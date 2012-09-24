@@ -88,7 +88,7 @@ class AuthMixin(object):
         if getattr(request, 'user', None) is None:
             # Probably happens only in tests that have forgotten to
             # set the user?
-            raise permissions._403_FORBIDDEN_RESPONSE
+            return permissions._403_FORBIDDEN_RESPONSE.response
         # This triggers authentication (view.user is a property).
         user = self.user
 
@@ -98,7 +98,7 @@ class AuthMixin(object):
             pass
         else:
             logger.error("Subclass %s of AuthMixin is supposed to provide .allowed_user_kwarg or .allowed_username" % self)
-            raise permissions._403_FORBIDDEN_RESPONSE
+            return permissions._403_FORBIDDEN_RESPONSE.response
 
         if request.method not in ('GET', 'HEAD', 'OPTIONS'):
             try:
