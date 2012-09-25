@@ -8,13 +8,13 @@ Deploying to DotCloud
 At OpenPlans, we have been deploying Shareabouts to DotCloud internally, so many
 of the files necessary are already in the repository.
 
-* First, create a new dotcloud application from the contents of the `sa-service` branch:
+* First, create a new dotcloud application from the contents of the `master` branch:
 
     dotcloud create <instance name>
 
 * Push the code to DotCloud.  This will take several minutes the first time.
 
-    dotcloud push <instance name> -b sa-service
+    dotcloud push <instance name> -b sa-master
 
   Note you should first either push all your changes to your master
   repository (eg. github or whatever you're using for version

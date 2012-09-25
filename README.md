@@ -1,10 +1,21 @@
-Shareabouts is a simple web app for crowdsourced mapping. We're in very early stages right now, so expect many rough edges. 
+Shareabouts API [![Build Status](https://secure.travis-ci.org/openplans/shareabouts-api.png)](http://travis-ci.org/openplans/shareabouts-api)
+===============
 
-Shareabouts is intended for simple mapping applications. For example, you could use it to collect public input on suitable locations for stations in a city-wide bike share.
+The Shareabouts API is the data storage and data management component that 
+powers the [Shareabouts web application](https://github.com/openplans/shareabouts). 
+It is a REST API for flexibly storing data about places and an UI for managing
+and exporting your data.
 
-The project is open source, and we welcome your involvement.
+Documentation
+-------------
+All of our documentation is is our `doc` directory. Use it to learn more about:
+* [local setup](https://github.com/openplans/shareabouts-api/blob/master/doc/README.md)
+* [how to deploy to DotCloud](https://github.com/openplans/shareabouts-api/blob/master/doc/DEPLOY.md)
+* [upgrading from an older version](https://github.com/openplans/shareabouts-api/blob/master/doc/UPGRADE.md)
 
-Requirements and a setup guide are located at doc/README_FOR_APP.
+Demo
+------------
+Please feel free to check out our [staging server](http://sapistaging-civicworks.dotcloud.com/manage/datasets/) to see how it work. Use username `demo-user` and password `demo`
 
 Contributing
 ------------
