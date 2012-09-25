@@ -499,3 +499,15 @@ class ActivityView (Ignore_CacheBusterMixin, AuthMixin, AbsUrlMixin, views.ListM
         if limit is not None:
             queryset = queryset[:limit]
         return queryset
+
+
+class OwnerPasswordView (Ignore_CacheBusterMixin, AuthMixin, AbsUrlMixin, views.View):
+    allowed_user_kwarg = 'owner__username'
+    parsers = [parsers.PlainTextParser]
+
+    def put(self, request, owner__username):
+        new_password = self.DATA
+        owner = auth.models.User.objects.get(username=owner__username)
+        owner.set_password(new_password)
+        owner.save()
+        return Response(204)

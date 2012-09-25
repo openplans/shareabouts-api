@@ -5,12 +5,14 @@ from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from djangorestframework.response import ErrorResponse
 from mock import patch
-from nose.tools import istest, assert_equal, assert_in, assert_raises
+from nose.tools import (istest, assert_equal, assert_not_equal, assert_in,
+                        assert_raises)
 from ..models import DataSet, Place, Submission, SubmissionSet
 from ..models import SubmittedThing, Activity
 from ..views import SubmissionCollectionView
 from ..views import raise_error_if_not_authenticated
 from ..views import ApiKeyCollectionView
+from ..views import OwnerPasswordView
 import json
 import mock
 
@@ -631,4 +633,72 @@ class TestApiKeyCollectionView(TestCase):
                                          'is_superuser': False,
                                          })
         response = self.view(self.request, **self.uri_args)
+        assert_equal(response.status_code, 403)
+
+class TestOwnerPasswordView(TestCase):
+
+    def _cleanup(self):
+        User.objects.all().delete()
+
+    def setUp(self):
+        self._cleanup()
+        self.user1 = User.objects.create(username='test-user1', password='abc')
+        self.user2 = User.objects.create(username='test-user2', password='123')
+
+        self.uri_args = {
+            'owner__username': self.user1.username,
+        }
+        self.uri = reverse('owner_password',
+                           kwargs=self.uri_args)
+        self.request = RequestFactory().get(self.uri)
+        self.view = OwnerPasswordView().as_view()
+
+    def tearDown(self):
+        self._cleanup()
+
+    @istest
+    def put_changes_password_if_user_is_authenticated(self):
+        request = RequestFactory().put(self.uri, data='new-password', content_type="text/plain")
+
+        user1 = User.objects.get(username='test-user1')
+        current_password = user1.password
+
+        request.user = user1
+        self.view(request, owner__username='test-user1')
+
+        user1 = User.objects.get(username='test-user1')
+        new_password = user1.password
+
+        assert_not_equal(current_password, new_password)
+
+    @istest
+    def put_403s_if_user_is_unauthenticated(self):
+        request = RequestFactory().put(self.uri, data='new-password', content_type="text/plain")
+
+        user1 = User.objects.get(username='test-user1')
+        current_password = user1.password
+
+        response = self.view(request, owner__username='test-user1')
+
+        user1 = User.objects.get(username='test-user1')
+        new_password = user1.password
+
+        assert_equal(current_password, new_password)
+        assert_equal(response.status, 403)
+
+    @istest
+    def put_403s_if_wrong_user_is_authenticated(self):
+        request = RequestFactory().put(self.uri, data='new-password', content_type="text/plain")
+
+        user1 = User.objects.get(username='test-user1')
+        user2 = User.objects.get(username='test-user2')
+        current_password = user1.password
+
+        request.user = user2
+        response = self.view(request, owner__username='test-user1')
+
+        user1 = User.objects.get(username='test-user1')
+        new_password = user1.password
+
+        assert_equal(current_password, new_password)
         assert_equal(response.status_code, 403)

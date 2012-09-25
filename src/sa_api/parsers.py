@@ -2,6 +2,9 @@ from .utils import unpack_data_blob
 from djangorestframework import parsers
 
 
+PlainTextParser = parsers.PlainTextParser
+
+
 class FormDataWithDataBlobMixin (object):
     """
     After initial decoding, look for an item named 'data', decode it as JSON,

@@ -40,6 +40,10 @@ urlpatterns = patterns('sa_api',
         views.AllSubmissionCollectionsView.as_view(),
         name='all_submissions_by_dataset'),
 
+    url(r'^(?P<owner__username>[^/]+)/password$',
+        views.OwnerPasswordView.as_view(),
+        name='owner_password'),
+
 
     ###############################################
     # Views with no specified dataset. Deprecate?
