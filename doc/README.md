@@ -73,7 +73,7 @@ platform, see https://docs.djangoproject.com/en/dev/ref/contrib/gis/install/#pla
 Create a development database for the Shareabouts data store.
 Typically this is done like:
 
-  createdb -T template_postgis shareabouts_v2
+    createdb -T template_postgis shareabouts_v2
 
 Copy the file
 `src/project/local_settings.py.template` to `local_settings.py` and fill in the
@@ -82,7 +82,7 @@ checked in to the repository.
 
 Then bootstrap the development database using the usual Django command:
 
-  src/manage.py syncdb --migrate
+    src/manage.py syncdb --migrate
 
 
 Running the Shareabouts Web Application
@@ -96,9 +96,9 @@ in the future.)
 
 For example, in another terminal session, do this:
 
-  git clone https://github.com/openplans/shareabouts/ sa-web
-  cd sa-web
-  git checkout sa-web
+    git clone https://github.com/openplans/shareabouts/ sa-web
+    cd sa-web
+    git checkout sa-web
 
 Then follow its own install documentation, in doc/README.md.
 
