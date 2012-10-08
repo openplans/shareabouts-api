@@ -8,3 +8,5 @@ DATABASES = {
         'PORT': '',
     }
 }
+
+LAUNCHROCK_KEY = 'ABCDEFG'

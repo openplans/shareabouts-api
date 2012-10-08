@@ -9,6 +9,9 @@ urlpatterns = patterns('',
     # url(r'^$', 'project.views.home', name='home'),
     # url(r'^project/', include('project.foo.urls')),
 
+    # Index page for the Launchrock
+    url(r'^$', 'beta_signup.views.index', name='index'),
+
     # Uncomment the admin/doc line below to enable admin documentation:
     # url(r'^admin/doc/', include('django.contrib.admindocs.urls')),
 

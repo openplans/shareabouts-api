@@ -31,6 +31,8 @@ STATIC_ROOT = '/home/dotcloud/current/static/'
 DEBUG = (env.get('DEBUG', 'False') in ['true', 'True'])
 TEMPLATE_DEBUG = DEBUG
 
+LAUNCHROCK_KEY = env.get('SHAREABOUTS_LAUNCHROCK_KEY')
+
 EOF
 
 # Need to be able to import settings to run the createdbs script...

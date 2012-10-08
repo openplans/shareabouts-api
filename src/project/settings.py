@@ -141,6 +141,7 @@ INSTALLED_APPS = (
     'django_nose',
 
     # Project apps
+    'beta_signup',
     'sa_api',
     'sa_api.apikey',
     'sa_manager',
