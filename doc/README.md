@@ -1,6 +1,6 @@
 From 0 to Shareabouts in about an hour
 ======================================
-Shareabouts requires python2.6 or greater.
+Shareabouts requires python2.6 or greater (and PostgreSQL 9.1 and development libraries by default to build).
 
 If you are converting from Shareabouts 1.0, note that
 we have switched platforms. See [the upgrade docs](UPGRADE.md).
