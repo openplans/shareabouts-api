@@ -52,7 +52,7 @@ To run the development server:
 
     src/manage.py runserver 8001
 
-This will start the service at http://localhost:8000/ .
+This will start the service at http://localhost:8001/ .
 
 If you don't specify a port, the server will start on port 8000.
 We recommend getting in the habit of using port 8001 so you can
