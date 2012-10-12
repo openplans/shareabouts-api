@@ -18,12 +18,13 @@ key handy.
 `dotcloud ssh shareaboutsapi.db`
 3. Copy our backup script (a slight modification of the DotCloud backup script).
 `curl --output dotcloud_db_backup.sh https://raw.github.com/openplans/shareabouts-api/master/scripts/dotcloud_db_backup.sh`
-4. Run `s3cmd --configure` setup access to your S3 bucket. Enter your
+4. Make your script executable `chmod +x dotcloud_db_backup.sh`
+5. Run `s3cmd --configure` setup access to your S3 bucket. Enter your
 `access key` and `secret key` here. The `Encryption password` and
 `Path to GPG program` are optional if you prefer.
-5. When it asks "Test access with supplied credentials?", enter `Y` to make
+6. When it asks "Test access with supplied credentials?", enter `Y` to make
 sure the configuration is correct.
-6. Test the backup! `~/dotcloud_db_backup.sh pgsql s3 shareaboutsapi_backups`
+7. Test the backup! `~/dotcloud_db_backup.sh pgsql s3 shareaboutsapi_backups`
 where `shareaboutsapi_backups` is your bucket name.
 
 Schedule Backups
