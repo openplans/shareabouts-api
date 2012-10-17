@@ -201,3 +201,20 @@ class TestSaManager(TestCase):
                               'dataset_slug': 'dataset1'})
         response = client.get(url)
         self.assertEqual(response.status_code, 200)
+        
+    def test_manager_password(self):
+        client = Client()
+        url = reverse('manager_password')
+
+        client.login(username='riley', password='pass')
+        response = client.get(url)
+        self.assertEqual(response.status_code, 200)
+        
+        response = client.post(url, data={'new_password': 'pass1', 'confirm_password': 'pass2'})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['form'].non_field_errors(), [u'Passwords do not match'])
+        
+        response = client.post(url, data={'new_password': 'pass1', 'confirm_password': 'pass1'})
+        self.assertEqual(response.status_code, 302)
+        self.mock_api.send.assert_called_with('PUT', 'password', data=u'pass1', content_type='text/plain')
+

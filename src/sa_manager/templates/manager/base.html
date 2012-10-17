@@ -42,7 +42,8 @@
           <div class="navbar-text pull-right">
             {% if request.user.is_authenticated %}
               Logged in as {{ request.user.username }}.
-              <a href="{% url 'manager_logout' %}?next={{ request.get_full_path }}">Log out</a>
+              <a href="{% url 'manager_logout' %}?next={{ request.get_full_path }}">Log out</a> /
+              <a href="{% url 'manager_password' %}?next={{ request.get_full_path }}">Change Password</a>
            {% endif %}
          </div>
 

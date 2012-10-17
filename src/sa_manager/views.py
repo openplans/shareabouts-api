@@ -4,7 +4,8 @@ from django.core.urlresolvers import reverse
 from django.http import HttpResponse
 from django.shortcuts import render, redirect
 from django.utils.decorators import method_decorator
-from django.views.generic import View
+from django.views.generic import View, FormView
+from . import forms
 import json
 import requests
 
@@ -14,6 +15,7 @@ API_ROOT = '/api/v1/'
 
 class ShareaboutsApi (object):
     uri_templates = {
+        'password': r'{username}/password',
         'dataset_collection': r'datasets/{username}/',
         'dataset_instance': r'datasets/{username}/{slug}/',
         'keys_collection': r'datasets/{username}/{dataset_slug}/keys/',
@@ -43,7 +45,7 @@ class ShareaboutsApi (object):
         self.cookies = request.META.get('HTTP_COOKIE', '')
 
     def send(self, method, url, data=None, content_type='application/json'):
-        if data is not None:
+        if data is not None and content_type == 'application/json':
             data = json.dumps(data)
 
         headers = {'Content-type': content_type,
@@ -323,6 +325,34 @@ class ExistingPlaceView (PlaceFormMixin, View):
         else:
             # TODO ???
             pass
+
+
+class ChangePasswordView (FormView):
+    template_name = 'registration/change_password.html'
+    form_class = forms.ChangePasswordForm
+    
+    @method_decorator(login_required)
+    def dispatch(self, request, *args, **kwargs):
+        self.api = ShareaboutsApi(request)
+        self.api.authenticate(request)
+
+        self.password_uri = self.api.build_uri('password', username=request.user.username)
+
+        return super(ChangePasswordView, self).dispatch(request, *args, **kwargs)
+    
+    def get_context_data(self, **kwargs):
+        context = super(ChangePasswordView, self).get_context_data(**kwargs)
+        next = self.request.GET.get('next', reverse('manager_index'))
+        context['next'] = next
+        return context
+    
+    def get_success_url(self):
+        return self.request.POST.get('next', reverse('manager_index'))
+
+    def form_valid(self, form):
+        new_password = form.cleaned_data['new_password']
+        self.api.send('PUT', self.password_uri, data=new_password, content_type='text/plain')
+        return super(ChangePasswordView, self).form_valid(form)
 
 
 @login_required
