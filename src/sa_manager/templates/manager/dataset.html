@@ -9,6 +9,11 @@
     <legend>{% if dataset.id %}Edit Dataset{% else %}New Dataset{% endif %}</legend>
     {% include "manager/_field.html" with label="Display Name" name="display_name" value=dataset.display_name %}
     {% include "manager/_field.html" with label="Slug"  name="slug" value=dataset.slug|default:'' %}
+
+    <div class="control-group">
+      <label class="control-label">Root URL</label>
+      <div class="controls"><a href="{{ dataset.url }}">{{ dataset.url }}</a></div>
+    </div>
   </fieldset>
 
   <div class="form-actions">
