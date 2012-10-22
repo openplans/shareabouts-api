@@ -472,7 +472,7 @@ class ActivityView (Ignore_CacheBusterMixin, AuthMixin, AbsUrlMixin, views.ListM
         if (visibility == 'all'):
             return models.Submission.objects.all().select_related('parent')
         elif visibility == 'true' or visibility == '':
-            return models.Submission.objects.all().select_related('parent').filter(parent__place__visible=True)
+            return models.Submission.objects.all().filter(visible=True).select_related('parent').filter(parent__place__visible=True)
         else:
             raise Exception('Invalid visibility: ' + repr(visibility))
 

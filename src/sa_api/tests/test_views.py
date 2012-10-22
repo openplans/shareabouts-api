@@ -426,6 +426,7 @@ class TestActivityView(TestCase):
 
         self.visible_submission = Submission.objects.create(dataset_id=self.dataset.id, parent_id=self.visible_set.id)
         self.invisible_submission = Submission.objects.create(dataset_id=self.dataset.id, parent_id=self.invisible_set.id)
+        self.invisible_submission2 = Submission.objects.create(dataset_id=self.dataset.id, parent_id=self.visible_set.id, visible=False)
 
         # Note this implicitly creates an Activity.
         visible_place_activity = Activity.objects.get(data_id=self.visible_place.id)
@@ -459,7 +460,7 @@ class TestActivityView(TestCase):
         view = ActivityView()
         view.request = RequestFactory().get(self.url + '?visible=all')
         qs = view.get_queryset()
-        self.assertEqual(qs.count(), 6)
+        self.assertEqual(qs.count(), 7)
 
     @istest
     def get_queryset_before(self):
