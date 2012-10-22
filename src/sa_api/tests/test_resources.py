@@ -1,9 +1,11 @@
+from django.contrib.auth.models import User
 from django.test import TestCase
-from mock_django.models import ModelMock
-from nose.tools import istest
-from nose.tools import assert_equal, assert_raises, assert_in
-from djangorestframework.response import ErrorResponse
 import mock
+from nose.tools import istest
+from nose.tools import assert_equal, assert_in, assert_not_in, ok_
+
+from ..resources import ModelResourceWithDataBlob
+from ..models import SubmittedThing, DataSet
 
 
 def make_model_mock(model, **kw):
@@ -31,50 +33,57 @@ class TestFunctions(object):
 
 
 class TestModelResourceWithDataBlob(object):
+    def setUp(self):
+        User.objects.all().delete()
+        DataSet.objects.all().delete()
+        SubmittedThing.objects.all().delete()
 
     def _get_resource_and_instance(self):
-        from ..resources import ModelResourceWithDataBlob
-        from ..models import SubmittedThing
         resource = ModelResourceWithDataBlob()
         resource.model = SubmittedThing
-        mock_instance = ModelMock(SubmittedThing)
+
+        user = User.objects.create_user(username='paul')
+        dataset_instance = DataSet.objects.create(owner=user)
+        submitted_thing = SubmittedThing.objects.create(dataset=dataset_instance)
         # Need an instance to avoid auto-creating one.
         resource.view = mock.Mock()
-        resource.view.model_instance = mock_instance
+        resource.view.model_instance = submitted_thing
         # ... and it needs some other attributes to avoid making a
         # useless mock form.
         resource.view.form = None
         resource.view.method = None
-        return resource, mock_instance
+        return resource, submitted_thing
 
     @istest
     def serialize_with_data_blob(self):
-        resource, mock_instance = self._get_resource_and_instance()
+        resource, submitted_thing = self._get_resource_and_instance()
 
-        mock_instance.data = '{"animals": ["dogs", "cats"]}'
-        mock_instance.submitter_name = 'Jacques Tati'
-        result = resource.serialize(mock_instance)
-        assert_equal(result, {'animals': ['dogs', 'cats']})
+        submitted_thing.data = '{"animals": ["dogs", "cats"]}'
+        submitted_thing.submitter_name = 'Jacques Tati'
+        result = resource.serialize(submitted_thing)
+        # import pdb; pdb.set_trace()
+        assert_equal(result['animals'], ['dogs', 'cats'])
+        assert_not_in('data', result)
+        ok_(result['visible'])
+        assert_equal(result['dataset']['id'], submitted_thing.dataset.id)
         # TODO: why isn't submitter_name in there?
 
     @istest
     def validate_request_with_origdata(self):
-        resource, mock_instance = self._get_resource_and_instance()
+        resource, submitted_thing = self._get_resource_and_instance()
+
         result = resource.validate_request({'submitter_name': 'ralphie',
-                                            'x': 'xylophone'})
+                                            'x': 'xylophone',
+                                            'dataset': submitted_thing.dataset.id,
+                                            'visible': True})
+
         # Anything not in the model's fields gets converted to the 'data'
         # JSON blog.
         assert_equal(
             result,
-            {'submitter_name': u'ralphie', 'dataset': None,
-             'data': u'{\n  "x": "xylophone"\n}'}
+            {'submitter_name': u'ralphie', 'dataset': submitted_thing.dataset,
+             'data': u'{\n  "x": "xylophone"\n}', 'visible': True}
         )
-
-    @istest
-    def validate_request_without_origdata(self):
-        resource, mock_instance = self._get_resource_and_instance()
-        # Missing required fieldsd.
-        assert_raises(ErrorResponse, resource.validate_request, {})
 
 
 class TestPlaceResource(TestCase):

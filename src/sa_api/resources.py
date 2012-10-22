@@ -33,6 +33,7 @@ class ModelResourceWithDataBlob (resources.ModelResource):
         serialization = super(ModelResourceWithDataBlob, self).serialize(obj, *args, **kwargs)
         if isinstance(obj, self.model):
             data = json.loads(obj.data)
+            serialization.pop('data', None)
             serialization.update(data)
 
         return serialization
