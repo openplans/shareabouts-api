@@ -371,6 +371,16 @@ class SubmissionCollectionView (Ignore_CacheBusterMixin, AuthMixin, AbsUrlMixin,
             **kwargs
         )
 
+    def get_queryset(self):
+        # Expects 'all' or not defined
+        visibility = self.request.GET.get('visible', 'true')
+        queryset = super(SubmissionCollectionView, self).get_queryset()
+
+        if (visibility == 'all'):
+            return queryset
+        elif visibility == 'true':
+            return queryset.filter(visible=True)
+
     def post(self, request, place_id, submission_type, **kwargs):
         # TODO: Location
         return super(SubmissionCollectionView, self).post(

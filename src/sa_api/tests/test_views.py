@@ -370,6 +370,41 @@ class TestSubmissionInstanceAPI (TestCase):
         assert_equal(data['animal'], 'tree frog')
 
 
+class TestSubmissionCollectionView(TestCase):
+
+    def setUp(self):
+        User.objects.all().delete()
+        DataSet.objects.all().delete()
+        Place.objects.all().delete()
+        Submission.objects.all().delete()
+        SubmittedThing.objects.all().delete()
+        Activity.objects.all().delete()
+
+        self.owner = User.objects.create(username='myuser')
+        self.dataset = DataSet.objects.create(slug='data',
+                                              owner_id=self.owner.id)
+        self.visible_place = Place.objects.create(dataset_id=self.dataset.id, location='POINT (0 0)', visible=True)
+        self.visible_set = SubmissionSet.objects.create(place_id=self.visible_place.id)
+
+        self.visible_submission = Submission.objects.create(dataset_id=self.dataset.id, parent_id=self.visible_set.id, visible=True)
+        self.invisible_submission = Submission.objects.create(dataset_id=self.dataset.id, parent_id=self.visible_set.id, visible=False)
+
+    @istest
+    def get_queryset_checks_visibility(self):
+        from ..views import SubmissionCollectionView
+        view = SubmissionCollectionView()
+
+        # Only visible Submissions by default...
+        view.request = mock.Mock(GET={})
+        qs = view.get_queryset()
+        assert_equal(qs.count(), 1)
+
+        # Or, all of them.
+        view.request = mock.Mock(GET={'visible': 'all'})
+        qs = view.get_queryset()
+        assert_equal(qs.count(), 2)
+
+
 class TestActivityView(TestCase):
 
     def setUp(self):
@@ -536,6 +571,10 @@ class TestPlaceCollectionView(TestCase):
 
         # And we have a place:
         assert_equal(models.Place.objects.count(), 1)
+
+        # And that place is visible. See story #38212759
+        # assert_equal(models.Place.objects.all()[0].visible, True)
+        # assert_equal(response.cleaned_content['visible'], True)
 
     @istest
     def get_queryset_checks_visibility(self):
