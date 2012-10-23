@@ -371,6 +371,16 @@ class SubmissionCollectionView (Ignore_CacheBusterMixin, AuthMixin, AbsUrlMixin,
             **kwargs
         )
 
+    def get_queryset(self):
+        # Expects 'all' or not defined
+        visibility = self.request.GET.get('visible', 'true')
+        queryset = super(SubmissionCollectionView, self).get_queryset()
+
+        if (visibility == 'all'):
+            return queryset
+        elif visibility == 'true':
+            return queryset.filter(visible=True)
+
     def post(self, request, place_id, submission_type, **kwargs):
         # TODO: Location
         return super(SubmissionCollectionView, self).post(
@@ -462,7 +472,7 @@ class ActivityView (Ignore_CacheBusterMixin, AuthMixin, AbsUrlMixin, views.ListM
         if (visibility == 'all'):
             return models.Submission.objects.all().select_related('parent')
         elif visibility == 'true' or visibility == '':
-            return models.Submission.objects.all().select_related('parent').filter(parent__place__visible=True)
+            return models.Submission.objects.all().filter(visible=True).select_related('parent').filter(parent__place__visible=True)
         else:
             raise Exception('Invalid visibility: ' + repr(visibility))
 

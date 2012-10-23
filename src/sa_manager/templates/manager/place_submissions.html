@@ -6,9 +6,9 @@
 {% include "manager/place_tabs.html" with submissions_active=1 link_prefix='../' %}
 
 {% for submission_set in place.submissions %}
+
+{% if submission_set.submissions|length %}
 <legend>{{ submission_set.label }}</legend>
-
-
 
 <table class="table">
   <thead>
@@ -50,6 +50,8 @@
     {% endfor %}
   </tbody>
 </table>
+{% endif %}
+
 {% endfor %}
 
 {% endblock place_content %}

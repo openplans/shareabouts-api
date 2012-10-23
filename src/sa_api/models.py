@@ -21,6 +21,7 @@ class SubmittedThing (TimeStampedModel):
     data = models.TextField(default='{}')
     dataset = models.ForeignKey('DataSet', related_name='submitted_thing_set',
                                 blank=True)
+    visible = models.BooleanField(default=True, blank=True)
 
     def save(self, *args, **kwargs):
         is_new = (self.id == None)
@@ -60,7 +61,6 @@ class Place (SubmittedThing):
 
     """
     location = models.PointField()
-    visible = models.BooleanField(default=True)
 
     objects = models.GeoManager()
 
