@@ -542,7 +542,8 @@ class SubmissionMixin (BaseDataBlobFormMixin):
                 continue
 
             # Retrieve each submission set.
-            submission_set['submissions'] = self.api.get(submission_set['url'])
+            join_char = '&' if '?' in submission_set['url'] else '?'
+            submission_set['submissions'] = self.api.get(join_char.join([submission_set['url'], 'visible=all']))
 
             # Process some data for display
             submission_set['is_shown'] = True
@@ -593,7 +594,7 @@ class SubmissionMixin (BaseDataBlobFormMixin):
 
         # Construct the submission_uri, taking into account the submission
         # type according to the POST variables.
-        self.submissions_uri = request.build_absolute_uri(API_ROOT + 'datasets/' + request.user.username + '/' + dataset_slug + '/places/{0}/{1}/'.format(place_id, self.actual_submission_type))
+        self.submissions_uri = api.build_uri('submission_collection', username=request.user.username, dataset_slug=dataset_slug, place_pk=place_id, type=self.actual_submission_type)
 
         # Send the save request
         response = self.api.send('POST', self.submissions_uri, data)
