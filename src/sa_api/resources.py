@@ -187,6 +187,7 @@ class DataSetResource (resources.ModelResource):
 
             submission_sets[submission_set.place.dataset_id].add((
                 ('type', submission_set.submission_type),
+                ('length', submission_set.length),
                 ('url', reverse('all_submissions_by_dataset', kwargs={
                     'dataset__owner__username': submission_set.place.dataset.owner.username,
                     'dataset__slug': submission_set.place.dataset.slug,
