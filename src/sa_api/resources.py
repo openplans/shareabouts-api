@@ -243,7 +243,7 @@ class SubmissionResource (ModelResourceWithDataBlob):
                          'dataset__owner__username': submission.dataset.owner.username,
                          'dataset__slug': submission.dataset.slug,
                          'pk': submission.parent.place_id})
-        return {'url': url}
+        return {'url': url, 'id': submission.parent.place_id}
 
     def dataset(self, submission):
         url = reverse('dataset_instance_by_user',
