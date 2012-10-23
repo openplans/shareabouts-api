@@ -178,25 +178,40 @@ class DataSetResource (resources.ModelResource):
         significantly on the number of queries.
         """
         submission_sets = defaultdict(set)
+        submission_counts = defaultdict(lambda: defaultdict(int))
 
         qs = models.SubmissionSet.objects.all().select_related()
         for submission_set in qs.annotate(length=Count('children')):
             # Ignore empty sets
             if submission_set.length <= 0:
                 continue
-
-            submission_sets[submission_set.place.dataset_id].add((
-                ('type', submission_set.submission_type),
-                ('length', submission_set.length),
+            
+            ds_id = submission_set.place.dataset_id
+            ss_type = submission_set.submission_type
+            
+            # Keep a total of how many of each submission type you've seen
+            submission_counts[ds_id][ss_type] += submission_set.length
+            
+            # Build a list of unique submission set types; use tuples so that 
+            # we can compare values.
+            submission_sets[ds_id].add((
+                ('type', ss_type),
                 ('url', reverse('all_submissions_by_dataset', kwargs={
                     'dataset__owner__username': submission_set.place.dataset.owner.username,
                     'dataset__slug': submission_set.place.dataset.slug,
-                    'submission_type': submission_set.submission_type
+                    'submission_type': ss_type
                 }))
             ))
 
+        # Go through and create a dictionary from all the tuple sets
         for dataset_id, submission_sets_data in submission_sets.items():
             submission_sets[dataset_id] = [dict(data) for data in submission_sets_data]
+        
+        # Attach the counts to the dictionaries
+        for dataset_id, type_counts in submission_counts.items():
+            for submission_set in submission_sets[dataset_id]:
+                submission_type = submission_set['type']
+                submission_set['length'] = type_counts[submission_type]
 
         return submission_sets
 
