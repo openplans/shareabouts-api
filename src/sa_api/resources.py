@@ -277,10 +277,6 @@ class ActivityResource (resources.ModelResource):
     model = models.Activity
     fields = ['action', 'type', 'id', 'place_id', ('data', GeneralSubmittedThingResource)]
     
-    # The ActivityView uses PARAMS, but in order to do that with the JSON-P
-    # content type, we need to be able to ignore the 'callback' parameter.
-    allow_unknown_form_fields = True
-
     @property
     def queryset(self):
         return models.Activity.objects.filter(data_id__in=self.things)

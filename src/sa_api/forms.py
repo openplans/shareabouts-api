@@ -45,3 +45,4 @@ class ActivityForm (forms.Form):
     visible = forms.CharField(required=False)
 
     format = forms.CharField(required=False)
+    callback = forms.CharField(required=False)
