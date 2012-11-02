@@ -1,3 +1,5 @@
+#-*- coding:utf-8 -*-
+
 from django.test import TestCase
 from nose.tools import istest
 from sa_api.renderers import CSVRenderer
@@ -50,3 +52,17 @@ class TestCSVRenderer (TestCase):
                                 [None, 1   , 2   , None  , None ],
                                 [None, None, 3   , 4     , 5    ],
                                 [6   , None, None, None  , None ]])
+
+    def test_tablize_a_list_with_unicode_elements(self):
+        renderer = CSVRenderer(None)
+
+        flat = renderer.tablize([{u'a': 1, u'b': u'hello\u2014goodbye'}])
+        self.assertEqual(flat, [[u'a', u'b'            ],
+                                [1   , u'hello—goodbye']])
+
+    def test_render_a_list_with_unicode_elements(self):
+        renderer = CSVRenderer(None)
+
+        dump = renderer.render([{u'a': 1, u'b': u'hello\u2014goodbye', u'c': 'http://example.com/'}])
+        self.assertEqual(dump, (u'a,b,c\r\n1,hello—goodbye,http://example.com/\r\n').encode('utf-8'))
+

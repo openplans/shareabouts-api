@@ -22,7 +22,11 @@ class CSVRenderer(renderers.BaseRenderer):
         csv_buffer = StringIO()
         csv_writer = csv.writer(csv_buffer)
         for row in table:
-            csv_writer.writerow(row)
+            # Assume that strings should be encoded as UTF-8
+            csv_writer.writerow([
+                elem.encode('utf-8') if isinstance(elem, basestring) else elem 
+                for elem in row
+            ])
 
         return csv_buffer.getvalue()
 
