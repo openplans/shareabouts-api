@@ -700,7 +700,7 @@ def download_places_view(request, dataset_slug):
     api.authenticate(request)
     places_uri = api.build_uri('place_collection', username=request.user.username, dataset_slug=dataset_slug)
 
-    api_response = api.send('GET', places_uri, content_type='text/csv')
+    api_response = api.send('GET', places_uri + 'table', content_type='text/csv')
     places_csv = api_response.text
 
     response = HttpResponse(places_csv, content_type='text/csv')
@@ -713,7 +713,7 @@ def download_submissions_view(request, dataset_slug, submission_type):
     api.authenticate(request)
     submissions_uri = api.build_uri('all_submissions', username=request.user.username, dataset_slug=dataset_slug, type=submission_type)
 
-    api_response = api.send('GET', submissions_uri, content_type='text/csv')
+    api_response = api.send('GET', submissions_uri + 'table', content_type='text/csv')
     submissions_csv = api_response.text
 
     response = HttpResponse(submissions_csv, content_type='text/csv')
