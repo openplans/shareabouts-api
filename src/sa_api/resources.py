@@ -246,7 +246,7 @@ class SubmissionResource (ModelResourceWithDataBlob):
     form = forms.SubmissionForm
     # TODO: show dataset, but not detailed owner info
     exclude = ['parent', 'data', 'submittedthing_ptr']
-    include = ['type', 'place']
+    include = ['type', 'place', 'url']
     queryset = model.objects.select_related().order_by('created_datetime')
 
     def type(self, submission):
@@ -266,6 +266,25 @@ class SubmissionResource (ModelResourceWithDataBlob):
                          'owner__username': submission.dataset.owner.username,
                          'slug': submission.dataset.slug})
         return {'url': url}
+
+    def _get_dataset_url_args(self, dataset_id):
+        # Looking up the same parent dataset for 1000 places would be
+        # pointless and expensive.
+        self._reverse_args_cache = getattr(self, '_reverse_args_cache', {})
+        if dataset_id in self._reverse_args_cache:
+            args = self._reverse_args_cache[dataset_id]
+        else:
+            dataset = models.DataSet.objects.get(id=dataset_id)
+            args = self._reverse_args_cache[dataset_id] = (
+                dataset.owner.username,
+                dataset.slug,
+            )
+        return args
+
+    def url(self, submission):
+        args = self._get_dataset_url_args(submission.dataset_id)
+        args = args + (submission.parent.place.id, submission.parent.submission_type, submission.id,)
+        return reverse('submission_instance_by_dataset', args=args)
 
 
 class GeneralSubmittedThingResource (ModelResourceWithDataBlob):
