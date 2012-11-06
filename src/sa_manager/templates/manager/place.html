@@ -1,54 +1,73 @@
 {% extends "manager/place_base.html" %}
 
+{% block styles %}
+  <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.4.5/leaflet.css" />
+  <!--[if lte IE 8]>
+      <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.4.5/leaflet.ie.css" />
+  <![endif]-->
+  <link href="{{ STATIC_URL }}place.css" rel="stylesheet">
+{% endblock styles %}
+
+{% block scripts %}
+  <script src="http://cdn.leafletjs.com/leaflet-0.4.5/leaflet.js"></script>
+  <script src="{{ STATIC_URL }}place.js"></script>
+{% endblock scripts %}
+
 {% block place_content %}
 
 {% include "manager/place_tabs.html" with properties_active=1 %}
 
-<form method="POST" class="form-horizontal">{% csrf_token %}
-  <fieldset>
-    <legend>Edit existing properties</legend>
-    {% include "manager/_field.html" with label="Place Name" name="name" value=place.name %}
-    {% include "manager/_field.html" with label="Submitter Name" name="submitter_name" value=place.submitter_name|default:'' %}
-    {% if place.id %}
-      {% include "manager/_field.html" with label="Visible?" name="visible" value=place.visible type="checkbox" %}
-    {% else %}
-      {% include "manager/_field.html" with label="Visible?" name="visible" value='on' type="checkbox" %}
-    {% endif %}
-    {% include "manager/_field.html" with label="Latitude" name="lat" value=place.location.lat %}
-    {% include "manager/_field.html" with label="Longitude" name="lng" value=place.location.lng %}
+<div class="row">
+  <div class="span6">
+    <form method="POST" class="form-horizontal">{% csrf_token %}
+      <fieldset>
+        <legend>Edit existing properties</legend>
+        {% include "manager/_field.html" with label="Place Name" name="name" value=place.name %}
+        {% include "manager/_field.html" with label="Submitter Name" name="submitter_name" value=place.submitter_name|default:'' %}
+        {% if place.id %}
+          {% include "manager/_field.html" with label="Visible?" name="visible" value=place.visible type="checkbox" %}
+        {% else %}
+          {% include "manager/_field.html" with label="Visible?" name="visible" value='on' type="checkbox" %}
+        {% endif %}
+        {% include "manager/_field.html" with label="Latitude" name="lat" value=place.location.lat %}
+        {% include "manager/_field.html" with label="Longitude" name="lng" value=place.location.lng %}
 
-    {% for label, key, value in data_fields %}
-      {% include "manager/_field.html" with label=label name=key value=value %}
-    {% endfor %}
-  </fieldset>
+        {% for label, key, value in data_fields %}
+          {% include "manager/_field.html" with label=label name=key value=value %}
+        {% endfor %}
+      </fieldset>
 
-  <fieldset>
-    <legend>Add more properties</legend>
-    <div class="control-group">
-      <label class="control-label" style="padding-top: 0px; padding-bottom: 0px;">
-        <input class="input-small" name="_new_key1" type="text" placeholder="Attr Name">
-      </label>
-      <div class="controls">
-        <input name="_new_val1" type="text" placeholder="Attr Value">
+      <fieldset>
+        <legend>Add more properties</legend>
+        <div class="control-group">
+          <label class="control-label" style="padding-top: 0px; padding-bottom: 0px;">
+            <input class="input-small" name="_new_key1" type="text" placeholder="Attr Name">
+          </label>
+          <div class="controls">
+            <input name="_new_val1" type="text" placeholder="Attr Value">
+          </div>
+        </div>
+        <div class="control-group">
+          <label class="control-label" style="padding-top: 0px; padding-bottom: 0px;">
+            <input class="input-small" name="_new_key2" type="text" placeholder="Attr Name">
+          </label>
+          <div class="controls">
+            <input name="_new_val2" type="text" placeholder="Attr Value">
+            <p class="help-block">Save to add more</p>
+          </div>
+        </div>
+      </fieldset>
+
+      <div class="form-actions">
+        <button class="btn btn-primary" name="action" value="save" type="submit">Save</button>
+        {% if place.id %}
+        <button class="btn" name="action" value="delete" type="submit">Delete</button>
+        {% endif %}
       </div>
-    </div>
-    <div class="control-group">
-      <label class="control-label" style="padding-top: 0px; padding-bottom: 0px;">
-        <input class="input-small" name="_new_key2" type="text" placeholder="Attr Name">
-      </label>
-      <div class="controls">
-        <input name="_new_val2" type="text" placeholder="Attr Value">
-        <p class="help-block">Save to add more</p>
-      </div>
-    </div>
-  </fieldset>
-
-  <div class="form-actions">
-    <button class="btn btn-primary" name="action" value="save" type="submit">Save</button>
-    {% if place.id %}
-    <button class="btn" name="action" value="delete" type="submit">Delete</button>
-    {% endif %}
+    </form>
   </div>
-</form>
-
+  <div class="span6">
+    <div id="place-map"></div>
+  </div>
+</div>
 {% endblock %}
