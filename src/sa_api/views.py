@@ -288,6 +288,7 @@ class PlaceCollectionView (Ignore_CacheBusterMixin, AuthMixin, AbsUrlMixin, Mode
             return queryset
         elif visibility == 'true':
             return queryset.filter(visible=True)
+        # TODO: What's a reasonable default?
 
     def post(self, request, *args, **kwargs):
         response = super(PlaceCollectionView, self).post(request, *args, **kwargs)

@@ -20,10 +20,12 @@ class ShareaboutsApi (object):
         'dataset_instance': r'datasets/{username}/{slug}/',
         'keys_collection': r'datasets/{username}/{dataset_slug}/keys/',
         'place_collection': r'datasets/{username}/{dataset_slug}/places/?visible=all',
+        'place_collection_table': r'datasets/{username}/{dataset_slug}/places/table?visible=all',
         'place_instance': r'datasets/{username}/{dataset_slug}/places/{pk}/',
         'submission_collection': r'datasets/{username}/{dataset_slug}/places/{place_pk}/{type}/?visible=all',
         'submission_instance': r'datasets/{username}/{dataset_slug}/places/{place_pk}/{type}/{pk}/',
         'all_submissions': r'datasets/{username}/{dataset_slug}/{type}/',
+        'all_submissions_table': r'datasets/{username}/{dataset_slug}/{type}/table',
     }
 
     def __init__(self, request=None, root='/api/v1/'):
@@ -698,9 +700,9 @@ class ExistingSubmissionView (SubmissionMixin, View):
 def download_places_view(request, dataset_slug):
     api = ShareaboutsApi(request)
     api.authenticate(request)
-    places_uri = api.build_uri('place_collection', username=request.user.username, dataset_slug=dataset_slug)
+    places_uri = api.build_uri('place_collection_table', username=request.user.username, dataset_slug=dataset_slug)
 
-    api_response = api.send('GET', places_uri + 'table', content_type='text/csv')
+    api_response = api.send('GET', places_uri, content_type='text/csv')
     places_csv = api_response.text
 
     response = HttpResponse(places_csv, content_type='text/csv')
@@ -711,9 +713,9 @@ def download_places_view(request, dataset_slug):
 def download_submissions_view(request, dataset_slug, submission_type):
     api = ShareaboutsApi(request)
     api.authenticate(request)
-    submissions_uri = api.build_uri('all_submissions', username=request.user.username, dataset_slug=dataset_slug, type=submission_type)
+    submissions_uri = api.build_uri('all_submissions_table', username=request.user.username, dataset_slug=dataset_slug, type=submission_type)
 
-    api_response = api.send('GET', submissions_uri + 'table', content_type='text/csv')
+    api_response = api.send('GET', submissions_uri, content_type='text/csv')
     submissions_csv = api_response.text
 
     response = HttpResponse(submissions_csv, content_type='text/csv')
