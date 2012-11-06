@@ -339,3 +339,44 @@ class ApiKeyResource(resources.ModelResource):
     model = apikey.models.ApiKey
 
     fields = ('key', 'logged_ip', 'last_used')
+
+
+class TabularPlaceResource (PlaceResource):
+    exclude = PlaceResource.exclude + ['dataset', 'url', 'name', 'updated_datetime']
+    
+    def serialize(self, obj, *args, **kwargs):
+        serialization = super(TabularPlaceResource, self).serialize(obj, *args, **kwargs)
+        
+        if isinstance(obj, self.model):
+            for fieldname in ['id', 'submitter_name', 'created_datetime', 'visible', 'location']:
+                fieldvalue = serialization.pop(fieldname)
+                serialization['place_' + fieldname] = fieldvalue
+
+            submission_sets = serialization.pop('submissions')
+            for submission_set in submission_sets:
+                serialization[submission_set['type']] = submission_set['length']
+        
+        return serialization
+
+
+class TabularSubmissionResource (SubmissionResource):
+    exclude = SubmissionResource.exclude + ['dataset', 'url', 'name', 'updated_datetime']
+    
+    def serialize(self, obj, *args, **kwargs):
+        serialization = super(TabularSubmissionResource, self).serialize(obj, *args, **kwargs)
+        
+        if isinstance(obj, self.model):
+            submissionset = serialization.pop('type')
+            if submissionset.endswith('s'):
+                submissiontype = submissionset[:-1]
+            else:
+                submissiontype = submissionset
+
+            place = serialization.pop('place')
+            serialization['place_id'] = place['id']
+            
+            for fieldname in ['id', 'submitter_name', 'created_datetime', 'visible']:
+                fieldvalue = serialization.pop(fieldname)
+                serialization['_'.join([submissiontype, fieldname])] = fieldvalue
+        
+        return serialization

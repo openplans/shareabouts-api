@@ -521,3 +521,18 @@ class OwnerPasswordView (Ignore_CacheBusterMixin, AuthMixin, AbsUrlMixin, views.
         owner.set_password(new_password)
         owner.save()
         return Response(204)
+
+
+class TabularPlaceCollectionView (PlaceCollectionView):
+    resource = resources.TabularPlaceResource
+    cache_prefix = 'place_collection'
+    
+
+class TabularSubmissionCollectionView (SubmissionCollectionView):
+    resource = resources.TabularSubmissionResource
+    cache_prefix = 'submission_collection'
+    
+
+class TabularAllSubmissionCollectionsView (AllSubmissionCollectionsView):
+    resource = resources.TabularSubmissionResource
+    cache_prefix = 'submission_collection'

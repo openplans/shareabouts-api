@@ -20,6 +20,10 @@ urlpatterns = patterns('sa_api',
         views.PlaceCollectionView.as_view(),
         name='place_collection_by_dataset'),
 
+    url(places_base_regex + 'table$',
+        views.TabularPlaceCollectionView.as_view(),
+        name='tabular_place_collection_by_dataset'),
+
     url(places_base_regex + r'(?P<pk>\d+)/$',
         views.PlaceInstanceView.as_view(),
         name='place_instance_by_dataset'),
@@ -27,6 +31,10 @@ urlpatterns = patterns('sa_api',
     url(places_base_regex + r'(?P<place_id>\d+)/(?P<submission_type>[^/]+)/$',
         views.SubmissionCollectionView.as_view(),
         name='submission_collection_by_dataset'),
+
+    url(places_base_regex + r'(?P<place_id>\d+)/(?P<submission_type>[^/]+)/table$',
+        views.TabularSubmissionCollectionView.as_view(),
+        name='tabular_submission_collection_by_dataset'),
 
     url(places_base_regex + r'(?P<place_id>\d+)/(?P<submission_type>[^/]+)/(?P<pk>\d+)/$',
         views.SubmissionInstanceView.as_view(),
@@ -39,6 +47,10 @@ urlpatterns = patterns('sa_api',
     url(r'^datasets/(?P<dataset__owner__username>[^/]+)/(?P<dataset__slug>[^/]+)/(?P<submission_type>[^/]+)/$',
         views.AllSubmissionCollectionsView.as_view(),
         name='all_submissions_by_dataset'),
+
+    url(r'^datasets/(?P<dataset__owner__username>[^/]+)/(?P<dataset__slug>[^/]+)/(?P<submission_type>[^/]+)/table$',
+        views.TabularAllSubmissionCollectionsView.as_view(),
+        name='tabular_all_submissions_by_dataset'),
 
     url(r'^(?P<owner__username>[^/]+)/password$',
         views.OwnerPasswordView.as_view(),

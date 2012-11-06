@@ -10,6 +10,7 @@ class CSVRenderer(renderers.BaseRenderer):
 
     media_type = 'text/csv'
     format = 'csv'
+    level_sep = '.'
 
     def render(self, obj=None, media_type=None):
         """
@@ -100,7 +101,7 @@ class CSVRenderer(renderers.BaseRenderer):
         """
         nested_item = {}
         for header, val in flat_item.iteritems():
-            nested_header = '.'.join([prefix, header]) if header else prefix
+            nested_header = self.level_sep.join([prefix, header]) if header else prefix
             nested_item[nested_header] = val
         return nested_item
 
@@ -123,4 +124,8 @@ class CSVRenderer(renderers.BaseRenderer):
         return flat_dict
 
 
-renderers.DEFAULT_RENDERERS += (CSVRenderer,)
+class CSVRendererWithUnderscores (CSVRenderer):
+    level_sep = '_'
+    
+    
+renderers.DEFAULT_RENDERERS += (CSVRendererWithUnderscores,)
