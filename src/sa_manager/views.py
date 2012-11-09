@@ -96,7 +96,8 @@ def places_view(request, dataset_slug):
     for place in places:
         for field_name in place:
             data_fields.add(field_name)
-    data_fields -= set(['submissions', 'name', 'dataset', 'url', 'location'])
+    data_fields -= set(['id', 'submissions', 'dataset', 'url', 'location', 
+                        'visible', 'created_datetime', 'updated_datetime'])
 
     for place in places:
         place['submission_count'] = sum([s['length'] for s in place['submissions']])

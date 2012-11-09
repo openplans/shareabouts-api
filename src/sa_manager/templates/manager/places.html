@@ -1,6 +1,7 @@
 {% extends "manager/dataset_base.html" %}
 {% load url from future %}
 {% load get_item %}
+{% load parse_datetime %}
 
 {% block dataset_content %}
 
@@ -9,19 +10,29 @@
 <table class="table">
   <thead>
     <tr>
-      <th>Place Name</th>
-      <th>Submissions</th>
+      <th>ID</th>
       
       {% for field_name in data_fields %}
       <th>{{ field_name|title }}</th>
       {% endfor %}
+
+      <th>Created At</th>
+      <th>Updated At</th>
+      <th>Submissions</th>
     </tr>
   </thead>
 
   <tbody>
     {% for place in places %}
-    <tr>
-      <td><a href="{{ place.id }}">"{{ place.name }}"</a></td>
+    <tr class="{% if not place.visible %}in{% endif %}visible-place-row">
+      <td><a href="{{ place.id }}">{{ place.id }}</a></td>
+      
+      {% for field_name in data_fields %}
+      <td>{{ place|get_item:field_name|default_if_none:''|truncatechars:140 }}</td>
+      {% endfor %}
+
+      <td><time datetime="{{ place.created_datetime }}">{{ place.created_datetime|parse_datetime|date:"Y-m-d H:i:s" }}</time></td>
+      <td><time datetime="{{ place.updated_datetime }}">{{ place.updated_datetime|parse_datetime|date:"Y-m-d H:i:s" }}</time></td>
       <td>
         <a href="{% url 'manager_place_submission_list' dataset.slug place.id 'submissions' %}" class="btn btn-small">
           {{ place.submission_count }} Submission{{ place.submission_count|pluralize }}
@@ -34,10 +45,6 @@
           {% endfor %}
         </ul>
       </td>
-      
-      {% for field_name in data_fields %}
-      <td>{{ place|get_item:field_name }}</td>
-      {% endfor %}
     </tr>
     {% endfor %}
   </tbody>
