@@ -1,5 +1,6 @@
 {% extends "manager/dataset_base.html" %}
 {% load url from future %}
+{% load get_item %}
 
 {% block dataset_content %}
 
@@ -10,6 +11,10 @@
     <tr>
       <th>Place Name</th>
       <th>Submissions</th>
+      
+      {% for field_name in data_fields %}
+      <th>{{ field_name|title }}</th>
+      {% endfor %}
     </tr>
   </thead>
 
@@ -29,6 +34,10 @@
           {% endfor %}
         </ul>
       </td>
+      
+      {% for field_name in data_fields %}
+      <td>{{ place|get_item:field_name }}</td>
+      {% endfor %}
     </tr>
     {% endfor %}
   </tbody>
