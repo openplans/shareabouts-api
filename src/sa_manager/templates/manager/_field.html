@@ -1,6 +1,8 @@
 <div class="control-group">
   <label class="control-label">{{ label }}</label>
   <div class="controls">
+
+  {% if type == 'checkbox' %}
   <input
       name="{{ name }}"
       type="{{ type|default:'text' }}"
@@ -10,5 +12,8 @@
       {% else %}
       value="{{ value }}"
       {% endif %}>
+  {% else %}
+    <textarea name="{{ name }}">{{ value }}</textarea>
+  {% endif %}
   </div>
 </div>
