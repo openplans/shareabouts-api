@@ -9,10 +9,70 @@
     <meta property="og:url" content="http://api.shareabouts.org" />
     <meta property="og:image" content="https://launchrock-assets.s3.amazonaws.com/facebook-files/sSAVeOtmTKLOXl8.png" />
     <meta property="og:description" content="Shareabouts API now accepting requests for private beta access. Sign up now!" />
+
+    <link href='http://fonts.googleapis.com/css?family=Open+Sans' rel='stylesheet' type='text/css'>
+    <style>
+      body {
+        font-family: 'Open Sans', sans-serif;
+        font-size: 0.8em;
+        padding: 0;
+        margin: 0;
+      }
+
+      .background {
+        width:1399px;
+        position: fixed;
+        top: 0;
+        left: 0;
+      }
+
+      .content {
+        width: 440px;
+        position: absolute;
+        left: 50%;
+        margin-left: -225px;
+        text-align: center;
+        top: 20%;
+        padding:10px;
+        -webkit-border-radius: 6px;
+        -moz-border-radius: 6px;
+        border-radius: 6px;
+
+        background-color: rgba(255, 255, 255, .3);
+      }
+
+      .tagline {
+        margin-top: 0;
+      }
+
+      h3 {
+        margin-top: 40px;
+      }
+
+      a:hover, a:active { outline: none; }
+      a, a:active, a:visited { color: #007fbf; }
+      a:hover { color: #00aaff; }
+
+    </style>
   </head>
 
   <body>
-    <div rel="{{ LAUNCHROCK_KEY }}" class="lrdiscoverwidget" data-logo="on" data-background="on" data-share-url="api.shareabouts.org" data-css=""></div>
-    <script type="text/javascript" src="http://launchrock-ignition.s3.amazonaws.com/ignition.1.1.js"></script>
+    <img src="{{ STATIC_URL }}bg.png" class="background">
+
+    <div class="content">
+      <div class="logo"><img src="{{ STATIC_URL }}logo.png" alt="Shareabouts API Logo" class="site-logo"></div>
+
+      <h3 class="tagline">Request private beta access now!</h3>
+      <p>Email us at <strong><a href="mailto:support@openplans.org?subject=Shareabouts API Beta Access Request">support@openplans.org</a></strong></p>
+
+      <p>Tell us why (and where) you want to use the Shareabouts API with your name and organization, and we'll get you up in no time.</p>
+
+      <h3>About Shareabouts</h3>
+
+      <p>It's an application and API to crowdsource place data for civic projects. Use it to gather suggestions for bike share stations, collect data on vacant lots, crowdsource issue reporting after a storm, and more. <a href="http://shareabouts.org">Learn more.</a></p>
+
+
+    </div>
+
   </body>
 </html>

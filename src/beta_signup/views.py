@@ -1,6 +1,5 @@
-from django.conf import settings
-from django.shortcuts import render_to_response
+from django.shortcuts import render
 
 
 def index(request):
-    return render_to_response('index.html', {'LAUNCHROCK_KEY': settings.LAUNCHROCK_KEY})
+    return render(request, 'index.html')
