@@ -15,7 +15,7 @@ south
 #
 #       - mjumbewu, 28 Aug 2012
 #
-git+git://github.com/tomchristie/django-rest-framework.git@abd3c7b46dcc76a042789f5c6d87ebdc9e8c980c#egg=djangorestframework
+git+git://github.com/mjumbewu/django-rest-framework-0.4.git@shareabouts-customizations#egg=djangorestframework
 markdown
 python-dateutil
 

@@ -23,16 +23,17 @@ class SubmittedThing (TimeStampedModel):
                                 blank=True)
     visible = models.BooleanField(default=True, blank=True)
 
-    def save(self, *args, **kwargs):
+    def save(self, silent=False, *args, **kwargs):
         is_new = (self.id == None)
 
         ret = super(SubmittedThing, self).save(*args, **kwargs)
 
-        # All submitted things generate an action.
-        activity = Activity()
-        activity.action = 'create' if is_new else 'update'
-        activity.data = self
-        activity.save()
+        # All submitted things generate an action if not silent.
+        if not silent:
+            activity = Activity()
+            activity.action = 'create' if is_new else 'update'
+            activity.data = self
+            activity.save()
 
         return ret
 

@@ -531,6 +531,7 @@ class TestPlaceCollectionView(TestCase):
         models.SubmissionSet.objects.all().delete()
         models.Place.objects.all().delete()
         models.DataSet.objects.all().delete()
+        models.Activity.objects.all().delete()
         User.objects.all().delete()
 
     def setUp(self):
@@ -563,6 +564,7 @@ class TestPlaceCollectionView(TestCase):
         request.user = user
         # Ready to post. Verify there are no Places yet...
         assert_equal(models.Place.objects.count(), 0)
+        assert_equal(models.Activity.objects.count(), 0)
 
         response = view(request, **uri_args)
 
@@ -573,9 +575,48 @@ class TestPlaceCollectionView(TestCase):
         # And we have a place:
         assert_equal(models.Place.objects.count(), 1)
 
+        # And we have activity:
+        assert_equal(models.Activity.objects.count(), 1)
+
         # And that place is visible. See story #38212759
         # assert_equal(models.Place.objects.all()[0].visible, True)
         # assert_equal(response.cleaned_content['visible'], True)
+
+    @istest
+    def post_with_silent_header_creates_no_activity(self):
+        from ..views import PlaceCollectionView, models
+        view = PlaceCollectionView().as_view()
+        # Need an existing DataSet.
+        user = User.objects.create(username='test-user')
+        ds = models.DataSet.objects.create(owner=user, id=789,
+                                           slug='stuff')
+        #place = models.Place.objects.create(dataset=ds, id=123)
+        uri_args = {
+            'dataset__owner__username': user.username,
+            'dataset__slug': ds.slug,
+        }
+        uri = reverse('place_collection_by_dataset', kwargs=uri_args)
+        data = {'location': {'lat': 39.94494, 'lng': -75.06144},
+                'description': 'hello', 'location_type': 'School',
+                'name': 'Ward Melville HS',
+                'submitter_name': 'Joe',
+                }
+        request = RequestFactory().post(uri, data=json.dumps(data),
+                                        content_type='application/json',
+                                        HTTP_X_SHAREABOUTS_SILENT='True')
+
+        request.user = user
+        # Ready to post. Verify there is no Activity yet...
+        assert_equal(models.Activity.objects.count(), 0)
+
+        response = view(request, **uri_args)
+
+        # We got a Created status...
+        assert_equal(response.status_code, 201)
+        assert_in(uri, response.get('Location'))
+
+        # And we have no activity:
+        assert_equal(models.Activity.objects.count(), 0)
 
     @istest
     def get_queryset_checks_visibility(self):

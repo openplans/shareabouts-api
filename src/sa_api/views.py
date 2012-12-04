@@ -202,6 +202,13 @@ class Ignore_CacheBusterMixin (object):
         return super(Ignore_CacheBusterMixin, self).dispatch(request, *args, **kwargs)
 
 
+class ActivityGeneratingMixin (object):
+    def get_save_kwargs(self):
+        silent_header = self.request.META.get('HTTP_X_SHAREABOUTS_SILENT', 'False')
+        silent = silent_header.lower() in ('true', 't', 'yes', 'y')
+        return {'silent': silent}
+    
+
 class ModelViewWithDataBlobMixin (object):
     parsers = parsers.DEFAULT_DATA_BLOB_PARSERS
 
@@ -262,7 +269,7 @@ class DataSetInstanceView (Ignore_CacheBusterMixin, AuthMixin, AbsUrlMixin, Mode
 
 
 # TODO derive from CachedMixin to enable caching
-class PlaceCollectionView (Ignore_CacheBusterMixin, AuthMixin, AbsUrlMixin, ModelViewWithDataBlobMixin, views.ListOrCreateModelView):
+class PlaceCollectionView (Ignore_CacheBusterMixin, AuthMixin, AbsUrlMixin, ActivityGeneratingMixin, ModelViewWithDataBlobMixin, views.ListOrCreateModelView):
     # TODO: Decide whether pagination is appropriate/necessary.
     resource = resources.PlaceResource
     cache_prefix = 'place_collection'
@@ -298,7 +305,7 @@ class PlaceCollectionView (Ignore_CacheBusterMixin, AuthMixin, AbsUrlMixin, Mode
         return response
 
 
-class PlaceInstanceView (Ignore_CacheBusterMixin, AuthMixin, AbsUrlMixin, ModelViewWithDataBlobMixin, views.InstanceModelView):
+class PlaceInstanceView (Ignore_CacheBusterMixin, AuthMixin, AbsUrlMixin, ActivityGeneratingMixin, ModelViewWithDataBlobMixin, views.InstanceModelView):
 
     allowed_user_kwarg = 'dataset__owner__username'
 
@@ -341,7 +348,7 @@ class ApiKeyCollectionView (Ignore_CacheBusterMixin, AbsUrlMixin, ModelViewWithD
     # TODO: handle POST, DELETE
 
 
-class AllSubmissionCollectionsView (Ignore_CacheBusterMixin, AuthMixin, AbsUrlMixin, ModelViewWithDataBlobMixin, views.ListModelView):
+class AllSubmissionCollectionsView (Ignore_CacheBusterMixin, AuthMixin, AbsUrlMixin, ActivityGeneratingMixin, ModelViewWithDataBlobMixin, views.ListModelView):
     resource = resources.SubmissionResource
 
     allowed_user_kwarg = 'dataset__owner__username'
@@ -357,7 +364,7 @@ class AllSubmissionCollectionsView (Ignore_CacheBusterMixin, AuthMixin, AbsUrlMi
         )
 
 
-class SubmissionCollectionView (Ignore_CacheBusterMixin, AuthMixin, AbsUrlMixin, ModelViewWithDataBlobMixin, views.ListOrCreateModelView):
+class SubmissionCollectionView (Ignore_CacheBusterMixin, AuthMixin, AbsUrlMixin, ActivityGeneratingMixin, ModelViewWithDataBlobMixin, views.ListOrCreateModelView):
     resource = resources.SubmissionResource
 
     allowed_user_kwarg = 'dataset__owner__username'
@@ -411,7 +418,7 @@ class SubmissionCollectionView (Ignore_CacheBusterMixin, AuthMixin, AbsUrlMixin,
         return super(SubmissionCollectionView, self).get_instance_data(model, content,)
 
 
-class SubmissionInstanceView (Ignore_CacheBusterMixin, AuthMixin, AbsUrlMixin, ModelViewWithDataBlobMixin, views.InstanceModelView):
+class SubmissionInstanceView (Ignore_CacheBusterMixin, AuthMixin, AbsUrlMixin, ActivityGeneratingMixin, ModelViewWithDataBlobMixin, views.InstanceModelView):
     resource = resources.SubmissionResource
 
     allowed_user_kwarg = 'dataset__owner__username'
