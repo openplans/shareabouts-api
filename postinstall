@@ -25,6 +25,17 @@ DATABASES = {
     }
 }
 
+CACHES = {
+    "default": {
+        "BACKEND": "redis_cache.cache.RedisCache",
+        "LOCATION": "%s:%s:1" % (env['DOTCLOUD_CACHE_REDIS_HOST'],
+                                 env['DOTCLOUD_CACHE_REDIS_PORT']),
+        "OPTIONS": {
+            "CLIENT_CLASS": "redis_cache.client.DefaultClient",
+        }
+    }
+}
+
 STATIC_ROOT = '/home/dotcloud/current/static/'
 
 # Debug is False by default, true if set in the environment.

@@ -6,6 +6,7 @@ gunicorn
 # Database
 psycopg2
 south
+django-redis
 
 # REST API
 #
