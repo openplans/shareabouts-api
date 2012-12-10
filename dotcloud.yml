@@ -5,3 +5,6 @@ www:
     - libgdal1-dev
 db:
   type: postgis
+
+cache:
+  type: redis
