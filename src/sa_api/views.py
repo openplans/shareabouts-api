@@ -116,7 +116,7 @@ class CachedMixin (object):
     @property
     def cache_prefix(self):
         return self.request.path
-    
+
     def get_cache_prefix(self):
         return self.cache_prefix
 
@@ -140,7 +140,7 @@ class CachedMixin (object):
     def get_cache_key(self, request, *args, **kwargs):
         querystring = request.META['QUERY_STRING']
         contenttype = request.META['HTTP_ACCEPT']
-        
+
         return ':'.join([self.cache_prefix, contenttype, querystring])
 
     def respond_from_cache(self, cached_data):
@@ -157,7 +157,7 @@ class CachedMixin (object):
         content = response.content
         status = response.status_code
         headers = response.items()
-        
+
         # Cache enough info to recreate the response.
         cache.set(key, (content, status, headers))
 
@@ -213,7 +213,7 @@ class ActivityGeneratingMixin (object):
         silent_header = self.request.META.get('HTTP_X_SHAREABOUTS_SILENT', 'False')
         silent = silent_header.lower() in ('true', 't', 'yes', 'y')
         return {'silent': silent}
-    
+
 
 class ModelViewWithDataBlobMixin (object):
     parsers = parsers.DEFAULT_DATA_BLOB_PARSERS
@@ -258,7 +258,7 @@ class DataSetInstanceView (Ignore_CacheBusterMixin, AuthMixin, AbsUrlMixin, Mode
     resource = resources.DataSetResource
 
     allowed_user_kwarg = 'owner__username'
-    
+
     def put(self, request, *args, **kwargs):
         instance = super(DataSetInstanceView, self).put(request, *args, **kwargs)
         renamed = ('slug' in kwargs and
@@ -539,12 +539,11 @@ class OwnerPasswordView (Ignore_CacheBusterMixin, AuthMixin, AbsUrlMixin, views.
 
 class TabularPlaceCollectionView (PlaceCollectionView):
     resource = resources.TabularPlaceResource
-    
+
 
 class TabularSubmissionCollectionView (SubmissionCollectionView):
     resource = resources.TabularSubmissionResource
-    
+
 
 class TabularAllSubmissionCollectionsView (AllSubmissionCollectionsView):
     resource = resources.TabularSubmissionResource
-
