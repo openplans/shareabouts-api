@@ -32,6 +32,7 @@ CACHES = {
                                  env['DOTCLOUD_CACHE_REDIS_PORT']),
         "OPTIONS": {
             "CLIENT_CLASS": "redis_cache.client.DefaultClient",
+            "PASSWORD": env['DOTCLOUD_CACHE_REDIS_PASSWORD'],
         }
     }
 }
