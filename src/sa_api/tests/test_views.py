@@ -105,7 +105,7 @@ class TestDataSetCollectionView(TestCase):
         User.objects.all().delete()
 
         cache.clear()
-    
+
     @istest
     def post_without_permission_does_not_invalidate_cache(self):
         from ..views import DataSetCollectionView
@@ -117,22 +117,66 @@ class TestDataSetCollectionView(TestCase):
         kwargs = {'owner__username': user.username}
         url = reverse('dataset_collection_by_user', kwargs=kwargs)
 
-        get_request = factory.get(url, content_type='application/json')
-        
-        response1 = view(get_request, **kwargs)
-        response2 = view(get_request, **kwargs)
-        self.assertEqual(response1.raw_content, response2.raw_content)
+        get_request = factory.get(url, content_type='application/json',  headers={'Accept': 'application/json'})
+        get_request.user = user
+        get_request.META['HTTP_ACCEPT'] = 'application/json'
+
+        with self.assertNumQueries(1):
+            response1 = view(get_request, **kwargs)
+        with self.assertNumQueries(0):
+            response2 = view(get_request, **kwargs)
+        self.assertEqual(response1.content, response2.content)
 
         data = {
             'display_name': 'Test DataSet',
             'slug': 'test-dataset',
         }
-        
-        post_request = factory.post(url, data=json.dumps(data), content_type='application/json')
+
+        post_request = factory.post(url, data=json.dumps(data), content_type='application/json', headers={'Accept': 'application/json'})
+        post_request.META['HTTP_ACCEPT'] = 'application/json'
         view(post_request, **kwargs)
-        
-        response3 = view(get_request, **kwargs)
-        self.assertEqual(response1.raw_content, response3.raw_content)
+
+        with self.assertNumQueries(0):
+            response3 = view(get_request, **kwargs)
+        self.assertEqual(response1.content, response3.content)
+
+
+    @istest
+    def post_with_permission_invalidates_cache(self):
+        from ..views import DataSetCollectionView
+
+        user = User.objects.create(username='bob')
+        factory = RequestFactory()
+        view = DataSetCollectionView.as_view()
+
+        kwargs = {'owner__username': user.username}
+        url = reverse('dataset_collection_by_user', kwargs=kwargs)
+
+        get_request = factory.get(url, content_type='application/json')
+        get_request.user = user
+        get_request.META['HTTP_ACCEPT'] = 'application/json'
+
+        with self.assertNumQueries(1):
+            response1 = view(get_request, **kwargs)
+        with self.assertNumQueries(0):
+            response2 = view(get_request, **kwargs)
+        self.assertEqual(response1.content, response2.content)
+
+        data = {
+            'display_name': 'Test DataSet',
+            'slug': 'test-dataset',
+        }
+
+        post_request = factory.post(url, data=json.dumps(data), content_type='application/json')
+        post_request.user = user
+        post_request.META['HTTP_ACCEPT'] = 'application/json'
+        view(post_request, **kwargs)
+
+        # We make more queries here because the dataset collection is non-empty
+        # and we have to join with places and such.
+        with self.assertNumQueries(3):
+            response3 = view(get_request, **kwargs)
+        self.assertNotEqual(response1.content, response3.content)
 
 
     @istest
@@ -530,6 +574,49 @@ class TestActivityView(TestCase):
 
         view.request = RequestFactory().get(self.url + '?limit=1')
         self.assertEqual(view.get(view.request).count(), 1)
+
+    @istest
+    def returns_from_cache_based_on_params(self):
+        from ..views import ActivityView
+        no_params = RequestFactory().get(self.url)
+        vis_param = RequestFactory().get(self.url + '?visible=all')
+        no_params.user = self.owner
+        vis_param.user = self.owner
+        no_params.META['HTTP_ACCEPT'] = 'application/json'
+        vis_param.META['HTTP_ACCEPT'] = 'application/json'
+
+        view = ActivityView.as_view()
+        view(no_params, data__dataset__owner__username='myuser', data__dataset__slug='data')
+        view(vis_param, data__dataset__owner__username='myuser', data__dataset__slug='data')
+
+        # Both requests should be made without hitting the database...
+        with self.assertNumQueries(0):
+            no_params_response = view(no_params, data__dataset__owner__username='myuser', data__dataset__slug='data')
+            vis_param_response = view(vis_param, data__dataset__owner__username='myuser', data__dataset__slug='data')
+
+        # But they should each correspond to different cached values.
+        self.assertNotEqual(no_params_response.content, vis_param_response.content)
+
+    @istest
+    def returns_from_db_when_object_changes(self):
+        from ..views import ActivityView
+        request = RequestFactory().get(self.url + '?visible=all')
+        request.user = self.owner
+        request.META['HTTP_ACCEPT'] = 'application/json'
+
+        view = ActivityView.as_view()
+        view(request, data__dataset__owner__username='myuser', data__dataset__slug='data')
+
+        # Next requests should be made without hitting the database...
+        with self.assertNumQueries(0):
+            response1 = view(request, data__dataset__owner__username='myuser', data__dataset__slug='data')
+
+        # But cache should be invalidated after changing a place.
+        self.visible_place.location.x = 1
+        self.visible_place.save()
+        response2 = view(request, data__dataset__owner__username='myuser', data__dataset__slug='data')
+
+        self.assertNotEqual(response1.content, response2.content)
 
 
 class TestAbsUrlMixin (object):
