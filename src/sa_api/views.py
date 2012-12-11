@@ -131,12 +131,16 @@ class CachedMixin (object):
         response_data = cache.get(key)
 
         if response_data:
-            return self.respond_from_cache(response_data)
+            response = self.respond_from_cache(response_data)
         else:
             response = super(CachedMixin, self).dispatch(request, *args, **kwargs)
             self.cache_response(key, response)
-            return response
-    
+
+        # Disable client-side caching. Cause IE wrongly assumes that it should
+        # cache.
+        response['Cache-Control'] = 'no-cache'
+        return response
+
     def get_cache_key(self, request, *args, **kwargs):
         querystring = request.META['QUERY_STRING']
         contenttype = request.META['HTTP_ACCEPT']
