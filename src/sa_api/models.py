@@ -1,6 +1,7 @@
 from django.contrib.auth import models as auth_models
 from django.contrib.gis.db import models
 from django.core.cache import cache
+from django.core.urlresolvers import reverse
 
 
 class TimeStampedModel (models.Model):
@@ -11,7 +12,19 @@ class TimeStampedModel (models.Model):
         abstract = True
 
 
-class SubmittedThing (TimeStampedModel):
+class CacheClearingModel (object):
+    def clear_keys_with_prefix(self, prefix):
+        self.clear_keys_with_prefixes(prefix)
+
+    def clear_keys_with_prefixes(self, *prefixes):
+        keys = set()
+        for prefix in prefixes:
+            keys |= cache.get(prefix + '_keys') or set()
+            keys.add(prefix + '_keys')
+        cache.delete_many(keys)
+
+
+class SubmittedThing (CacheClearingModel, TimeStampedModel):
     """
     A SubmittedThing generally comes from the end-user.  It may be a place, a
     comment, a vote, etc.
@@ -38,7 +51,7 @@ class SubmittedThing (TimeStampedModel):
         return ret
 
 
-class DataSet (models.Model):
+class DataSet (CacheClearingModel, models.Model):
     """
     A DataSet is a named collection of data, eg. Places, owned by a user,
     and intended for a coherent purpose, eg. display on a single map.
@@ -53,6 +66,20 @@ class DataSet (models.Model):
     class Meta:
         unique_together = (('owner', 'slug'),
                            )
+    
+    def save(self, *args, **kwargs):
+        result = super(DataSet, self).save(*args, **kwargs)
+        
+        # Collect information for cache keys
+        owner = self.owner.username
+        slug = self.slug
+        
+        instance_path = reverse('dataset_instance_by_user', args=[owner, slug])
+        collection_path = reverse('dataset_collection_by_user', args=[owner])
+        
+        self.clear_keys_with_prefixes(instance_path, collection_path)
+        
+        return result
 
 
 class Place (SubmittedThing):
@@ -66,14 +93,22 @@ class Place (SubmittedThing):
     objects = models.GeoManager()
 
     def save(self, *args, **kwargs):
-        keys = cache.get('place_collection_keys') or set()
-        keys.add('place_collection_keys')
-        cache.delete_many(keys)
+        result = super(Place, self).save(*args, **kwargs)
+        
+        # Collect information for cache keys
+        owner = self.dataset.owner.username
+        dataset = self.dataset.slug
+        pk = self.pk
+        
+        instance_path = reverse('place_instance_by_dataset', args=[owner, dataset, pk])
+        collection_path = reverse('place_collection_by_dataset', args=[owner, dataset])
+        activity_path = reverse('activity_collection_by_dataset', args=[owner, dataset])
+        self.clear_keys_with_prefixes(instance_path, collection_path, activity_path)
+        
+        return result
 
-        return super(Place, self).save(*args, **kwargs)
 
-
-class SubmissionSet (models.Model):
+class SubmissionSet (CacheClearingModel, models.Model):
     """
     A submission set is a collection of user Submissions attached to a place.
     For example, comments will be a submission set with a submission_type of
@@ -87,6 +122,21 @@ class SubmissionSet (models.Model):
         unique_together = (('place', 'submission_type'),
                            )
 
+    def save(self, *args, **kwargs):
+        result = super(SubmissionSet, self).save(*args, **kwargs)
+        
+        # Collect information for cache keys
+        owner = self.place.dataset.owner.username
+        dataset = self.place.dataset.slug
+        pk = self.place.pk
+        
+        instance_path = reverse('place_instance_by_dataset', args=[owner, dataset, pk])
+        collection_path = reverse('place_collection_by_dataset', args=[owner, dataset])
+        activity_path = reverse('activity_collection_by_dataset', args=[owner, dataset])
+        self.clear_keys_with_prefixes(instance_path, collection_path, activity_path)
+        
+        return result
+
 
 class Submission (SubmittedThing):
     """
@@ -95,6 +145,33 @@ class Submission (SubmittedThing):
     Used for representing eg. comments, votes, ...
     """
     parent = models.ForeignKey(SubmissionSet, related_name='children')
+
+    def save(self, *args, **kwargs):
+        result = super(Submission, self).save(*args, **kwargs)
+        
+        # Collect information for cache keys
+        owner = self.dataset.owner.username
+        dataset = self.dataset.slug
+        place_id = self.parent.place.id
+        type = self.parent.submission_type
+        id = self.pk
+        
+        # Clear related cache values
+        specific_instance_path = reverse('submission_instance_by_dataset', args=[owner, dataset, place_id, type, id])
+        general_instance_path = reverse('submission_instance_by_dataset', args=[owner, dataset, place_id, 'submissions', id])
+        specific_collection_path = reverse('submission_collection_by_dataset', args=[owner, dataset, place_id, type])
+        general_collection_path = reverse('submission_collection_by_dataset', args=[owner, dataset, place_id, 'submissions'])
+        specific_all_path = reverse('all_submissions_by_dataset', args=[owner, dataset, type])
+        general_all_path = reverse('all_submissions_by_dataset', args=[owner, dataset, 'submissions'])
+        activity_path = reverse('activity_collection_by_dataset', args=[owner, dataset])
+        
+        self.clear_keys_with_prefixes(
+            specific_instance_path, general_instance_path,
+            specific_collection_path, general_collection_path,
+            specific_all_path, general_all_path,
+            activity_path)
+        
+        return result
 
 
 class Activity (TimeStampedModel):

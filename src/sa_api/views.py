@@ -115,7 +115,10 @@ class AuthMixin(object):
 class CachedMixin (object):
     @property
     def cache_prefix(self):
-        return self.__class__.__name__.lower()
+        return self.request.path
+    
+    def get_cache_prefix(self):
+        return self.cache_prefix
 
     @csrf_exempt
     def dispatch(self, request, *args, **kwargs):
@@ -124,11 +127,7 @@ class CachedMixin (object):
             return super(CachedMixin, self).dispatch(request, *args, **kwargs)
 
         # Check whether the response data is in the cache.
-        key = ''.join([self.cache_prefix,
-                       request.META['QUERY_STRING'],
-                       request.META['HTTP_ACCEPT'],
-                       request.META.get(apikey.auth.KEY_HEADER, ''),
-                       ])
+        key = self.get_cache_key(request, *args, **kwargs)
         response_data = cache.get(key)
 
         if response_data:
@@ -137,6 +136,12 @@ class CachedMixin (object):
             response = super(CachedMixin, self).dispatch(request, *args, **kwargs)
             self.cache_response(key, response)
             return response
+    
+    def get_cache_key(self, request, *args, **kwargs):
+        querystring = request.META['QUERY_STRING']
+        contenttype = request.META['HTTP_ACCEPT']
+        
+        return ':'.join([self.cache_prefix, contenttype, querystring])
 
     def respond_from_cache(self, cached_data):
         # Given some cached data, construct a response.
@@ -149,10 +154,11 @@ class CachedMixin (object):
         return response
 
     def cache_response(self, key, response):
-        # Cache enough info to recreate the response.
         content = response.content
         status = response.status_code
         headers = response.items()
+        
+        # Cache enough info to recreate the response.
         cache.set(key, (content, status, headers))
 
         # Also, add the key to the set of pages cached from this view.
@@ -222,10 +228,10 @@ class ModelViewWithDataBlobMixin (object):
 
 
 # TODO derive from CachedMixin to enable caching
-class DataSetCollectionView (Ignore_CacheBusterMixin, AuthMixin, AbsUrlMixin, ModelViewWithDataBlobMixin, views.ListOrCreateModelView):
+class DataSetCollectionView (Ignore_CacheBusterMixin, AuthMixin, AbsUrlMixin, ModelViewWithDataBlobMixin, CachedMixin, views.ListOrCreateModelView):
 
     resource = resources.DataSetResource
-    cache_prefix = 'dataset_collection'
+#    cache_prefix = 'dataset_collection'
 
     allowed_user_kwarg = 'owner__username'
 
@@ -248,11 +254,11 @@ class DataSetCollectionView (Ignore_CacheBusterMixin, AuthMixin, AbsUrlMixin, Mo
         return response
 
 
-class DataSetInstanceView (Ignore_CacheBusterMixin, AuthMixin, AbsUrlMixin, ModelViewWithDataBlobMixin, views.InstanceModelView):
+class DataSetInstanceView (Ignore_CacheBusterMixin, AuthMixin, AbsUrlMixin, ModelViewWithDataBlobMixin, CachedMixin, views.InstanceModelView):
     resource = resources.DataSetResource
 
     allowed_user_kwarg = 'owner__username'
-
+    
     def put(self, request, *args, **kwargs):
         instance = super(DataSetInstanceView, self).put(request, *args, **kwargs)
         renamed = ('slug' in kwargs and
@@ -269,10 +275,10 @@ class DataSetInstanceView (Ignore_CacheBusterMixin, AuthMixin, AbsUrlMixin, Mode
 
 
 # TODO derive from CachedMixin to enable caching
-class PlaceCollectionView (Ignore_CacheBusterMixin, AuthMixin, AbsUrlMixin, ActivityGeneratingMixin, ModelViewWithDataBlobMixin, views.ListOrCreateModelView):
+class PlaceCollectionView (Ignore_CacheBusterMixin, AuthMixin, AbsUrlMixin, ActivityGeneratingMixin, CachedMixin, ModelViewWithDataBlobMixin, views.ListOrCreateModelView):
     # TODO: Decide whether pagination is appropriate/necessary.
     resource = resources.PlaceResource
-    cache_prefix = 'place_collection'
+#    cache_prefix = 'place_collection'
 
     allowed_user_kwarg = 'dataset__owner__username'
 
@@ -305,7 +311,7 @@ class PlaceCollectionView (Ignore_CacheBusterMixin, AuthMixin, AbsUrlMixin, Acti
         return response
 
 
-class PlaceInstanceView (Ignore_CacheBusterMixin, AuthMixin, AbsUrlMixin, ActivityGeneratingMixin, ModelViewWithDataBlobMixin, views.InstanceModelView):
+class PlaceInstanceView (Ignore_CacheBusterMixin, AuthMixin, AbsUrlMixin, ActivityGeneratingMixin, ModelViewWithDataBlobMixin, CachedMixin, views.InstanceModelView):
 
     allowed_user_kwarg = 'dataset__owner__username'
 
@@ -348,7 +354,7 @@ class ApiKeyCollectionView (Ignore_CacheBusterMixin, AbsUrlMixin, ModelViewWithD
     # TODO: handle POST, DELETE
 
 
-class AllSubmissionCollectionsView (Ignore_CacheBusterMixin, AuthMixin, AbsUrlMixin, ActivityGeneratingMixin, ModelViewWithDataBlobMixin, views.ListModelView):
+class AllSubmissionCollectionsView (Ignore_CacheBusterMixin, AuthMixin, AbsUrlMixin, ActivityGeneratingMixin, ModelViewWithDataBlobMixin, CachedMixin, views.ListModelView):
     resource = resources.SubmissionResource
 
     allowed_user_kwarg = 'dataset__owner__username'
@@ -433,7 +439,7 @@ class SubmissionInstanceView (Ignore_CacheBusterMixin, AuthMixin, AbsUrlMixin, A
 
 
 # TODO derive from CachedMixin to enable caching
-class ActivityView (Ignore_CacheBusterMixin, AuthMixin, AbsUrlMixin, views.ListModelView):
+class ActivityView (Ignore_CacheBusterMixin, AuthMixin, AbsUrlMixin, CachedMixin, views.ListModelView):
     """
     Get a list of activities ordered by the `created_datetime` in reverse.
 
@@ -462,7 +468,7 @@ class ActivityView (Ignore_CacheBusterMixin, AuthMixin, AbsUrlMixin, views.ListM
     """
     resource = resources.ActivityResource
     form = forms.ActivityForm
-    cache_prefix = 'activity'
+#    cache_prefix = 'activity'
 
     allowed_user_kwarg = 'data__dataset__owner__username'
 
@@ -533,14 +539,12 @@ class OwnerPasswordView (Ignore_CacheBusterMixin, AuthMixin, AbsUrlMixin, views.
 
 class TabularPlaceCollectionView (PlaceCollectionView):
     resource = resources.TabularPlaceResource
-    cache_prefix = 'place_collection'
     
 
 class TabularSubmissionCollectionView (SubmissionCollectionView):
     resource = resources.TabularSubmissionResource
-    cache_prefix = 'submission_collection'
     
 
 class TabularAllSubmissionCollectionsView (AllSubmissionCollectionsView):
     resource = resources.TabularSubmissionResource
-    cache_prefix = 'submission_collection'
+

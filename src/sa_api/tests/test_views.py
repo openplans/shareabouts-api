@@ -3,6 +3,7 @@ from django.test.client import Client
 from django.test.client import RequestFactory
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
+from django.core.cache import cache
 from djangorestframework.response import ErrorResponse
 from mock import patch
 from nose.tools import (istest, assert_equal, assert_not_equal, assert_in,
@@ -97,15 +98,45 @@ class TestAuthFunctions(object):
 
 
 class TestDataSetCollectionView(TestCase):
-
-    @istest
-    def post_creates_an_api_key(self):
+    def setUp(self):
         from ..apikey.models import ApiKey
         DataSet.objects.all().delete()
         ApiKey.objects.all().delete()
         User.objects.all().delete()
 
-        # TODO: mock the models?
+        cache.clear()
+    
+    @istest
+    def post_without_permission_does_not_invalidate_cache(self):
+        from ..views import DataSetCollectionView
+
+        user = User.objects.create(username='bob')
+        factory = RequestFactory()
+        view = DataSetCollectionView.as_view()
+
+        kwargs = {'owner__username': user.username}
+        url = reverse('dataset_collection_by_user', kwargs=kwargs)
+
+        get_request = factory.get(url, content_type='application/json')
+        
+        response1 = view(get_request, **kwargs)
+        response2 = view(get_request, **kwargs)
+        self.assertEqual(response1.raw_content, response2.raw_content)
+
+        data = {
+            'display_name': 'Test DataSet',
+            'slug': 'test-dataset',
+        }
+        
+        post_request = factory.post(url, data=json.dumps(data), content_type='application/json')
+        view(post_request, **kwargs)
+        
+        response3 = view(get_request, **kwargs)
+        self.assertEqual(response1.raw_content, response3.raw_content)
+
+
+    @istest
+    def post_creates_an_api_key(self):
         user = User.objects.create(username='bob')
 
         kwargs = {'owner__username': user.username}
@@ -384,7 +415,7 @@ class TestSubmissionCollectionView(TestCase):
         self.dataset = DataSet.objects.create(slug='data',
                                               owner_id=self.owner.id)
         self.visible_place = Place.objects.create(dataset_id=self.dataset.id, location='POINT (0 0)', visible=True)
-        self.visible_set = SubmissionSet.objects.create(place_id=self.visible_place.id)
+        self.visible_set = SubmissionSet.objects.create(place_id=self.visible_place.id, submission_type='vis')
 
         self.visible_submission = Submission.objects.create(dataset_id=self.dataset.id, parent_id=self.visible_set.id, visible=True)
         self.invisible_submission = Submission.objects.create(dataset_id=self.dataset.id, parent_id=self.visible_set.id, visible=False)
@@ -421,8 +452,8 @@ class TestActivityView(TestCase):
         self.visible_place = Place.objects.create(dataset_id=self.dataset.id, location='POINT (0 0)', visible=True)
         self.invisible_place = Place.objects.create(dataset_id=self.dataset.id, location='POINT (0 0)', visible=False)
 
-        self.visible_set = SubmissionSet.objects.create(place_id=self.visible_place.id)
-        self.invisible_set = SubmissionSet.objects.create(place_id=self.invisible_place.id)
+        self.visible_set = SubmissionSet.objects.create(place_id=self.visible_place.id, submission_type='vis')
+        self.invisible_set = SubmissionSet.objects.create(place_id=self.invisible_place.id, submission_type='invis')
 
         self.visible_submission = Submission.objects.create(dataset_id=self.dataset.id, parent_id=self.visible_set.id)
         self.invisible_submission = Submission.objects.create(dataset_id=self.dataset.id, parent_id=self.invisible_set.id)

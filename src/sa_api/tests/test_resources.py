@@ -43,7 +43,7 @@ class TestModelResourceWithDataBlob(object):
         resource.model = SubmittedThing
 
         user = User.objects.create_user(username='paul')
-        dataset_instance = DataSet.objects.create(owner=user)
+        dataset_instance = DataSet.objects.create(owner=user, slug='ds')
         submitted_thing = SubmittedThing.objects.create(dataset=dataset_instance)
         # Need an instance to avoid auto-creating one.
         resource.view = mock.Mock()
