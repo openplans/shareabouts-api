@@ -163,7 +163,7 @@ class CachedMixin (object):
         headers = response.items()
 
         # Cache enough info to recreate the response.
-        cache.set(key, (content, status, headers))
+        cache.set(key, (content, status, headers), 86400)  # Cache for 24hs
 
         # Also, add the key to the set of pages cached from this view.
         keys = cache.get(self.cache_prefix + '_keys') or set()
