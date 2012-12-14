@@ -235,7 +235,6 @@ class ModelViewWithDataBlobMixin (object):
 class DataSetCollectionView (Ignore_CacheBusterMixin, AuthMixin, AbsUrlMixin, ModelViewWithDataBlobMixin, CachedMixin, views.ListOrCreateModelView):
 
     resource = resources.DataSetResource
-#    cache_prefix = 'dataset_collection'
 
     allowed_user_kwarg = 'owner__username'
 
@@ -282,7 +281,6 @@ class DataSetInstanceView (Ignore_CacheBusterMixin, AuthMixin, AbsUrlMixin, Mode
 class PlaceCollectionView (Ignore_CacheBusterMixin, AuthMixin, AbsUrlMixin, ActivityGeneratingMixin, CachedMixin, ModelViewWithDataBlobMixin, views.ListOrCreateModelView):
     # TODO: Decide whether pagination is appropriate/necessary.
     resource = resources.PlaceResource
-#    cache_prefix = 'place_collection'
 
     allowed_user_kwarg = 'dataset__owner__username'
 
@@ -472,7 +470,6 @@ class ActivityView (Ignore_CacheBusterMixin, AuthMixin, AbsUrlMixin, CachedMixin
     """
     resource = resources.ActivityResource
     form = forms.ActivityForm
-#    cache_prefix = 'activity'
 
     allowed_user_kwarg = 'data__dataset__owner__username'
 
