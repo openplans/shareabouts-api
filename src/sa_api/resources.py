@@ -174,14 +174,14 @@ class DataSetResource (resources.ModelResource):
             # Ignore empty sets
             if submission_set.length <= 0:
                 continue
-            
+
             ds_id = submission_set.place.dataset_id
             ss_type = submission_set.submission_type
-            
+
             # Keep a total of how many of each submission type you've seen
             submission_counts[ds_id][ss_type] += submission_set.length
-            
-            # Build a list of unique submission set types; use tuples so that 
+
+            # Build a list of unique submission set types; use tuples so that
             # we can compare values.
             submission_sets[ds_id].add((
                 ('type', ss_type),
@@ -195,7 +195,7 @@ class DataSetResource (resources.ModelResource):
         # Go through and create a dictionary from all the tuple sets
         for dataset_id, submission_sets_data in submission_sets.items():
             submission_sets[dataset_id] = [dict(data) for data in submission_sets_data]
-        
+
         # Attach the counts to the dictionaries
         for dataset_id, type_counts in submission_counts.items():
             for submission_set in submission_sets[dataset_id]:
@@ -284,7 +284,7 @@ class GeneralSubmittedThingResource (ModelResourceWithDataBlob):
 class ActivityResource (resources.ModelResource):
     model = models.Activity
     fields = ['action', 'type', 'id', 'place_id', ('data', GeneralSubmittedThingResource)]
-    
+
     @property
     def queryset(self):
         return models.Activity.objects.filter(data_id__in=self.things)
@@ -332,10 +332,10 @@ class ApiKeyResource(resources.ModelResource):
 
 class TabularPlaceResource (PlaceResource):
     exclude = PlaceResource.exclude + ['dataset', 'url', 'name', 'updated_datetime']
-    
+
     def serialize(self, obj, *args, **kwargs):
         serialization = super(TabularPlaceResource, self).serialize(obj, *args, **kwargs)
-        
+
         if isinstance(obj, self.model):
             for fieldname in ['id', 'submitter_name', 'created_datetime', 'visible', 'location']:
                 fieldvalue = serialization.pop(fieldname)
@@ -344,16 +344,16 @@ class TabularPlaceResource (PlaceResource):
             submission_sets = serialization.pop('submissions')
             for submission_set in submission_sets:
                 serialization[submission_set['type']] = submission_set['length']
-        
+
         return serialization
 
 
 class TabularSubmissionResource (SubmissionResource):
     exclude = SubmissionResource.exclude + ['dataset', 'url', 'name', 'updated_datetime']
-    
+
     def serialize(self, obj, *args, **kwargs):
         serialization = super(TabularSubmissionResource, self).serialize(obj, *args, **kwargs)
-        
+
         if isinstance(obj, self.model):
             submissionset = serialization.pop('type')
             if submissionset.endswith('s'):
@@ -363,9 +363,9 @@ class TabularSubmissionResource (SubmissionResource):
 
             place = serialization.pop('place')
             serialization['place_id'] = place['id']
-            
+
             for fieldname in ['id', 'submitter_name', 'created_datetime', 'visible']:
                 fieldvalue = serialization.pop(fieldname)
                 serialization['_'.join([submissiontype, fieldname])] = fieldvalue
-        
+
         return serialization
