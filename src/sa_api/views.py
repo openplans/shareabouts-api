@@ -166,9 +166,10 @@ class CachedMixin (object):
         cache.set(key, (content, status, headers), 86400)  # Cache for 24hs
 
         # Also, add the key to the set of pages cached from this view.
-        keys = cache.get(self.cache_prefix + '_keys') or set()
+        meta_key = self.cache_prefix + '_keys'
+        keys = cache.get(meta_key) or set()
         keys.add(key)
-        cache.set(self.cache_prefix + '_keys', keys)
+        cache.set(meta_key, keys)
 
 
 class AbsUrlMixin (object):

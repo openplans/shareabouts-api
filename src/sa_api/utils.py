@@ -57,6 +57,23 @@ def unpack_data_blob(data):
         data.update(data_blob)
 
 
+def cached_method(f):
+    @wraps(f)
+    def get(self, *args, **kwargs):
+        key = (f, args, tuple(kwargs.items()))
+        try:
+            return self._method_cache[key]
+        except AttributeError:
+            self._method_cache = {}
+            x = self._method_cache[key] = f(self, *args, **kwargs)
+            return x
+        except KeyError:
+            x = self._method_cache[key] = f(self, *args, **kwargs)
+            return x
+
+    return get
+
+
 def cached_property(f):
     """
     Returns a cached property that is calculated by function f.  Lifted from
