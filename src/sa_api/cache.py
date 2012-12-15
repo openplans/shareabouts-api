@@ -16,25 +16,29 @@ class Cache (object):
             keys.add(meta_key)
         cache.delete_many(keys)
 
-    def get_instance_params_key(self, obj):
-        return '%s:%s' % (self.__class__.__name__, obj.pk)
+    def get_instance_params_key(self, inst_key):
+        if isinstance(inst_key, basestring):
+            obj = inst_key
+            inst_key = obj.pk
+        return '%s:%s' % (self.__class__.__name__, inst_key)
 
     def clear_instance_params(self, obj):
         instance_params_key = self.get_instance_params_key(obj)
         cache.delete(instance_params_key)
 
-    def get_cached_instance_params(self, obj):
-        instance_params_key = self.get_instance_params_key(obj)
+    def get_cached_instance_params(self, inst_key, obj_getter):
+        instance_params_key = self.get_instance_params_key(inst_key)
         params = cache.get(instance_params_key)
 
         if params is None:
+            obj = obj_getter()
             params = self.get_instance_params(obj)
             cache.set(instance_params_key, params)
         return params
 
     def clear_instance(self, obj):
         # Collect information for cache keys
-        params = self.get_cached_instance_params(obj)
+        params = self.get_cached_instance_params(obj.pk, lambda: obj)
         # Collect the prefixes for cached requests
         prefixes = self.get_request_prefixes(*params)
         # Clear all the keys

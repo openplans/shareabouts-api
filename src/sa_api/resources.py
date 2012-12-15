@@ -10,6 +10,7 @@ from djangorestframework import resources
 from . import models
 from . import utils
 from . import forms
+from . import cache
 
 
 def simple_user(user):
@@ -71,6 +72,8 @@ class PlaceResource (ModelResourceWithDataBlob):
     form = forms.PlaceForm
     queryset = model.objects.all().select_related()
 
+    dataset_cache = cache.DataSetCache()
+
     # TODO: un-exclude dataset once i figure out how to avoid exposing user info
     # in related resources.
     exclude = ['data', 'submittedthing_ptr']
@@ -113,30 +116,16 @@ class PlaceResource (ModelResourceWithDataBlob):
         }
 
     def dataset(self, place):
-        url = reverse('dataset_instance_by_user',
-                      kwargs={
-                         'owner__username': place.dataset.owner.username,
-                         'slug': place.dataset.slug})
-        return {'url': url}
-
-    def _get_dataset_url_args(self, dataset_id):
-        # Looking up the same parent dataset for 1000 places would be
-        # pointless and expensive.
-        self._reverse_args_cache = getattr(self, '_reverse_args_cache', {})
-        if dataset_id in self._reverse_args_cache:
-            args = self._reverse_args_cache[dataset_id]
-        else:
-            dataset = models.DataSet.objects.get(id=dataset_id)
-            args = self._reverse_args_cache[dataset_id] = (
-                dataset.owner.username,
-                dataset.slug,
-            )
-        return args
+        owner, dataset = self.dataset_cache.get_cached_instance_params(place.dataset_id, lambda: place.dataset)
+        dataset = {
+          'url': reverse('dataset_instance_by_user', args=(owner, dataset))
+        }
+        return dataset
 
     def url(self, place):
-        args = self._get_dataset_url_args(place.dataset_id)
-        args = args + (place.id,)
-        return reverse('place_instance_by_dataset', args=args)
+        owner, dataset = self.dataset_cache.get_cached_instance_params(place.dataset_id, lambda: place.dataset)
+        url = reverse('place_instance_by_dataset', args=(owner, dataset, place.pk))
+        return url
 
     def submissions(self, place):
         return self.submission_sets[place.id]
