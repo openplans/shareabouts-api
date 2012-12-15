@@ -124,13 +124,15 @@ class TestPlaceResource(TestCase):
         for i in range(2):
             models.Submission.objects.create(parent=ss2, dataset_id=ds.id)
 
+        self.ds = ds
+
     @istest
     def submission_sets_empty(self):
         from ..resources import models, PlaceResource
         from mock_django.managers import ManagerMock
         mock_manager = ManagerMock(models.SubmissionSet.objects)
         with mock.patch.object(models.SubmissionSet, 'objects', mock_manager):
-            assert_equal(PlaceResource().submission_sets, {})
+            assert_equal(PlaceResource().dataset_cache.get_submission_sets(0), {})
 
     @istest
     def submission_sets_non_empty(self):
@@ -140,7 +142,7 @@ class TestPlaceResource(TestCase):
             123: [{'length': 3, 'url': '/api/v1/datasets/user/dataset/places/123/foo/', 'type': 'foo'}],
             456: [{'length': 2, 'url': '/api/v1/datasets/user/dataset/places/456/bar/', 'type': 'bar'}],
         }
-        assert_equal(dict(PlaceResource().submission_sets), expected_result)
+        assert_equal(dict(PlaceResource().dataset_cache.get_submission_sets(self.ds.id)), expected_result)
         for place in models.Place.objects.all():
             assert_in(place.id, expected_result)
 

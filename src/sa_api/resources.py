@@ -79,35 +79,6 @@ class PlaceResource (ModelResourceWithDataBlob):
     exclude = ['data', 'submittedthing_ptr']
     include = ['url', 'submissions']
 
-    @utils.cached_property
-    def submission_sets(self):
-        """
-        A mapping from Place ids to attributes.  Helps to cut down
-        significantly on the number of queries.
-
-        There should be at most one SubmissionSet of a given type for one place.
-        """
-        submission_sets = defaultdict(list)
-
-        qs = models.SubmissionSet.objects.all().select_related()
-        for submission_set in qs.annotate(length=Count('children')):
-            # Ignore empty sets
-            if submission_set.length <= 0:
-                continue
-
-            submission_sets[submission_set.place_id].append({
-                'type': submission_set.submission_type,
-                'length': submission_set.length,
-                'url': reverse('submission_collection_by_dataset', kwargs={
-                    'dataset__owner__username': submission_set.place.dataset.owner.username,
-                    'dataset__slug': submission_set.place.dataset.slug,
-                    'place_id': submission_set.place_id,
-                    'submission_type': submission_set.submission_type
-                })
-            })
-
-        return submission_sets
-
     # TODO: Included vote counts, without an additional query if possible.
     def location(self, place):
         return {
@@ -128,7 +99,8 @@ class PlaceResource (ModelResourceWithDataBlob):
         return url
 
     def submissions(self, place):
-        return self.submission_sets[place.id]
+        submission_sets = self.dataset_cache.get_submission_sets(place.dataset_id)
+        return submission_sets.get(place.id, [])
 
     def validate_request(self, origdata, files=None):
         if origdata:
