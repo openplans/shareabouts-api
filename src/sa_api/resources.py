@@ -126,6 +126,7 @@ class DataSetResource (resources.ModelResource):
     fields = ['id', 'url', 'owner', 'places', 'slug', 'display_name', 'keys', 'submissions']
     queryset = model.objects.all().select_related()
 
+    # TODO: Move this to the cache module. Invalidate on place save.
     @utils.cached_property
     def places_counts(self):
         # TODO: We should check the view attached to the resource to see whether
@@ -137,7 +138,7 @@ class DataSetResource (resources.ModelResource):
                               for places in qs])
         return places_counts
 
-    # TODO: Store this in the cache
+    # TODO: Move this to the cache module. Invalidate on submission save.
     @utils.cached_property
     def submission_sets(self):
         """
@@ -185,6 +186,7 @@ class DataSetResource (resources.ModelResource):
     def owner(self, dataset):
         return simple_user(dataset.owner)
 
+    # TODO: construct with the cache's instance_params.
     def places(self, dataset):
         url = reverse('place_collection_by_dataset',
                       kwargs={
@@ -195,11 +197,13 @@ class DataSetResource (resources.ModelResource):
     def submissions(self, dataset):
         return self.submission_sets[dataset.id]
 
+    # TODO: construct with the cache's instance_params.
     def url(self, instance):
         return reverse('dataset_instance_by_user',
                        kwargs={'owner__username': instance.owner.username,
                                'slug': instance.slug})
 
+    # TODO: construct with the cache's instance_params.
     def keys(self, instance):
         url = reverse('api_key_collection_by_dataset',
                       kwargs={'datasets__owner__username': instance.owner.username,
@@ -255,6 +259,7 @@ class ActivityResource (resources.ModelResource):
     def queryset(self):
         return models.Activity.objects.filter(data_id__in=self.things)
 
+    # TODO: Move this to the cache module. Invalidate on submitted thing save.
     @utils.cached_property
     def things(self):
         """
