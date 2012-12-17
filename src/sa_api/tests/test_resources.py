@@ -132,7 +132,7 @@ class TestPlaceResource(TestCase):
         from mock_django.managers import ManagerMock
         mock_manager = ManagerMock(models.SubmissionSet.objects)
         with mock.patch.object(models.SubmissionSet, 'objects', mock_manager):
-            assert_equal(PlaceResource().dataset_cache.get_submission_sets(0), {})
+            assert_equal(PlaceResource().model.cache.get_submission_sets(0), {})
 
     @istest
     def submission_sets_non_empty(self):
@@ -142,7 +142,7 @@ class TestPlaceResource(TestCase):
             123: [{'length': 3, 'url': '/api/v1/datasets/user/dataset/places/123/foo/', 'type': 'foo'}],
             456: [{'length': 2, 'url': '/api/v1/datasets/user/dataset/places/456/bar/', 'type': 'bar'}],
         }
-        assert_equal(dict(PlaceResource().dataset_cache.get_submission_sets(self.ds.id)), expected_result)
+        assert_equal(dict(PlaceResource().model.cache.get_submission_sets(self.ds.id)), expected_result)
         for place in models.Place.objects.all():
             assert_in(place.id, expected_result)
 
@@ -177,18 +177,23 @@ class TestPlaceResource(TestCase):
         from ..resources import models, PlaceResource
         # White-box test - we hook up the stuff we know it uses.
         resource = PlaceResource()
-        place = models.Place.objects.get(id=123)
         from django.contrib.auth.models import User
         user = User.objects.create(username='test-user')
         dataset = models.DataSet.objects.create(id=456, slug='test-set',
                                                 owner=user)
-        place.dataset = dataset
+
+        place = models.Place.objects.create(id=124, dataset=dataset, location='POINT(1 1)')
         # TODO: call reverse() here to avoid breaking if using a different urls.py?
         assert_equal(resource.url(place),
-                     '/api/v1/datasets/test-user/test-set/places/123/')
+                     '/api/v1/datasets/test-user/test-set/places/124/')
         # Called twice to get coverage of memoization.
         assert_equal(resource.url(place),
-                     '/api/v1/datasets/test-user/test-set/places/123/')
+                     '/api/v1/datasets/test-user/test-set/places/124/')
+
+        # Call with different place, to make sure the cache is behaving.
+        place = models.Place.objects.create(id=125, dataset=dataset, location='POINT(1 1)')
+        assert_equal(resource.url(place),
+                     '/api/v1/datasets/test-user/test-set/places/125/')
 
 
 class TestDataSetResource(object):

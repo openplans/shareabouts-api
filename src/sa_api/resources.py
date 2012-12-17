@@ -74,12 +74,17 @@ class PlaceResource (ModelResourceWithDataBlob):
 
     dataset_cache = cache.DataSetCache()
 
-    # TODO: un-exclude dataset once i figure out how to avoid exposing user info
-    # in related resources.
     exclude = ['data', 'submittedthing_ptr']
     include = ['url', 'submissions']
 
-    # TODO: Included vote counts, without an additional query if possible.
+    # TODO: this can be abstracted into a mixin.
+    def instance_params(self, inst):
+        """
+        Get arguments from the cache for retrieving information about the
+        instance.
+        """
+        return self.model.cache.get_cached_instance_params(inst.pk, lambda: inst)
+
     def location(self, place):
         return {
             'lat': place.location.y,
@@ -87,19 +92,19 @@ class PlaceResource (ModelResourceWithDataBlob):
         }
 
     def dataset(self, place):
-        owner, dataset = self.dataset_cache.get_cached_instance_params(place.dataset_id, lambda: place.dataset)
+        owner, dataset = map(self.instance_params(place).get, ['owner', 'dataset'])
         dataset = {
           'url': reverse('dataset_instance_by_user', args=(owner, dataset))
         }
         return dataset
 
     def url(self, place):
-        owner, dataset = self.dataset_cache.get_cached_instance_params(place.dataset_id, lambda: place.dataset)
+        owner, dataset = map(self.instance_params(place).get, ['owner', 'dataset'])
         url = reverse('place_instance_by_dataset', args=(owner, dataset, place.pk))
         return url
 
     def submissions(self, place):
-        submission_sets = self.dataset_cache.get_submission_sets(place.dataset_id)
+        submission_sets = self.model.cache.get_submission_sets(place.dataset_id)
         return submission_sets.get(place.id, [])
 
     def validate_request(self, origdata, files=None):
@@ -132,6 +137,7 @@ class DataSetResource (resources.ModelResource):
                               for places in qs])
         return places_counts
 
+    # TODO: Store this in the cache
     @utils.cached_property
     def submission_sets(self):
         """
@@ -205,47 +211,35 @@ class DataSetResource (resources.ModelResource):
 class SubmissionResource (ModelResourceWithDataBlob):
     model = models.Submission
     form = forms.SubmissionForm
-    # TODO: show dataset, but not detailed owner info
     exclude = ['parent', 'data', 'submittedthing_ptr']
     include = ['type', 'place', 'url']
     queryset = model.objects.select_related().order_by('created_datetime')
+
+    # TODO: this can be abstracted into a mixin.
+    def instance_params(self, inst):
+        """
+        Get arguments from the cache for retrieving information about the
+        instance.
+        """
+        return self.model.cache.get_cached_instance_params(inst.pk, lambda: inst)
 
     def type(self, submission):
         return submission.parent.submission_type
 
     def place(self, submission):
-        url = reverse('place_instance_by_dataset',
-                      kwargs={
-                         'dataset__owner__username': submission.dataset.owner.username,
-                         'dataset__slug': submission.dataset.slug,
-                         'pk': submission.parent.place_id})
-        return {'url': url, 'id': submission.parent.place_id}
+        owner, dataset, place = map(self.instance_params(submission).get, ['owner', 'dataset', 'place'])
+        url = reverse('place_instance_by_dataset', args=[owner, dataset, place])
+        return {'url': url, 'id': place}
 
     def dataset(self, submission):
-        url = reverse('dataset_instance_by_user',
-                      kwargs={
-                         'owner__username': submission.dataset.owner.username,
-                         'slug': submission.dataset.slug})
+        owner, dataset = map(self.instance_params(submission).get, ['owner', 'dataset'])
+        url = reverse('dataset_instance_by_user', args=(owner, dataset))
         return {'url': url}
 
-    def _get_dataset_url_args(self, dataset_id):
-        # Looking up the same parent dataset for 1000 places would be
-        # pointless and expensive.
-        self._reverse_args_cache = getattr(self, '_reverse_args_cache', {})
-        if dataset_id in self._reverse_args_cache:
-            args = self._reverse_args_cache[dataset_id]
-        else:
-            dataset = models.DataSet.objects.get(id=dataset_id)
-            args = self._reverse_args_cache[dataset_id] = (
-                dataset.owner.username,
-                dataset.slug,
-            )
-        return args
-
     def url(self, submission):
-        args = self._get_dataset_url_args(submission.dataset_id)
-        args = args + (submission.parent.place.id, submission.parent.submission_type, submission.id,)
-        return reverse('submission_instance_by_dataset', args=args)
+        owner, dataset, place, set_name, pk = map(
+            self.instance_params(submission).get, ['owner', 'dataset', 'place', 'set_name', 'submission'])
+        return reverse('submission_instance_by_dataset', args=(owner, dataset, place, set_name, pk))
 
 
 class GeneralSubmittedThingResource (ModelResourceWithDataBlob):
