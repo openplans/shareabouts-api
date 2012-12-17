@@ -119,6 +119,19 @@ class PlaceResource (ModelResourceWithDataBlob):
             data = origdata
         return super(PlaceResource, self).validate_request(data, files)
 
+    def filter_response(self, obj):
+        data = super(PlaceResource, self).filter_response(obj)
+
+        if isinstance(data, list):
+            # These filters will have been applied when constructing the queryset
+            special_filters = set(['visible', 'format'])
+
+            for key, values in self.view.request.GET.iterlists():
+                if key not in special_filters:
+                    data = [item for item in data
+                               if item.get(key, None) in values]
+        return data
+
 
 class DataSetResource (resources.ModelResource):
     model = models.DataSet

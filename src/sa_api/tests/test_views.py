@@ -767,6 +767,67 @@ class TestPlaceCollectionView(TestCase):
         ids = set([place.id for place in qs])
         assert_equal(ids, set([123, 124, 456, 457]))
 
+    @istest
+    def get_filters_on_data_fields(self):
+        from ..views import PlaceCollectionView, models
+
+        user = User.objects.create(username='test-user')
+        ds = models.DataSet.objects.create(owner=user, id=789,
+                                           slug='stuff')
+        location = 'POINT (0.0 0.0)'
+        models.Place.objects.create(dataset=ds, id=123, location=location, visible=True, data=json.dumps({'favorite_food': 'pizza', 'favorite_color': 'red'}))
+        models.Place.objects.create(dataset=ds, id=124, location=location, visible=True, data=json.dumps({'favorite_food': 'asparagus', 'favorite_color': 'green'}))
+        models.Place.objects.create(dataset=ds, id=125, location=location, visible=True, data=json.dumps({'favorite_food': 'pizza', 'favorite_color': 'blue'}))
+        models.Place.objects.create(dataset=ds, id=126, location=location, visible=True, data=json.dumps({'favorite_food': 'chili', 'favorite_color': 'yellow'}))
+        view = PlaceCollectionView()
+
+        # Only visible Places with favorite food 'pizza'...
+        request = RequestFactory().get('/api/v1/datasets/test-user/stuff/places/?favorite_food=pizza')
+        request.user = user
+        request.META['HTTP_ACCEPT'] = 'application/json'
+        view.request = request
+        response = view.dispatch(request,
+                            dataset__owner__username='test-user',
+                            dataset__slug='stuff')
+
+        places = json.loads(response.content)
+
+        assert_equal(len(places), 2)
+        ids = set([place['id'] for place in places])
+        assert_equal(ids, set([123, 125]))
+
+        # Only visible Places with favorite color 'red' or 'yellow'...
+        request = RequestFactory().get('/api/v1/datasets/test-user/stuff/places/?favorite_color=red&favorite_color=yellow')
+        request.user = user
+        request.META['HTTP_ACCEPT'] = 'application/json'
+        view.request = request
+        response = view.dispatch(request,
+                            dataset__owner__username='test-user',
+                            dataset__slug='stuff')
+
+        places = json.loads(response.content)
+
+
+        assert_equal(len(places), 2)
+        ids = set([place['id'] for place in places])
+        assert_equal(ids, set([123, 126]))
+
+        # Only visible Places with favorite color 'red' or 'yellow'...
+        request = RequestFactory().get('/api/v1/datasets/test-user/stuff/places/?favorite_color=red&favorite_color=yellow&favorite_food=pizza')
+        request.user = user
+        request.META['HTTP_ACCEPT'] = 'application/json'
+        view.request = request
+        response = view.dispatch(request,
+                            dataset__owner__username='test-user',
+                            dataset__slug='stuff')
+
+        places = json.loads(response.content)
+
+
+        assert_equal(len(places), 1)
+        ids = set([place['id'] for place in places])
+        assert_equal(ids, set([123]))
+
 
 class TestApiKeyCollectionView(TestCase):
 

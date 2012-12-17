@@ -232,9 +232,7 @@ class ModelViewWithDataBlobMixin (object):
             utils.unpack_data_blob(self._data)
 
 
-# TODO derive from CachedMixin to enable caching
 class DataSetCollectionView (Ignore_CacheBusterMixin, AuthMixin, AbsUrlMixin, ModelViewWithDataBlobMixin, CachedMixin, views.ListOrCreateModelView):
-
     resource = resources.DataSetResource
 
     allowed_user_kwarg = 'owner__username'
@@ -278,7 +276,6 @@ class DataSetInstanceView (Ignore_CacheBusterMixin, AuthMixin, AbsUrlMixin, Mode
             return instance
 
 
-# TODO derive from CachedMixin to enable caching
 class PlaceCollectionView (Ignore_CacheBusterMixin, AuthMixin, AbsUrlMixin, ActivityGeneratingMixin, CachedMixin, ModelViewWithDataBlobMixin, views.ListOrCreateModelView):
     # TODO: Decide whether pagination is appropriate/necessary.
     resource = resources.PlaceResource
