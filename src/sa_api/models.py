@@ -121,3 +121,14 @@ class Activity (CacheClearingModel, TimeStampedModel):
     @property
     def submitter_name(self):
         return self.data.submitter_name
+
+
+class Attachment (TimeStampedModel):
+    """
+    A file attached to a submitted thing.
+    """
+    file = models.FileField(upload_to='attachments')
+    name = models.CharField(max_length=128, null=True, blank=True)
+    thing = models.ForeignKey('SubmittedThing', related_name='attachments')
+
+#

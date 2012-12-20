@@ -3,10 +3,12 @@ django>=1.4
 # gevent
 gunicorn
 
-# Database
+# Persistance
 psycopg2
 south
 django-redis
+boto
+django-storages
 
 # REST API
 #

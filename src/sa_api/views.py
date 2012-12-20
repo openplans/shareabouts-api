@@ -14,6 +14,8 @@ from djangorestframework.response import Response, ErrorResponse
 import apikey.auth
 import json
 import logging
+import os
+import time
 
 logger = logging.getLogger('sa_api.views')
 
@@ -546,3 +548,32 @@ class TabularSubmissionCollectionView (SubmissionCollectionView):
 
 class TabularAllSubmissionCollectionsView (AllSubmissionCollectionsView):
     resource = resources.TabularSubmissionResource
+
+
+class AttachmentView (views.View):
+    authentication = [authentication.BasicAuthentication,
+                      authentication.UserLoggedInAuthentication]
+
+    def post(self, request, thing_id):
+        form = forms.AttachmentForm(request.POST, request.FILES)
+        if form.is_valid():
+            upload = request.FILES['file']
+
+            attachment = models.Attachment(
+                file = upload,
+                name = request.POST['name'],
+                thing = models.SubmittedThing.objects.get(pk=thing_id),
+            )
+
+            # Unique file names, hopefully!
+            _, ext = os.path.splitext(upload.name)
+            number = utils.to_base(int(time.time() * 1000000), 62)
+            attachment.file.name = number + ext
+
+            return Response(201, {
+                'url': attachment.file.url,
+                'name': attachment.name,
+            })
+
+        else:
+            raise ErrorResponse(400, form.errors)

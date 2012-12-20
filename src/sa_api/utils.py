@@ -94,3 +94,17 @@ def cached_property(f):
             return x
 
     return property(get)
+
+
+def to_base(num, base):
+    """
+    Convert an integer to a string in the given base, up to 62.
+    """
+    alphabet = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+
+    digits = []
+    while num > 0:
+        num, remainder = divmod(num, base)
+        digits.insert(0, alphabet[remainder])
+
+    return ''.join(digits)

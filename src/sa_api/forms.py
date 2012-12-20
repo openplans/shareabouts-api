@@ -46,3 +46,9 @@ class ActivityForm (forms.Form):
 
     format = forms.CharField(required=False)
     callback = forms.CharField(required=False)
+
+
+class AttachmentForm (forms.ModelForm):
+    class Meta:
+        model = models.Attachment
+        exclude = ['thing']

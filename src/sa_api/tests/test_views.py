@@ -8,7 +8,7 @@ from djangorestframework.response import ErrorResponse
 from mock import patch
 from nose.tools import (istest, assert_equal, assert_not_equal, assert_in,
                         assert_raises)
-from ..models import DataSet, Place, Submission, SubmissionSet
+from ..models import DataSet, Place, Submission, SubmissionSet, Attachment
 from ..models import SubmittedThing, Activity
 from ..views import SubmissionCollectionView
 from ..views import raise_error_if_not_authenticated
@@ -962,3 +962,37 @@ class TestOwnerPasswordView(TestCase):
 
         assert_equal(current_password, new_password)
         assert_equal(response.status_code, 403)
+
+
+class TestAttachmentView (TestCase):
+    def setUp(self):
+        User.objects.all().delete()
+        DataSet.objects.all().delete()
+        Place.objects.all().delete()
+        Attachment.objects.all().delete()
+
+        self.owner = User.objects.create_user('user', password='password')
+        self.dataset = DataSet.objects.create(slug='data',
+                                              owner_id=self.owner.id)
+        self.place = Place.objects.create(location='POINT(0 0)',
+                                          dataset_id=self.dataset.id)
+        self.url = reverse('place_attachment_by_dataset', args=[self.place.id])
+
+    @istest
+    def creates_attachment_for_a_place(self):
+        client = Client()
+
+        # Set up a dummy file
+        from StringIO import StringIO
+        f = StringIO('This is test content in a "file"')
+        f.name = 'myfile.txt'
+
+        # Send the request
+        assert client.login(username='user', password='password')
+        response = client.post(self.url, {'name': 'test_attachment', 'file': f})
+
+        assert_equal(response.status_code, 201)
+
+        a = self.place.attachments.all()[0]
+        assert_equal(a.name, 'test_attachment')
+        assert_equal(a.file.read(), 'This is test content in a "file"')

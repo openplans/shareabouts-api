@@ -141,6 +141,7 @@ INSTALLED_APPS = (
     'south',
     'django_nose',
     'debug_toolbar',
+    'storages',
 
     # Project apps
     'beta_signup',
