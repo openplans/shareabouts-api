@@ -976,7 +976,13 @@ class TestAttachmentView (TestCase):
                                               owner_id=self.owner.id)
         self.place = Place.objects.create(location='POINT(0 0)',
                                           dataset_id=self.dataset.id)
-        self.url = reverse('place_attachment_by_dataset', args=[self.place.id])
+        self.submission_set = SubmissionSet.objects.create(place=self.place,
+                                                           submission_type='comments')
+        self.submission = Submission.objects.create(parent=self.submission_set,
+                                                    dataset_id=self.dataset.id)
+        self.place_url = reverse('place_attachment_by_dataset', args=['user', 'data', self.place.id])
+        self.submission_url = reverse('submission_attachment_by_dataset',
+                                      args=['user', 'data', self.place.id, 'comments', self.submission.id])
 
     @istest
     def creates_attachment_for_a_place(self):
@@ -989,10 +995,29 @@ class TestAttachmentView (TestCase):
 
         # Send the request
         assert client.login(username='user', password='password')
-        response = client.post(self.url, {'name': 'test_attachment', 'file': f})
+        response = client.post(self.place_url, {'name': 'test_attachment', 'file': f})
 
         assert_equal(response.status_code, 201)
 
         a = self.place.attachments.all()[0]
+        assert_equal(a.name, 'test_attachment')
+        assert_equal(a.file.read(), 'This is test content in a "file"')
+
+    @istest
+    def creates_attachment_for_a_submission(self):
+        client = Client()
+
+        # Set up a dummy file
+        from StringIO import StringIO
+        f = StringIO('This is test content in a "file"')
+        f.name = 'myfile.txt'
+
+        # Send the request
+        assert client.login(username='user', password='password')
+        response = client.post(self.submission_url, {'name': 'test_attachment', 'file': f})
+
+        assert_equal(response.status_code, 201)
+
+        a = self.submission.attachments.all()[0]
         assert_equal(a.name, 'test_attachment')
         assert_equal(a.file.read(), 'This is test content in a "file"')

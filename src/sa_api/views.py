@@ -570,6 +570,8 @@ class AttachmentView (views.View):
             number = utils.to_base(int(time.time() * 1000000), 62)
             attachment.file.name = number + ext
 
+            attachment.save()
+
             return Response(201, {
                 'url': attachment.file.url,
                 'name': attachment.name,
@@ -577,3 +579,13 @@ class AttachmentView (views.View):
 
         else:
             raise ErrorResponse(400, form.errors)
+
+
+class PlaceAttachmentView (AttachmentView):
+    def post(self, request, dataset__owner__username, dataset__slug, pk):
+        return super(PlaceAttachmentView, self).post(request, pk)
+
+
+class SubmissionAttachmentView (AttachmentView):
+    def post(self, request, dataset__owner__username, dataset__slug, place_id, submission_type, pk):
+        return super(SubmissionAttachmentView, self).post(request, pk)
