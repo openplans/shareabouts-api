@@ -550,9 +550,8 @@ class TabularAllSubmissionCollectionsView (AllSubmissionCollectionsView):
     resource = resources.TabularSubmissionResource
 
 
-class AttachmentView (views.View):
-    authentication = [authentication.BasicAuthentication,
-                      authentication.UserLoggedInAuthentication]
+class AttachmentView (Ignore_CacheBusterMixin, AuthMixin, views.View):
+    allowed_user_kwarg = 'dataset__owner__username'
 
     def post(self, request, thing_id):
         form = forms.AttachmentForm(request.POST, request.FILES)
