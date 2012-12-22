@@ -81,7 +81,62 @@ class DataSetCache (Cache):
         return '%s:%s:%s' % (self.__class__.__name__, owner_id, 'submission_sets')
 
 
-class PlaceCache (Cache):
+class ThingWithAttachmentCache (Cache):
+    dataset_cache = DataSetCache()
+
+    def get_instance_params(self, thing_obj):
+        params = self.dataset_cache.get_cached_instance_params(
+            thing_obj.dataset_id, lambda: thing_obj.dataset)
+        params.update({
+            'thing': thing_obj.pk
+        })
+        return params
+
+    def get_attachments_key(self, dataset_id):
+        return 'dataset:%s:%s' % (dataset_id, 'attachments-by-thing_id')
+
+    def calculate_attachments(self, dataset_id):
+        """
+        Cache all the attachments for all the places in the given dataset. Helps
+        to cut down on database hits when doing operations on several places.
+        """
+        # Import Attachment here to avoid circular dependencies.
+        from .models import Attachment
+
+        attachments = defaultdict(list)
+
+        qs = Attachment.objects.filter(thing__dataset_id=dataset_id)
+#        qs = qs.values('file', 'name', 'thing_id')
+        # NOTE: To build the back-reference URL, I'd need information about
+        # the thing's dataset (like thing__dataset__owner__username and such),
+        # but I'd also need to know whether the thing is a place or a
+        # submission.  I'd rather avoid that right now.
+
+        for attachment in qs:
+            attachments[attachment.thing.pk].append({
+                'name': attachment.name,
+                'url': attachment.file.url,
+                'created_datetime': attachment.created_datetime,
+                'updated_datetime': attachment.updated_datetime,
+            })
+
+        return attachments
+
+    def get_attachments(self, dataset_id):
+        """
+        A mapping from Place id to attachments. This is so that when we request
+        all the places in a dataset, we don't end up doing a query for the
+        attachments on each place; we can just do it once.
+        """
+        attachments_key = self.get_attachments_key(dataset_id)
+        attachments = cache.get(attachments_key)
+        if attachments is None:
+            attachments = self.calculate_attachments(dataset_id)
+            cache.set(attachments_key, attachments)
+        return attachments
+
+
+class PlaceCache (ThingWithAttachmentCache, Cache):
     dataset_cache = DataSetCache()
 
     def get_instance_params(self, place_obj):
@@ -183,7 +238,7 @@ class SubmissionSetCache (Cache):
         return (instance_path, collection_path, dataset_path, activity_path)
 
 
-class SubmissionCache (Cache):
+class SubmissionCache (ThingWithAttachmentCache, Cache):
     dataset_cache = DataSetCache()
     place_cache = PlaceCache()
     submissionset_cache = SubmissionSetCache()
@@ -224,3 +279,24 @@ class ActivityCache (Cache):
         keys = cache.get('activity_keys') or set()
         keys.add('activity_keys')
         cache.delete_many(keys)
+
+
+class AttachmentCache (Cache):
+    thing_cache = ThingWithAttachmentCache()
+
+    def get_instance_params(self, attachment_obj):
+        params = self.thing_cache.get_cached_instance_params(
+            attachment_obj.thing_id, lambda: attachment_obj.thing)
+        params.update({
+            'attachment': attachment_obj.name,
+            'attachment_id': attachment_obj.pk,
+        })
+        return params
+
+    def get_request_prefixes(self, **params):
+        return set()
+
+    def get_other_keys(self, **params):
+        dataset_id = params.get('dataset_id')
+        thing_attachments_key = self.thing_cache.get_attachments_key(dataset_id)
+        return set([thing_attachments_key])

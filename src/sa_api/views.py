@@ -550,41 +550,12 @@ class TabularAllSubmissionCollectionsView (AllSubmissionCollectionsView):
     resource = resources.TabularSubmissionResource
 
 
-class AttachmentView (Ignore_CacheBusterMixin, AuthMixin, views.View):
+class AttachmentView (Ignore_CacheBusterMixin, AuthMixin, views.ListOrCreateModelView):
+    resource = resources.AttachmentResource
     allowed_user_kwarg = 'dataset__owner__username'
 
-    def post(self, request, thing_id):
-        form = forms.AttachmentForm(request.POST, request.FILES)
-        if form.is_valid():
-            upload = request.FILES['file']
+    def post(self, request, **kwargs):
+        return super(AttachmentView, self).post(request, thing_id=kwargs['thing_id'])
 
-            attachment = models.Attachment(
-                file = upload,
-                name = request.POST['name'],
-                thing = models.SubmittedThing.objects.get(pk=thing_id),
-            )
-
-            # Unique file names, hopefully!
-            _, ext = os.path.splitext(upload.name)
-            number = utils.to_base(int(time.time() * 1000000), 62)
-            attachment.file.name = number + ext
-
-            attachment.save()
-
-            return Response(201, {
-                'url': attachment.file.url,
-                'name': attachment.name,
-            })
-
-        else:
-            raise ErrorResponse(400, form.errors)
-
-
-class PlaceAttachmentView (AttachmentView):
-    def post(self, request, dataset__owner__username, dataset__slug, pk):
-        return super(PlaceAttachmentView, self).post(request, pk)
-
-
-class SubmissionAttachmentView (AttachmentView):
-    def post(self, request, dataset__owner__username, dataset__slug, place_id, submission_type, pk):
-        return super(SubmissionAttachmentView, self).post(request, pk)
+    def get(self, request, **kwargs):
+        return super(AttachmentView, self).get(request, thing_id=kwargs['thing_id'])

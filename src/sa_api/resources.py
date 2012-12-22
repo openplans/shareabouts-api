@@ -67,6 +67,16 @@ class ModelResourceWithDataBlob (resources.ModelResource):
         return super(ModelResourceWithDataBlob, self).validate_request(data, files)
 
 
+class AttachmentResource (resources.ModelResource):
+    model = models.Attachment
+    form = forms.AttachmentForm
+    exclude = ['thing', 'file', 'id']
+    include = ['url']
+
+    def url(self, inst):
+        return inst.file.url
+
+
 class PlaceResource (ModelResourceWithDataBlob):
     model = models.Place
     form = forms.PlaceForm
@@ -75,7 +85,7 @@ class PlaceResource (ModelResourceWithDataBlob):
     dataset_cache = cache.DataSetCache()
 
     exclude = ['data', 'submittedthing_ptr']
-    include = ['url', 'submissions']
+    include = ['url', 'submissions', 'attachments']
 
     # TODO: this can be abstracted into a mixin.
     def instance_params(self, inst):
@@ -106,6 +116,10 @@ class PlaceResource (ModelResourceWithDataBlob):
     def submissions(self, place):
         submission_sets = self.model.cache.get_submission_sets(place.dataset_id)
         return submission_sets.get(place.id, [])
+
+    def attachments(self, place):
+        attachments = self.model.cache.get_attachments(place.dataset_id)
+        return attachments.get(place.id, [])
 
     def validate_request(self, origdata, files=None):
         if origdata:
@@ -229,7 +243,7 @@ class SubmissionResource (ModelResourceWithDataBlob):
     model = models.Submission
     form = forms.SubmissionForm
     exclude = ['parent', 'data', 'submittedthing_ptr']
-    include = ['type', 'place', 'url']
+    include = ['type', 'place', 'url', 'attachments']
     queryset = model.objects.select_related().order_by('created_datetime')
 
     # TODO: this can be abstracted into a mixin.
@@ -252,6 +266,10 @@ class SubmissionResource (ModelResourceWithDataBlob):
         owner, dataset = map(self.instance_params(submission).get, ['owner', 'dataset'])
         url = reverse('dataset_instance_by_user', args=(owner, dataset))
         return {'url': url}
+
+    def attachments(self, submission):
+        attachments = self.model.cache.get_attachments(submission.dataset_id)
+        return attachments.get(submission.id, [])
 
     def url(self, submission):
         owner, dataset, place, set_name, pk = map(
