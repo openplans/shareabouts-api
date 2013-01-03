@@ -3,6 +3,8 @@ from django.core.cache import cache
 from django.core.urlresolvers import reverse
 from . import utils
 
+import logging
+logger = logging.getLogger('sa_api.cache')
 
 class Cache (object):
     def get_meta_key(self, prefix):
@@ -14,9 +16,11 @@ class Cache (object):
             meta_key = self.get_meta_key(prefix)
             keys |= cache.get(meta_key) or set()
             keys.add(meta_key)
+        logger.debug('Keys with prefixes "%s": "%s"' % ('", "'.join(prefixes), '", "'.join(keys)))
         return keys
 
     def clear_keys(self, *keys):
+        logger.debug('Deleting: "%s"' % '", "'.join(keys))
         cache.delete_many(keys)
 
     def get_instance_params_key(self, inst_key):
@@ -28,6 +32,7 @@ class Cache (object):
 
     def clear_instance_params(self, obj):
         instance_params_key = self.get_instance_params_key(obj)
+        logger.debug('Deleting: "%s"' % instance_params_key)
         cache.delete(instance_params_key)
 
     def get_cached_instance_params(self, inst_key, obj_getter):
@@ -43,7 +48,10 @@ class Cache (object):
         if params is None:
             obj = obj_getter()
             params = self.get_instance_params(obj)
+            logger.debug('Setting instance parameters for "%s": %r' % (instance_params_key, params))
             cache.set(instance_params_key, params)
+        else:
+            logger.debug('Found instance parameters for "%s": %r' % (instance_params_key, params))
         return params
 
     def get_other_keys(self, **params):

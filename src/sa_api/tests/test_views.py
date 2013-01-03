@@ -652,11 +652,60 @@ class TestPlaceCollectionView(TestCase):
         models.Activity.objects.all().delete()
         User.objects.all().delete()
 
+        cache.clear()
+
     def setUp(self):
         self._cleanup()
 
     def tearDown(self):
         self._cleanup()
+
+    @istest
+    def post_with_permission_invalidates_cache(self):
+        from ..views import PlaceCollectionView, models
+        view = PlaceCollectionView().as_view()
+        # Need an existing DataSet.
+        user = User.objects.create(username='test-user')
+        ds = models.DataSet.objects.create(owner=user, id=789,
+                                           slug='stuff')
+        #place = models.Place.objects.create(dataset=ds, id=123)
+        uri_args = {
+            'dataset__owner__username': user.username,
+            'dataset__slug': ds.slug,
+        }
+        uri = reverse('place_collection_by_dataset', kwargs=uri_args)
+        factory = RequestFactory()
+
+        get_request = factory.get(uri, content_type='application/json')
+        get_request.user = user
+        get_request.META['HTTP_ACCEPT'] = 'application/json'
+
+        with self.assertNumQueries(1):
+            response1 = view(get_request, **uri_args)
+        with self.assertNumQueries(0):
+            response2 = view(get_request, **uri_args)
+        self.assertEqual(response1.content, response2.content)
+
+        data = {'location': {'lat': 39.94494, 'lng': -75.06144},
+                'description': 'hello', 'location_type': 'School',
+                'name': 'Ward Melville HS',
+                'submitter_name': 'Joe',
+                'visible': True,
+                }
+
+        post_request = factory.post(uri, data=json.dumps(data),
+                                    content_type='application/json')
+        post_request.user = user
+        post_request.META['HTTP_ACCEPT'] = 'application/json'
+
+        self.assertEqual(models.Place.objects.count(), 0)
+        res = view(post_request, **uri_args)
+        print res.content
+        self.assertEqual(models.Place.objects.count(), 1)
+
+        with self.assertNumQueries(1):
+            response3 = view(get_request, **uri_args)
+        assert_not_equal(response1.content, response3.content)
 
     @istest
     def post_creates_a_place(self):
