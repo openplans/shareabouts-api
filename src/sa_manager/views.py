@@ -96,12 +96,12 @@ def places_view(request, dataset_slug):
     for place in places:
         for field_name in place:
             data_fields.add(field_name)
-    data_fields -= set(['id', 'submissions', 'dataset', 'url', 'location', 
+    data_fields -= set(['id', 'submissions', 'dataset', 'url', 'location',
                         'visible', 'created_datetime', 'updated_datetime'])
 
     for place in places:
         place['submission_count'] = sum([s['length'] for s in place['submissions']])
-    
+
     return render(request, "manager/places.html", {'places': places,
                                                    'dataset': dataset,
                                                    'data_fields': data_fields})
@@ -207,7 +207,7 @@ class PlaceFormMixin (BaseDataBlobFormMixin):
     def dispatch(self, request, *args, **kwargs):
         self.special_fields = ('id', 'location', 'submitter_name', 'name',
                                'created_datetime', 'updated_datetime', 'url',
-                               'visible', 'submissions', 'dataset')
+                               'visible', 'submissions', 'dataset', 'attachments')
         return super(PlaceFormMixin, self).dispatch(request, *args, **kwargs)
 
     def process_specific_fields(self):
@@ -340,7 +340,7 @@ class ExistingPlaceView (PlaceFormMixin, View):
 class ChangePasswordView (FormView):
     template_name = 'registration/change_password.html'
     form_class = forms.ChangePasswordForm
-    
+
     @method_decorator(login_required)
     def dispatch(self, request, *args, **kwargs):
         self.api = ShareaboutsApi(request)
@@ -349,13 +349,13 @@ class ChangePasswordView (FormView):
         self.password_uri = self.api.build_uri('password', username=request.user.username)
 
         return super(ChangePasswordView, self).dispatch(request, *args, **kwargs)
-    
+
     def get_context_data(self, **kwargs):
         context = super(ChangePasswordView, self).get_context_data(**kwargs)
         next = self.request.GET.get('next', reverse('manager_index'))
         context['next'] = next
         return context
-    
+
     def get_success_url(self):
         return self.request.POST.get('next', reverse('manager_index'))
 
@@ -533,7 +533,7 @@ class SubmissionMixin (BaseDataBlobFormMixin):
 
         self.special_fields = ('id', 'submitter_name', 'url', 'visible',
                                'created_datetime', 'updated_datetime', 'type',
-                               'place', 'dataset')
+                               'place', 'dataset', 'attachments')
         return super(SubmissionMixin, self).dispatch(request, dataset_slug, place_id, submission_type, *args, **kwargs)
 
     def index(self, request, dataset_slug, place_id, submission_type):
