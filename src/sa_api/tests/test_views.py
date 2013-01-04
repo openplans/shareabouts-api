@@ -7,7 +7,7 @@ from django.core.cache import cache
 from djangorestframework.response import ErrorResponse
 from mock import patch
 from nose.tools import (istest, assert_equal, assert_not_equal, assert_in,
-                        assert_raises)
+                        assert_raises, assert_is_not_none)
 from ..models import DataSet, Place, Submission, SubmissionSet, Attachment
 from ..models import SubmittedThing, Activity
 from ..views import SubmissionCollectionView
@@ -1076,6 +1076,7 @@ class TestAttachmentView (TestCase):
 
         # Set up a dummy file
         from StringIO import StringIO
+        import re
         f = StringIO('This is test content in a "file"')
         f.name = 'myfile.txt'
 
@@ -1086,7 +1087,9 @@ class TestAttachmentView (TestCase):
         assert_equal(response.status_code, 201)
 
         a = self.place.attachments.all()[0]
+        file_prefix_pattern = r'^attachments/\w+-'
         assert_equal(a.name, 'test_attachment')
+        assert_is_not_none(re.match(file_prefix_pattern + 'myfile.txt$', a.file.name))
         assert_equal(a.file.read(), 'This is test content in a "file"')
 
     @istest

@@ -124,14 +124,16 @@ class Activity (CacheClearingModel, TimeStampedModel):
         return self.data.submitter_name
 
 
+def timestamp_filename(attachment, filename):
+    # NOTE: It would be nice if this were a staticmethod in Attachment, but
+    # Django 1.4 tries to convert the function to a string when we do that.
+    return ''.join(['attachments/', utils.base62_time(), '-', filename])
+
+
 class Attachment (CacheClearingModel, TimeStampedModel):
     """
     A file attached to a submitted thing.
     """
-    @staticmethod
-    def timestamp_filename(self, filename):
-        return ''.join(['attachments/', filename, utils.base62_time()])
-
     file = models.FileField(upload_to=timestamp_filename)
     name = models.CharField(max_length=128, null=True, blank=True)
     thing = models.ForeignKey('SubmittedThing', related_name='attachments')
