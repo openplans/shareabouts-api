@@ -1,3 +1,4 @@
+import time
 from djangorestframework import status
 
 
@@ -94,6 +95,14 @@ def cached_property(f):
             return x
 
     return property(get)
+
+
+def base62_time():
+    """
+    Convert the current epoch time in milliseconds to a base-64 encoded string.
+    """
+    ms = int(time.time() * 1000)
+    return to_base(ms, 62)
 
 
 def to_base(num, base):

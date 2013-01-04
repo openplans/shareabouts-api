@@ -2,6 +2,7 @@ from django.contrib.auth import models as auth_models
 from django.contrib.gis.db import models
 from django.core.urlresolvers import reverse
 from . import cache
+from . import utils
 
 
 class TimeStampedModel (models.Model):
@@ -127,7 +128,11 @@ class Attachment (CacheClearingModel, TimeStampedModel):
     """
     A file attached to a submitted thing.
     """
-    file = models.FileField(upload_to='attachments')
+    @staticmethod
+    def timestamp_filename(self, filename):
+        return ''.join(['attachments/', filename, utils.base62_time()])
+
+    file = models.FileField(upload_to=timestamp_filename)
     name = models.CharField(max_length=128, null=True, blank=True)
     thing = models.ForeignKey('SubmittedThing', related_name='attachments')
 
