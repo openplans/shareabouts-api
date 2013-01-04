@@ -122,6 +122,10 @@ class CachedMixin (object):
     def get_cache_prefix(self):
         return self.cache_prefix
 
+    def get_cache_metakey(self):
+        prefix = self.cache_prefix
+        return prefix + '_keys'
+
     @csrf_exempt
     def dispatch(self, request, *args, **kwargs):
         # Only do the cache for GET method.
@@ -130,9 +134,16 @@ class CachedMixin (object):
 
         # Check whether the response data is in the cache.
         key = self.get_cache_key(request, *args, **kwargs)
-        response_data = cache.get(key)
+        response_data = cache.get(key) or None
 
-        if response_data:
+        # Also check whether the request cache key is managed in the cache.
+        # This is important, because if it's not managed, then we'll never
+        # know when to invalidate it. If it's not managed we should just
+        # assume that it's invalid.
+        metakey = self.get_cache_metakey()
+        keyset = cache.get(metakey) or set()
+
+        if (response_data is not None) and (key in keyset):
             response = self.respond_from_cache(response_data)
         else:
             response = super(CachedMixin, self).dispatch(request, *args, **kwargs)

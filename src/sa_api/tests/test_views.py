@@ -708,6 +708,43 @@ class TestPlaceCollectionView(TestCase):
         assert_not_equal(response1.content, response3.content)
 
     @istest
+    def missing_cache_metakey_invalidates_cache(self):
+        from ..views import PlaceCollectionView, models
+        view = PlaceCollectionView().as_view()
+        # Need an existing DataSet.
+        user = User.objects.create(username='test-user')
+        ds = models.DataSet.objects.create(owner=user, id=789,
+                                           slug='stuff')
+        #place = models.Place.objects.create(dataset=ds, id=123)
+        uri_args = {
+            'dataset__owner__username': user.username,
+            'dataset__slug': ds.slug,
+        }
+        uri = reverse('place_collection_by_dataset', kwargs=uri_args)
+        factory = RequestFactory()
+
+        get_request = factory.get(uri, content_type='application/json')
+        get_request.user = user
+        get_request.META['HTTP_ACCEPT'] = 'application/json'
+
+        with self.assertNumQueries(1):
+            response1 = view(get_request, **uri_args)
+        with self.assertNumQueries(0):
+            response2 = view(get_request, **uri_args)
+        self.assertEqual(response1.content, response2.content)
+
+        temp_collection_view = PlaceCollectionView()
+        temp_collection_view.request = get_request
+        metakey = temp_collection_view.get_cache_metakey()
+        cache.delete(metakey)
+
+        # Without the metakey, the cache for the request should be assumed
+        # invalid.
+        with self.assertNumQueries(1):
+            response3 = view(get_request, **uri_args)
+        assert_equal(response1.content, response3.content)
+
+    @istest
     def post_creates_a_place(self):
         from ..views import PlaceCollectionView, models
         view = PlaceCollectionView().as_view()
