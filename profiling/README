@@ -1,0 +1,28 @@
+Usage
+-----
+
+- First, make a clone of your production environment. It should mirror the
+  number of servers available, as well as the memory available on those
+  servers. Copy over the data from the database as well.
+
+- Copy settings.py.template to settings.py and fill in the appropriate values.
+
+- Download some usage logs (like, nginx access logs). These can be downloaded
+  from Dotcloud from the command line with a call like:
+
+    dc run -A shareaboutsapi www.0 cat /var/log/nginx/shareaboutsapi-default-www-0.access.log > access.log
+
+  In the above command, replace 'shareaboutsapi' with your api server name,
+  and '0' with the instance that you want to get the logs from.
+
+- Run:
+
+    cat access.log | ./extract_api_calls.py | ./construct_api_calls.py | python 25
+
+- or, do them one at a time.
+
+    cat access.log | ./extract_api_calls.py > api.log
+    cat api.log | ./construct_api_calls.py > make_api_calls.py
+    python make_api_calls.py 25
+
+The 25 is the number of concurrent requests.

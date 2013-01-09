@@ -1,0 +1,11 @@
+# This is a dictionary of a dataset key for every dataset on your testing
+# server.
+api_keys = {
+  "user1/dataset1": "ABCDEFGH12345678IJKLMNOP90123456",
+  "user1/dataset2": "ABCDEFGH12345678IJKLMNOP90123456",
+  "user2/dataset1": "ABCDEFGH12345678IJKLMNOP90123456",
+  "user2/dataset2": "ABCDEFGH12345678IJKLMNOP90123456",
+}
+
+# This should be the host name for your testing server.
+host = 'http://shareaboutsfake-civicworks.dotcloud.com'
