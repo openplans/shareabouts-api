@@ -22,6 +22,12 @@ class CacheClearingModel (object):
 
         return result
 
+    def delete(self, *args, **kwargs):
+        if hasattr(self, 'cache'):
+            self.cache.clear_instance(self)
+
+        return super(CacheClearingModel, self).delete(*args, **kwargs)
+
 
 class SubmittedThing (CacheClearingModel, TimeStampedModel):
     """
