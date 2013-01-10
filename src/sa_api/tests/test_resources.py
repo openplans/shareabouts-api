@@ -139,8 +139,8 @@ class TestPlaceResource(TestCase):
         from ..resources import models, PlaceResource
         self.populate()
         expected_result = {
-            123: [{'length': 3, 'url': '/api/v1/datasets/user/dataset/places/123/foo/', 'type': 'foo'}],
-            456: [{'length': 2, 'url': '/api/v1/datasets/user/dataset/places/456/bar/', 'type': 'bar'}],
+            123: [{'length': 3, 'url': '/api/v1/user/datasets/dataset/places/123/foo/', 'type': 'foo'}],
+            456: [{'length': 2, 'url': '/api/v1/user/datasets/dataset/places/456/bar/', 'type': 'bar'}],
         }
         assert_equal(dict(PlaceResource().model.cache.get_submission_sets(self.ds.id)), expected_result)
         for place in models.Place.objects.all():
@@ -185,15 +185,15 @@ class TestPlaceResource(TestCase):
         place = models.Place.objects.create(id=124, dataset=dataset, location='POINT(1 1)')
         # TODO: call reverse() here to avoid breaking if using a different urls.py?
         assert_equal(resource.url(place),
-                     '/api/v1/datasets/test-user/test-set/places/124/')
+                     '/api/v1/test-user/datasets/test-set/places/124/')
         # Called twice to get coverage of memoization.
         assert_equal(resource.url(place),
-                     '/api/v1/datasets/test-user/test-set/places/124/')
+                     '/api/v1/test-user/datasets/test-set/places/124/')
 
         # Call with different place, to make sure the cache is behaving.
         place = models.Place.objects.create(id=125, dataset=dataset, location='POINT(1 1)')
         assert_equal(resource.url(place),
-                     '/api/v1/datasets/test-user/test-set/places/125/')
+                     '/api/v1/test-user/datasets/test-set/places/125/')
 
 
 class TestDataSetResource(object):
@@ -227,7 +227,7 @@ class TestDataSetResource(object):
             dataset.slug = 'mock-dataset'
             dataset.id = 1
             assert_equal(resource.places(dataset),
-                         {'url': '/api/v1/datasets/mock-user/mock-dataset/places/',
+                         {'url': '/api/v1/mock-user/datasets/mock-dataset/places/',
                           'length': 2})
 
 
