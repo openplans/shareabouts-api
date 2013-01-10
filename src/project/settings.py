@@ -150,6 +150,11 @@ INSTALLED_APPS = (
     'sa_manager',
 )
 
+# How long to keep api cache values. Since the api will invalidate the cache
+# automatically when appropriate, this can (and should) be set to something
+# large.
+API_CACHE_TIMEOUT = 604800  # a week
+
 TEST_RUNNER = 'django_nose.NoseTestSuiteRunner'
 SOUTH_TESTS_MIGRATE = False
 

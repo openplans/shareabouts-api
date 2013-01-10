@@ -4,6 +4,7 @@ from . import parsers
 from . import renderers
 from . import resources
 from . import utils
+from django.conf import settings
 from django.contrib import auth
 from django.core.cache import cache
 from django.http import HttpResponse
@@ -176,13 +177,13 @@ class CachedMixin (object):
         headers = response.items()
 
         # Cache enough info to recreate the response.
-        cache.set(key, (content, status, headers), 86400)  # Cache for 24hs
+        cache.set(key, (content, status, headers), settings.API_CACHE_TIMEOUT)
 
         # Also, add the key to the set of pages cached from this view.
         meta_key = self.cache_prefix + '_keys'
         keys = cache.get(meta_key) or set()
         keys.add(key)
-        cache.set(meta_key, keys)
+        cache.set(meta_key, keys, settings.API_CACHE_TIMEOUT)
 
 
 class AbsUrlMixin (object):

@@ -1,4 +1,5 @@
 from collections import defaultdict
+from django.conf import settings
 from django.core.cache import cache
 from django.core.urlresolvers import reverse
 from . import utils
@@ -49,7 +50,7 @@ class Cache (object):
             obj = obj_getter()
             params = self.get_instance_params(obj)
             logger.debug('Setting instance parameters for "%s": %r' % (instance_params_key, params))
-            cache.set(instance_params_key, params)
+            cache.set(instance_params_key, params, settings.API_CACHE_TIMEOUT)
         else:
             logger.debug('Found instance parameters for "%s": %r' % (instance_params_key, params))
         return params
@@ -140,7 +141,7 @@ class ThingWithAttachmentCache (Cache):
         attachments = cache.get(attachments_key)
         if attachments is None:
             attachments = self.calculate_attachments(dataset_id)
-            cache.set(attachments_key, attachments)
+            cache.set(attachments_key, attachments, settings.API_CACHE_TIMEOUT)
         return attachments
 
 
@@ -220,7 +221,7 @@ class PlaceCache (ThingWithAttachmentCache, Cache):
         submission_sets = cache.get(submission_sets_key)
         if submission_sets is None:
             submission_sets = self.calculate_submission_sets(dataset_id)
-            cache.set(submission_sets_key, submission_sets)
+            cache.set(submission_sets_key, submission_sets, settings.API_CACHE_TIMEOUT)
         return submission_sets
 
 
