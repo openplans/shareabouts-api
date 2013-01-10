@@ -16,16 +16,16 @@ API_ROOT = '/api/v1/'
 class ShareaboutsApi (object):
     uri_templates = {
         'password': r'{username}/password',
-        'dataset_collection': r'datasets/{username}/',
-        'dataset_instance': r'datasets/{username}/{slug}/',
-        'keys_collection': r'datasets/{username}/{dataset_slug}/keys/',
-        'place_collection': r'datasets/{username}/{dataset_slug}/places/?visible=all',
-        'place_collection_table': r'datasets/{username}/{dataset_slug}/places/table?visible=all',
-        'place_instance': r'datasets/{username}/{dataset_slug}/places/{pk}/',
-        'submission_collection': r'datasets/{username}/{dataset_slug}/places/{place_pk}/{type}/?visible=all',
-        'submission_instance': r'datasets/{username}/{dataset_slug}/places/{place_pk}/{type}/{pk}/',
-        'all_submissions': r'datasets/{username}/{dataset_slug}/{type}/',
-        'all_submissions_table': r'datasets/{username}/{dataset_slug}/{type}/table',
+        'dataset_collection': r'{username}/datasets/',
+        'dataset_instance': r'{username}/datasets/{slug}/',
+        'keys_collection': r'{username}/datasets/{dataset_slug}/keys/',
+        'place_collection': r'{username}/datasets/{dataset_slug}/places/?visible=all',
+        'place_collection_table': r'{username}/datasets/{dataset_slug}/places/table?visible=all',
+        'place_instance': r'{username}/datasets/{dataset_slug}/places/{pk}/',
+        'submission_collection': r'{username}/datasets/{dataset_slug}/places/{place_pk}/{type}/?visible=all',
+        'submission_instance': r'{username}/datasets/{dataset_slug}/places/{place_pk}/{type}/{pk}/',
+        'all_submissions': r'{username}/datasets/{dataset_slug}/{type}/',
+        'all_submissions_table': r'{username}/datasets/{dataset_slug}/{type}/table',
     }
 
     def __init__(self, request=None, root='/api/v1/'):
