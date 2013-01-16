@@ -54,7 +54,14 @@ def main():
 
   for line in infile:
     method, path = line.strip().split(' ', 1)
-    owner, dataset = path.split('/')[4:6]
+
+    # Make old-style paths into new ones
+    dirs = path.split('/')
+    if dirs[3] == 'datasets':
+        dirs[3], dirs[4] = dirs[4], dirs[3]
+        path = '/'.join(dirs)
+
+    owner, _, dataset = path.split('/')[3:6]
     api_key = api_keys['/'.join([owner, dataset])]
 
     if method.lower() == 'put':
