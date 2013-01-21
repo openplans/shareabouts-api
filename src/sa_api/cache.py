@@ -122,7 +122,7 @@ class ThingWithAttachmentCache (Cache):
         # submission.  I'd rather avoid that right now.
 
         for attachment in qs:
-            attachments[attachment.thing.pk].append({
+            attachments[attachment.thing_id].append({
                 'name': attachment.name,
                 'url': attachment.file.url,
                 'created_datetime': attachment.created_datetime,
@@ -164,7 +164,7 @@ class PlaceCache (ThingWithAttachmentCache, Cache):
         return (instance_path, collection_path, activity_path)
 
     def get_submission_sets_key(self, dataset_id):
-        return '%s:%s:%s' % (self.__class__.__name__, dataset_id, 'submission_sets')
+        return 'dataset:%s:%s' % (dataset_id, 'submission_sets-by-thing_id')
 
     def calculate_submission_sets(self, dataset_id):
         """
