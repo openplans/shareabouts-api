@@ -388,7 +388,7 @@ class AllSubmissionCollectionsView (Ignore_CacheBusterMixin, AuthMixin, AbsUrlMi
         )
 
 
-class SubmissionCollectionView (Ignore_CacheBusterMixin, AuthMixin, AbsUrlMixin, ActivityGeneratingMixin, ModelViewWithDataBlobMixin, views.ListOrCreateModelView):
+class SubmissionCollectionView (Ignore_CacheBusterMixin, AuthMixin, AbsUrlMixin, ActivityGeneratingMixin, ModelViewWithDataBlobMixin, CachedMixin, views.ListOrCreateModelView):
     resource = resources.SubmissionResource
 
     allowed_user_kwarg = 'dataset__owner__username'
@@ -442,7 +442,7 @@ class SubmissionCollectionView (Ignore_CacheBusterMixin, AuthMixin, AbsUrlMixin,
         return super(SubmissionCollectionView, self).get_instance_data(model, content,)
 
 
-class SubmissionInstanceView (Ignore_CacheBusterMixin, AuthMixin, AbsUrlMixin, ActivityGeneratingMixin, ModelViewWithDataBlobMixin, views.InstanceModelView):
+class SubmissionInstanceView (Ignore_CacheBusterMixin, AuthMixin, AbsUrlMixin, ActivityGeneratingMixin, ModelViewWithDataBlobMixin, CachedMixin, views.InstanceModelView):
     resource = resources.SubmissionResource
 
     allowed_user_kwarg = 'dataset__owner__username'
