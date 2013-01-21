@@ -258,7 +258,8 @@ class TestMakingAGetRequestToASubmissionTypeCollectionUrl (TestCase):
         client = Client()
 
         with patch('sa_api.views.SubmissionCollectionView.get') as getter:
-            client.get('/api/v1/datasets/somebody/something/places/1/comments/')
+            client.get('/api/v1/datasets/somebody/something/places/1/comments/',
+                       HTTP_ACCEPT='application/json')
             args, kwargs = getter.call_args
             assert_equal(
                 kwargs,
@@ -287,6 +288,7 @@ class TestMakingAGetRequestToASubmissionTypeCollectionUrl (TestCase):
         request = RequestFactory().get('/places/%d/comments/' % place.id)
         request.user = mock.Mock(**{'is_authenticated.return_value': False,
                                     'is_superuser': False})
+        request.META['HTTP_ACCEPT'] = 'application/json'
         view = SubmissionCollectionView.as_view()
 
         response = view(request, place_id=place.id,
@@ -314,6 +316,7 @@ class TestMakingAGetRequestToASubmissionTypeCollectionUrl (TestCase):
         request = RequestFactory().get('/places/%d/votes/' % place.id)
         request.user = mock.Mock(**{'is_authenticated.return_value': False,
                                     'is_superuser': False})
+        request.META['HTTP_ACCEPT'] = 'application/json'
         view = SubmissionCollectionView.as_view()
 
         response = view(request, place_id=place.id,
@@ -434,6 +437,7 @@ class TestSubmissionInstanceAPI (TestCase):
         request.user = mock.Mock(**{'is_authenticated.return_value': False,
                                     'is_superuser': False,
                                     })
+        request.META['HTTP_ACCEPT'] = 'application/json'
         response = self.view(request, place_id=self.place.id,
                              pk=self.submission.id,
                              submission_type='comments',
