@@ -11,6 +11,10 @@ class Cache (object):
     def get_meta_key(self, prefix):
         return prefix + '_keys'
 
+    def get_request_prefixes(self, **params):
+        # Override in derived classes
+        return set()
+
     def get_keys_with_prefixes(self, *prefixes):
         keys = set()
         for prefix in prefixes:
@@ -82,9 +86,18 @@ class DataSetCache (Cache):
 
     def get_request_prefixes(self, **params):
         owner, dataset = map(params.get, ('owner', 'dataset'))
+        prefixes = super(DataSetCache, self).get_request_prefixes(**params)
+
         instance_path = reverse('dataset_instance_by_user', args=[owner, dataset])
         collection_path = reverse('dataset_collection_by_user', args=[owner])
-        return (instance_path, collection_path)
+        prefixes.update([instance_path, collection_path])
+
+        # TODO: Deprecated paths
+        instance_path = reverse('dataset_instance_by_user_1', args=[owner, dataset])
+        collection_path = reverse('dataset_collection_by_user_1', args=[owner])
+        prefixes.update([instance_path, collection_path])
+
+        return prefixes
 
     def get_submission_sets_key(self, owner_id):
         return '%s:%s:%s' % (self.__class__.__name__, owner_id, 'submission_sets')
@@ -158,10 +171,20 @@ class PlaceCache (ThingWithAttachmentCache, Cache):
 
     def get_request_prefixes(self, **params):
         owner, dataset, place = map(params.get, ('owner', 'dataset', 'place'))
+        prefixes = super(PlaceCache, self).get_request_prefixes(**params)
+
         instance_path = reverse('place_instance_by_dataset', args=[owner, dataset, place])
         collection_path = reverse('place_collection_by_dataset', args=[owner, dataset])
         activity_path = reverse('activity_collection_by_dataset', args=[owner, dataset])
-        return (instance_path, collection_path, activity_path)
+        prefixes.update([instance_path, collection_path, activity_path])
+
+        # TODO: Deprecated paths
+        instance_path = reverse('place_instance_by_dataset_1', args=[owner, dataset, place])
+        collection_path = reverse('place_collection_by_dataset_1', args=[owner, dataset])
+        activity_path = reverse('activity_collection_by_dataset_1', args=[owner, dataset])
+        prefixes.update([instance_path, collection_path, activity_path])
+
+        return prefixes
 
     def get_submission_sets_key(self, dataset_id):
         return 'dataset:%s:%s' % (dataset_id, 'submission_sets-by-thing_id')
@@ -240,11 +263,24 @@ class SubmissionSetCache (Cache):
 
     def get_request_prefixes(self, **params):
         owner, dataset, place = map(params.get, ['owner', 'dataset', 'place'])
+        prefixes = super(SubmissionSetCache, self).get_request_prefixes(**params)
+
         instance_path = reverse('place_instance_by_dataset', args=[owner, dataset, place])
         collection_path = reverse('place_collection_by_dataset', args=[owner, dataset])
         dataset_path = reverse('dataset_instance_by_user', args=[owner, dataset])
         activity_path = reverse('activity_collection_by_dataset', args=[owner, dataset])
-        return (instance_path, collection_path, dataset_path, activity_path)
+
+        prefixes.update([instance_path, collection_path, dataset_path, activity_path])
+
+        # TODO: Deprecated paths
+        instance_path = reverse('place_instance_by_dataset_1', args=[owner, dataset, place])
+        collection_path = reverse('place_collection_by_dataset_1', args=[owner, dataset])
+        dataset_path = reverse('dataset_instance_by_user_1', args=[owner, dataset])
+        activity_path = reverse('activity_collection_by_dataset_1', args=[owner, dataset])
+
+        prefixes.update([instance_path, collection_path, dataset_path, activity_path])
+
+        return prefixes
 
 
 class SubmissionCache (ThingWithAttachmentCache, Cache):
@@ -268,6 +304,8 @@ class SubmissionCache (ThingWithAttachmentCache, Cache):
 
     def get_request_prefixes(self, **params):
         owner, dataset, place, set_name, submission = map(params.get, ['owner', 'dataset', 'place', 'set_name', 'submission'])
+        prefixes = super(SubmissionCache, self).get_request_prefixes(**params)
+
         specific_instance_path = reverse('submission_instance_by_dataset', args=[owner, dataset, place, set_name, submission])
         general_instance_path = reverse('submission_instance_by_dataset', args=[owner, dataset, place, 'submissions', submission])
         specific_collection_path = reverse('submission_collection_by_dataset', args=[owner, dataset, place, set_name])
@@ -277,10 +315,27 @@ class SubmissionCache (ThingWithAttachmentCache, Cache):
         dataset_path = reverse('dataset_instance_by_user', args=[owner, dataset])
         activity_path = reverse('activity_collection_by_dataset', args=[owner, dataset])
 
-        return (specific_instance_path, general_instance_path,
-                specific_collection_path, general_collection_path,
-                specific_all_path, general_all_path, dataset_path,
-                activity_path)
+        prefixes.update([specific_instance_path, general_instance_path,
+                         specific_collection_path, general_collection_path,
+                         specific_all_path, general_all_path, dataset_path,
+                         activity_path])
+
+        # TODO: Deprecated paths
+        specific_instance_path = reverse('submission_instance_by_dataset_1', args=[owner, dataset, place, set_name, submission])
+        general_instance_path = reverse('submission_instance_by_dataset_1', args=[owner, dataset, place, 'submissions', submission])
+        specific_collection_path = reverse('submission_collection_by_dataset_1', args=[owner, dataset, place, set_name])
+        general_collection_path = reverse('submission_collection_by_dataset_1', args=[owner, dataset, place, 'submissions'])
+        specific_all_path = reverse('all_submissions_by_dataset_1', args=[owner, dataset, set_name])
+        general_all_path = reverse('all_submissions_by_dataset_1', args=[owner, dataset, 'submissions'])
+        dataset_path = reverse('dataset_instance_by_user_1', args=[owner, dataset])
+        activity_path = reverse('activity_collection_by_dataset_1', args=[owner, dataset])
+
+        prefixes.update([specific_instance_path, general_instance_path,
+                         specific_collection_path, general_collection_path,
+                         specific_all_path, general_all_path, dataset_path,
+                         activity_path])
+
+        return prefixes
 
 
 class ActivityCache (Cache):
