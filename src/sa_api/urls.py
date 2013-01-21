@@ -4,6 +4,10 @@ from . import views
 places_base_regex = r'^(?P<dataset__owner__username>[^/]+)/datasets/(?P<dataset__slug>[^/]+)/places/'
 
 urlpatterns = patterns('sa_api',
+    url(r'^$',
+        views.OwnerCollectionView.as_view(),
+        name='owner_collection'),
+
     url(r'^(?P<owner__username>[^/]+)/datasets/$',
         views.DataSetCollectionView.as_view(),
         name='dataset_collection_by_user'),

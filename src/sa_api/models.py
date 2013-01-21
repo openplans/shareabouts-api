@@ -61,7 +61,7 @@ class DataSet (CacheClearingModel, models.Model):
     A DataSet is a named collection of data, eg. Places, owned by a user,
     and intended for a coherent purpose, eg. display on a single map.
     """
-    owner = models.ForeignKey(auth_models.User)
+    owner = models.ForeignKey(auth_models.User, related_name='datasets')
     display_name = models.CharField(max_length=128)
     slug = models.SlugField(max_length=128, default=u'')
 

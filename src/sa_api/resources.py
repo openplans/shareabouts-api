@@ -4,6 +4,7 @@ DjangoRestFramework resources for the Shareabouts REST API.
 import json
 import apikey.models
 from collections import defaultdict
+from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.db.models import Count
 from djangorestframework import resources
@@ -19,6 +20,19 @@ def simple_user(user):
         'id': user.pk,
         'username': user.username,
     }
+
+
+class OwnerResource (resources.ModelResource):
+    model = User
+    fields = ['id', 'username', 'datasets']
+    queryset = User.objects.all().annotate(dataset_count=Count('datasets')).filter(dataset_count__gt=0)
+
+    def datasets(self, inst):
+        datasets = {
+            'url': reverse('dataset_collection_by_user', args=[inst.username]),
+            'length': inst.dataset_count
+        }
+        return datasets
 
 
 class ModelResourceWithDataBlob (resources.ModelResource):

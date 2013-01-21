@@ -246,6 +246,10 @@ class ModelViewWithDataBlobMixin (object):
             utils.unpack_data_blob(self._data)
 
 
+class OwnerCollectionView (AbsUrlMixin, views.ListModelView):
+    resource = resources.OwnerResource
+
+
 class DataSetCollectionView (Ignore_CacheBusterMixin, AuthMixin, AbsUrlMixin, ModelViewWithDataBlobMixin, CachedMixin, views.ListOrCreateModelView):
     resource = resources.DataSetResource
 
