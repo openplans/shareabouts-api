@@ -29,14 +29,20 @@ class CacheClearingModel (object):
         return super(CacheClearingModel, self).delete(*args, **kwargs)
 
 
-class SubmittedThing (CacheClearingModel, TimeStampedModel):
+class ModelWithDataBlob (models.Model):
+    data = models.TextField(default='{}')
+
+    class Meta:
+        abstract = True
+
+
+class SubmittedThing (CacheClearingModel, ModelWithDataBlob, TimeStampedModel):
     """
     A SubmittedThing generally comes from the end-user.  It may be a place, a
     comment, a vote, etc.
 
     """
     submitter_name = models.CharField(max_length=256, null=True, blank=True)
-    data = models.TextField(default='{}')
     dataset = models.ForeignKey('DataSet', related_name='submitted_thing_set',
                                 blank=True)
     visible = models.BooleanField(default=True, blank=True)
