@@ -19,3 +19,41 @@ DATABASES = {
 #AWS_QUERYSTRING_AUTH = False
 
 LAUNCHROCK_KEY = 'ABCDEFG'
+
+# Some default settings that are handy for debugging
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'filters': {
+    },
+    'formatters': {
+        'verbose': {
+            'format': '%(levelname)s %(asctime)s %(module)s %(process)d %(thread)d %(message)s'
+        },
+        'moderate': {
+            'format': '%(levelname)s %(asctime)s %(module)s: %(message)s'
+        },
+        'simple': {
+            'format': '%(levelname)s %(message)s'
+        },
+    },
+    'handlers': {
+        'console': {
+            'level': 'DEBUG',
+            'class': 'logging.StreamHandler',
+            'formatter': 'moderate'
+        },
+    },
+    'loggers': {
+        'sa_api': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+        'request_timer': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+   }
+}

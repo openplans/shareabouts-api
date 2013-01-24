@@ -99,6 +99,8 @@ MIDDLEWARE_CLASSES = (
     # Uncomment the next line for simple clickjacking protection:
     # 'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'debug_toolbar.middleware.DebugToolbarMiddleware',
+
+    'sa_api.middleware.RequestTimeLogger',
 )
 
 ROOT_URLCONF = 'project.urls'
