@@ -51,6 +51,64 @@ AWS_QUERYSTRING_AUTH = False
 
 LAUNCHROCK_KEY = env.get('SHAREABOUTS_LAUNCHROCK_KEY')
 
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'filters': {
+    },
+    'formatters': {
+        'verbose': {
+            'format': '%(levelname)s %(asctime)s %(name)s: %(message)s %(process)d %(thread)d'
+        },
+        'moderate': {
+            'format': '%(levelname)s %(asctime)s %(name)s: %(message)s'
+        },
+        'simple': {
+            'format': '%(levelname)s %(message)s'
+        },
+    },
+    'handlers': {
+        'console': {
+            'level': 'DEBUG',
+            'class': 'logging.StreamHandler',
+            'formatter': 'moderate'
+        },
+        'debug_file': {
+            'level': 'DEBUG',
+            'class': 'logging.handlers.TimedRotatingFileHandler',
+            'formatter': 'verbose',
+
+            'filename': 'debug.log',
+            'backupCount': 7,
+            'when': 'd',
+        },
+    },
+    'loggers': {
+        'django.db.backends': {
+            'handlers': ['debug_file'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+
+        'utils.request_timer': {
+            'handlers': ['debug_file'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+
+        'storages': {
+            'handlers': ['debug_file'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+
+        'redis_cache': {
+            'handlers': ['debug_file'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+   }
+}
 EOF
 
 # Need to be able to import settings to run the createdbs script...

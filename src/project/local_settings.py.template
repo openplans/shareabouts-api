@@ -28,10 +28,10 @@ LOGGING = {
     },
     'formatters': {
         'verbose': {
-            'format': '%(levelname)s %(asctime)s %(module)s %(process)d %(thread)d %(message)s'
+            'format': '%(levelname)s %(asctime)s %(name)s %(process)d %(thread)d %(message)s'
         },
         'moderate': {
-            'format': '%(levelname)s %(asctime)s %(module)s: %(message)s'
+            'format': '%(levelname)s %(asctime)s %(name)s: %(message)s'
         },
         'simple': {
             'format': '%(levelname)s %(message)s'
@@ -43,16 +43,44 @@ LOGGING = {
             'class': 'logging.StreamHandler',
             'formatter': 'moderate'
         },
+        'debug_file': {
+            'level': 'DEBUG',
+            'class': 'logging.handlers.TimedRotatingFileHandler',
+            'formatter': 'moderate',
+
+            'filename': 'debug.log',
+            'backupCount': 3,
+            'when': 'h',
+        },
     },
     'loggers': {
-        'sa_api': {
-            'handlers': ['console'],
+        'django.db.backends': {
+            'handlers': ['debug_file'],
             'level': 'DEBUG',
             'propagate': True,
         },
-        'request_timer': {
+
+        'utils.request_timer': {
+            'handlers': ['debug_file'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+
+        'storages': {
+            'handlers': ['debug_file'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+
+        'redis_cache': {
+            'handlers': ['debug_file'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+
+        'sa_api': {
             'handlers': ['console'],
-            'level': 'INFO',
+            'level': 'DEBUG',
             'propagate': True,
         },
    }
