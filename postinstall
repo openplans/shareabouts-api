@@ -88,7 +88,7 @@ LOGGING = {
 
             'filename': 'debug.log',
             'backupCount': 7,
-            'when': 'd',
+            'when': 'midnight',
         },
     },
     'loggers': {
