@@ -16,6 +16,7 @@ import apikey.auth
 import json
 import logging
 import os
+import re
 import time
 
 logger = logging.getLogger('sa_api.views')
@@ -158,6 +159,11 @@ class CachedMixin (object):
     def get_cache_key(self, request, *args, **kwargs):
         querystring = request.META['QUERY_STRING']
         contenttype = request.META['HTTP_ACCEPT']
+
+        # TODO: Eliminate the jQuery cache busting parameter for now. Get
+        # rid of this after the old API has been deprecated.
+        cache_buster_pattern = re.compile(r'&?_=\d+')
+        querystring = re.sub(cache_buster_pattern, '', querystring)
 
         return ':'.join([self.cache_prefix, contenttype, querystring])
 
