@@ -7,6 +7,8 @@ safe() { "$@" || barf "cannot $*"; }
 # =============================================================================
 # Post-install hook file for configuring dotcloud server
 
+mkdir ../data
+
 echo "Writing the local settings file..."
 cat >> src/project/local_settings.py <<EOF
 
@@ -86,7 +88,7 @@ LOGGING = {
             'class': 'logging.handlers.TimedRotatingFileHandler',
             'formatter': 'verbose',
 
-            'filename': 'debug.log',
+            'filename': '../data/debug.log',
             'backupCount': 7,
             'when': 'midnight',
         },
