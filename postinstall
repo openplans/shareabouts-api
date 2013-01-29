@@ -39,6 +39,8 @@ CACHES = {
     }
 }
 
+SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+
 STATIC_ROOT = '/home/dotcloud/current/static/'
 
 # Debug is False by default, true if set in the environment.
