@@ -55,6 +55,10 @@ AWS_QUERYSTRING_AUTH = False
 
 LAUNCHROCK_KEY = env.get('SHAREABOUTS_LAUNCHROCK_KEY')
 
+ADMINS = (
+    ('Shareabouts API Admin', env.get('SHAREABOUTS_ADMIN_EMAIL')),
+)
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
