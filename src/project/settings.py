@@ -1,3 +1,5 @@
+from os import environ
+
 # Django settings for project project.
 
 DEBUG = True
@@ -220,6 +222,14 @@ LOGGING = {
         },
     }
 }
+
+##############################################################################
+# Environment loading
+
+if 'DATABASE_URL' in environ:
+    import dj_database_url
+    # NOTE: Be sure that your DATABASE_URL has the 'postgis://' scheme.
+    DATABASES = {'default': dj_database_url.config()}
 
 ##############################################################################
 # Local settings overrides

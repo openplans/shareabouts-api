@@ -6,6 +6,7 @@ gunicorn
 
 # Persistance
 psycopg2
+dj-database-url
 south
 django-redis
 boto
