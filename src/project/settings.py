@@ -231,6 +231,9 @@ if 'DATABASE_URL' in environ:
     # NOTE: Be sure that your DATABASE_URL has the 'postgis://' scheme.
     DATABASES = {'default': dj_database_url.config()}
 
+if 'DEBUG' in environ:
+    DEBUG = (environ['DEBUG'].lower() == 'true')
+
 ##############################################################################
 # Local settings overrides
 # ------------------------
