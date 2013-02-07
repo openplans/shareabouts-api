@@ -183,10 +183,10 @@ LOGGING = {
     },
     'formatters': {
         'verbose': {
-            'format': '%(levelname)s %(asctime)s %(module)s %(process)d %(thread)d %(message)s'
+            'format': '%(levelname)s %(asctime)s %(name)s: %(message)s %(process)d %(thread)d'
         },
         'moderate': {
-            'format': '%(levelname)s %(asctime)s %(module)s: %(message)s'
+            'format': '%(levelname)s %(asctime)s %(name)s: %(message)s'
         },
         'simple': {
             'format': '%(levelname)s %(message)s'
@@ -218,6 +218,36 @@ LOGGING = {
         'sa_manager': {
             'handlers': ['console'],
             'level': 'INFO',
+            'propagate': True,
+        },
+
+        'django.request': {
+            'handlers': ['mail_admins'],
+            'level': 'ERROR',
+            'propagate': True,
+        },
+
+        'django.db.backends': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+
+        'utils.request_timer': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+
+        'storages': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+
+        'redis_cache': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
             'propagate': True,
         },
     }
