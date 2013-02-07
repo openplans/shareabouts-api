@@ -225,6 +225,7 @@ LOGGING = {
 
 ##############################################################################
 # Environment loading
+from urlparse import urlparse
 
 if 'DATABASE_URL' in environ:
     import dj_database_url
@@ -233,6 +234,34 @@ if 'DATABASE_URL' in environ:
 
 if 'DEBUG' in environ:
     DEBUG = (environ['DEBUG'].lower() == 'true')
+    TEMPLATE_DEBUG = DEBUG
+
+if 'REDIS_URL' in environ:
+    url = urlparse(environ['REDIS_URL'])
+    CACHES = {
+        "default": {
+            "BACKEND": "redis_cache.cache.RedisCache",
+            "LOCATION": "%s:1" % (url.netloc,),
+            "OPTIONS": {
+                "CLIENT_CLASS": "redis_cache.client.DefaultClient",
+                "PASSWORD": url.password,
+            }
+        }
+    }
+
+    SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+
+if all([key in environ for key in ('SHAREABOUTS_AWS_KEY',
+                                   'SHAREABOUTS_AWS_SECRET',
+                                   'SHAREABOUTS_AWS_BUCKET')]):
+    AWS_ACCESS_KEY_ID = environ['SHAREABOUTS_AWS_KEY']
+    AWS_SECRET_ACCESS_KEY = environ['SHAREABOUTS_AWS_SECRET']
+    AWS_STORAGE_BUCKET_NAME = environ['SHAREABOUTS_AWS_BUCKET']
+    AWS_QUERYSTRING_AUTH = False
+    AWS_PRELOAD_METADATA = True
+
+    DEFAULT_FILE_STORAGE = 'storages.backends.s3boto.S3BotoStorage'
+    STATICFILES_STORAGE = DEFAULT_FILE_STORAGE
 
 ##############################################################################
 # Local GEOS/GDAL installations (for Heroku)
