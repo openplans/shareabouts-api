@@ -235,6 +235,17 @@ if 'DEBUG' in environ:
     DEBUG = (environ['DEBUG'].lower() == 'true')
 
 ##############################################################################
+# Local GEOS/GDAL installations (for Heroku)
+
+import os.path
+
+if os.path.exists('/app/.geodjango/geos/lib/libgeos_c.so'):
+    GEOS_LIBRARY_PATH = '/app/.geodjango/geos/lib/libgeos_c.so'
+
+if os.path.exists('/app/.geodjango/gdal/lib/libgdal.so'):
+    GDAL_LIBRARY_PATH = '/app/.geodjango/gdal/lib/libgdal.so'
+
+##############################################################################
 # Local settings overrides
 # ------------------------
 # Override settings values by importing the local_settings.py module.
