@@ -267,14 +267,16 @@ if 'DEBUG' in environ:
     TEMPLATE_DEBUG = DEBUG
 
 if 'REDIS_URL' in environ:
-    url = urlparse(environ['REDIS_URL'])
+    scheme, connstring = environ['REDIS_URL'].split('://')
+    userpass, netloc = connstring.split('@')
+    userename, password = userpass.split(':')
     CACHES = {
         "default": {
             "BACKEND": "redis_cache.cache.RedisCache",
-            "LOCATION": "%s:1" % (url.netloc,),
+            "LOCATION": "%s:1" % (netloc,),
             "OPTIONS": {
                 "CLIENT_CLASS": "redis_cache.client.DefaultClient",
-                "PASSWORD": url.password,
+                "PASSWORD": password,
             }
         }
     }
