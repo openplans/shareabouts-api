@@ -445,10 +445,12 @@ class DataSetFormMixin (BaseDataBlobFormMixin):
         response = self.api.send('PUT', self.dataset_uri, data)
 
         if response.status_code == 200:
+            response_json = response.json()
+
             # Note that we end up with 200 even if the dataset is
             # renamed and we get redirected... this is *after* the redirect
             # completes.
-            if response.json['slug'] == dataset_slug:
+            if response_json['slug'] == dataset_slug:
                 messages.success(request, 'Successfully saved!')
             else:
                 messages.warning(
@@ -457,11 +459,11 @@ class DataSetFormMixin (BaseDataBlobFormMixin):
                     changed. This will affect lots of other URLs, notably
                     your shareabouts client application(s) MUST be
                     reconfigured to use the new dataset URL!
-                    It is: %s""" % response.json['url'],
+                    It is: %s""" % response_json['url'],
                 )
                 new_url = reverse(
                     'manager_dataset_detail',
-                    kwargs={'dataset_slug': response.json['slug']})
+                    kwargs={'dataset_slug': response_json['slug']})
                 return redirect(new_url)
         else:
             messages.error(request, 'Error: ' + response.text)

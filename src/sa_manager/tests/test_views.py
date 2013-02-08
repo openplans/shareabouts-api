@@ -201,7 +201,7 @@ class TestSaManager(TestCase):
                               'dataset_slug': 'dataset1'})
         response = client.get(url)
         self.assertEqual(response.status_code, 200)
-        
+
     def test_manager_password(self):
         client = Client()
         url = reverse('manager_password')
@@ -209,12 +209,43 @@ class TestSaManager(TestCase):
         client.login(username='riley', password='pass')
         response = client.get(url)
         self.assertEqual(response.status_code, 200)
-        
+
         response = client.post(url, data={'new_password': 'pass1', 'confirm_password': 'pass2'})
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context['form'].non_field_errors(), [u'Passwords do not match'])
-        
+
         response = client.post(url, data={'new_password': 'pass1', 'confirm_password': 'pass1'})
         self.assertEqual(response.status_code, 302)
         self.mock_api.send.assert_called_with('PUT', 'password', data=u'pass1', content_type='text/plain')
 
+
+class TestDatasetDetailPostRequest (TestCase):
+    def setUp(self):
+        # We need a user.
+        from django.contrib.auth.models import User
+        from sa_api.models import DataSet
+        self.user = User.objects.create_user('riley', password='pass')
+        self.dataset = DataSet.objects.create(owner=self.user, slug='dataset1')
+
+        import json
+        from requests.models import Response
+        response = Response()
+        response.status_code = 200
+        response.raw = json.dumps({'slug': 'abc', 'url': 'http://www.example.com/riley/datasets/'})
+        response._content = response.raw
+
+        self.patcher = mock.patch('requests.request', return_value=response)
+        self.mock_requests = self.patcher.start()
+
+    def tearDown(self):
+        self.user.delete()
+        self.patcher.stop()
+
+    def test_should_update(self):
+        client = Client()
+        client.login(username='riley', password='pass')
+        url = reverse('manager_dataset_detail',
+                      kwargs={'dataset_slug': 'dataset1'})
+        response = client.post(url, data={'display_name': 'abc', 'action': 'save'})
+
+        self.assertEqual(response.status_code, 302)
