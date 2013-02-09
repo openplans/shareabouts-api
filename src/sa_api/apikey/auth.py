@@ -38,7 +38,7 @@ class APIKeyBackend(object):
 
     def _get_user_and_key(self, key):
         try:
-            key_instance = self.model.objects.get(key=key).select_related('user')
+            key_instance = self.model.objects.select_related('user').get(key=key)
         except self.model.DoesNotExist:
             return (None, None)
         return key_instance.user, key_instance
