@@ -296,6 +296,11 @@ if all([key in environ for key in ('SHAREABOUTS_AWS_KEY',
     STATICFILES_STORAGE = DEFAULT_FILE_STORAGE
     STATIC_URL = 'http://%s.s3.amazonaws.com/' % AWS_STORAGE_BUCKET_NAME
 
+if 'SHAREABOUTS_ADMIN_EMAIL' in environ:
+    ADMINS = (
+        ('Shareabouts API Admin', environ.get('SHAREABOUTS_ADMIN_EMAIL')),
+    )
+
 ##############################################################################
 # Local GEOS/GDAL installations (for Heroku)
 
