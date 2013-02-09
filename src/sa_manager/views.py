@@ -6,7 +6,7 @@ from django.shortcuts import render, redirect
 from django.utils.decorators import method_decorator
 from django.views.generic import View, FormView
 from . import forms
-import json
+import ujson as json
 import requests
 
 

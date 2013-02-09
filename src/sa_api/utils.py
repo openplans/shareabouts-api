@@ -33,7 +33,7 @@ def unpack_data_blob(data):
     blob, and merge the result into the mapping (in place; returns
     None).
     """
-    import json
+    import ujson as json
     from djangorestframework.response import ErrorResponse
 
     # Don't let the CSRF middleware token muck up our data.

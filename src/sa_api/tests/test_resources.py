@@ -82,7 +82,7 @@ class TestModelResourceWithDataBlob(object):
         assert_equal(
             result,
             {'submitter_name': u'ralphie', 'dataset': submitted_thing.dataset,
-             'data': u'{\n  "x": "xylophone"\n}', 'visible': True}
+             'data': u'{"x":"xylophone"}', 'visible': True}
         )
 
 

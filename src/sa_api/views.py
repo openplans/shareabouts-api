@@ -13,7 +13,7 @@ from django.views.decorators.csrf import csrf_exempt
 from djangorestframework import views, permissions, mixins, authentication
 from djangorestframework.response import Response, ErrorResponse
 import apikey.auth
-import json
+import ujson as json
 import logging
 import os
 import re

@@ -1,7 +1,7 @@
 """
 DjangoRestFramework resources for the Shareabouts REST API.
 """
-import json
+import ujson as json
 import apikey.models
 from collections import defaultdict
 from django.contrib.auth.models import User
@@ -74,7 +74,7 @@ class ModelResourceWithDataBlob (resources.ModelResource):
                 if key not in known_fields:
                     blob_data[key] = data[key]
                     del data[key]
-            data['data'] = json.dumps(blob_data, indent=2)
+            data['data'] = json.dumps(blob_data)
 
         else:
             data = origdata
