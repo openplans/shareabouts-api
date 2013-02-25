@@ -301,6 +301,9 @@ if 'SHAREABOUTS_ADMIN_EMAIL' in environ:
         ('Shareabouts API Admin', environ.get('SHAREABOUTS_ADMIN_EMAIL')),
     )
 
+if 'CONSOLE_LOG_LEVEL' in environ:
+    LOGGING['handlers']['console']['level'] = environ.get('CONSOLE_LOG_LEVEL')
+
 ##############################################################################
 # Local GEOS/GDAL installations (for Heroku)
 
