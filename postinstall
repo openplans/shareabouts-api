@@ -94,7 +94,7 @@ LOGGING = {
             'class': 'logging.handlers.TimedRotatingFileHandler',
             'formatter': 'verbose',
 
-            'filename': '../data/debug.log',
+            'filename': '/home/dotcloud/data/debug.log',
             'backupCount': 7,
             'when': 'midnight',
         },
