@@ -1,6 +1,5 @@
 # The server
-#django>=1.4
-https://www.djangoproject.com/download/1.5c1/tarball/#egg=django
+django>=1.4
 # gevent
 gunicorn
 
