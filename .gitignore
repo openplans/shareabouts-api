@@ -5,6 +5,9 @@ log/*.log
 # tmp
 tmp/
 .sass-cache/
+profiling/
+attachments/
+build/
 
 # cover_me generated
 coverage
