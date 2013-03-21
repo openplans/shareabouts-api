@@ -4,7 +4,7 @@ from django.core.urlresolvers import reverse
 from django.http import HttpResponse
 from django.shortcuts import render, redirect
 from django.utils.decorators import method_decorator
-from django.views.generic import View, FormView
+from django.views.generic import View, FormView, TemplateView
 from . import forms
 import ujson as json
 import requests
@@ -512,6 +512,31 @@ class ExistingDataSetView (DataSetFormMixin, View):
         else:
             # TODO ???
             pass
+
+
+class DataSetReportingView (TemplateView):
+    template_name = 'manager/dataset_reports.html'
+
+    def get_context_data(self, **kwargs):
+        context = super(DataSetReportingView, self).get_context_data(**kwargs)
+
+        request, dataset_slug = self.request, self.kwargs['dataset_slug']
+
+        api = ShareaboutsApi(request)
+        api.authenticate(request)
+        dataset_uri = api.build_uri('dataset_instance', username=request.user.username, slug=dataset_slug)
+        places_uri = api.build_uri('place_collection', username=request.user.username, dataset_slug=dataset_slug)
+
+        places = api.get(places_uri)
+        dataset = api.get(dataset_uri)
+
+        context['places'] = places
+        context['dataset'] = dataset
+
+        context['places_json'] = json.dumps(places)
+        context['dataset_json'] = json.dumps(dataset)
+
+        return context
 
 
 class SubmissionMixin (BaseDataBlobFormMixin):

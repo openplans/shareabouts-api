@@ -11,6 +11,9 @@
   <li{% if keys_active %} class="active"{% endif %}>
     <a href="{% url 'manager_keys_list' dataset.slug %}">API Keys</a>
   </li>
+  <li{% if reports_active %} class="active"{% endif %}>
+    <a href="{% url 'manager_dataset_reports' dataset.slug %}">Reports</a>
+  </li>
 
   <li class="dropdown pull-right">
     <a class="dropdown-toggle" data-toggle="dropdown" href="#""><i class="icon-download"></i> Export Data <b class="caret"></b></a>
