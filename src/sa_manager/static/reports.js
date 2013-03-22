@@ -14,29 +14,91 @@
         zoom: 2,
         layers: [base],
         maxZoom: 17
-      });
+      }),
 
-  function initMap(data) {
-    var _heatmap = S.heatmap(data, {
-      resizeCanvas: false,
-      bgcolor: [0, 0, 0, 0],
-      bufferPixels: 100,
-      step: 0.05,
-      colorscheme: function(value){
-        var h = (1 - value);
-        var l = 0.5;
-        var s = 1;
-        var a = value + 0.03;
-        return [h, s, l, a];
-      }
+      vizLayers = [],
+
+      $variable = $('select[name="variable"]');
+      S.$variable = $('select[name="variable"]');
+
+  function getValueFunction(varType, varParam) {
+    switch (varType) {
+      case 'identity':
+        return null;
+
+      case 'submission_count':
+        var name = varParam;
+        return function(place) {
+          var submissionSet = _.findWhere(place.submissions, {'type': name});
+          if (submissionSet) {
+            return submissionSet.length;
+          } else {
+            return 0;
+          }
+        };
+
+      default:
+        return null;
+    }
+  }
+
+  function getPlaceBounds(data) {
+    var points = _.map(data, function(place) { return [place.location.lat, place.location.lng]; }),
+        bounds = new L.LatLngBounds(points);
+    return bounds;
+  }
+
+  function updateMap(data) {
+    var options,
+        _heatmap;
+
+    // First, clear the map
+    _.each(vizLayers, function(layer) {
+      map.removeLayer(layer);
     });
+    vizLayers = [];
+
+    // Get your variable function (assuming single-variate viz)
+    options = {
+      valueFn: getValueFunction($variable.find(':selected').attr('data-variable-type'),
+                                $variable.find(':selected').attr('data-variable-param'))
+    };
+
+    // Draw your visualization
+    _heatmap = S.heatmap(data, options);
+    vizLayers.push(_heatmap.layer)
 
     map.addLayer(_heatmap.layer);
-    map.fitBounds(_heatmap.layer._bounds);
+  }
+
+  function initVariableOptions(data) {
+    // Get all the unique submission set names
+    var submissionSetNames = [];
+    _.each(data, function(place, i) {
+      _.each(place.submissions, function(submission_set, i) {
+        submissionSetNames.push(submission_set.type);
+      });
+    });
+    submissionSetNames = _.uniq(submissionSetNames);
+
+    // Populate submission count variables
+    _.each(submissionSetNames, function(name) {
+      $variable.append('<option '+
+                           'data-variable-type="submission_count" '+
+                           'data-variable-param="' + name + '" '+
+                           'value="' + name + '_count">Number of ' + name + '</option>');
+    });
   }
 
   $(function() {
-    initMap(S.placesData);
+    initVariableOptions(S.placesData);
+    map.fitBounds(getPlaceBounds(S.placesData));
+
+//    updateMap(S.placesData);
+
+    $variable.change(function() {
+      updateMap(S.placesData);
+    });
   });
 
 }(Shareabouts, jQuery));
