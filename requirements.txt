@@ -26,3 +26,8 @@ django-nose
 mock
 mock_django
 django-debug-toolbar
+
+# =====================================
+
+# For DRF 0.4 (deprecated)
+URLObject>=0.6.0
