@@ -9,10 +9,15 @@ DATABASES = {
     }
 }
 
+# Set the attachment storage class to the file storage class that should
+# manage storing and retriving of place and submission attachments.
+#
+ATTACHMENT_STORAGE = 'django.core.files.storage.FileSystemStorage'
+
 # Django will use django.core.files.storage.FileSystemStorage by default.
 # Uncomment the following lines if you want to use S3 storage instead.
 #
-#DEFAULT_FILE_STORAGE = 'storages.backends.s3.S3Storage'
+#ATTACHMENT_STORAGE = 'storages.backends.s3boto.S3BotoStorage'
 #AWS_ACCESS_KEY_ID = ''
 #AWS_SECRET_ACCESS_KEY = ''
 #AWS_STORAGE_BUCKET_NAME = 'shareabouts_attachments'

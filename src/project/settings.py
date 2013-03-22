@@ -293,6 +293,7 @@ if all([key in environ for key in ('SHAREABOUTS_AWS_KEY',
     AWS_PRELOAD_METADATA = True
 
     DEFAULT_FILE_STORAGE = 'storages.backends.s3boto.S3BotoStorage'
+    ATTACHMENT_STORAGE = DEFAULT_FILE_STORAGE
     STATICFILES_STORAGE = DEFAULT_FILE_STORAGE
     STATIC_URL = 'http://%s.s3.amazonaws.com/' % AWS_STORAGE_BUCKET_NAME
 

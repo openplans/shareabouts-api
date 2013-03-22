@@ -1,5 +1,7 @@
 from django.contrib.auth import models as auth_models
 from django.contrib.gis.db import models
+from django.conf import settings
+from django.core.files.storage import get_storage_class
 from django.core.urlresolvers import reverse
 from . import cache
 from . import utils
@@ -141,12 +143,14 @@ def timestamp_filename(attachment, filename):
     # Django 1.4 tries to convert the function to a string when we do that.
     return ''.join(['attachments/', utils.base62_time(), '-', filename])
 
+AttachmentStorage = get_storage_class(settings.ATTACHMENT_STORAGE)
+
 
 class Attachment (CacheClearingModel, TimeStampedModel):
     """
     A file attached to a submitted thing.
     """
-    file = models.FileField(upload_to=timestamp_filename)
+    file = models.FileField(upload_to=timestamp_filename, storage=AttachmentStorage())
     name = models.CharField(max_length=128, null=True, blank=True)
     thing = models.ForeignKey('SubmittedThing', related_name='attachments')
 

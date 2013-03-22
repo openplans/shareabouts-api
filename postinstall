@@ -47,11 +47,16 @@ STATIC_ROOT = '/home/dotcloud/current/static/'
 DEBUG = (env.get('DEBUG', 'False') in ['true', 'True'])
 TEMPLATE_DEBUG = DEBUG
 
-DEFAULT_FILE_STORAGE = 'storages.backends.s3boto.S3BotoStorage'
+ATTACHMENT_STORAGE = 'storages.backends.s3boto.S3BotoStorage'
 AWS_ACCESS_KEY_ID = env['SHAREABOUTS_AWS_KEY']
 AWS_SECRET_ACCESS_KEY = env['SHAREABOUTS_AWS_SECRET']
 AWS_STORAGE_BUCKET_NAME = env['SHAREABOUTS_AWS_BUCKET']
 AWS_QUERYSTRING_AUTH = False
+
+# Set these explicitly here to override whatever may have come from settings
+DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
+STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
+STATIC_URL = '/static/'
 
 LAUNCHROCK_KEY = env.get('SHAREABOUTS_LAUNCHROCK_KEY')
 
