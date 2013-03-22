@@ -8,10 +8,11 @@ and providing forms and links depending on the allowed methods, renderers and pa
 from django import forms
 from django.conf import settings
 from django.template import RequestContext, loader
-from django.utils import simplejson as json
+from django.core.serializers.json import DateTimeAwareJSONEncoder
+import json
 
 
-from djangorestframework.compat import yaml, DateTimeAwareJSONEncoder
+from djangorestframework.compat import yaml
 from djangorestframework.utils import dict2xml, url_resolves
 from djangorestframework.utils.breadcrumbs import get_breadcrumbs
 from djangorestframework.utils.mediatypes import get_media_type_params, add_media_type_param, media_type_matches
