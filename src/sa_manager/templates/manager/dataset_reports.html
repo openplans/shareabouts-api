@@ -5,11 +5,12 @@
 {% include "manager/dataset_tabs.html" with reports_active=1 %}
 
 <select name="visualization_type">
+  <option value="scale">Bubbles</option>
   <option value="heatmap">Heat map</option>
 </select>
 
 <select name="variable">
-  <option value="identity">Identity</option>
+  <option value="identity" data-variable-type="identity">Count</option>
 </select>
 
 <div id="report-map"></div>
@@ -34,10 +35,11 @@
   <script src="{{ STATIC_URL }}libs/shareabouts/heatmap.js"></script>
   <script src="{{ STATIC_URL }}libs/shareabouts/utils.js"></script>
   <script src="{{ STATIC_URL }}libs/shareabouts/models.js"></script>
-  <script src="{{ STATIC_URL }}reports.js"></script>
 
   <script>
     Shareabouts.placesData = {{ places_json|default:"[]"|safe }};
     Shareabouts.datasetData = {{ dataset_json|default:"{}"|safe }};
   </script>
+
+  <script src="{{ STATIC_URL }}reports.js"></script>
 {% endblock scripts %}

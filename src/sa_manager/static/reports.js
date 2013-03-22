@@ -18,13 +18,13 @@
 
       vizLayers = [],
 
+      $visualization = $('select[name="visualization_type"]'),
       $variable = $('select[name="variable"]');
-      S.$variable = $('select[name="variable"]');
 
   function getValueFunction(varType, varParam) {
     switch (varType) {
       case 'identity':
-        return null;
+        return function() { return 1; };
 
       case 'submission_count':
         var name = varParam;
@@ -42,6 +42,54 @@
     }
   }
 
+  function getScaleLayer(data, options) {
+    var maxRadius = 25,
+        minRadius = 3,
+        defaultRadius = 5,
+        circleLayers, max, min, diff, layerData;
+
+    layerData = _.map(data, function(place) {
+      return { place: place, latLng: [place.location.lat, place.location.lng], val: options.valueFn(place)};
+    });
+
+    max = _.max(layerData, function(d) { return d.val; }).val;
+    min = _.min(layerData, function(d) { return d.val; }).val;
+    diff = max - min;
+
+    circleLayers = _.map(layerData, function(d) {
+      var marker, radius;
+      if (diff > 0) {
+        radius = ((d.val - min) / diff) * (maxRadius - minRadius) + minRadius;
+      } else {
+        radius = defaultRadius;
+      }
+
+      marker = L.circleMarker(d.latLng, {
+        radius: radius,
+        fillOpacity: 0.4,
+        stroke: false,
+        color: '#ff5c00'
+      });
+
+      marker.bindPopup('<a href="../places/'+d.place.id+'" target="_blank">' + d.place.id + '</a>');
+
+      return marker;
+    });
+
+    return L.layerGroup(circleLayers);
+  }
+
+  function getLayer(vizType, data, options) {
+    switch (vizType) {
+      case 'heatmap':
+        return S.heatmap(data, options).layer;
+      case 'scale':
+        return getScaleLayer(data, options);
+      default:
+        return null;
+    }
+  }
+
   function getPlaceBounds(data) {
     var points = _.map(data, function(place) { return [place.location.lat, place.location.lng]; }),
         bounds = new L.LatLngBounds(points);
@@ -50,7 +98,7 @@
 
   function updateMap(data) {
     var options,
-        _heatmap;
+        layer;
 
     // First, clear the map
     _.each(vizLayers, function(layer) {
@@ -65,10 +113,9 @@
     };
 
     // Draw your visualization
-    _heatmap = S.heatmap(data, options);
-    vizLayers.push(_heatmap.layer)
-
-    map.addLayer(_heatmap.layer);
+    layer = getLayer($visualization.find(':selected').val(), data, options);
+    vizLayers.push(layer);
+    map.addLayer(layer);
   }
 
   function initVariableOptions(data) {
@@ -94,11 +141,15 @@
     initVariableOptions(S.placesData);
     map.fitBounds(getPlaceBounds(S.placesData));
 
-//    updateMap(S.placesData);
-
     $variable.change(function() {
       updateMap(S.placesData);
     });
+
+    $visualization.change(function() {
+      updateMap(S.placesData);
+    });
+
+    updateMap(S.placesData);
   });
 
 }(Shareabouts, jQuery));
