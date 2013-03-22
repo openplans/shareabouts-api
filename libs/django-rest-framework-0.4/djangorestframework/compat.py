@@ -463,3 +463,15 @@ try:
     from xml.etree import ParseError as ETParseError
 except ImportError:  # python < 2.7
     ETParseError = None
+
+
+# Simplejson compatibility
+if django.VERSION < (1, 5):
+    from django.core.serializers.json import DateTimeAwareJSONEncoder
+else:
+    from django.core.serializers.json import DateTimeAwareJSONEncoder as BaseJSONSerializer
+
+    class DateTimeAwareJSONEncoder(BaseJSONSerializer):
+        def __init__(self, namedtuple_as_object=True, **kwargs):
+            self.namedtuple_as_object = namedtuple_as_object
+            super(DateTimeAwareJSONEncoder, self).__init__(**kwargs)
