@@ -19,13 +19,13 @@ class ShareaboutsApi (object):
         'dataset_collection': r'{username}/datasets/',
         'dataset_instance': r'{username}/datasets/{slug}/',
         'keys_collection': r'{username}/datasets/{dataset_slug}/keys/',
-        'place_collection': r'{username}/datasets/{dataset_slug}/places/?visible=all',
-        'place_collection_table': r'{username}/datasets/{dataset_slug}/places/table?visible=all',
-        'place_instance': r'{username}/datasets/{dataset_slug}/places/{pk}/',
-        'submission_collection': r'{username}/datasets/{dataset_slug}/places/{place_pk}/{type}/?visible=all',
-        'submission_instance': r'{username}/datasets/{dataset_slug}/places/{place_pk}/{type}/{pk}/',
-        'all_submissions': r'{username}/datasets/{dataset_slug}/{type}/',
-        'all_submissions_table': r'{username}/datasets/{dataset_slug}/{type}/table',
+        'place_collection': r'{username}/datasets/{dataset_slug}/places/?visible=all&show_private=true',
+        'place_collection_table': r'{username}/datasets/{dataset_slug}/places/table?visible=all&show_private=true',
+        'place_instance': r'{username}/datasets/{dataset_slug}/places/{pk}/?show_private=true',
+        'submission_collection': r'{username}/datasets/{dataset_slug}/places/{place_pk}/{type}/?visible=all&show_private=true',
+        'submission_instance': r'{username}/datasets/{dataset_slug}/places/{place_pk}/{type}/{pk}/?show_private=true',
+        'all_submissions': r'{username}/datasets/{dataset_slug}/{type}/?show_private=true',
+        'all_submissions_table': r'{username}/datasets/{dataset_slug}/{type}/table?show_private=true',
     }
 
     def __init__(self, request=None, root='/api/v1/'):
