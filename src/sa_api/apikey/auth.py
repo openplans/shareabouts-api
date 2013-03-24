@@ -70,6 +70,7 @@ def check_api_authorization(request):
         if user.is_active:
             # login() expects a dotted name at user.backend.
             user.backend = APIKeyBackend.backend_name
+            request.user = user
             login(request, user)
             return True
         else:
@@ -91,4 +92,5 @@ class ApiKeyAuthentication(authentication.BaseAuthentication):
         except PermissionDenied:
             # Does djrf allow you to provide a message with auth failures?
             return None
+
         return request.user

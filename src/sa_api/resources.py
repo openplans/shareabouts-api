@@ -42,6 +42,18 @@ class ModelResourceWithDataBlob (resources.ModelResource):
     'data' JSON blob of arbitrary key/value pairs.
     """
 
+    def should_show_private_data(self):
+        if not hasattr(self, 'view') or self.view is None:
+            return False
+
+        if not hasattr(self.view, 'show_private_data'):
+            return False
+
+        if self.view.show_private_data is not True:
+            return False
+
+        return True
+
     def serialize(self, obj, *args, **kwargs):
         # If the object is a place, parse the data blob and add it to the
         # place's fields.
@@ -49,6 +61,11 @@ class ModelResourceWithDataBlob (resources.ModelResource):
         if isinstance(obj, self.model):
             data = json.loads(obj.data)
             serialization.pop('data', None)
+
+            if not self.should_show_private_data():
+                for key in data.keys():
+                    if key.startswith('private-'):
+                        del data[key]
             serialization.update(data)
 
         return serialization

@@ -61,12 +61,40 @@ class TestModelResourceWithDataBlob(object):
         submitted_thing.data = '{"animals": ["dogs", "cats"]}'
         submitted_thing.submitter_name = 'Jacques Tati'
         result = resource.serialize(submitted_thing)
-        # import pdb; pdb.set_trace()
+
         assert_equal(result['animals'], ['dogs', 'cats'])
         assert_not_in('data', result)
         ok_(result['visible'])
         assert_equal(result['dataset']['id'], submitted_thing.dataset.id)
-        # TODO: why isn't submitter_name in there?
+
+    @istest
+    def serialize_with_private_data(self):
+        resource, submitted_thing = self._get_resource_and_instance()
+
+        submitted_thing.data = '{"animals": ["dogs", "cats"], "private-email": "admin@example.com"}'
+        submitted_thing.submitter_name = 'Jacques Tati'
+        result = resource.serialize(submitted_thing)
+
+        assert_equal(result['animals'], ['dogs', 'cats'])
+        assert_not_in('data', result)
+        assert_not_in('private-email', result)
+        ok_(result['visible'])
+        assert_equal(result['dataset']['id'], submitted_thing.dataset.id)
+
+    @istest
+    def serialize_with_private_data_and_permission(self):
+        resource, submitted_thing = self._get_resource_and_instance()
+        resource.view.show_private_data = True
+
+        submitted_thing.data = '{"animals": ["dogs", "cats"], "private-email": "admin@example.com"}'
+        submitted_thing.submitter_name = 'Jacques Tati'
+        result = resource.serialize(submitted_thing)
+
+        assert_equal(result['animals'], ['dogs', 'cats'])
+        assert_not_in('data', result)
+        assert_in('private-email', result)
+        ok_(result['visible'])
+        assert_equal(result['dataset']['id'], submitted_thing.dataset.id)
 
     @istest
     def validate_request_with_origdata(self):

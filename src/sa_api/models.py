@@ -1,4 +1,4 @@
-from django.contrib.auth import models as auth_models
+from django.contrib.auth.models import User
 from django.contrib.gis.db import models
 from django.conf import settings
 from django.core.files.storage import get_storage_class
@@ -69,7 +69,7 @@ class DataSet (CacheClearingModel, models.Model):
     A DataSet is a named collection of data, eg. Places, owned by a user,
     and intended for a coherent purpose, eg. display on a single map.
     """
-    owner = models.ForeignKey(auth_models.User, related_name='datasets')
+    owner = models.ForeignKey(User, related_name='datasets')
     display_name = models.CharField(max_length=128)
     slug = models.SlugField(max_length=128, default=u'')
 
