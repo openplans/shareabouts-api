@@ -575,13 +575,14 @@ class TestSubmissionCollectionView(TestCase):
         self.visible_place = Place.objects.create(dataset_id=self.dataset.id, location='POINT (0 0)', visible=True)
         self.visible_set = SubmissionSet.objects.create(place_id=self.visible_place.id, submission_type='vis')
 
-        self.visible_submission = Submission.objects.create(dataset_id=self.dataset.id, parent_id=self.visible_set.id, visible=True)
-        self.invisible_submission = Submission.objects.create(dataset_id=self.dataset.id, parent_id=self.visible_set.id, visible=False)
-
     @istest
     def get_queryset_checks_visibility(self):
         from ..views import SubmissionCollectionView
         view = SubmissionCollectionView()
+
+        # Create two submissions, one visisble, one invisible.
+        visible_submission = Submission.objects.create(dataset_id=self.dataset.id, parent_id=self.visible_set.id, visible=True)
+        invisible_submission = Submission.objects.create(dataset_id=self.dataset.id, parent_id=self.visible_set.id, visible=False)
 
         # Only visible Submissions by default...
         view.request = mock.Mock(GET={})
@@ -592,6 +593,32 @@ class TestSubmissionCollectionView(TestCase):
         view.request = mock.Mock(GET={'visible': 'all'})
         qs = view.get_queryset()
         assert_equal(qs.count(), 2)
+
+    @istest
+    def post_request_should_reject_setting_times_by_default(self):
+        from ..views import SubmissionCollectionView
+        view = SubmissionCollectionView.as_view()
+
+        request_kwargs = {
+            'place_id': self.visible_place.id,
+            'submission_type': self.visible_set.submission_type,
+            'dataset__owner__username': self.owner.username,
+            'dataset__slug': self.dataset.slug,
+        }
+
+        submission_data = {
+            'submitter_name': 'joe bloggs',
+            'created_datetime': '2012-04-13T12:16:00Z'
+        }
+
+        request = RequestFactory().post(
+            reverse('submission_collection_by_dataset', kwargs=request_kwargs),
+            data=json.dumps(submission_data), content_type='application/json')
+        request.user = self.owner
+
+        response = view(request, **request_kwargs)
+
+        assert_equal(response.status_code, 400)
 
 
 class TestActivityView(TestCase):

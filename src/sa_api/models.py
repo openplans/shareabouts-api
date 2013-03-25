@@ -38,12 +38,25 @@ class ModelWithDataBlob (models.Model):
         abstract = True
 
 
+#class Submitter (CacheClearingModel, ModelWithDataBlob, TimeStampedModel):
+#    account = models.ForeignKey('User', null=True, blank=True)
+#
+#    @property
+#    def places(self):
+#        return Place.objects.filter(submittedthing_ptr__submitter=self)
+#
+#    @property
+#    def submissions(self):
+#        return Sumbission.objects.filter(submittedthing_ptr__submitter=self)
+
+
 class SubmittedThing (CacheClearingModel, ModelWithDataBlob, TimeStampedModel):
     """
     A SubmittedThing generally comes from the end-user.  It may be a place, a
     comment, a vote, etc.
 
     """
+#    submitter = models.ForeignKey('Submitter', related_name='things')
     submitter_name = models.CharField(max_length=256, null=True, blank=True)
     dataset = models.ForeignKey('DataSet', related_name='submitted_thing_set',
                                 blank=True)
