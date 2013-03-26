@@ -19,13 +19,19 @@
       vizLayers = [],
 
       $visualization = $('select[name="visualization_type"]'),
-      $variable = $('select[name="variable"]');
+      $variable = $('select[name="variable"]'),
+      $minValue = $('input[name="min_value"]'),
+
+      allValues = [];
 
   function getValueFunction(varType, varParam) {
     switch (varType) {
+
+      // Simple presence of a place
       case 'identity':
         return function() { return 1; };
 
+      // Number of submissions in a given submission set
       case 'submission_count':
         var name = varParam;
         return function(place) {
@@ -36,6 +42,19 @@
             return 0;
           }
         };
+
+      // Number of attachments on a place
+      case 'attachment_count':
+        return function(place) {
+          return place.attachments.length;
+        }
+
+      // Value of a place's attribute
+      case 'attribute_value':
+        var attr = varParam;
+        return function(place) {
+          return place[attr] || 0;
+        }
 
       default:
         return null;
@@ -96,6 +115,20 @@
     return bounds;
   }
 
+  function resetMinValueSlider(data) {
+    var valueFn = getValueFunction($variable.find(':selected').attr('data-variable-type'),
+                                   $variable.find(':selected').attr('data-variable-param'));
+
+    allValues = _.map(data, valueFn);
+    allValues = _.filter(allValues, _.isNumber)
+    allValues = _.uniq(allValues.sort(function(a,b){return a-b}), true);
+
+    $minValue.attr('max', allValues.length - 1);
+    $minValue.attr('value', 0);
+
+    updateMinValueLabel();
+  }
+
   function updateMap(data) {
     var options,
         layer;
@@ -112,19 +145,35 @@
                                 $variable.find(':selected').attr('data-variable-param'))
     };
 
+    data = _.filter(data, function(d) { return options.valueFn(d) >= allValues[$minValue.val()]; });
+
     // Draw your visualization
     layer = getLayer($visualization.find(':selected').val(), data, options);
     vizLayers.push(layer);
     map.addLayer(layer);
   }
 
+  function updateMinValueLabel() {
+    $('.min-value label').text('Min value: ' + allValues[$minValue.val()]);
+  }
+
+  function _allKeys(data) {
+    var tempObject = {};
+
+    _.each(data, function(obj) {
+      tempObject = _.extend(tempObject, obj);
+    });
+
+    return _.keys(tempObject);
+  }
+
   function initVariableOptions(data) {
+    var submissionSetNames = [],
+        placeAttributes = [];
+
     // Get all the unique submission set names
-    var submissionSetNames = [];
     _.each(data, function(place, i) {
-      _.each(place.submissions, function(submission_set, i) {
-        submissionSetNames.push(submission_set.type);
-      });
+      submissionSetNames = submissionSetNames.concat(_.pluck(place.submissions, 'type'));
     });
     submissionSetNames = _.uniq(submissionSetNames);
 
@@ -135,6 +184,24 @@
                            'data-variable-param="' + name + '" '+
                            'value="' + name + '_count">Number of ' + name + '</option>');
     });
+
+    // Add number of attachments variable
+    $variable.append('<option '+
+                         'data-variable-type="attachment_count" '+
+                         'data-variable-param="" '+
+                         'value="attachment_count">Number of attachments</option>');
+
+    // Get all the unique attributes
+    placeAttributes = _allKeys(data)
+    placeAttributes = _.without(placeAttributes, 'attachments', 'updated_datetime', 'created_datetime', 'id', 'dataset', 'visible', 'location', 'url', 'submissions')
+
+    // Populate the values
+    _.each(placeAttributes, function(attr) {
+      $variable.append('<option '+
+                           'data-variable-type="attribute_value" '+
+                           'data-variable-param="' + attr + '" '+
+                           'value="' + attr + '_value">Value of ' + attr + '</option>');
+    });
   }
 
   $(function() {
@@ -142,6 +209,7 @@
     map.fitBounds(getPlaceBounds(S.placesData));
 
     $variable.change(function() {
+      resetMinValueSlider(S.placesData);
       updateMap(S.placesData);
     });
 
@@ -149,6 +217,12 @@
       updateMap(S.placesData);
     });
 
+    $minValue.change(function() {
+      updateMinValueLabel();
+      updateMap(S.placesData);
+    });
+
+    resetMinValueSlider(S.placesData);
     updateMap(S.placesData);
   });
 
