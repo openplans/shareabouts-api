@@ -97,6 +97,37 @@ class TestModelResourceWithDataBlob(object):
         assert_equal(result['dataset']['id'], submitted_thing.dataset.id)
 
     @istest
+    def serialize_list_with_private_data(self):
+        resource, submitted_thing = self._get_resource_and_instance()
+
+        submitted_thing.data = '{"animals": ["dogs", "cats"], "private-email": "admin@example.com"}'
+        submitted_thing.submitter_name = 'Jacques Tati'
+        result = resource.serialize([submitted_thing, submitted_thing])
+
+        assert_equal(len(result), 2)
+        assert_equal(result[0]['animals'], ['dogs', 'cats'])
+        assert_not_in('data', result[0])
+        assert_not_in('private-email', result[0])
+        ok_(result[0]['visible'])
+        assert_equal(result[0]['dataset']['id'], submitted_thing.dataset.id)
+
+    @istest
+    def serialize_list_with_private_data_and_permission(self):
+        resource, submitted_thing = self._get_resource_and_instance()
+        resource.view.show_private_data = True
+
+        submitted_thing.data = '{"animals": ["dogs", "cats"], "private-email": "admin@example.com"}'
+        submitted_thing.submitter_name = 'Jacques Tati'
+        result = resource.serialize([submitted_thing, submitted_thing])
+
+        assert_equal(len(result), 2)
+        assert_equal(result[0]['animals'], ['dogs', 'cats'])
+        assert_not_in('data', result[0])
+        assert_in('private-email', result[0])
+        ok_(result[0]['visible'])
+        assert_equal(result[0]['dataset']['id'], submitted_thing.dataset.id)
+
+    @istest
     def validate_request_with_origdata(self):
         resource, submitted_thing = self._get_resource_and_instance()
 

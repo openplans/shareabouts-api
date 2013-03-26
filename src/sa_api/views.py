@@ -77,6 +77,13 @@ class CanShowPrivateData (permissions.BasePermission):
         if hasattr(user, 'is_directly_authenticated') and user.is_directly_authenticated is True:
             if user.is_superuser or user.username == self.view.allowed_username:
                 self.view.show_private_data = True
+
+                # Pull off the parameter, so that views don't try to use it
+                # to filter.
+                queryparams = self.view.request.GET.copy()
+                del queryparams['show_private']
+                self.view.request.GET = queryparams
+
                 return
 
         raise permissions._403_FORBIDDEN_RESPONSE

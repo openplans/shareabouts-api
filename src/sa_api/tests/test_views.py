@@ -595,7 +595,7 @@ class TestSubmissionCollectionView(TestCase):
         assert_equal(qs.count(), 2)
 
     @istest
-    def post_request_should_reject_setting_times_by_default(self):
+    def get_request_from_owner_should_return_private_data_for_all(self):
         from ..views import SubmissionCollectionView
         view = SubmissionCollectionView.as_view()
 
@@ -606,19 +606,51 @@ class TestSubmissionCollectionView(TestCase):
             'dataset__slug': self.dataset.slug,
         }
 
-        submission_data = {
-            'submitter_name': 'joe bloggs',
-            'created_datetime': '2012-04-13T12:16:00Z'
-        }
+        # Create two submissions, one visisble, one invisible.
+        visible_submission = Submission.objects.create(dataset_id=self.dataset.id, parent_id=self.visible_set.id, visible=True,
+                                                       data=json.dumps({'x': 1, 'private-y': 2}))
+        invisible_submission = Submission.objects.create(dataset_id=self.dataset.id, parent_id=self.visible_set.id, visible=False,
+                                                         data=json.dumps({'x': 3, 'private-y': 4}))
 
-        request = RequestFactory().post(
-            reverse('submission_collection_by_dataset', kwargs=request_kwargs),
-            data=json.dumps(submission_data), content_type='application/json')
+        request = RequestFactory().get(
+            reverse('submission_collection_by_dataset', kwargs=request_kwargs) + '?visible=all&show_private=true',
+            content_type='application/json')
         request.user = self.owner
+        request.META['HTTP_ACCEPT'] = 'application/json'
 
         response = view(request, **request_kwargs)
 
-        assert_equal(response.status_code, 400)
+        assert_equal(response.status_code, 200)
+        response_data = json.loads(response.content)
+        assert_equal(len(response_data), 2)
+        assert_in('private-y', response_data[0])
+
+    @istest
+    def get_request_should_disallow_private_data_access(self):
+        from ..views import SubmissionCollectionView
+        view = SubmissionCollectionView.as_view()
+
+        request_kwargs = {
+            'place_id': self.visible_place.id,
+            'submission_type': self.visible_set.submission_type,
+            'dataset__owner__username': self.owner.username,
+            'dataset__slug': self.dataset.slug,
+        }
+
+        # Create two submissions, one visisble, one invisible.
+        visible_submission = Submission.objects.create(dataset_id=self.dataset.id, parent_id=self.visible_set.id, visible=True,
+                                                       data=json.dumps({'x': 1, 'private-y': 2}))
+        invisible_submission = Submission.objects.create(dataset_id=self.dataset.id, parent_id=self.visible_set.id, visible=False,
+                                                         data=json.dumps({'x': 3, 'private-y': 4}))
+
+        request = RequestFactory().get(
+            reverse('submission_collection_by_dataset', kwargs=request_kwargs) + '?visible=all&show_private=true',
+            content_type='application/json')
+        request.META['HTTP_ACCEPT'] = 'application/json'
+
+        response = view(request, **request_kwargs)
+
+        assert_equal(response.status_code, 403)
 
 
 class TestActivityView(TestCase):
@@ -1054,6 +1086,66 @@ class TestPlaceCollectionView(TestCase):
         assert_equal(len(places), 1)
         ids = set([place['id'] for place in places])
         assert_equal(ids, set([123]))
+
+    @istest
+    def get_request_from_owner_should_return_private_data_for_all(self):
+        from ..views import PlaceCollectionView
+        view = PlaceCollectionView.as_view()
+
+        owner = User.objects.create(username='superman')
+        dataset = DataSet.objects.create(owner=owner, slug='moth')
+
+        request_kwargs = {
+            'dataset__owner__username': owner.username,
+            'dataset__slug': dataset.slug,
+        }
+
+        # Create two places, one visisble, one invisible.
+        visible_place = Place.objects.create(dataset_id=dataset.id, location='POINT(0 0)', visible=True,
+                                             data=json.dumps({'x': 1, 'private-y': 2}))
+        invisible_place = Place.objects.create(dataset_id=dataset.id, location='POINT(0 0)', visible=False,
+                                               data=json.dumps({'x': 3, 'private-y': 4}))
+
+        request = RequestFactory().get(
+            reverse('place_collection_by_dataset', kwargs=request_kwargs) + '?visible=all&show_private=true',
+            content_type='application/json')
+        request.user = owner
+        request.META['HTTP_ACCEPT'] = 'application/json'
+
+        response = view(request, **request_kwargs)
+
+        assert_equal(response.status_code, 200)
+        response_data = json.loads(response.content)
+        assert_equal(len(response_data), 2)
+        assert_in('private-y', response_data[0])
+
+    @istest
+    def get_request_should_disallow_private_data_access(self):
+        from ..views import PlaceCollectionView
+        view = PlaceCollectionView.as_view()
+
+        owner = User.objects.create(username='superman')
+        dataset = DataSet.objects.create(owner=owner, slug='moth')
+
+        request_kwargs = {
+            'dataset__owner__username': owner.username,
+            'dataset__slug': dataset.slug,
+        }
+
+        # Create two submissions, one visisble, one invisible.
+        visible_place = Place.objects.create(dataset_id=dataset.id, location='POINT(0 0)', visible=True,
+                                             data=json.dumps({'x': 1, 'private-y': 2}))
+        invisible_place = Place.objects.create(dataset_id=dataset.id, location='POINT(0 0)', visible=False,
+                                               data=json.dumps({'x': 3, 'private-y': 4}))
+
+        request = RequestFactory().get(
+            reverse('place_collection_by_dataset', kwargs=request_kwargs) + '?visible=all&show_private=true',
+            content_type='application/json')
+        request.META['HTTP_ACCEPT'] = 'application/json'
+
+        response = view(request, **request_kwargs)
+
+        assert_equal(response.status_code, 403)
 
 
 class TestApiKeyCollectionView(TestCase):
