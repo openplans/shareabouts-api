@@ -6,11 +6,12 @@ from . import resources
 from . import utils
 from django.conf import settings
 from django.contrib import auth
+from django.contrib.gis import geos
 from django.core.cache import cache
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
-from djangorestframework import views, permissions, mixins, authentication
+from djangorestframework import views, permissions, mixins, authentication, status
 from djangorestframework.response import Response, ErrorResponse
 import apikey.auth
 import ujson as json
@@ -77,13 +78,6 @@ class CanShowPrivateData (permissions.BasePermission):
         if hasattr(user, 'is_directly_authenticated') and user.is_directly_authenticated is True:
             if user.is_superuser or user.username == self.view.allowed_username:
                 self.view.show_private_data = True
-
-                # Pull off the parameter, so that views don't try to use it
-                # to filter.
-                queryparams = self.view.request.GET.copy()
-                del queryparams['show_private']
-                self.view.request.GET = queryparams
-
                 return
 
         raise permissions._403_FORBIDDEN_RESPONSE
@@ -379,6 +373,16 @@ class PlaceCollectionView (Ignore_CacheBusterMixin, AuthMixin, AbsUrlMixin, Acti
         # Expects 'all' or not defined
         visibility = self.request.GET.get('visible', 'true')
         queryset = super(PlaceCollectionView, self).get_queryset()
+
+        if 'near' in self.request.GET:
+            try:
+                lat, lng = map(float, self.request.GET['near'].split(','))
+            except ValueError:
+                raise ErrorResponse(
+                    status.HTTP_400_BAD_REQUEST,
+                    {'detail': 'The near parameter should be a comma-separated pair of numbers.'})
+
+            queryset = queryset.distance(geos.Point(lng, lat)).order_by('distance')
 
         if (visibility == 'all'):
             return queryset

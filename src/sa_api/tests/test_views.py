@@ -1027,6 +1027,55 @@ class TestPlaceCollectionView(TestCase):
         assert_equal(ids, set([123, 124, 456, 457]))
 
     @istest
+    def order_by_proximity_to_a_point(self):
+        from ..views import PlaceCollectionView, models
+
+        user = User.objects.create(username='test-user')
+        ds = models.DataSet.objects.create(owner=user, id=789,
+                                           slug='stuff')
+        location = 'POINT (0.0 0.0)'
+        models.Place.objects.create(dataset=ds, id=123, location='POINT (1 1)', visible=True, data=json.dumps({'favorite_food': 'pizza', 'favorite_color': 'red'}))
+        models.Place.objects.create(dataset=ds, id=124, location='POINT (0 0)', visible=True, data=json.dumps({'favorite_food': 'asparagus', 'favorite_color': 'green'}))
+        models.Place.objects.create(dataset=ds, id=125, location='POINT (0 2)', visible=True, data=json.dumps({'favorite_food': 'pizza', 'favorite_color': 'blue'}))
+        models.Place.objects.create(dataset=ds, id=126, location='POINT (1 0.5)', visible=True, data=json.dumps({'favorite_food': 'chili', 'favorite_color': 'yellow'}))
+        view = PlaceCollectionView.as_view()
+
+        request = RequestFactory().get('/api/v1/test-user/datasets/stuff/places/?near=0.5,1.0')
+        request.user = user
+        request.META['HTTP_ACCEPT'] = 'application/json'
+
+        response = view(request,
+                        dataset__owner__username='test-user',
+                        dataset__slug='stuff')
+
+        places = json.loads(response.content)
+        ids = [place['id'] for place in places]
+        assert_equal(ids, [126, 123, 124, 125])
+
+    @istest
+    def enforces_valid_near_parameter(self):
+        from ..views import PlaceCollectionView, models
+        view = PlaceCollectionView.as_view()
+
+        # Single number
+        request = RequestFactory().get('/api/v1/test-user/datasets/stuff/places/?near=0.5')
+        request.META['HTTP_ACCEPT'] = 'application/json'
+        response = view(request, dataset__owner__username='test-user', dataset__slug='stuff')
+        assert_equal(response.status_code, 400)
+
+        # Two items, non-numeric
+        request = RequestFactory().get('/api/v1/test-user/datasets/stuff/places/?near=0.5,hello')
+        request.META['HTTP_ACCEPT'] = 'application/json'
+        response = view(request, dataset__owner__username='test-user', dataset__slug='stuff')
+        assert_equal(response.status_code, 400)
+
+        # More than two numbers
+        request = RequestFactory().get('/api/v1/test-user/datasets/stuff/places/?near=1,1,1')
+        request.META['HTTP_ACCEPT'] = 'application/json'
+        response = view(request, dataset__owner__username='test-user', dataset__slug='stuff')
+        assert_equal(response.status_code, 400)
+
+    @istest
     def get_filters_on_data_fields(self):
         from ..views import PlaceCollectionView, models
 
