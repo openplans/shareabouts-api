@@ -8,7 +8,24 @@ import logging
 logger = logging.getLogger('sa_api.cache')
 
 class Cache (object):
+    """
+    The base class for objects responsible for caching Shareabouts data
+    structure information
+
+    """
+
     def get_meta_key(self, prefix):
+        """
+        Data identified by a number of keys may be cached for any given object.
+        A meta-key keeps track of a set of related keys, for the purposes of
+        invalidating all of those keys at once when the associated object is
+        updated.
+
+        For example, data associated with a particular dataset with a primary
+        key of 23 might have cache keys that all begin with the prefix
+        "datasets:23". The cache keys themselves would be stored in a list
+        identified by the meta-key "dataset:23_keys".
+        """
         return prefix + '_keys'
 
     def get_request_prefixes(self, **params):
@@ -16,6 +33,10 @@ class Cache (object):
         return set()
 
     def get_keys_with_prefixes(self, *prefixes):
+        """
+        Return a set of keys that begin with the given prefixes, including
+        meta-keys.
+        """
         keys = set()
         for prefix in prefixes:
             meta_key = self.get_meta_key(prefix)
@@ -25,10 +46,19 @@ class Cache (object):
         return keys
 
     def clear_keys(self, *keys):
+        """
+        Delete all of the data from the cache identified by the given keys.
+        """
         logger.debug('Deleting: "%s"' % '", "'.join(keys))
         cache.delete_many(keys)
 
     def get_instance_params_key(self, inst_key):
+        """
+        Keys related to an instance can be reconstructed without having to
+        query the database for the instance by using characteristic parameters
+        related to the instance. Those parameters themselves are cached with
+        this key.
+        """
         from django.db.models import Model
         if isinstance(inst_key, Model):
             obj = inst_key
@@ -36,6 +66,11 @@ class Cache (object):
         return '%s:%s' % (self.__class__.__name__, inst_key)
 
     def clear_instance_params(self, obj):
+        """
+        Clear the instance parameters. Useful for when we delete a particular
+        instance, or when the identifying information for the instance changes
+        which, for well-chosen characteristic parameters, should never happen.
+        """
         instance_params_key = self.get_instance_params_key(obj)
         logger.debug('Deleting: "%s"' % instance_params_key)
         cache.delete(instance_params_key)
