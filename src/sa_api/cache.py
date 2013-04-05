@@ -134,8 +134,21 @@ class DataSetCache (Cache):
 
         return prefixes
 
-    def get_submission_sets_key(self, owner_id):
+    def get_submission_sets_key_prefix(self, owner_id):
         return '%s:%s:%s' % (self.__class__.__name__, owner_id, 'submission_sets')
+
+    def get_submission_sets_key(self, owner_id, **params):
+        prefix = self.get_submission_sets_key_prefix(owner_id)
+        if params:
+            paramstring = ','.join(['%s=%s' % (k, v) for k, v in params.iteritems()])
+            return ':'.join([prefix, paramstring])
+        else:
+            return prefix
+
+    def get_submission_sets_keys(self, owner_id):
+        prefix = self.get_submission_sets_key_prefix(owner_id)
+        keys = self.get_keys_with_prefixes(prefix)
+        return keys
 
 
 class ThingWithAttachmentCache (Cache):
@@ -221,65 +234,46 @@ class PlaceCache (ThingWithAttachmentCache, Cache):
 
         return prefixes
 
-    def get_submission_sets_key(self, dataset_id):
+    def get_submission_sets_key_prefix(self, dataset_id):
         return 'dataset:%s:%s' % (dataset_id, 'submission_sets-by-thing_id')
 
-    def calculate_submission_sets(self, dataset_id):
-        """
-        Cache all the submission set metadata for all the places in the given
-        dataset. Helps to cut down on database hits when doing operations on
-        several places.
+    def get_submission_sets_key(self, dataset_id, **params):
+        prefix = self.get_submission_sets_key_prefix(dataset_id)
+        if params:
+            paramstring = ','.join(['%s=%s' % (k, v) for k, v in params.iteritems()])
+            return ':'.join([prefix, paramstring])
+        else:
+            return prefix
 
-        Because of this, it's more efficient to modify many places in a batch,
-        as opposed to doing a few places, then a few submissions, etc.
-        """
-        # Import SubmissionSet here to avoid circular dependencies.
-        from django.db.models import Count
-        from .models import SubmissionSet
+    def get_submission_sets_keys(self, dataset_id):
+        prefix = self.get_submission_sets_key_prefix(dataset_id)
+        keys = self.get_keys_with_prefixes(prefix)
+        return keys
 
-        submission_sets = defaultdict(list)
-
-        qs = SubmissionSet.objects.filter(place__dataset_id=dataset_id)
-        qs = qs.annotate(length=Count('children'))
-        qs = qs.values('submission_type', 'length',
-                       'place__dataset__owner__username',
-                       'place__dataset__slug', 'place_id')
-
-        for submission_set in qs:
-            set_name, length, owner, dataset, place = \
-                map(submission_set.get, ['submission_type', 'length',
-                       'place__dataset__owner__username',
-                       'place__dataset__slug', 'place_id'])
-
-            # Ignore empty sets
-            if length <= 0:
-                continue
-
-            submission_sets[place].append({
-                'type': set_name,
-                'length': length,
-                'url': reverse('submission_collection_by_dataset', kwargs={
-                    'dataset__owner__username': owner,
-                    'dataset__slug': dataset,
-                    'place_id': place,
-                    'submission_type': set_name
-                })
-            })
-
-        return submission_sets
-
-    def get_submission_sets(self, dataset_id):
+    def get_submission_sets(self, dataset_id, calculate_func, **params):
         """
         A mapping from Place ids to attributes.  Helps to cut down
         significantly on the number of queries.
 
         There should be at most one SubmissionSet of a given type for one place.
+
+        If the mapping is not already cached, the calculate_func will be called
+        to build it. Because of this, it's more efficient to PUT to many places
+        in a batch, as opposed to doing a few places, then a few submissions,
+        etc. Staggering places and submissions will result in a high number of
+        cache invalidations.
         """
-        submission_sets_key = self.get_submission_sets_key(dataset_id)
+        submission_sets_key = self.get_submission_sets_key(dataset_id, **params)
         submission_sets = cache.get(submission_sets_key)
         if submission_sets is None:
-            submission_sets = self.calculate_submission_sets(dataset_id)
+            submission_sets = calculate_func(dataset_id)
             cache.set(submission_sets_key, submission_sets, settings.API_CACHE_TIMEOUT)
+
+            # Cache the key itself
+            meta_key = self.get_meta_key(self.get_submission_sets_key_prefix(dataset_id))
+            keys = cache.get(meta_key) or set()
+            keys.add(submission_sets_key)
+            cache.set(meta_key, keys, settings.API_CACHE_TIMEOUT)
         return submission_sets
 
 
@@ -333,9 +327,9 @@ class SubmissionCache (ThingWithAttachmentCache, Cache):
 
     def get_other_keys(self, **params):
         owner_id, dataset_id = map(params.get, ['owner_id', 'dataset_id'])
-        dataset_submission_sets_key = self.dataset_cache.get_submission_sets_key(owner_id)
-        place_submission_sets_key = self.place_cache.get_submission_sets_key(dataset_id)
-        return set([dataset_submission_sets_key, place_submission_sets_key])
+        dataset_submission_sets_keys = self.dataset_cache.get_submission_sets_keys(owner_id)
+        place_submission_sets_keys = self.place_cache.get_submission_sets_keys(dataset_id)
+        return dataset_submission_sets_keys | place_submission_sets_keys
 
     def get_request_prefixes(self, **params):
         owner, dataset, place, set_name, submission = map(params.get, ['owner', 'dataset', 'place', 'set_name', 'submission'])

@@ -457,7 +457,7 @@ class TestSubmissionInstanceAPI (TestCase):
     def submission_get_request_retrieves_data_when_directly_authenticated_as_superuser(self):
         self.submission.data = json.dumps({'animal': 'tree frog', 'private-email': 'admin@example.com'})
         self.submission.save()
-        request = RequestFactory().get(self.url + '?show_private=on')
+        request = RequestFactory().get(self.url + '?include_private_data=on')
         request.user = mock.Mock(**{'is_authenticated.return_value': True,
                                     'is_superuser': True,
                                     })
@@ -480,7 +480,7 @@ class TestSubmissionInstanceAPI (TestCase):
 
         self.submission.data = json.dumps({'animal': 'tree frog', 'private-email': 'admin@example.com'})
         self.submission.save()
-        request = RequestFactory().get(self.url + '?show_private=on')
+        request = RequestFactory().get(self.url + '?include_private_data=on')
         request.session = SessionStore()
 
         request.META['HTTP_ACCEPT'] = 'application/json'
@@ -497,7 +497,7 @@ class TestSubmissionInstanceAPI (TestCase):
     def submission_get_request_retrieves_private_data_when_authenticated_as_owner(self):
         self.submission.data = json.dumps({'animal': 'tree frog', 'private-email': 'admin@example.com'})
         self.submission.save()
-        request = RequestFactory().get(self.url + '?show_private=on')
+        request = RequestFactory().get(self.url + '?include_private_data=on')
         request.user = self.submission.dataset.owner
 
         request.META['HTTP_ACCEPT'] = 'application/json'
@@ -518,7 +518,7 @@ class TestSubmissionInstanceAPI (TestCase):
         self.submission.save()
 
         # Anonymous user
-        request = RequestFactory().get(self.url + '?show_private=on')
+        request = RequestFactory().get(self.url + '?include_private_data=on')
         request.user = mock.Mock(**{'is_authenticated.return_value': False,
                                     'is_superuser': False,
                                     })
@@ -532,7 +532,7 @@ class TestSubmissionInstanceAPI (TestCase):
         assert_equal(response.status_code, 403)
 
         # Directly authenticated owner
-        request = RequestFactory().get(self.url + '?show_private=on')
+        request = RequestFactory().get(self.url + '?include_private_data=on')
         request.user = self.submission.dataset.owner
         request.META['HTTP_ACCEPT'] = 'application/json'
         response = self.view(request, place_id=self.place.id,
@@ -544,7 +544,7 @@ class TestSubmissionInstanceAPI (TestCase):
         assert_equal(response.status_code, 200)
 
         # Anonymous user again
-        request = RequestFactory().get(self.url + '?show_private=on')
+        request = RequestFactory().get(self.url + '?include_private_data=on')
         request.user = mock.Mock(**{'is_authenticated.return_value': False,
                                     'is_superuser': False,
                                     })
@@ -590,7 +590,7 @@ class TestSubmissionCollectionView(TestCase):
         assert_equal(qs.count(), 1)
 
         # Or, all of them.
-        view.request = mock.Mock(GET={'visible': 'all'})
+        view.request = mock.Mock(GET={'include_invisible': 'on'})
         qs = view.get_queryset()
         assert_equal(qs.count(), 2)
 
@@ -613,7 +613,7 @@ class TestSubmissionCollectionView(TestCase):
                                                          data=json.dumps({'x': 3, 'private-y': 4}))
 
         request = RequestFactory().get(
-            reverse('submission_collection_by_dataset', kwargs=request_kwargs) + '?visible=all&show_private=true',
+            reverse('submission_collection_by_dataset', kwargs=request_kwargs) + '?include_invisible=true&include_private_data=true',
             content_type='application/json')
         request.user = self.owner
         request.META['HTTP_ACCEPT'] = 'application/json'
@@ -644,7 +644,7 @@ class TestSubmissionCollectionView(TestCase):
                                                          data=json.dumps({'x': 3, 'private-y': 4}))
 
         request = RequestFactory().get(
-            reverse('submission_collection_by_dataset', kwargs=request_kwargs) + '?visible=all&show_private=true',
+            reverse('submission_collection_by_dataset', kwargs=request_kwargs) + '?include_invisible=true&include_private_data=true',
             content_type='application/json')
         request.META['HTTP_ACCEPT'] = 'application/json'
 
@@ -1014,13 +1014,15 @@ class TestPlaceCollectionView(TestCase):
 
         # Only visible Places by default...
         view.request = mock.Mock(GET={})
+        view.calculate_flags(view.request)
         qs = view.get_queryset()
         assert_equal(qs.count(), 2)
         ids = set([place.id for place in qs])
         assert_equal(ids, set([123, 124]))
 
         # Or, all of them.
-        view.request = mock.Mock(GET={'visible': 'all'})
+        view.request = mock.Mock(GET={'include_invisible': 'on'})
+        view.calculate_flags(view.request)
         qs = view.get_queryset()
         assert_equal(qs.count(), 4)
         ids = set([place.id for place in qs])
@@ -1156,7 +1158,7 @@ class TestPlaceCollectionView(TestCase):
                                                data=json.dumps({'x': 3, 'private-y': 4}))
 
         request = RequestFactory().get(
-            reverse('place_collection_by_dataset', kwargs=request_kwargs) + '?visible=all&show_private=true',
+            reverse('place_collection_by_dataset', kwargs=request_kwargs) + '?include_invisible=true&include_private_data=true',
             content_type='application/json')
         request.user = owner
         request.META['HTTP_ACCEPT'] = 'application/json'
@@ -1167,6 +1169,42 @@ class TestPlaceCollectionView(TestCase):
         response_data = json.loads(response.content)
         assert_equal(len(response_data), 2)
         assert_in('private-y', response_data[0])
+
+        # Check for nested submissions
+        ss = SubmissionSet.objects.create(place=visible_place, submission_type="witnesses")
+        submission = Submission.objects.create(dataset_id=dataset.id, parent_id=ss.id, data=json.dumps({'x': 5, 'private-y': 6}))
+
+        # ... first without private data flag
+        request = RequestFactory().get(
+            reverse('place_collection_by_dataset', kwargs=request_kwargs) + '?include_private_data=false&include_submissions=true',
+            content_type='application/json')
+        request.user = owner
+        request.META['HTTP_ACCEPT'] = 'application/json'
+
+        response = view(request, **request_kwargs)
+
+        assert_equal(response.status_code, 200)
+        response_data = json.loads(response.content)
+        submission_set = response_data[0]['submissions'][0]
+        assert_equal(type(response_data), list)
+        assert_not_in('private-y', submission_set[0])
+
+        # ... and then with private data flag
+        request = RequestFactory().get(
+            reverse('place_collection_by_dataset', kwargs=request_kwargs) + '?include_private_data=true&include_submissions=true',
+            content_type='application/json')
+        request.user = owner
+        request.META['HTTP_ACCEPT'] = 'application/json'
+
+        response = view(request, **request_kwargs)
+
+        assert_equal(response.status_code, 200)
+        response_data = json.loads(response.content)
+        submission_set = response_data[0]['submissions'][0]
+        assert_equal(type(response_data), list)
+        assert_in('private-y', submission_set[0])
+
+
 
     @istest
     def get_request_should_disallow_private_data_access(self):
@@ -1188,7 +1226,7 @@ class TestPlaceCollectionView(TestCase):
                                                data=json.dumps({'x': 3, 'private-y': 4}))
 
         request = RequestFactory().get(
-            reverse('place_collection_by_dataset', kwargs=request_kwargs) + '?visible=all&show_private=true',
+            reverse('place_collection_by_dataset', kwargs=request_kwargs) + '?include_invisible=true&include_private_data=true',
             content_type='application/json')
         request.META['HTTP_ACCEPT'] = 'application/json'
 

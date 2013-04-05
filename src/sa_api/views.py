@@ -72,12 +72,11 @@ class IsOwnerOrSuperuserWithoutApiKey(IsOwnerOrSuperuser):
 
 class CanShowPrivateData (permissions.BasePermission):
     def check_permission(self, user):
-        if 'show_private' not in self.view.request.GET:
+        if not self.view.flags.get('include_private_data'):
             return
 
         if hasattr(user, 'is_directly_authenticated') and user.is_directly_authenticated is True:
             if user.is_superuser or user.username == self.view.allowed_username:
-                self.view.show_private_data = True
                 return
 
         raise permissions._403_FORBIDDEN_RESPONSE
@@ -290,11 +289,43 @@ class OwnerAwareMixin (object):
 
 
 class ModelViewWithDataBlobMixin (OwnerAwareMixin):
+    """
+    Views on things that store flexible data derive from this.
+
+    Attributes:
+    -----------
+    flags - A dictionary of values that modify what data to show or hide.
+    * 'include_invisible': Show visible and invisible objects
+    * 'include_private_data': Show data attributes that begin with a private
+                              prefix
+    * 'include_submissions': Show the full submission data attached to objects,
+                             not just the summary counts
+    """
+
     parsers = parsers.DEFAULT_DATA_BLOB_PARSERS
 
+    default_modifiers = {
+        'include_invisible': False,
+        'include_private_data': False,
+        'include_submissions': False,
+    }
+
     def __init__(self, *args, **kwargs):
+        self.flags = self.default_modifiers.copy()
         self.permissions += (CanShowPrivateData,)
         super(ModelViewWithDataBlobMixin, self).__init__(*args, **kwargs)
+
+    def calculate_flags(self, request):
+        if request.GET.get('include_submissions', 'false').lower() != 'false':
+            self.flags['include_submissions'] = True
+        if request.GET.get('include_invisible', 'false').lower() != 'false':
+            self.flags['include_invisible'] = True
+        if request.GET.get('include_private_data', 'false').lower() != 'false':
+            self.flags['include_private_data'] = True
+
+    def initial(self, request, *args, **kwargs):
+        self.calculate_flags(request)
+        return super(ModelViewWithDataBlobMixin, self).initial(request, *args, **kwargs)
 
     def _perform_form_overloading(self):
         """
@@ -370,8 +401,6 @@ class PlaceCollectionView (Ignore_CacheBusterMixin, AuthMixin, AbsUrlMixin, Acti
         return super(PlaceCollectionView, self).get_instance_data(model, content, **kwargs)
 
     def get_queryset(self):
-        # Expects 'all' or not defined
-        visibility = self.request.GET.get('visible', 'true')
         queryset = super(PlaceCollectionView, self).get_queryset()
 
         if 'near' in self.request.GET:
@@ -384,11 +413,10 @@ class PlaceCollectionView (Ignore_CacheBusterMixin, AuthMixin, AbsUrlMixin, Acti
 
             queryset = queryset.distance(geos.Point(lng, lat)).order_by('distance')
 
-        if (visibility == 'all'):
+        if (self.flags['include_invisible']):
             return queryset
-        elif visibility == 'true':
+        else:
             return queryset.filter(visible=True)
-        # TODO: What's a reasonable default?
 
     def post(self, request, *args, **kwargs):
         response = super(PlaceCollectionView, self).post(request, *args, **kwargs)
@@ -472,14 +500,13 @@ class SubmissionCollectionView (Ignore_CacheBusterMixin, AuthMixin, AbsUrlMixin,
         )
 
     def get_queryset(self):
-        # Expects 'all' or not defined
-        visibility = self.request.GET.get('visible', 'true')
         queryset = super(SubmissionCollectionView, self).get_queryset()
 
-        if (visibility == 'all'):
-            return queryset
-        elif visibility == 'true':
+        show_invisible = self.request.GET.get('include_invisible', 'false')
+        if (show_invisible.lower() == 'false'):
             return queryset.filter(visible=True)
+        else:
+            return queryset
 
     def post(self, request, place_id, submission_type, **kwargs):
         # TODO: Location

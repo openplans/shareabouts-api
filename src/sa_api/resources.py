@@ -46,13 +46,10 @@ class ModelResourceWithDataBlob (resources.ModelResource):
         if not hasattr(self, 'view') or self.view is None:
             return False
 
-        if not hasattr(self.view, 'show_private_data'):
+        if not hasattr(self.view, 'flags'):
             return False
 
-        if self.view.show_private_data is not True:
-            return False
-
-        return True
+        return self.view.flags.get('include_private_data', False)
 
     def serialize(self, obj, *args, **kwargs):
         # If the object is a place, parse the data blob and add it to the
@@ -108,6 +105,66 @@ class AttachmentResource (resources.ModelResource):
         return inst.file.url
 
 
+class SubmissionSetResource (resources.Resource):
+    def serialize_by_dataset(self, dataset_id):
+        from django.db.models import Count
+
+        submission_sets = defaultdict(list)
+
+        qs = models.SubmissionSet.objects.filter(place__dataset_id=dataset_id)
+        qs = qs.annotate(length=Count('children'))
+        qs = qs.values('submission_type', 'length',
+                       'place__dataset__owner__username',
+                       'place__dataset__slug', 'place_id')
+
+        for submission_set in qs:
+            set_name, length, owner, dataset, place = \
+                map(submission_set.get, ['submission_type', 'length',
+                       'place__dataset__owner__username',
+                       'place__dataset__slug', 'place_id'])
+
+            # Ignore empty sets
+            if length <= 0:
+                continue
+
+            submission_sets[place].append({
+                'type': set_name,
+                'length': length,
+                'url': reverse('submission_collection_by_dataset', kwargs={
+                    'dataset__owner__username': owner,
+                    'dataset__slug': dataset,
+                    'place_id': place,
+                    'submission_type': set_name
+                })
+            })
+
+        return submission_sets
+
+    def serialize_by_dataset_with_submissions(self, dataset_id):
+        submission_resource = SubmissionResource()
+        submission_resource.view = self.view
+
+        # Don't render the place and dataset, as those are redundant.
+        submission_resource.include = submission_resource.include[:]
+        submission_resource.include.remove('place')
+        submission_resource.exclude.append('dataset')
+
+        places_to_submission_sets = defaultdict(lambda: defaultdict(list))
+
+        # TODO: handle inclusion of private data.
+        qs = models.Submission.objects.filter(dataset_id=dataset_id).select_related('parent')
+        for submission in qs:
+            places_to_submission_sets[submission.parent.place_id][submission.parent.submission_type].append(submission_resource.serialize(submission))
+
+        submission_sets = {}
+        for place_id, submissions in places_to_submission_sets.iteritems():
+            places_to_submission_sets[place_id] = submissions.values()
+
+        places_to_submission_sets = dict(places_to_submission_sets.items())
+
+        return places_to_submission_sets
+
+
 class PlaceResource (ModelResourceWithDataBlob):
     model = models.Place
     form = forms.PlaceForm
@@ -145,7 +202,17 @@ class PlaceResource (ModelResourceWithDataBlob):
         return url
 
     def submissions(self, place):
-        submission_sets = self.model.cache.get_submission_sets(place.dataset_id)
+        if not hasattr(self.view, 'flags'):
+            self.view.flags = {}
+
+        sub_resource = SubmissionSetResource()
+        sub_resource.view = self.view
+        if self.view.flags.get('include_submissions', False):
+            render_func = sub_resource.serialize_by_dataset_with_submissions
+        else:
+            render_func = sub_resource.serialize_by_dataset
+
+        submission_sets = self.model.cache.get_submission_sets(place.dataset_id, render_func, **self.view.flags)
         return submission_sets.get(place.id, [])
 
     def attachments(self, place):
@@ -174,7 +241,7 @@ class PlaceResource (ModelResourceWithDataBlob):
 
         if isinstance(data, list):
             # These filters will have been applied when constructing the queryset
-            special_filters = set(['visible', 'format', 'show_private', 'near'])
+            special_filters = set(['include_invisible', 'include_private_data', 'include_submissions', 'format', 'near'])
 
             for key, values in self.view.request.GET.iterlists():
                 if key not in special_filters:

@@ -46,7 +46,7 @@ class TestModelResourceWithDataBlob(object):
         dataset_instance = DataSet.objects.create(owner=user, slug='ds')
         submitted_thing = SubmittedThing.objects.create(dataset=dataset_instance)
         # Need an instance to avoid auto-creating one.
-        resource.view = mock.Mock()
+        resource.view = mock.Mock(flags={})
         resource.view.model_instance = submitted_thing
         # ... and it needs some other attributes to avoid making a
         # useless mock form.
@@ -84,7 +84,7 @@ class TestModelResourceWithDataBlob(object):
     @istest
     def serialize_with_private_data_and_permission(self):
         resource, submitted_thing = self._get_resource_and_instance()
-        resource.view.show_private_data = True
+        resource.view.flags['include_private_data'] = True
 
         submitted_thing.data = '{"animals": ["dogs", "cats"], "private-email": "admin@example.com"}'
         submitted_thing.submitter_name = 'Jacques Tati'
@@ -114,7 +114,7 @@ class TestModelResourceWithDataBlob(object):
     @istest
     def serialize_list_with_private_data_and_permission(self):
         resource, submitted_thing = self._get_resource_and_instance()
-        resource.view.show_private_data = True
+        resource.view.flags['include_private_data'] = True
 
         submitted_thing.data = '{"animals": ["dogs", "cats"], "private-email": "admin@example.com"}'
         submitted_thing.submitter_name = 'Jacques Tati'
@@ -150,11 +150,13 @@ class TestPlaceResource(TestCase):
     def _cleanup(self):
         from sa_api import models
         from django.contrib.auth.models import User
+        from django.core.cache import cache
         models.Submission.objects.all().delete()
         models.SubmissionSet.objects.all().delete()
         models.Place.objects.all().delete()
         models.DataSet.objects.all().delete()
         User.objects.all().delete()
+        cache.clear()
 
     def setUp(self):
         self._cleanup()
@@ -187,21 +189,24 @@ class TestPlaceResource(TestCase):
 
     @istest
     def submission_sets_empty(self):
-        from ..resources import models, PlaceResource
+        from ..resources import models, PlaceResource, SubmissionSetResource
         from mock_django.managers import ManagerMock
         mock_manager = ManagerMock(models.SubmissionSet.objects)
         with mock.patch.object(models.SubmissionSet, 'objects', mock_manager):
-            assert_equal(PlaceResource().model.cache.get_submission_sets(0), {})
+            submission_set_func = SubmissionSetResource().serialize_by_dataset
+            assert_equal(PlaceResource().model.cache.get_submission_sets(0, submission_set_func), {})
 
     @istest
     def submission_sets_non_empty(self):
-        from ..resources import models, PlaceResource
+        from ..resources import models, PlaceResource, SubmissionSetResource
         self.populate()
         expected_result = {
             123: [{'length': 3, 'url': '/api/v1/user/datasets/dataset/places/123/foo/', 'type': 'foo'}],
             456: [{'length': 2, 'url': '/api/v1/user/datasets/dataset/places/456/bar/', 'type': 'bar'}],
         }
-        assert_equal(dict(PlaceResource().model.cache.get_submission_sets(self.ds.id)), expected_result)
+        submission_set_func = SubmissionSetResource().serialize_by_dataset
+        assert_equal(dict(PlaceResource().model.cache.get_submission_sets(
+            self.ds.id, submission_set_func)), expected_result)
         for place in models.Place.objects.all():
             assert_in(place.id, expected_result)
 
@@ -253,6 +258,26 @@ class TestPlaceResource(TestCase):
         place = models.Place.objects.create(id=125, dataset=dataset, location='POINT(1 1)')
         assert_equal(resource.url(place),
                      '/api/v1/test-user/datasets/test-set/places/125/')
+
+    @istest
+    def serialize_with_submission_data(self):
+        from ..models import User, DataSet, Place, SubmissionSet, Submission
+        user = User.objects.create(username='user')
+        ds = DataSet.objects.create(owner=user, slug='ds')
+        place = Place.objects.create(location='POINT(0 0)', dataset=ds)
+        ss = SubmissionSet.objects.create(place=place, submission_type='set')
+        Submission.objects.create(parent=ss, dataset=ds, data='{"val": 1}')
+        Submission.objects.create(parent=ss, dataset=ds, data='{"val": 2}')
+
+        from ..resources import PlaceResource
+        resource = PlaceResource()
+        resource.view = mock.Mock(flags={'include_submissions': True})
+
+        data = resource.serialize(place)
+        submission_set = data['submissions'][0]
+        assert_equal(type(submission_set), list)
+        assert_equal(len(submission_set), 2)
+        assert_equal(set([s['val'] for s in submission_set]), set([1, 2]))
 
 
 class TestDataSetResource(object):

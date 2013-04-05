@@ -19,13 +19,13 @@ class ShareaboutsApi (object):
         'dataset_collection': r'{username}/datasets/',
         'dataset_instance': r'{username}/datasets/{slug}/',
         'keys_collection': r'{username}/datasets/{dataset_slug}/keys/',
-        'place_collection': r'{username}/datasets/{dataset_slug}/places/?visible=all&show_private=true',
-        'place_collection_table': r'{username}/datasets/{dataset_slug}/places/table?visible=all&show_private=true',
-        'place_instance': r'{username}/datasets/{dataset_slug}/places/{pk}/?show_private=true',
-        'submission_collection': r'{username}/datasets/{dataset_slug}/places/{place_pk}/{type}/?visible=all&show_private=true',
-        'submission_instance': r'{username}/datasets/{dataset_slug}/places/{place_pk}/{type}/{pk}/?show_private=true',
-        'all_submissions': r'{username}/datasets/{dataset_slug}/{type}/?show_private=true',
-        'all_submissions_table': r'{username}/datasets/{dataset_slug}/{type}/table?show_private=true',
+        'place_collection': r'{username}/datasets/{dataset_slug}/places/?include_invisible=true&include_private_data=true',
+        'place_collection_table': r'{username}/datasets/{dataset_slug}/places/table?include_invisible=true&include_private_data=true',
+        'place_instance': r'{username}/datasets/{dataset_slug}/places/{pk}/?include_private_data=true',
+        'submission_collection': r'{username}/datasets/{dataset_slug}/places/{place_pk}/{type}/?include_invisible=true&include_private_data=true',
+        'submission_instance': r'{username}/datasets/{dataset_slug}/places/{place_pk}/{type}/{pk}/?include_private_data=true',
+        'all_submissions': r'{username}/datasets/{dataset_slug}/{type}/?include_private_data=true',
+        'all_submissions_table': r'{username}/datasets/{dataset_slug}/{type}/table?include_private_data=true',
     }
 
     def __init__(self, request=None, root='/api/v1/'):
@@ -580,7 +580,7 @@ class SubmissionMixin (BaseDataBlobFormMixin):
 
             # Retrieve each submission set.
             join_char = '&' if '?' in submission_set['url'] else '?'
-            submission_set['submissions'] = self.api.get(join_char.join([submission_set['url'], 'visible=all']))
+            submission_set['submissions'] = self.api.get(join_char.join([submission_set['url'], 'include_invisible=true']))
 
             # Process some data for display
             submission_set['is_shown'] = True
