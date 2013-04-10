@@ -341,12 +341,17 @@ class SubmissionCache (ThingWithAttachmentCache, Cache):
         general_collection_path = reverse('submission_collection_by_dataset', args=[owner, dataset, place, 'submissions'])
         specific_all_path = reverse('all_submissions_by_dataset', args=[owner, dataset, set_name])
         general_all_path = reverse('all_submissions_by_dataset', args=[owner, dataset, 'submissions'])
-        dataset_path = reverse('dataset_instance_by_user', args=[owner, dataset])
+        place_instance_path = reverse('place_instance_by_dataset', args=[owner, dataset, place])
+        place_collection_path = reverse('place_collection_by_dataset', args=[owner, dataset])
+        dataset_instance_path = reverse('dataset_instance_by_user', args=[owner, dataset])
+        dataset_collection_path = reverse('dataset_collection_by_user', args=[owner])
         activity_path = reverse('activity_collection_by_dataset', args=[owner, dataset])
 
         prefixes.update([specific_instance_path, general_instance_path,
                          specific_collection_path, general_collection_path,
-                         specific_all_path, general_all_path, dataset_path,
+                         specific_all_path, general_all_path,
+                         place_instance_path, place_collection_path,
+                         dataset_instance_path, dataset_collection_path,
                          activity_path])
 
         # TODO: Deprecated paths

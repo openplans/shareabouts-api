@@ -376,6 +376,8 @@ class TestSubmissionInstanceAPI (TestCase):
         SubmissionSet.objects.all().delete()
         ApiKey.objects.all().delete()
 
+        cache.clear()
+
         self.owner = User.objects.create(username='user')
         self.apikey = ApiKey.objects.create(user_id=self.owner.id, key='abcd1234')
         self.dataset = DataSet.objects.create(slug='data',
@@ -393,8 +395,14 @@ class TestSubmissionInstanceAPI (TestCase):
                                        dataset__owner__username=self.owner.username,
                                        dataset__slug=self.dataset.slug,
                                        ))
-        from ..views import SubmissionInstanceView
+        self.place_url = reverse('place_instance_by_dataset',
+                                 kwargs=dict(pk=self.place.id,
+                                             dataset__owner__username=self.owner.username,
+                                             dataset__slug=self.dataset.slug,
+                                             ))
+        from ..views import SubmissionInstanceView, PlaceInstanceView
         self.view = SubmissionInstanceView.as_view()
+        self.place_view = PlaceInstanceView.as_view()
 
     @istest
     def put_request_should_modify_instance(self):
@@ -417,6 +425,77 @@ class TestSubmissionInstanceAPI (TestCase):
         response_data = json.loads(response.content)
         assert_equal(response.status_code, 200)
         self.assertDictContainsSubset(data, response_data)
+
+    @istest
+    def put_request_should_invalidate_cache(self):
+        get_request = RequestFactory().get(self.url, content_type='application/json')
+        get_request.user = self.owner
+        get_request.META['HTTP_ACCEPT'] = 'application/json'
+        kwargs = dict(place_id=self.place.id,
+                       pk=self.submission.id,
+                       submission_type='comments',
+                       dataset__owner__username=self.owner.username,
+                       dataset__slug=self.dataset.slug,
+                      )
+
+        with self.assertNumQueries(2):
+            response1 = self.view(get_request, **kwargs)
+        with self.assertNumQueries(0):
+            response2 = self.view(get_request, **kwargs)
+        self.assertEqual(response1.content, response2.content)
+
+        data = {
+            'submitter_name': 'Paul Winkler',
+            'age': 99,
+            'comment': 'Get off my lawn!',
+        }
+
+        put_request = RequestFactory().put(self.url, data=json.dumps(data),
+                                           content_type='application/json')
+        put_request.user = self.owner
+        self.view(put_request, **kwargs)
+
+        with self.assertNumQueries(1):
+            response3 = self.view(get_request, **kwargs)
+        self.assertNotEqual(response1.content, response3.content)
+
+    @istest
+    def put_request_should_invalidate_place_cache(self):
+        get_request = RequestFactory().get(self.place_url + '?include_submissions=true', content_type='application/json')
+        get_request.user = self.owner
+        get_request.META['HTTP_ACCEPT'] = 'application/json'
+        place_kwargs = dict(pk=self.place.id,
+                       dataset__owner__username=self.owner.username,
+                       dataset__slug=self.dataset.slug,
+                      )
+        submission_kwargs = dict(place_id=self.place.id,
+                       pk=self.submission.id,
+                       submission_type='comments',
+                       dataset__owner__username=self.owner.username,
+                       dataset__slug=self.dataset.slug,
+                      )
+
+        with self.assertNumQueries(3):
+            response1 = self.place_view(get_request, **place_kwargs)
+        with self.assertNumQueries(0):
+            response2 = self.place_view(get_request, **place_kwargs)
+        self.assertEqual(response1.content, response2.content)
+        self.assertEqual(response1.status_code, 200)
+
+        data = {
+            'submitter_name': 'Paul Winkler',
+            'age': 99,
+            'comment': 'Get off my lawn!',
+        }
+
+        put_request = RequestFactory().put(self.url, data=json.dumps(data),
+                                           content_type='application/json')
+        put_request.user = self.owner
+        self.view(put_request, **submission_kwargs)
+
+        with self.assertNumQueries(2):
+            response3 = self.place_view(get_request, **place_kwargs)
+        self.assertNotEqual(response1.content, response3.content)
 
     @istest
     def delete_request_should_delete_submission(self):
