@@ -173,7 +173,7 @@ class PlaceResource (ModelResourceWithDataBlob):
     dataset_cache = cache.DataSetCache()
 
     exclude = ['data', 'submittedthing_ptr']
-    include = ['url', 'submissions', 'attachments']
+    include = ['url', 'submissions', 'attachments', 'distance']
 
     # TODO: this can be abstracted into a mixin.
     def instance_params(self, inst):
