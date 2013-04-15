@@ -403,6 +403,9 @@ class PlaceCollectionView (Ignore_CacheBusterMixin, AuthMixin, AbsUrlMixin, Acti
     def get_queryset(self):
         queryset = super(PlaceCollectionView, self).get_queryset()
 
+        if not self.flags['include_invisible']:
+            queryset = queryset.filter(visible=True)
+
         if 'near' in self.request.GET:
             try:
                 lat, lng = map(float, self.request.GET['near'].split(','))
@@ -413,10 +416,15 @@ class PlaceCollectionView (Ignore_CacheBusterMixin, AuthMixin, AbsUrlMixin, Acti
 
             queryset = queryset.distance(geos.Point(lng, lat)).order_by('distance')
 
-        if (self.flags['include_invisible']):
-            return queryset
-        else:
-            return queryset.filter(visible=True)
+        return queryset
+
+    def get(self, request, *args, **kwargs):
+        request.GET = request.GET.copy()
+        skip = request.GET.pop('skip', [None])[0]
+        limit = request.GET.pop('limit', [None])[0]
+
+        queryset = super(PlaceCollectionView, self).get(request, *args, **kwargs)
+        return queryset[skip:limit]
 
     def post(self, request, *args, **kwargs):
         response = super(PlaceCollectionView, self).post(request, *args, **kwargs)
