@@ -423,8 +423,10 @@ class PlaceCollectionView (Ignore_CacheBusterMixin, AuthMixin, AbsUrlMixin, Acti
         skip = request.GET.pop('skip', [None])[0]
         limit = request.GET.pop('limit', [None])[0]
 
+        start, end = skip, (int(limit)+int(skip) if limit and skip else limit)
+
         queryset = super(PlaceCollectionView, self).get(request, *args, **kwargs)
-        return queryset[skip:limit]
+        return queryset[start:end]
 
     def post(self, request, *args, **kwargs):
         response = super(PlaceCollectionView, self).post(request, *args, **kwargs)
