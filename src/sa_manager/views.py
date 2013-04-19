@@ -479,7 +479,7 @@ class DataSetFormMixin (BaseDataBlobFormMixin):
 
         if response.status_code == 204:
             messages.success(request, 'Successfully deleted!')
-            return redirect(reverse('manager_dataset_list'))
+            return redirect(reverse('manager_dataset_list', args=[owner_name]))
         else:
             messages.error(request, 'Error: ' + response.text)
             return redirect(request.get_full_path())
