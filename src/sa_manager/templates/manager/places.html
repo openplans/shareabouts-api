@@ -11,7 +11,7 @@
   <thead>
     <tr>
       <th>ID</th>
-      
+
       {% for field_name in data_fields %}
       <th>{{ field_name|title }}</th>
       {% endfor %}
@@ -26,7 +26,7 @@
     {% for place in places %}
     <tr class="{% if not place.visible %}in{% endif %}visible-place-row">
       <td><a href="{{ place.id }}">{{ place.id }}</a></td>
-      
+
       {% for field_name in data_fields %}
       <td>{{ place|get_item:field_name|default_if_none:''|truncatechars:140 }}</td>
       {% endfor %}
@@ -34,14 +34,14 @@
       <td><time datetime="{{ place.created_datetime }}">{{ place.created_datetime|parse_datetime|date:"Y-m-d H:i:s" }}</time></td>
       <td><time datetime="{{ place.updated_datetime }}">{{ place.updated_datetime|parse_datetime|date:"Y-m-d H:i:s" }}</time></td>
       <td>
-        <a href="{% url 'manager_place_submission_list' dataset.slug place.id 'submissions' %}" class="btn btn-small">
+        <a href="{% url 'manager_place_submission_list' dataset.owner.username dataset.slug place.id 'submissions' %}" class="btn btn-small">
           {{ place.submission_count }} Submission{{ place.submission_count|pluralize }}
           <i class="icon-chevron-right"></i>
         </a>
 
         <ul>
           {% for submission_set in place.submissions %}
-          <li><a href="{% url 'manager_place_submission_list' dataset.slug place.id submission_set.type %}">{{ submission_set.length }} {{ submission_set.type }}</a></li>
+          <li><a href="{% url 'manager_place_submission_list' dataset.owner.username dataset.slug place.id submission_set.type %}">{{ submission_set.length }} {{ submission_set.type }}</a></li>
           {% endfor %}
         </ul>
       </td>

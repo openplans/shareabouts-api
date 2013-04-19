@@ -79,15 +79,15 @@ class ShareaboutsApi (object):
 
 @login_required
 def index_view(request):
-    return redirect('manager_dataset_list')
+    return redirect(reverse('manager_dataset_list', args=[request.user.username]))
 
 
 @login_required
-def places_view(request, dataset_slug):
+def places_view(request, owner_name, dataset_slug):
     api = ShareaboutsApi(request)
     api.authenticate(request)
-    dataset_uri = api.build_uri('dataset_instance', username=request.user.username, slug=dataset_slug)
-    places_uri = api.build_uri('place_collection', username=request.user.username, dataset_slug=dataset_slug)
+    dataset_uri = api.build_uri('dataset_instance', username=owner_name, slug=dataset_slug)
+    places_uri = api.build_uri('place_collection', username=owner_name, dataset_slug=dataset_slug)
 
     places = api.get(places_uri)
     dataset = api.get(dataset_uri)
@@ -108,14 +108,14 @@ def places_view(request, dataset_slug):
 
 
 @login_required
-def keys_view(request, dataset_slug):
+def keys_view(request, owner_name, dataset_slug):
     api = ShareaboutsApi(request)
     api.authenticate(request)
     dataset_uri = api.build_uri('dataset_instance',
-                                username=request.user.username,
+                                username=owner_name,
                                 slug=dataset_slug)
     keys_uri = api.build_uri('keys_collection',
-                             username=request.user.username,
+                             username=owner_name,
                              dataset_slug=dataset_slug)
     keys = api.get(keys_uri)
     dataset = api.get(dataset_uri)
@@ -225,13 +225,13 @@ class PlaceFormMixin (BaseDataBlobFormMixin):
         # Fix the visibility to be either true or false (boolean)
         data['visible'] = ('visible' in data)
 
-    def initial(self, request, dataset_slug):
+    def initial(self, request, owner_name, dataset_slug):
         api = ShareaboutsApi(request)
         api.authenticate(request)
         dataset = api.get(self.dataset_uri)
         return render(request, "manager/place.html", {'dataset': dataset})
 
-    def create(self, request, dataset_slug):
+    def create(self, request, owner_name, dataset_slug):
         # Make a copy of the POST data, since we can't edit the original.
         self.data_blob = data = request.POST.dict()
         self.process_data_blob()
@@ -244,13 +244,13 @@ class PlaceFormMixin (BaseDataBlobFormMixin):
             place_id = data.get('id')
 
             messages.success(request, 'Successfully saved!')
-            return redirect(reverse('manager_place_detail', args=[dataset_slug, place_id]))
+            return redirect(reverse('manager_place_detail', args=[owner_name, dataset_slug, place_id]))
 
         else:
             messages.error(request, 'Error: ' + response.text)
             return redirect(request.get_full_path())
 
-    def read(self, request, dataset_slug, pk):
+    def read(self, request, owner_name, dataset_slug, pk):
         # Retrieve the place data.
         place = self.api.get(self.place_uri)
         dataset = self.api.get(self.dataset_uri)
@@ -264,7 +264,7 @@ class PlaceFormMixin (BaseDataBlobFormMixin):
             'data_fields': data_fields
         })
 
-    def update(self, request, dataset_slug, pk):
+    def update(self, request, owner_name, dataset_slug, pk):
         # Make a copy of the POST data, since we can't edit the original.
         self.data_blob = data = request.POST.dict()
         self.process_data_blob()
@@ -280,13 +280,13 @@ class PlaceFormMixin (BaseDataBlobFormMixin):
 
         return redirect(request.get_full_path())
 
-    def delete(self, request, dataset_slug, pk):
+    def delete(self, request, owner_name, dataset_slug, pk):
         # Send the delete request
         response = self.api.send('DELETE', self.place_uri)
 
         if response.status_code == 204:
             messages.success(request, 'Successfully deleted!')
-            return redirect(reverse('manager_place_list', args=[dataset_slug]))
+            return redirect(reverse('manager_place_list', args=[owner_name, dataset_slug]))
 
         else:
             messages.error(request, 'Error: ' + response.text)
@@ -296,42 +296,42 @@ class PlaceFormMixin (BaseDataBlobFormMixin):
 class NewPlaceView (PlaceFormMixin, View):
 
     @method_decorator(login_required)
-    def dispatch(self, request, dataset_slug):
+    def dispatch(self, request, owner_name, dataset_slug):
         self.api = ShareaboutsApi(request)
         self.api.authenticate(request)
 
-        self.dataset_uri = self.api.build_uri('dataset_instance', username=request.user.username, slug=dataset_slug)
-        self.places_uri = self.api.build_uri('place_collection', username=request.user.username, dataset_slug=dataset_slug)
+        self.dataset_uri = self.api.build_uri('dataset_instance', username=owner_name, slug=dataset_slug)
+        self.places_uri = self.api.build_uri('place_collection', username=owner_name, dataset_slug=dataset_slug)
 
-        return super(NewPlaceView, self).dispatch(request, dataset_slug)
+        return super(NewPlaceView, self).dispatch(request, owner_name, dataset_slug)
 
-    def get(self, request, dataset_slug):
-        return self.initial(request, dataset_slug)
+    def get(self, request, owner_name, dataset_slug):
+        return self.initial(request, owner_name, dataset_slug)
 
-    def post(self, request, dataset_slug):
-        return self.create(request, dataset_slug)
+    def post(self, request, owner_name, dataset_slug):
+        return self.create(request, owner_name, dataset_slug)
 
 
 class ExistingPlaceView (PlaceFormMixin, View):
 
     @method_decorator(login_required)
-    def dispatch(self, request, dataset_slug, pk):
+    def dispatch(self, request, owner_name, dataset_slug, pk):
         self.api = ShareaboutsApi(request)
         self.api.authenticate(request)
 
-        self.dataset_uri = self.api.build_uri('dataset_instance', username=request.user.username, slug=dataset_slug)
-        self.place_uri = self.api.build_uri('place_instance', username=request.user.username, dataset_slug=dataset_slug, pk=pk)
+        self.dataset_uri = self.api.build_uri('dataset_instance', username=owner_name, slug=dataset_slug)
+        self.place_uri = self.api.build_uri('place_instance', username=owner_name, dataset_slug=dataset_slug, pk=pk)
 
-        return super(ExistingPlaceView, self).dispatch(request, dataset_slug, pk)
+        return super(ExistingPlaceView, self).dispatch(request, owner_name, dataset_slug, pk)
 
-    def get(self, request, dataset_slug, pk):
-        return self.read(request, dataset_slug, pk)
+    def get(self, request, owner_name, dataset_slug, pk):
+        return self.read(request, owner_name, dataset_slug, pk)
 
-    def post(self, request, dataset_slug, pk):
+    def post(self, request, owner_name, dataset_slug, pk):
         if request.POST.get('action') == 'save':
-            return self.update(request, dataset_slug, pk)
+            return self.update(request, owner_name, dataset_slug, pk)
         elif request.POST.get('action') == 'delete':
-            return self.delete(request, dataset_slug, pk)
+            return self.delete(request, owner_name, dataset_slug, pk)
         else:
             # TODO ???
             pass
@@ -366,29 +366,31 @@ class ChangePasswordView (FormView):
 
 
 @login_required
-def datasets_view(request):
+def datasets_view(request, owner_name):
     api = ShareaboutsApi(request)
     api.authenticate(request)
 
-    datasets_uri = api.build_uri('dataset_collection', username=request.user.username)
+    datasets_uri = api.build_uri('dataset_collection', username=owner_name)
 
     datasets = api.get(datasets_uri)
     for ds in datasets:
         ds['manage_uri'] = reverse('manager_dataset_detail',
-                                   kwargs={'dataset_slug': ds['slug']})
+                                   kwargs={'owner_name': owner_name,
+                                           'dataset_slug': ds['slug']})
     return render(request, "manager/datasets.html", {'datasets': datasets})
 
 
 class DataSetFormMixin (BaseDataBlobFormMixin):
 
     @method_decorator(login_required)
-    def dispatch(self, request, *args, **kwargs):
+    def dispatch(self, request, owner_name, *args, **kwargs):
         self.api = ShareaboutsApi(request)
         self.api.authenticate(request)
 
-        self.datasets_uri = self.api.build_uri('dataset_collection', username=request.user.username)
+        self.datasets_uri = self.api.build_uri('dataset_collection', username=owner_name)
         self.special_fields = ('id', 'owner', 'display_name', 'slug')
 
+        # TODO: just make this a keyword attribute with default value of None
         dataset_slug = None
         if args:
             dataset_slug = args[0]
@@ -396,11 +398,11 @@ class DataSetFormMixin (BaseDataBlobFormMixin):
             dataset_slug = kwargs['dataset_slug']
 
         if dataset_slug is not None:
-            self.dataset_uri = self.api.build_uri('dataset_instance', username=request.user.username, slug=dataset_slug)
+            self.dataset_uri = self.api.build_uri('dataset_instance', username=owner_name, slug=dataset_slug)
 
-        return super(DataSetFormMixin, self).dispatch(request, *args, **kwargs)
+        return super(DataSetFormMixin, self).dispatch(request, owner_name, *args, **kwargs)
 
-    def read(self, request, dataset_slug):
+    def read(self, request, owner_name, dataset_slug):
         # Retrieve the dataset data.
         dataset = self.api.get(self.dataset_uri)
 
@@ -417,10 +419,10 @@ class DataSetFormMixin (BaseDataBlobFormMixin):
 #        owner = self.request.user.id  # Needs to be a django.contrib.auth id
 #        self.data_blob['owner'] = owner
 
-    def initial(self, request):
+    def initial(self, request, owner_name):
         return render(request, "manager/dataset.html")
 
-    def create(self, request):
+    def create(self, request, owner_name):
         self.data_blob = data = request.POST.dict()
         self.process_data_blob()
 
@@ -430,13 +432,13 @@ class DataSetFormMixin (BaseDataBlobFormMixin):
             data = json.loads(response.text)
             messages.success(request, 'Successfully saved!')
             return redirect(reverse('manager_dataset_detail', kwargs=(
-                {'dataset_slug': data['slug']})))
+                {'owner_name': owner_name, 'dataset_slug': data['slug']})))
 
         else:
             messages.error(request, 'Error: ' + response.text)
             return redirect(request.get_full_path())
 
-    def update(self, request, dataset_slug):
+    def update(self, request, owner_name, dataset_slug):
         # Make a copy of the POST data, since we can't edit the original.
         self.data_blob = data = request.POST.dict()
         self.process_data_blob()
@@ -463,14 +465,15 @@ class DataSetFormMixin (BaseDataBlobFormMixin):
                 )
                 new_url = reverse(
                     'manager_dataset_detail',
-                    kwargs={'dataset_slug': response_json['slug']})
+                    kwargs={'owner_name': response_json['owner']['username'],
+                            'dataset_slug': response_json['slug']})
                 return redirect(new_url)
         else:
             messages.error(request, 'Error: ' + response.text)
 
         return redirect(request.get_full_path())
 
-    def delete(self, request, dataset_slug):
+    def delete(self, request, owner_name, dataset_slug):
         # Send the delete request
         response = self.api.send('DELETE', self.dataset_uri)
 
@@ -485,30 +488,30 @@ class DataSetFormMixin (BaseDataBlobFormMixin):
 class NewDataSetView (DataSetFormMixin, View):
 
     @method_decorator(login_required)
-    def dispatch(self, request):
-        return super(NewDataSetView, self).dispatch(request)
+    def dispatch(self, request, owner_name):
+        return super(NewDataSetView, self).dispatch(request, owner_name)
 
-    def get(self, request):
-        return self.initial(request)
+    def get(self, request, owner_name):
+        return self.initial(request, owner_name)
 
-    def post(self, request):
-        return self.create(request)
+    def post(self, request, owner_name):
+        return self.create(request, owner_name)
 
 
 class ExistingDataSetView (DataSetFormMixin, View):
 
     @method_decorator(login_required)
-    def dispatch(self, request, dataset_slug):
-        return super(ExistingDataSetView, self).dispatch(request, dataset_slug)
+    def dispatch(self, request, owner_name, dataset_slug):
+        return super(ExistingDataSetView, self).dispatch(request, owner_name, dataset_slug)
 
-    def get(self, request, dataset_slug):
-        return self.read(request, dataset_slug)
+    def get(self, request, owner_name, dataset_slug):
+        return self.read(request, owner_name, dataset_slug)
 
-    def post(self, request, dataset_slug):
+    def post(self, request, owner_name, dataset_slug):
         if request.POST.get('action') == 'save':
-            return self.update(request, dataset_slug)
+            return self.update(request, owner_name, dataset_slug)
         elif request.POST.get('action') == 'delete':
-            return self.delete(request, dataset_slug)
+            return self.delete(request, owner_name, dataset_slug)
         else:
             # TODO ???
             pass
@@ -520,12 +523,13 @@ class DataSetReportingView (TemplateView):
     def get_context_data(self, **kwargs):
         context = super(DataSetReportingView, self).get_context_data(**kwargs)
 
-        request, dataset_slug = self.request, self.kwargs['dataset_slug']
+        request, owner_name, dataset_slug = \
+            self.request, self.kwargs['owner_name'], self.kwargs['dataset_slug']
 
         api = ShareaboutsApi(request)
         api.authenticate(request)
-        dataset_uri = api.build_uri('dataset_instance', username=request.user.username, slug=dataset_slug)
-        places_uri = api.build_uri('place_collection', username=request.user.username, dataset_slug=dataset_slug)
+        dataset_uri = api.build_uri('dataset_instance', username=owner_name, slug=dataset_slug)
+        places_uri = api.build_uri('place_collection', username=owner_name, dataset_slug=dataset_slug)
 
         places = api.get(places_uri)
         dataset = api.get(dataset_uri)
@@ -542,13 +546,14 @@ class DataSetReportingView (TemplateView):
 class SubmissionMixin (BaseDataBlobFormMixin):
 
     @method_decorator(login_required)
-    def dispatch(self, request, dataset_slug, place_id, submission_type, *args, **kwargs):
+    def dispatch(self, request, owner_name, dataset_slug, place_id, submission_type, *args, **kwargs):
         self.api = ShareaboutsApi(request)
         self.api.authenticate(request)
 
-        self.dataset_uri = self.api.build_uri('dataset_instance', username=request.user.username, slug=dataset_slug)
-        self.place_uri = self.api.build_uri('place_instance', username=request.user.username, dataset_slug=dataset_slug, pk=place_id)
+        self.dataset_uri = self.api.build_uri('dataset_instance', username=owner_name, slug=dataset_slug)
+        self.place_uri = self.api.build_uri('place_instance', username=owner_name, dataset_slug=dataset_slug, pk=place_id)
 
+        # TODO: use a keyword arg with a default value of None for pk
         pk = None
         if args:
             pk = args[0]
@@ -556,14 +561,14 @@ class SubmissionMixin (BaseDataBlobFormMixin):
             pk = kwargs['pk']
 
         if pk is not None:
-            self.submission_uri = self.api.build_uri('submission_instance', username=request.user.username, dataset_slug=dataset_slug, place_pk=place_id, type=submission_type, pk=pk)
+            self.submission_uri = self.api.build_uri('submission_instance', username=owner_name, dataset_slug=dataset_slug, place_pk=place_id, type=submission_type, pk=pk)
 
         self.special_fields = ('id', 'submitter_name', 'url', 'visible',
                                'created_datetime', 'updated_datetime', 'type',
                                'place', 'dataset', 'attachments')
-        return super(SubmissionMixin, self).dispatch(request, dataset_slug, place_id, submission_type, *args, **kwargs)
+        return super(SubmissionMixin, self).dispatch(request, owner_name, dataset_slug, place_id, submission_type, *args, **kwargs)
 
-    def index(self, request, dataset_slug, place_id, submission_type):
+    def index(self, request, owner_name, dataset_slug, place_id, submission_type):
         # Retrieve the dataset data.
         dataset = self.api.get(self.dataset_uri)
 
@@ -599,7 +604,7 @@ class SubmissionMixin (BaseDataBlobFormMixin):
             'dataset': dataset
         })
 
-    def initial(self, request, dataset_slug, place_id, submission_type):
+    def initial(self, request, owner_name, dataset_slug, place_id, submission_type):
         # Retrieve the dataset data.
         dataset = self.api.get(self.dataset_uri)
 
@@ -624,14 +629,14 @@ class SubmissionMixin (BaseDataBlobFormMixin):
         # Fix the visibility to be either true or false (boolean)
         data['visible'] = ('visible' in data)
 
-    def create(self, request, dataset_slug, place_id, submission_type):
+    def create(self, request, owner_name, dataset_slug, place_id, submission_type):
         # Make a copy of the POST data, since we can't edit the original.
         self.data_blob = data = request.POST.dict()
         self.process_data_blob()
 
         # Construct the submission_uri, taking into account the submission
         # type according to the POST variables.
-        self.submissions_uri = self.api.build_uri('submission_collection', username=request.user.username, dataset_slug=dataset_slug, place_pk=place_id, type=self.actual_submission_type)
+        self.submissions_uri = self.api.build_uri('submission_collection', username=owner_name, dataset_slug=dataset_slug, place_pk=place_id, type=self.actual_submission_type)
 
         # Send the save request
         response = self.api.send('POST', self.submissions_uri, data)
@@ -641,13 +646,13 @@ class SubmissionMixin (BaseDataBlobFormMixin):
             submission_id = data.get('id')
 
             messages.success(request, 'Successfully saved!')
-            return redirect(reverse('manager_place_submission_detail', args=[dataset_slug, place_id, self.actual_submission_type, submission_id]))
+            return redirect(reverse('manager_place_submission_detail', args=[owner_name, dataset_slug, place_id, self.actual_submission_type, submission_id]))
 
         else:
             messages.error(request, 'Error: ' + response.text)
             return redirect(request.get_full_path())
 
-    def read(self, request, dataset_slug, place_id, submission_type, pk):
+    def read(self, request, owner_name, dataset_slug, place_id, submission_type, pk):
         # Retrieve the dataset data.
         dataset = self.api.get(self.dataset_uri)
 
@@ -666,7 +671,7 @@ class SubmissionMixin (BaseDataBlobFormMixin):
             'data_fields': data_fields
         })
 
-    def update(self, request, dataset_slug, place_id, submission_type, pk):
+    def update(self, request, owner_name, dataset_slug, place_id, submission_type, pk):
         # Make a copy of the POST data, since we can't edit the original.
         self.data_blob = data = request.POST.dict()
         self.process_data_blob()
@@ -682,13 +687,13 @@ class SubmissionMixin (BaseDataBlobFormMixin):
 
         return redirect(request.get_full_path())
 
-    def delete(self, request, dataset_slug, place_id, submission_type, pk):
+    def delete(self, request, owner_name, dataset_slug, place_id, submission_type, pk):
         # Send the delete request
         response = self.api.send('DELETE', self.submission_uri)
 
         if response.status_code == 204:
             messages.success(request, 'Successfully deleted!')
-            return redirect(reverse('manager_place_submission_list', args=(dataset_slug, place_id, submission_type)))
+            return redirect(reverse('manager_place_submission_list', args=(owner_name, dataset_slug, place_id, submission_type)))
 
         else:
             messages.error(request, 'Error: ' + response.text)
@@ -696,46 +701,46 @@ class SubmissionMixin (BaseDataBlobFormMixin):
 
 
 class SubmissionListView (SubmissionMixin, View):
-    def get(self, request, dataset_slug, place_id, submission_type):
-        return self.index(request, dataset_slug, place_id, submission_type)
+    def get(self, request, owner_name, dataset_slug, place_id, submission_type):
+        return self.index(request, owner_name, dataset_slug, place_id, submission_type)
 
 
 class NewSubmissionView (SubmissionMixin, View):
 
     @method_decorator(login_required)
-    def dispatch(self, request, dataset_slug, place_id, submission_type):
-        return super(NewSubmissionView, self).dispatch(request, dataset_slug, place_id, submission_type)
+    def dispatch(self, request, owner_name, dataset_slug, place_id, submission_type):
+        return super(NewSubmissionView, self).dispatch(request, owner_name, dataset_slug, place_id, submission_type)
 
-    def get(self, request, dataset_slug, place_id, submission_type):
-        return self.initial(request, dataset_slug, place_id, submission_type)
+    def get(self, request, owner_name, dataset_slug, place_id, submission_type):
+        return self.initial(request, owner_name, dataset_slug, place_id, submission_type)
 
-    def post(self, request, dataset_slug, place_id, submission_type):
-        return self.create(request, dataset_slug, place_id, submission_type)
+    def post(self, request, owner_name, dataset_slug, place_id, submission_type):
+        return self.create(request, owner_name, dataset_slug, place_id, submission_type)
 
 
 class ExistingSubmissionView (SubmissionMixin, View):
 
     @method_decorator(login_required)
-    def dispatch(self, request, dataset_slug, place_id, submission_type, pk):
-        return super(ExistingSubmissionView, self).dispatch(request, dataset_slug, place_id, submission_type, pk)
+    def dispatch(self, request, owner_name, dataset_slug, place_id, submission_type, pk):
+        return super(ExistingSubmissionView, self).dispatch(request, owner_name, dataset_slug, place_id, submission_type, pk)
 
-    def get(self, request, dataset_slug, place_id, submission_type, pk):
-        return self.read(request, dataset_slug, place_id, submission_type, pk)
+    def get(self, request, owner_name, dataset_slug, place_id, submission_type, pk):
+        return self.read(request, owner_name, dataset_slug, place_id, submission_type, pk)
 
-    def post(self, request, dataset_slug, place_id, submission_type, pk):
+    def post(self, request, owner_name, dataset_slug, place_id, submission_type, pk):
         if request.POST.get('action') == 'save':
-            return self.update(request, dataset_slug, place_id, submission_type, pk)
+            return self.update(request, owner_name, dataset_slug, place_id, submission_type, pk)
         elif request.POST.get('action') == 'delete':
-            return self.delete(request, dataset_slug, place_id, submission_type, pk)
+            return self.delete(request, owner_name, dataset_slug, place_id, submission_type, pk)
         else:
             # TODO ???
             pass
 
 
-def download_places_view(request, dataset_slug):
+def download_places_view(request, owner_name, dataset_slug):
     api = ShareaboutsApi(request)
     api.authenticate(request)
-    places_uri = api.build_uri('place_collection_table', username=request.user.username, dataset_slug=dataset_slug)
+    places_uri = api.build_uri('place_collection_table', username=owner_name, dataset_slug=dataset_slug)
 
     api_response = api.send('GET', places_uri, content_type='text/csv')
     places_csv = api_response.text
@@ -745,10 +750,10 @@ def download_places_view(request, dataset_slug):
 
     return response
 
-def download_submissions_view(request, dataset_slug, submission_type):
+def download_submissions_view(request, owner_name, dataset_slug, submission_type):
     api = ShareaboutsApi(request)
     api.authenticate(request)
-    submissions_uri = api.build_uri('all_submissions_table', username=request.user.username, dataset_slug=dataset_slug, type=submission_type)
+    submissions_uri = api.build_uri('all_submissions_table', username=owner_name, dataset_slug=dataset_slug, type=submission_type)
 
     api_response = api.send('GET', submissions_uri, content_type='text/csv')
     submissions_csv = api_response.text

@@ -8,7 +8,7 @@
     <a href="{% url 'manager_index' %}">Manager</a> <span class="divider">/</span>
   </li>
   <li>
-    <a href="{% url 'manager_dataset_list' %}">Datasets</a> <span class="divider">/</span>
+    <a href="{% url 'manager_dataset_list' dataset.owner.username %}">Datasets</a> <span class="divider">/</span>
   </li>
 
   {% block more_breadcrumbs %}
@@ -22,7 +22,7 @@
   {% endblock %}
 </ul>
 
-{% if dataset %}<h2>{{ dataset.display_name }} <a class="btn btn-primary" href="{% url 'manager_place_create' dataset.slug %}">Add New Place</a></h2>
+{% if dataset %}<h2>{{ dataset.display_name }} <a class="btn btn-primary" href="{% url 'manager_place_create' dataset.owner.username dataset.slug %}">Add New Place</a></h2>
 {% endif %}
 
 {% block dataset_content %}
