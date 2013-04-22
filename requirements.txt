@@ -18,7 +18,7 @@ python-dateutil
 ujson
 
 # The manager interface
-requests>=1.0.0
+requests>=1.2.0
 
 # Testing, validating, and debugging
 nose
