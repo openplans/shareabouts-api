@@ -420,7 +420,7 @@ class DataSetFormMixin (BaseDataBlobFormMixin):
 #        self.data_blob['owner'] = owner
 
     def initial(self, request, owner_name):
-        return render(request, "manager/dataset.html")
+        return render(request, "manager/dataset.html", {'dataset': {'owner': {'username': owner_name}}})
 
     def create(self, request, owner_name):
         self.data_blob = data = request.POST.dict()

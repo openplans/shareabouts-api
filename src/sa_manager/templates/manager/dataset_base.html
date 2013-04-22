@@ -22,7 +22,7 @@
   {% endblock %}
 </ul>
 
-{% if dataset %}<h2>{{ dataset.display_name }} <a class="btn btn-primary" href="{% url 'manager_place_create' dataset.owner.username dataset.slug %}">Add New Place</a></h2>
+{% if dataset.slug %}<h2>{{ dataset.display_name }} <a class="btn btn-primary" href="{% url 'manager_place_create' dataset.owner.username dataset.slug %}">Add New Place</a></h2>
 {% endif %}
 
 {% block dataset_content %}

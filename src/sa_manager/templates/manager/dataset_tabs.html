@@ -1,6 +1,6 @@
 {% load url from future %}
 
-{% if dataset %}
+{% if dataset.slug %}
 <ul class="nav nav-tabs">
   <li{% if properties_active %} class="active"{% endif %}>
     <a href="{% url 'manager_dataset_detail' dataset.owner.username dataset.slug %}">Properties</a>
