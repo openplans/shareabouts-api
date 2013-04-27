@@ -30,6 +30,71 @@ Datasets
 The primary entry point into the API is a dataset. Each dataset has an owner,
 and a user can own any number of datasets.
 
+Sample URL:       | /api/v1/*:owner*/datasets/
+------------------|---------------------------
+Response Formats: | JSON, CSV
+------------------|---------------------------
+Sample Response:  |
+                  |
+                  |    [
+                  |      {
+                  |        "id": 10,
+                  |        "url": "http://api.shareabouts.org/api/v1/openplans/datasets/atm_surcharge/",
+                  |
+                  |        "display_name": "ATM Surcharge",
+                  |        "slug": "atm_surcharge",
+                  |
+                  |        "keys": {
+                  |          "url": "http://api.shareabouts.org/api/v1/openplans/datasets/atm_surcharge/keys/"
+                  |        },
+                  |        "owner": {
+                  |          "username": "openplans",
+                  |          "id": 7
+                  |        },
+                  |        "places": {
+                  |          "url": "http://api.shareabouts.org/api/v1/openplans/datasets/atm_surcharge/places/",
+                  |          "length": 31
+                  |        },
+                  |        "submissions": [
+                  |          {
+                  |            "type": "comments"
+                  |            "length": 13,
+                  |            "url": "http://api.shareabouts.org/api/v1/openplans/datasets/atm_surcharge/comments/",
+                  |          }
+                  |        ]
+                  |      },
+                  |      {
+                  |        "id": 31,
+                  |        "url": "http://api.shareabouts.org/api/v1/openplans/datasets/chicagobikes/",
+                  |        "display_name": "Chicago Bike Share exports",
+                  |        "slug": "chicagobikes",
+                  |
+                  |        "keys": {
+                  |          "url": "http://api.shareabouts.org/api/v1/openplans/datasets/chicagobikes/keys/"
+                  |        },
+                  |        "owner": {
+                  |          "username": "openplans",
+                  |          "id": 7
+                  |        },
+                  |        "places": {
+                  |          "url": "http://api.shareabouts.org/api/v1/openplans/datasets/chicagobikes/places/",
+                  |          "length": 1281
+                  |        },
+                  |        "submissions": [
+                  |          {
+                  |            "url": "http://api.shareabouts.org/api/v1/openplans/datasets/chicagobikes/comments/",
+                  |            "length": 1166,
+                  |            "type": "comments"
+                  |          },
+                  |          {
+                  |            "url": "http://api.shareabouts.org/api/v1/openplans/datasets/chicagobikes/support/",
+                  |            "length": 12389,
+                  |            "type": "support"
+                  |          }
+                  |        ]
+                  |      }
+                  |    ]
+
 To get a list of all datasets belonging to a user:
 
   * **Method**: GET
