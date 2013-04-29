@@ -48,11 +48,6 @@ and a user can own any number of datasets.
 
 Get a user's datasets
 
-**Request Parameters**:
-
-  * *include_hidden* *(only direct auth)*
-  * *include_private* *(only direct auth)*
-
 **Authentication**: Basic, session, or key auth *(optional)*
 
 **Response Formats**: JSON (default), CSV, HTML, XML
@@ -195,11 +190,6 @@ Delete a user's dataset
 
 Get the details of a dataset
 
-**Request Parameters**:
-
-  * *include_hidden* *(only direct auth)*
-  * *include_private* *(only direct auth)*
-
 **Authentication**: Basic, session, or key auth *(optional)*
 
 **Response Formats**: JSON (default), CSV, HTML, XML
@@ -238,6 +228,169 @@ Get the details of a dataset
           }
         ]
       }
+
+
+Places
+--------
+
+Places are the basic unit of a dataset. They have a point geometry and attributes.
+
+**Fields**:
+
+* *attachments*:
+* *created_datetime*:
+* *dataset*:
+* *id*:
+* *location*:
+* *submissions*:
+* *updated_datetime*:
+* *url*:
+* *visible*:
+
+
+### GET /api/v1/*:owner*/datasets/*:slug*/places/
+
+Get a places in a dataset
+
+**Request Parameters**:
+
+  * *include_invisible* *(only direct auth)*
+  * *include_private_data* *(only direct auth)*
+  * *include_submissions*
+
+**Authentication**: Basic, session, or key auth *(optional)*
+
+**Response Formats**: JSON (default), CSV, HTML, XML
+
+**Sample URL**: http://api.shareabouts.org/api/v1/openplans/datasets/atm_surcharge/places/?format=json
+
+**Sample Response**:
+
+    [
+        {
+            "attachments": [],
+            "created_datetime": "2013-02-15T13:23:36.754Z",
+            "dataset": {
+                "url": "http://api.shareabouts.org/api/v1/openplans/datasets/atm_surcharge/"
+            },
+            "id": 25519,
+            "location": {
+                "lat": 40.722347722199999,
+                "lng": -73.997224330899996
+            },
+            "location_type": "ATM",
+            "name": "",
+            "submissions": [],
+            "submitter_name": "",
+            "surcharge": "",
+            "updated_datetime": "2013-02-15T13:23:36.755Z",
+            "url": "http://api.shareabouts.org/api/v1/openplans/datasets/atm_surcharge/places/25519/",
+            "visible": true
+        },
+        ...
+    ]
+
+
+### POST /api/v1/*:owner*/datasets/*:slug*/places/
+
+Create a place for a dataset
+
+**Authentication**: Basic or session auth *(required)*
+
+**Content type**: application/json
+
+**Sample URL**: http://api.shareabouts.org/api/v1/openplans/places/
+
+**Sample Request Data**:
+
+    {
+      "description": "This is a great location.",
+      "location": {"lat":40.72044500134832, "lng":-73.9999086856842},
+      "location_type": "landmark",
+      "name": "Location Name",
+      "submitter_name": "Aaron",
+      "visible": "true",
+    }
+
+**Sample Response**:
+
+    201 CREATED
+
+    {
+        "location_type": "landmark",
+        "attachments": [],
+        "updated_datetime": "2013-04-29T22:20:58.010Z",
+        "created_datetime": "2013-04-29T22:20:58.010Z",
+        "description": "This is a great location.",
+        "dataset": {
+            "url": "http://shareaboutsapi-civicworks.dotcloud.com/api/v1/demo-user/datasets/demo-data/"
+        },
+        "visible": true,
+        "location": {"lat": 40.7204450013, "lng": -73.999908685700007},
+        "url": "http://shareaboutsapi-civicworks.dotcloud.com/api/v1/demo-user/datasets/demo-data/places/29664/",
+        "submitter_name": "Aaron",
+        "submissions": [],
+        "id": 29664,
+        "name": "Location Name"
+    }
+
+
+### PUT /api/v1/*:owner*/datasets/*:slug*/places/*:place_id*/
+
+Update a place for a dataset
+
+**Authentication**: Basic or session auth *(required)*
+
+**Content type**: application/json
+
+**Sample URL**: http://api.shareabouts.org/api/v1/demo-user/datasets/demo-data/places/29664/
+
+**Sample Request Data**:
+
+    {
+      "description": "This is a REALLY great location.",
+      "location": {"lat":40.72044500134832, "lng":-73.9999086856842},
+      "location_type": "landmark",
+      "name": "Location Name",
+      "submitter_name": "Frank",
+      "visible": "true",
+    }
+
+**Sample Response**:
+
+    200 OK
+
+    {
+        "location_type": "landmark",
+        "attachments": [],
+        "updated_datetime": "2013-04-29T22:20:58.010Z",
+        "created_datetime": "2013-04-29T22:20:58.010Z",
+        "description": "This is a REALLY great location.",
+        "dataset": {
+            "url": "http://shareaboutsapi-civicworks.dotcloud.com/api/v1/demo-user/datasets/demo-data/"
+        },
+        "visible": true,
+        "location": {"lat": 40.7204450013, "lng": -73.999908685700007},
+        "url": "http://shareaboutsapi-civicworks.dotcloud.com/api/v1/demo-user/datasets/demo-data/places/29664/",
+        "submitter_name": "Frank",
+        "submissions": [],
+        "id": 29664,
+        "name": "Location Name"
+    }
+
+
+### DELETE /api/v1/*:owner*/datasets/*:slug*/places/*:place_id*/
+
+Delete a place
+
+**Authentication**: Basic or session auth *(required)*
+
+**Sample URL**: http://api.shareabouts.org/api/v1/demo-user/datasets/demo-data/places/29664/
+
+**Sample Response**:
+
+    204 NO CONTENT
+
 
 Attachments
 -----------
