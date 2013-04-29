@@ -7,21 +7,23 @@ Datasets
 The primary entry point into the API is a dataset. Each dataset has an owner,
 and a user can own any number of datasets.
 
-### Get a user's datasets
+------------------------------------------------------------
 
-/api/v2/*:owner*/datasets/
+### GET /api/v2/*:owner*/datasets/
 
-**Method**: GET
+Get a user's datasets
 
 **Request Parameters**:
 
-  * *include_hidden*
-  * *include_private*
-  * *include_submissions*
+  * include_hidden *(only direct auth)*
+  * include_private *(only direct auth)*
+  * include_submissions
 
-**Response Formats**: JSON, CSV
+**Authentication**: Basic, session, or key auth *(optional)*
 
-**Sample URL**: http://api.shareabouts.org/api/v1/openplans/datasets/
+**Response Formats**: JSON (default), CSV, HTML, XML
+
+**Sample URL**: http://api.shareabouts.org/api/v2/openplans/datasets.json
 
 **Sample Response**:
 
@@ -44,12 +46,12 @@ and a user can own any number of datasets.
             "url": "http://.../api/v2/openplans/datasets/atm_surcharge/places/",
             "length": 31
           },
-          "submission_sets": [
+          "submission_sets": {
             "comments": {
               "length": 13,
               "url": "http://.../api/v2/openplans/datasets/atm_surcharge/comments/"
             }
-          ]
+          }
         },
         {
           "slug": "chicagobikes",
@@ -62,7 +64,7 @@ and a user can own any number of datasets.
             "url": "http://.../api/v2/openplans/datasets/chicagobikes/places/",
             "length": 1281
           },
-          "submission_sets": [
+          "submission_sets": {
             "comments": {
               "url": "http://.../api/v2/openplans/datasets/chicagobikes/comments/",
               "length": 1166
@@ -71,9 +73,47 @@ and a user can own any number of datasets.
               "url": "http://.../api/v2/openplans/datasets/chicagobikes/support/",
               "length": 12389
             }
-          ]
+          }
         }
       ]
+    }
+
+------------------------------------------------------------
+
+### POST /api/v2/*:owner*/datasets/
+
+Create a dataset
+
+**Authentication**: Basic or session auth *(required)*
+
+**Response Formats**: JSON (default), CSV, HTML, XML
+
+**Sample URL**: http://api.shareabouts.org/api/v2/openplans/datasets.json
+
+**Sample Request Data**:
+
+    {
+      "slug": "mctesty",
+      "display_name": "Testy McTest"
+    }
+
+**Sample Response**:
+
+**201 Created**
+    
+    {
+      "slug": "mctesty", 
+      "url": "http://api.shareabouts.org/api/v1/openplans/datasets/mctesty/"
+      "display_name": "Testy McTest", 
+
+      "keys": { "url": "http://api.shareabouts.org/api/v1/openplans/datasets/mctesty/keys/" }, 
+      "owner": { "username": "openplans" }, 
+      "places": {
+        "length": 0, 
+        "url": "http://api.shareabouts.org/api/v1/openplans/datasets/mctesty/places/"
+      }, 
+      "submission_sets": {}, 
+    }
 
 To get a list of all datasets belonging to a user:
 
