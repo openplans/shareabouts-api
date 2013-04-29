@@ -27,6 +27,8 @@ Get a user's datasets
 
 **Sample Response**:
 
+    200 OK
+    
     {
       "metadata": {
         "length": 2,
@@ -99,7 +101,7 @@ Create a dataset
 
 **Sample Response**:
 
-**201 Created**
+    201 Created
     
     {
       "slug": "mctesty", 
