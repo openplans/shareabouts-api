@@ -9,9 +9,19 @@ and a user can own any number of datasets.
 
 ### Get a user's datasets
 
-**Sample URL**: /api/v1/*:owner*/datasets/
+/api/v2/*:owner*/datasets/
+
+**Method**: GET
+
+**Request Parameters**:
+
+  * *include_hidden*
+  * *include_private*
+  * *include_submissions*
 
 **Response Formats**: JSON, CSV
+
+**Sample URL**: http://api.shareabouts.org/api/v1/openplans/datasets/
 
 **Sample Response**:
 
