@@ -30,11 +30,33 @@ Datasets
 The primary entry point into the API is a dataset. Each dataset has an owner,
 and a user can own any number of datasets.
 
+**Fields**:
+
+  * *id*: the numeric id of the dataset; every dataset has a unique id
+  * *slug*: the short name for the dataset, used in the url; no user can
+    own two datasets with the same slug
+  * *display_name*: the human-readable name for the dataset
+  * *url*: the URL of the dataset
+  * *owner*: an object with the `username` and `id` of the owner
+  * *places*: an object with places metadata -- the number (`length`) of
+    places, and the `url` of the place collection
+  * *submissions*: a list of objects with meta data about each submission
+    set -- `type` (the set name), `length`, and `url`
+  * *keys*: an object that contains only the URL to the dataset's API keys
+
 ### Get a user's datasets
 
-**Sample URL**:       | /api/v1/*:owner*/datasets/
-----------------------|---------------------------
-**Response Formats**: | JSON, CSV
+/api/v1/*:owner*/datasets/
+
+**Method**: GET
+
+**Request Parameters**:
+
+  * *include_hidden
+
+**Response Formats**: JSON, CSV
+
+**Sample URL**: http://api.shareabouts.org/api/v1/openplans/datasets/
 
 **Sample Response**:
 
@@ -96,26 +118,6 @@ and a user can own any number of datasets.
         ]
       }
     ]
-
-To get a list of all datasets belonging to a user:
-
-  * **Method**: GET
-
-    **URL**: /api/v1/&lt;owner&gt;/datasets/
-
-    **Result**: A list of JSON objects with the following fields:
-
-      * *display_name*: the human-readable name for the dataset
-      * *slug*: the short name for the dataset, used in the url; no user can
-        own two datasets with the same slug
-      * *id*: the numeric id of the dataset; every dataset has a unique id
-      * *url*: the URL of the dataset
-      * *owner*: an object with the `username` and `id` of the owner
-      * *places*: an object with places metadata -- the number (`length`) of
-        places, and the `url` of the place collection
-      * *submissions*: a list of objects with meta data about each submission
-        set -- `type` (the set name), `length`, and `url`
-      * *keys*: an object that contains only the URL to the dataset's API keys
 
 To create a new dataset:
 
