@@ -44,49 +44,170 @@ and a user can own any number of datasets.
     set -- `type` (the set name), `length`, and `url`
   * *keys*: an object that contains only the URL to the dataset's API keys
 
-### Get a user's datasets
+### GET /api/v1/*:owner*/datasets/
 
-/api/v1/*:owner*/datasets/
-
-**Method**: GET
+Get a user's datasets
 
 **Request Parameters**:
 
-  * *include_hidden
+  * *include_hidden* *(only direct auth)*
+  * *include_private* *(only direct auth)*
 
-**Response Formats**: JSON, CSV
+**Authentication**: Basic, session, or key auth *(optional)*
 
-**Sample URL**: http://api.shareabouts.org/api/v1/openplans/datasets/
+**Response Formats**: JSON (default), CSV, HTML, XML
+
+**Sample URL**: http://api.shareabouts.org/api/v1/openplans/datasets/?format=json
 
 **Sample Response**:
 
     [
       {
-        "id": 10,
-        "url": "http://api.shareabouts.org/api/v1/openplans/datasets/atm_surcharge/",
-
-        "display_name": "ATM Surcharge",
-        "slug": "atm_surcharge",
+        "id": 31,
+        "url": "http://api.shareabouts.org/api/v1/openplans/datasets/chicagobikes/",
+        "display_name": "Chicago Bike Share exports",
+        "slug": "chicagobikes",
 
         "keys": {
-          "url": "http://api.shareabouts.org/api/v1/openplans/datasets/atm_surcharge/keys/"
+          "url": "http://api.shareabouts.org/api/v1/openplans/datasets/chicagobikes/keys/"
         },
         "owner": {
           "username": "openplans",
           "id": 7
         },
         "places": {
-          "url": "http://api.shareabouts.org/api/v1/openplans/datasets/atm_surcharge/places/",
-          "length": 31
+          "url": "http://api.shareabouts.org/api/v1/openplans/datasets/chicagobikes/places/",
+          "length": 1281
         },
         "submissions": [
           {
+            "url": "http://api.shareabouts.org/api/v1/openplans/datasets/chicagobikes/comments/",
+            "length": 1166,
             "type": "comments"
-            "length": 13,
-            "url": "http://api.shareabouts.org/api/v1/openplans/datasets/atm_surcharge/comments/",
+          },
+          {
+            "url": "http://api.shareabouts.org/api/v1/openplans/datasets/chicagobikes/support/",
+            "length": 12389,
+            "type": "support"
           }
         ]
       },
+      ...
+    ]
+
+
+### POST /api/v1/*:owner*/datasets/
+
+Create a user's datasets
+
+**Authentication**: Basic or session auth *(required)*
+
+**Content type**: application/json
+
+**Sample URL**: http://api.shareabouts.org/api/v1/openplans/datasets/
+
+**Sample Request Data**:
+
+    {
+      "slug": "mctesty",
+      "display_name": "testy mctest"
+    }
+
+**Sample Response**:
+
+    201 CREATED
+
+    {
+       "display_name": "testy mctest",
+       "id": 90,
+       "keys": {
+           "url": "http://api.shareabouts.org/api/v1/openplans/datasets/mctesty/keys/"
+       },
+       "owner": {
+           "id": 7,
+           "username": "openplans"
+       },
+       "places": {
+           "length": 0,
+           "url": "http://api.shareabouts.org/api/v1/openplans/datasets/mctesty/places/"
+       },
+       "slug": "mctesty",
+       "submissions": [],
+       "url": "http://api.shareabouts.org/api/v1/openplans/datasets/mctesty/"
+    }
+
+
+### PUT /api/v1/*:owner*/datasets/*:slug*/
+
+Update a user's dataset
+
+**Authentication**: Basic or session auth *(required)*
+
+**Content type**: application/json
+
+**Sample URL**: http://api.shareabouts.org/api/v1/openplans/datasets/mctesty/
+
+**Sample Request Data**:
+
+    {
+      "slug": "mctesty",
+      "display_name": "testy mctest"
+    }
+
+**Sample Response**:
+
+    200 OK
+
+    {
+       "display_name": "testy mctest",
+       "id": 90,
+       "keys": {
+           "url": "http://api.shareabouts.org/api/v1/openplans/datasets/mctesty/keys/"
+       },
+       "owner": {
+           "id": 7,
+           "username": "openplans"
+       },
+       "places": {
+           "length": 0,
+           "url": "http://api.shareabouts.org/api/v1/openplans/datasets/mctesty/places/"
+       },
+       "slug": "mctesty",
+       "submissions": [],
+       "url": "http://api.shareabouts.org/api/v1/openplans/datasets/mctesty/"
+    }
+
+
+### DELETE /api/v1/*:owner*/datasets/*:slug*/
+
+Delete a user's dataset
+
+**Authentication**: Basic or session auth *(required)*
+
+**Sample URL**: http://api.shareabouts.org/api/v1/openplans/datasets/mctesty/
+
+**Sample Response**:
+
+    204 NO CONTENT
+
+
+### GET /api/v1/*:owner*/datasets/*:slug*/
+
+Get the details of a dataset
+
+**Request Parameters**:
+
+  * *include_hidden* *(only direct auth)*
+  * *include_private* *(only direct auth)*
+
+**Authentication**: Basic, session, or key auth *(optional)*
+
+**Response Formats**: JSON (default), CSV, HTML, XML
+
+**Sample URL**: http://api.shareabouts.org/api/v1/openplans/datasets/mctesty/
+
+**Sample Response**:
+
       {
         "id": 31,
         "url": "http://api.shareabouts.org/api/v1/openplans/datasets/chicagobikes/",
@@ -117,22 +238,6 @@ and a user can own any number of datasets.
           }
         ]
       }
-    ]
-
-To create a new dataset:
-
-  * **Method**: POST
-
-    **URL**: /api/v1/&lt;owner&gt;/datasets/
-
-    **Authentication**: Basic auth or session auth
-
-    **Content type**: application/json
-
-    **Fields**
-      * *display_name*: the human-readable name for the dataset
-      * *slug*: the short name for the dataset
-
 
 Attachments
 -----------
