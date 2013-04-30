@@ -676,6 +676,53 @@ Delete a submission
 
 ------------------------------------------------------------
 
+Activity
+--------
+
+### GET /api/v2/*:owner*/datasets/*:ds-slug*/activity/
+
+Get the activity for a dataset
+
+**Request Parameters**:
+
+  * `before` -- The id of the latest activity to return.  The
+                most recent results with the given id or lower will be
+                returned.
+  * `after` -- The id of the earliest activity to return.  The
+               most recent results with ids higher than *but not including*
+               the given time will be returned.
+  * `limit` -- The maximum number of results to be returned.
+  * `visible` -- Set to `all` to return activity for both visible and
+                 invisible places.
+
+**Authentication**: Basic, session, or key auth *(optional)*
+
+**Response Formats**: JSON (default), CSV, HTML, XML
+
+**Sample URL**: http://api.shareabouts.org/api/v2/demo-user/datasets/demo-data/activity/
+
+**Sample Response**:
+
+    200 OK
+
+    [
+        {
+            "id": 159985,
+            "place_id": 29673,
+            "type": "support"
+            "action": "create",
+            "data": {
+                "created_datetime": "2013-04-30T19:47:21.101Z",
+                "updated_datetime": "2013-04-30T19:47:21.101Z",
+                "id": 29674,
+                "submitter_name": "",
+                "user_token": "session:e574c75e35d2e418a5de663b4b0c0691"
+            },
+        },
+        ...
+    ]
+
+
 Attachments
 -----------
 
