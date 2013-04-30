@@ -611,14 +611,6 @@ Get a submission for a place
 
 **Sample URL**: http://shareabouts-civicworks.dotcloud.com/api/places/29664/comments/29671/
 
-**Sample Request Data**:
-
-    {
-        comment: "This is REALLY great."
-        submitter_name: "Andy"
-        visible: "on"
-    }
-
 **Sample Response**:
 
     200 OK
