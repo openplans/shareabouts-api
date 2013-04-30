@@ -441,6 +441,43 @@ Get a place
         "name": "Location Name"
     }
 
+------------------------------------------------------------
+
+### GET /api/v1/*:owner*/datasets/*:slug*/places/table
+
+Get all places in a dataset
+
+**Request Parameters**:
+
+  * *include_invisible* *(only direct auth)*
+  * *include_private_data* *(only direct auth)*
+  * *include_submissions*
+
+**Authentication**: Basic, session, or key auth *(optional)*
+
+**Response Formats**: JSON (default), CSV, HTML, XML
+
+**Sample URL**: http://api.shareabouts.org/api/v1/openplans/datasets/atm_surcharge/places/table
+
+**Sample Response**:
+
+    [
+        {
+            "attachments": [],
+            "location_type": "ATM",
+            "name": "",
+            "place_created_datetime": "2013-02-15T13:23:36.754Z",
+            "place_id": 25519,
+            "place_location": {
+                "lat": 40.722347722199999,
+                "lng": -73.997224330899996
+            },
+            "place_submitter_name": "",
+            "place_visible": true,
+            "surcharge": ""
+        },
+        ...
+    ]
 
 Submissions
 -----------
@@ -630,6 +667,115 @@ Get a submission for a place
         "url": "http://shareaboutsapi-civicworks.dotcloud.com/api/v1/demo-user/datasets/demo-data/places/29664/comments/29671/",
         "visible": true
     }
+
+------------------------------------------------------------
+
+### GET /api/v1/*:owner*/datasets/*:slug*/places/*:place_id*/*:submission_type*/table
+
+Get a submissions for a place in a flat, tabular format
+
+**Request Parameters**:
+
+  * *include_invisible* *(only direct auth)*
+  * *include_private_data* *(only direct auth)*
+
+**Authentication**: Basic, session, or key auth *(optional)*
+
+**Response Formats**: JSON (default), CSV, HTML, XML
+
+**Sample URL**: http://api.shareabouts.org/api/v1/demo-user/datasets/demo-data/places/26836/comments/table
+
+**Sample Response**:
+
+    200 OK
+
+    [
+        {
+            "attachments": [],
+            "comment": "Agreed.  Caught me a big one just a week ago.",
+            "comment_created_datetime": "2013-04-11T16:46:38.662Z",
+            "comment_id": 26902,
+            "comment_submitter_name": "John",
+            "comment_visible": true,
+            "place_id": 26836
+        },
+        ...
+    ]
+
+------------------------------------------------------------
+
+### GET /api/v1/*:owner*/datasets/*:slug*/*:submission_type*/
+
+Get a submissions for a dataset
+
+**Request Parameters**:
+
+  * *include_invisible* *(only direct auth)*
+  * *include_private_data* *(only direct auth)*
+
+**Authentication**: Basic, session, or key auth *(optional)*
+
+**Response Formats**: JSON (default), CSV, HTML, XML
+
+**Sample URL**: http://api.shareabouts.org/api/v1/demo-user/datasets/demo-data/comments/
+
+**Sample Response**:
+
+    200 OK
+
+    [
+        {
+            "attachments": [],
+            "comment": "Moderately intelligent people.",
+            "created_datetime": "2012-08-27T14:45:53.815Z",
+            "id": 12,
+            "place": {
+                "id": 10,
+                "url": "http://shareaboutsapi-civicworks.dotcloud.com/api/v1/demo-user/datasets/demo-data/places/10/"
+            },
+            "submitter_name": "Mjumbe",
+            "type": "comments",
+            "updated_datetime": "2012-08-27T14:45:53.816Z",
+            "url": "http://shareaboutsapi-civicworks.dotcloud.com/api/v1/demo-user/datasets/demo-data/places/10/comments/12/",
+            "visible": true
+        },
+        ...
+    ]
+
+------------------------------------------------------------
+
+### GET /api/v1/*:owner*/datasets/*:slug*/*:submission_type*/table
+
+Get a submissions for a dataset in a flat, tabular format. Very useful with
+`format=csv`
+
+**Request Parameters**:
+
+  * *include_invisible* *(only direct auth)*
+  * *include_private_data* *(only direct auth)*
+
+**Authentication**: Basic, session, or key auth *(optional)*
+
+**Response Formats**: JSON (default), CSV, HTML, XML
+
+**Sample URL**: http://api.shareabouts.org/api/v1/demo-user/datasets/demo-data/comments/table
+
+**Sample Response**:
+
+    200 OK
+
+    [
+        {
+            "attachments": [],
+            "comment": "Moderately intelligent people.",
+            "comment_created_datetime": "2012-08-27T14:45:53.815Z",
+            "comment_id": 12,
+            "comment_submitter_name": "Mjumbe",
+            "comment_visible": true,
+            "place_id": 10
+        },
+        ...
+    ]
 
 
 
