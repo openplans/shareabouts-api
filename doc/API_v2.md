@@ -467,7 +467,8 @@ Submissions
 
 Submissions are stand-alone objects (key-value pairs) that can be attached to
 a place. These could be comments, surveys responses, support/likes, etc. You
-can attach multiple submission sets to a place.
+can attach multiple submission sets to a place. Submissions are grouped into 
+sets based on the type of submission.
 
 **Fields**:
 
@@ -483,7 +484,7 @@ can attach multiple submission sets to a place.
 
 ------------------------------------------------------------
 
-### GET /api/v2/*:owner*/datasets/*:slug*/places/*:place_id*/*:submission_type*/
+### GET /api/v2/*:owner*/datasets/*:slug*/places/*:place_id*/*:submission_set_name*/
 
 Get all submissions for a place
 
@@ -534,7 +535,7 @@ Get all submissions for a place
 
 ------------------------------------------------------------
 
-### POST /api/v2/*:owner*/datasets/*:slug*/places/*:place_id*/*:submission_type*/
+### POST /api/v2/*:owner*/datasets/*:slug*/places/*:place_id*/*:submission_set_name*/
 
 Create a submission for a place
 
@@ -542,7 +543,7 @@ Create a submission for a place
 
 **Content type**: application/json
 
-**Sample URL**: http://api.shareabouts.org/api/places/29664/comments/
+**Sample URL**: http://api.shareabouts.org/api/v2/places/29664/comments/
 
 **Sample Request Data**:
 
@@ -577,7 +578,47 @@ Create a submission for a place
 
 ------------------------------------------------------------
 
-### PUT /api/v2/*:owner*/datasets/*:slug*/places/*:place_id*/*:submission_type*/*:submission_id*/
+### GET /api/v2/*:owner*/datasets/*:slug*/places/*:place_id*/*:submission_set_name*/*:submission_id*/
+
+Get a particular submission
+
+**Request Parameters**:
+
+  * *include_invisible* *(only direct auth)*
+  * *include_private_data* *(only direct auth)*
+
+**Authentication**: Basic, session, or key auth *(optional)*
+
+**Response Formats**: JSON (default), CSV, HTML, XML
+
+**Sample URL**: http://api.shareabouts.org/api/v2/places/29664/comments/29671/
+
+**Sample Response**:
+
+    200 OK
+
+    {
+        "id": 29671,
+        "url": "http://api.shareabouts.org/api/v2/demo-user/datasets/demo-data/places/29664/comments/29671/",
+        "updated_datetime": "2013-04-30T15:38:54.449Z",
+        "created_datetime": "2013-04-30T15:40:16.145Z",
+        "visible": true,
+        "submitter_name": "Andy",
+        "comment": "This is REALLY great!",
+        "place": {
+            "url": "http://api.shareabouts.org/api/v2/demo-user/datasets/demo-data/places/29664/",
+            "id": 29664
+        },
+        "set": {
+          "name": "comments",
+          "url": "http://api.shareabouts.org/api/v2/demo-user/datasets/demo-data/places/29664/comments/"
+        },
+        "attachments": []
+    }
+
+------------------------------------------------------------
+
+### PUT /api/v2/*:owner*/datasets/*:slug*/places/*:place_id*/*:submission_set_name*/*:submission_id*/
 
 Update a submission for a place of a specific type
 
@@ -585,7 +626,7 @@ Update a submission for a place of a specific type
 
 **Content type**: application/json
 
-**Sample URL**: http://api.shareabouts.org/api/places/29664/comments/29671/
+**Sample URL**: http://api.shareabouts.org/api/v2/places/29664/comments/29671/
 
 **Sample Request Data**:
 
@@ -620,57 +661,17 @@ Update a submission for a place of a specific type
 
 ------------------------------------------------------------
 
-### DELETE /api/v2/*:owner*/datasets/*:slug*/places/*:place_id*/*:submission_type*/*:submission_id*/
+### DELETE /api/v2/*:owner*/datasets/*:slug*/places/*:place_id*/*:submission_set_name*/*:submission_id*/
 
 Delete a submission
 
 **Authentication**: Basic, session, or key auth *(required)*
 
-**Sample URL**: http://api.shareabouts.org/api/places/29664/comments/29671/
+**Sample URL**: http://api.shareabouts.org/api/v2/places/29664/comments/29671/
 
 **Sample Response**:
 
     204 NO CONTENT
-
-------------------------------------------------------------
-
-### GET /api/v2/*:owner*/datasets/*:slug*/places/*:place_id*/*:submission_type*/*:submission_id*/
-
-Get a particular submission
-
-**Request Parameters**:
-
-  * *include_invisible* *(only direct auth)*
-  * *include_private_data* *(only direct auth)*
-
-**Authentication**: Basic, session, or key auth *(optional)*
-
-**Response Formats**: JSON (default), CSV, HTML, XML
-
-**Sample URL**: http://api.shareabouts.org/api/places/29664/comments/29671/
-
-**Sample Response**:
-
-    200 OK
-
-    {
-        "id": 29671,
-        "url": "http://api.shareabouts.org/api/v2/demo-user/datasets/demo-data/places/29664/comments/29671/",
-        "updated_datetime": "2013-04-30T15:38:54.449Z",
-        "created_datetime": "2013-04-30T15:40:16.145Z",
-        "visible": true,
-        "submitter_name": "Andy",
-        "comment": "This is REALLY great!",
-        "place": {
-            "url": "http://api.shareabouts.org/api/v2/demo-user/datasets/demo-data/places/29664/",
-            "id": 29664
-        },
-        "set": {
-          "name": "comments",
-          "url": "http://api.shareabouts.org/api/v2/demo-user/datasets/demo-data/places/29664/comments/"
-        },
-        "attachments": []
-    }
 
 
 
