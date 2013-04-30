@@ -268,7 +268,7 @@ Get all the places in a dataset
           
           "properties": {
             "id": 25503, 
-            "url": "http://api.shareabouts.org/api/v1/openplans/datasets/atm_surcharge/places/25503/", 
+            "url": "http://api.shareabouts.org/api/v2/openplans/datasets/atm_surcharge/places/25503/", 
             "created_datetime": "2013-02-14T01:08:44.893Z", 
             "updated_datetime": "2013-02-14T01:08:44.893Z", 
             "visible": true,
@@ -278,12 +278,12 @@ Get all the places in a dataset
             "surcharge": "0", 
             "submitter_name": "Mjumbe", 
 
-            "dataset": { "url": "http://api.shareabouts.org/api/v1/openplans/datasets/atm_surcharge/" }, 
+            "dataset": { "url": "http://api.shareabouts.org/api/v2/openplans/datasets/atm_surcharge/" }, 
             "attachments": [], 
             "submission_sets": {
               "comments": {
                 "length": 1, 
-                "url": "http://api.shareabouts.org/api/v1/openplans/datasets/atm_surcharge/places/25503/comments/"
+                "url": "http://api.shareabouts.org/api/v2/openplans/datasets/atm_surcharge/places/25503/comments/"
               }
             }
           }
@@ -325,7 +325,7 @@ Create a place
       
       "properties": {
         "id": 25503, 
-        "url": "http://api.shareabouts.org/api/v1/openplans/datasets/atm_surcharge/places/25503/", 
+        "url": "http://api.shareabouts.org/api/v2/openplans/datasets/atm_surcharge/places/25503/", 
         "created_datetime": "2013-02-14T01:08:44.893Z", 
         "updated_datetime": "2013-02-14T01:08:44.893Z", 
         "visible": true,
@@ -335,7 +335,7 @@ Create a place
         "surcharge": "0", 
         "submitter_name": "Mjumbe", 
 
-        "dataset": { "url": "http://api.shareabouts.org/api/v1/openplans/datasets/atm_surcharge/" }, 
+        "dataset": { "url": "http://api.shareabouts.org/api/v2/openplans/datasets/atm_surcharge/" }, 
         "attachments": [], 
         "submission_sets": {}
       }
@@ -369,7 +369,7 @@ Get a specific place
       
       "properties": {
         "id": 25503, 
-        "url": "http://api.shareabouts.org/api/v1/openplans/datasets/atm_surcharge/places/25503/", 
+        "url": "http://api.shareabouts.org/api/v2/openplans/datasets/atm_surcharge/places/25503/", 
         "created_datetime": "2013-02-14T01:08:44.893Z", 
         "updated_datetime": "2013-02-14T01:08:44.893Z", 
         "visible": true,
@@ -379,12 +379,12 @@ Get a specific place
         "surcharge": "0", 
         "submitter_name": "Mjumbe", 
 
-        "dataset": { "url": "http://api.shareabouts.org/api/v1/openplans/datasets/atm_surcharge/" }, 
+        "dataset": { "url": "http://api.shareabouts.org/api/v2/openplans/datasets/atm_surcharge/" }, 
         "attachments": [], 
         "submission_sets": {
           "comments": {
             "length": 1, 
-            "url": "http://api.shareabouts.org/api/v1/openplans/datasets/atm_surcharge/places/25503/comments/"
+            "url": "http://api.shareabouts.org/api/v2/openplans/datasets/atm_surcharge/places/25503/comments/"
           }
         }
       }
@@ -423,7 +423,7 @@ Update a place
       
       "properties": {
         "id": 25503, 
-        "url": "http://api.shareabouts.org/api/v1/openplans/datasets/atm_surcharge/places/25503/", 
+        "url": "http://api.shareabouts.org/api/v2/openplans/datasets/atm_surcharge/places/25503/", 
         "created_datetime": "2013-02-14T01:08:44.893Z", 
         "updated_datetime": "2013-02-14T01:08:44.893Z", 
         "visible": true,
@@ -433,12 +433,12 @@ Update a place
         "surcharge": "0.50", 
         "submitter_name": "Mjumbe", 
 
-        "dataset": { "url": "http://api.shareabouts.org/api/v1/openplans/datasets/atm_surcharge/" }, 
+        "dataset": { "url": "http://api.shareabouts.org/api/v2/openplans/datasets/atm_surcharge/" }, 
         "attachments": [], 
         "submission_sets": {
           "comments": {
             "length": 1, 
-            "url": "http://api.shareabouts.org/api/v1/openplans/datasets/atm_surcharge/places/25503/comments/"
+            "url": "http://api.shareabouts.org/api/v2/openplans/datasets/atm_surcharge/places/25503/comments/"
           }
         }
       }
@@ -459,6 +459,220 @@ Delete a place
 **Sample Request Data**:
 
     204 NO CONTENT
+
+------------------------------------------------------------
+
+Submissions
+-----------
+
+Submissions are stand-alone objects (key-value pairs) that can be attached to
+a place. These could be comments, surveys responses, support/likes, etc. You
+can attach multiple submission sets to a place.
+
+**Fields**:
+
+* *id*:
+* *url*:
+* *created_datetime*:
+* *updated_datetime*:
+* *visible*:
+* *attachments*:
+* *place*:
+* *set*:
+* *dataset*:
+
+------------------------------------------------------------
+
+### GET /api/v2/*:owner*/datasets/*:slug*/places/*:place_id*/*:submission_type*/
+
+Get all submissions for a place
+
+**Request Parameters**:
+
+  * *include_invisible* *(only direct auth)*
+  * *include_private_data* *(only direct auth)*
+
+**Authentication**: Basic, session, or key auth *(optional)*
+
+**Response Formats**: JSON (default), CSV, HTML, XML
+
+**Sample URL**: http://api.shareabouts.org/api/v2/demo-user/datasets/demo-data/places/26836/comments/
+
+**Sample Response**:
+
+    200 OK
+
+    {
+      "metadata": {
+        "length": 30,
+        "page": 1,
+        "next": http://api.shareabouts.org/api/v2/openplans/datasets/demo-data/places/26836/comments.json?page=2,
+        "previous": null
+      },
+      "results": [
+        {
+          "id": 26902,
+          "url": "http://api.shareabouts.org/api/v2/demo-user/datasets/demo-data/places/26836/comments/26902/",
+          "created_datetime": "2013-04-11T16:46:38.662Z",
+          "updated_datetime": "2013-04-11T16:46:38.662Z",
+          "visible": true,
+          "submitter_name": "John",
+          "comment": "Agreed.  Caught me a big one just a week ago.",
+          "place": {
+            "id": 26836,
+            "url": "http://api.shareabouts.org/api/v2/demo-user/datasets/demo-data/places/26836/"
+          },
+          "set": {
+            "name": "comments",
+            "url": "http://api.shareabouts.org/api/v2/demo-user/datasets/demo-data/places/26836/comments/"
+          },
+          "attachments": []
+        },
+        ...
+      ]
+    }
+
+------------------------------------------------------------
+
+### POST /api/v2/*:owner*/datasets/*:slug*/places/*:place_id*/*:submission_type*/
+
+Create a submission for a place
+
+**Authentication**: Basic, session, or key auth *(required)*
+
+**Content type**: application/json
+
+**Sample URL**: http://api.shareabouts.org/api/places/29664/comments/
+
+**Sample Request Data**:
+
+    {
+        comment: "This is great!"
+        submitter_name: "Andy"
+        visible: "on"
+    }
+
+**Sample Response**:
+
+    201 CREATED
+
+    {
+        "id": 29671,
+        "url": "http://api.shareabouts.org/api/v2/demo-user/datasets/demo-data/places/29664/comments/29671/",
+        "updated_datetime": "2013-04-30T15:38:54.449Z",
+        "created_datetime": "2013-04-30T15:38:54.449Z",
+        "visible": true,
+        "submitter_name": "Andy",
+        "comment": "This is great!",
+        "place": {
+            "url": "http://api.shareabouts.org/api/v2/demo-user/datasets/demo-data/places/29664/",
+            "id": 29664
+        },
+        "set": {
+          "name": "comments",
+          "url": "http://api.shareabouts.org/api/v2/demo-user/datasets/demo-data/places/29664/comments/"
+        },
+        "attachments": []
+    }
+
+------------------------------------------------------------
+
+### PUT /api/v2/*:owner*/datasets/*:slug*/places/*:place_id*/*:submission_type*/*:submission_id*/
+
+Update a submission for a place of a specific type
+
+**Authentication**: Basic, session, or key auth *(required)*
+
+**Content type**: application/json
+
+**Sample URL**: http://api.shareabouts.org/api/places/29664/comments/29671/
+
+**Sample Request Data**:
+
+    {
+        comment: "This is REALLY great."
+        submitter_name: "Andy"
+        visible: "on"
+    }
+
+**Sample Response**:
+
+    200 OK
+
+    {
+        "id": 29671,
+        "url": "http://api.shareabouts.org/api/v2/demo-user/datasets/demo-data/places/29664/comments/29671/",
+        "updated_datetime": "2013-04-30T15:38:54.449Z",
+        "created_datetime": "2013-04-30T15:40:16.145Z",
+        "visible": true,
+        "submitter_name": "Andy",
+        "comment": "This is REALLY great!",
+        "place": {
+            "url": "http://api.shareabouts.org/api/v2/demo-user/datasets/demo-data/places/29664/",
+            "id": 29664
+        },
+        "set": {
+          "name": "comments",
+          "url": "http://api.shareabouts.org/api/v2/demo-user/datasets/demo-data/places/29664/comments/"
+        },
+        "attachments": []
+    }
+
+------------------------------------------------------------
+
+### DELETE /api/v2/*:owner*/datasets/*:slug*/places/*:place_id*/*:submission_type*/*:submission_id*/
+
+Delete a submission
+
+**Authentication**: Basic, session, or key auth *(required)*
+
+**Sample URL**: http://api.shareabouts.org/api/places/29664/comments/29671/
+
+**Sample Response**:
+
+    204 NO CONTENT
+
+------------------------------------------------------------
+
+### GET /api/v2/*:owner*/datasets/*:slug*/places/*:place_id*/*:submission_type*/*:submission_id*/
+
+Get a particular submission
+
+**Request Parameters**:
+
+  * *include_invisible* *(only direct auth)*
+  * *include_private_data* *(only direct auth)*
+
+**Authentication**: Basic, session, or key auth *(optional)*
+
+**Response Formats**: JSON (default), CSV, HTML, XML
+
+**Sample URL**: http://api.shareabouts.org/api/places/29664/comments/29671/
+
+**Sample Response**:
+
+    200 OK
+
+    {
+        "id": 29671,
+        "url": "http://api.shareabouts.org/api/v2/demo-user/datasets/demo-data/places/29664/comments/29671/",
+        "updated_datetime": "2013-04-30T15:38:54.449Z",
+        "created_datetime": "2013-04-30T15:40:16.145Z",
+        "visible": true,
+        "submitter_name": "Andy",
+        "comment": "This is REALLY great!",
+        "place": {
+            "url": "http://api.shareabouts.org/api/v2/demo-user/datasets/demo-data/places/29664/",
+            "id": 29664
+        },
+        "set": {
+          "name": "comments",
+          "url": "http://api.shareabouts.org/api/v2/demo-user/datasets/demo-data/places/29664/comments/"
+        },
+        "attachments": []
+    }
+
+
 
 
 
