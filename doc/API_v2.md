@@ -149,7 +149,7 @@ Get a specific dataset
 
 ### PUT /api/v2/*:owner*/datasets/*:slug*/
 
-Create a dataset
+Update a dataset
 
 **Authentication**: Basic or session auth *(required)*
 
@@ -193,6 +193,244 @@ Delete a dataset
 **Response Formats**: JSON (default), CSV, HTML, XML
 
 **Sample URL**: http://api.shareabouts.org/api/v2/openplans/datasets/mctesty.json
+
+**Sample Request Data**:
+
+    204 NO CONTENT
+
+
+------------------------------------------------------------
+
+Places
+------
+
+The primary entry point into the API is a dataset. Each dataset has an owner,
+and a user can own any number of datasets.
+
+------------------------------------------------------------
+
+### GET /api/v2/*:owner*/datasets/*:slug*/places/
+
+Get all the places in a dataset
+
+**Request Parameters**:
+
+  * include_hidden *(only direct auth)*
+  * include_private *(only direct auth)*
+  * include_submissions
+
+**Authentication**: Basic, session, or key auth *(optional)*
+
+**Response Formats**: JSON (default), CSV, HTML, XML
+
+**Sample URL**: http://api.shareabouts.org/api/v2/openplans/datasets/atm_surcharge/places.json
+
+**Sample Response**:
+
+    200 OK
+    
+    {
+      "metadata": {
+        "length": 30,
+        "page": 1,
+        "next": http://.../api/v2/openplans/datasets/atm_surcharge/places.json?page=2,
+        "previous": null
+      },
+      "type": "FeatureCollection",
+      "features": [
+        {
+          "type": "Feature",
+          "geometry": { "type": "Point", "coordinates: [-73.994711637500004, 40.752499397299999] },
+          
+          "properties": {
+            "id": 25503, 
+            "url": "http://api.shareabouts.org/api/v1/openplans/datasets/atm_surcharge/places/25503/", 
+            "created_datetime": "2013-02-14T01:08:44.893Z", 
+            "updated_datetime": "2013-02-14T01:08:44.893Z", 
+            "visible": true,
+            
+            "type": "ATM", 
+            "name": "K-mart", 
+            "surcharge": "0", 
+            "submitter_name": "Mjumbe", 
+
+            "dataset": { "url": "http://api.shareabouts.org/api/v1/openplans/datasets/atm_surcharge/" }, 
+            "attachments": [], 
+            "submission_sets": {
+              "comments": {
+                "length": 1, 
+                "url": "http://api.shareabouts.org/api/v1/openplans/datasets/atm_surcharge/places/25503/comments/"
+              }
+            }
+          }
+        },
+        ... 
+      ]
+    }
+
+------------------------------------------------------------
+
+### POST /api/v2/*:owner*/datasets/*:slug*/places/
+
+Create a place
+
+**Authentication**: Basic, session, or key auth *(required)*
+
+**Response Formats**: JSON (default), CSV, HTML, XML
+
+**Sample URL**: http://api.shareabouts.org/api/v2/openplans/datasets/atm_surcharge/places.json
+
+**Sample Request Data**:
+
+    {
+      "type": "ATM", 
+      "name": "K-mart", 
+      "surcharge": "0", 
+      "submitter_name": "Mjumbe", 
+      "geometry": { "type": "Point", "coordinates: [-73.994711637500004, 40.752499397299999] },
+      "visible": true
+    }
+
+**Sample Response**:
+
+    201 CREATED
+    
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates: [-73.994711637500004, 40.752499397299999] },
+      
+      "properties": {
+        "id": 25503, 
+        "url": "http://api.shareabouts.org/api/v1/openplans/datasets/atm_surcharge/places/25503/", 
+        "created_datetime": "2013-02-14T01:08:44.893Z", 
+        "updated_datetime": "2013-02-14T01:08:44.893Z", 
+        "visible": true,
+        
+        "type": "ATM", 
+        "name": "K-mart", 
+        "surcharge": "0", 
+        "submitter_name": "Mjumbe", 
+
+        "dataset": { "url": "http://api.shareabouts.org/api/v1/openplans/datasets/atm_surcharge/" }, 
+        "attachments": [], 
+        "submission_sets": {}
+      }
+    }
+
+------------------------------------------------------------
+
+### GET /api/v2/*:owner*/datasets/*:slug*/places/*:placeid*/
+
+Get a specific place
+
+**Request Parameters**:
+
+  * include_hidden *(only direct auth)*
+  * include_private *(only direct auth)*
+  * include_submissions
+
+**Authentication**: Basic, session, or key auth *(optional)*
+
+**Response Formats**: JSON (default), CSV, HTML, XML
+
+**Sample URL**: http://api.shareabouts.org/api/v2/openplans/datasets/atm_surcharge/places/25503.json
+
+**Sample Response**:
+
+    200 OK
+    
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates: [-73.994711637500004, 40.752499397299999] },
+      
+      "properties": {
+        "id": 25503, 
+        "url": "http://api.shareabouts.org/api/v1/openplans/datasets/atm_surcharge/places/25503/", 
+        "created_datetime": "2013-02-14T01:08:44.893Z", 
+        "updated_datetime": "2013-02-14T01:08:44.893Z", 
+        "visible": true,
+        
+        "type": "ATM", 
+        "name": "K-mart", 
+        "surcharge": "0", 
+        "submitter_name": "Mjumbe", 
+
+        "dataset": { "url": "http://api.shareabouts.org/api/v1/openplans/datasets/atm_surcharge/" }, 
+        "attachments": [], 
+        "submission_sets": {
+          "comments": {
+            "length": 1, 
+            "url": "http://api.shareabouts.org/api/v1/openplans/datasets/atm_surcharge/places/25503/comments/"
+          }
+        }
+      }
+    }
+
+------------------------------------------------------------
+
+### PUT /api/v2/*:owner*/datasets/*:slug*/places/*:placeid*/
+
+Update a place
+
+**Authentication**: Basic, session, or key auth *(required)*
+
+**Response Formats**: JSON (default), CSV, HTML, XML
+
+**Sample URL**: http://api.shareabouts.org/api/v2/openplans/datasets/atm_surcharge/places/25503.json
+
+**Sample Request Data**:
+
+    {
+      "type": "ATM", 
+      "name": "K-mart", 
+      "surcharge": "0.50", 
+      "submitter_name": "Mjumbe", 
+      "geometry": { "type": "Point", "coordinates: [-73.994711637500004, 40.752499397299999] },
+      "visible": true
+    }
+
+**Sample Response**:
+
+    200 OK
+    
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates: [-73.994711637500004, 40.752499397299999] },
+      
+      "properties": {
+        "id": 25503, 
+        "url": "http://api.shareabouts.org/api/v1/openplans/datasets/atm_surcharge/places/25503/", 
+        "created_datetime": "2013-02-14T01:08:44.893Z", 
+        "updated_datetime": "2013-02-14T01:08:44.893Z", 
+        "visible": true,
+        
+        "type": "ATM", 
+        "name": "K-mart", 
+        "surcharge": "0.50", 
+        "submitter_name": "Mjumbe", 
+
+        "dataset": { "url": "http://api.shareabouts.org/api/v1/openplans/datasets/atm_surcharge/" }, 
+        "attachments": [], 
+        "submission_sets": {
+          "comments": {
+            "length": 1, 
+            "url": "http://api.shareabouts.org/api/v1/openplans/datasets/atm_surcharge/places/25503/comments/"
+          }
+        }
+      }
+    }
+
+------------------------------------------------------------
+
+### DELETE /api/v2/*:owner*/datasets/*:slug*/places/*:placeid*/
+
+Delete a place
+
+**Authentication**: Basic, session, or key auth *(required)*
+
+**Response Formats**: JSON (default), CSV, HTML, XML
+
+**Sample URL**: http://api.shareabouts.org/api/v2/openplans/datasets/atm_surcharge/places/25503
 
 **Sample Request Data**:
 
