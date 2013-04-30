@@ -44,6 +44,8 @@ and a user can own any number of datasets.
     set -- `type` (the set name), `length`, and `url`
   * *keys*: an object that contains only the URL to the dataset's API keys
 
+------------------------------------------------------------
+
 ### GET /api/v1/*:owner*/datasets/
 
 Get a user's datasets
@@ -90,6 +92,7 @@ Get a user's datasets
       ...
     ]
 
+------------------------------------------------------------
 
 ### POST /api/v1/*:owner*/datasets/
 
@@ -131,6 +134,7 @@ Create a user's datasets
        "url": "http://api.shareabouts.org/api/v1/openplans/datasets/mctesty/"
     }
 
+------------------------------------------------------------
 
 ### PUT /api/v1/*:owner*/datasets/*:slug*/
 
@@ -172,6 +176,7 @@ Update a user's dataset
        "url": "http://api.shareabouts.org/api/v1/openplans/datasets/mctesty/"
     }
 
+------------------------------------------------------------
 
 ### DELETE /api/v1/*:owner*/datasets/*:slug*/
 
@@ -185,6 +190,7 @@ Delete a user's dataset
 
     204 NO CONTENT
 
+------------------------------------------------------------
 
 ### GET /api/v1/*:owner*/datasets/*:slug*/
 
@@ -247,10 +253,11 @@ Places are the basic unit of a dataset. They have a point geometry and attribute
 * *url*:
 * *visible*:
 
+------------------------------------------------------------
 
 ### GET /api/v1/*:owner*/datasets/*:slug*/places/
 
-Get a places in a dataset
+Get all places in a dataset
 
 **Request Parameters**:
 
@@ -290,6 +297,7 @@ Get a places in a dataset
         ...
     ]
 
+------------------------------------------------------------
 
 ### POST /api/v1/*:owner*/datasets/*:slug*/places/
 
@@ -334,6 +342,7 @@ Create a place for a dataset
         "name": "Location Name"
     }
 
+------------------------------------------------------------
 
 ### PUT /api/v1/*:owner*/datasets/*:slug*/places/*:place_id*/
 
@@ -378,6 +387,7 @@ Update a place for a dataset
         "name": "Location Name"
     }
 
+------------------------------------------------------------
 
 ### DELETE /api/v1/*:owner*/datasets/*:slug*/places/*:place_id*/
 
@@ -390,6 +400,247 @@ Delete a place
 **Sample Response**:
 
     204 NO CONTENT
+
+------------------------------------------------------------
+
+### GET /api/v1/*:owner*/datasets/*:slug*/places/*:place_id*/
+
+Get a place
+
+**Request Parameters**:
+
+  * *include_invisible* *(only direct auth)*
+  * *include_private_data* *(only direct auth)*
+  * *include_submissions*
+
+**Authentication**: Basic, session, or key auth *(optional)*
+
+**Response Formats**: JSON (default), CSV, HTML, XML
+
+**Sample URL**: http://api.shareabouts.org/api/v1/demo-user/datasets/demo-data/places/29664/
+
+**Sample Response**:
+
+    200 OK
+
+    {
+        "location_type": "landmark",
+        "attachments": [],
+        "updated_datetime": "2013-04-29T22:20:58.010Z",
+        "created_datetime": "2013-04-29T22:20:58.010Z",
+        "description": "This is a REALLY great location.",
+        "dataset": {
+            "url": "http://shareaboutsapi-civicworks.dotcloud.com/api/v1/demo-user/datasets/demo-data/"
+        },
+        "visible": true,
+        "location": {"lat": 40.7204450013, "lng": -73.999908685700007},
+        "url": "http://shareaboutsapi-civicworks.dotcloud.com/api/v1/demo-user/datasets/demo-data/places/29664/",
+        "submitter_name": "Frank",
+        "submissions": [],
+        "id": 29664,
+        "name": "Location Name"
+    }
+
+
+Submissions
+-----------
+
+Submissions are stand-alone objects (key-value pairs) that can be attached to
+a place. These could be comments, surveys responses, support/likes, etc. You
+can attach multiple submission sets to a place.
+
+**Fields**:
+
+* *attachments*:
+* *created_datetime*:
+* *id*:
+* *place*:
+* *type*:
+* *updated_datetime*:
+* *url*:
+* *visible*:
+
+------------------------------------------------------------
+
+### GET /api/v1/*:owner*/datasets/*:slug*/places/*:place_id*/*:submission_type*/
+
+Get all submissions for a place
+
+**Request Parameters**:
+
+  * *include_invisible* *(only direct auth)*
+  * *include_private_data* *(only direct auth)*
+
+**Authentication**: Basic, session, or key auth *(optional)*
+
+**Response Formats**: JSON (default), CSV, HTML, XML
+
+**Sample URL**: http://api.shareabouts.org/api/v1/demo-user/datasets/demo-data/places/26836/comments/
+
+**Sample Response**:
+
+    200 OK
+
+    [
+        {
+            "attachments": [],
+            "comment": "Agreed.  Caught me a big one just a week ago.",
+            "created_datetime": "2013-04-11T16:46:38.662Z",
+            "id": 26902,
+            "place": {
+                "id": 26836,
+                "url": "http://api.shareabouts.org/api/v1/demo-user/datasets/demo-data/places/26836/"
+            },
+            "submitter_name": "John",
+            "type": "comments",
+            "updated_datetime": "2013-04-11T16:46:38.662Z",
+            "url": "http://api.shareabouts.org/api/v1/demo-user/datasets/demo-data/places/26836/comments/26902/",
+            "visible": true
+        },
+        ...
+    ]
+
+------------------------------------------------------------
+
+### POST /api/v1/*:owner*/datasets/*:slug*/places/*:place_id*/*:submission_type*/
+
+Create a submission for a place
+
+**Authentication**: Basic or session auth *(required)*
+
+**Content type**: application/json
+
+**Sample URL**: http://shareabouts-civicworks.dotcloud.com/api/places/29664/comments/
+
+**Sample Request Data**:
+
+    {
+        comment: "This is great!"
+        submitter_name: "Andy"
+        visible: "on"
+    }
+
+**Sample Response**:
+
+    201 CREATED
+
+    {
+        "comment": "This is great!",
+        "attachments": [],
+        "updated_datetime": "2013-04-30T15:38:54.449Z",
+        "created_datetime": "2013-04-30T15:38:54.449Z",
+        "visible": true,
+        "place": {
+            "url": "http://shareaboutsapi-civicworks.dotcloud.com/api/v1/demo-user/datasets/demo-data/places/29664/",
+            "id": 29664
+        },
+        "url": "http://shareaboutsapi-civicworks.dotcloud.com/api/v1/demo-user/datasets/demo-data/places/29664/comments/29671/",
+        "submitter_name": "Andy",
+        "type": "comments",
+        "id": 29671
+    }
+
+------------------------------------------------------------
+
+### PUT /api/v1/*:owner*/datasets/*:slug*/places/*:place_id*/*:submission_type*/*:submission_id*/
+
+Update a submission for a place of a specific type
+
+**Authentication**: Basic or session auth *(required)*
+
+**Content type**: application/json
+
+**Sample URL**: http://shareabouts-civicworks.dotcloud.com/api/places/29664/comments/29671/
+
+**Sample Request Data**:
+
+    {
+        comment: "This is REALLY great."
+        submitter_name: "Andy"
+        visible: "on"
+    }
+
+**Sample Response**:
+
+    200 OK
+
+    {
+        "attachments": [],
+        "comment": "This is REALLY great.",
+        "created_datetime": "2013-04-30T15:38:54.449Z",
+        "id": 29671,
+        "place": {
+            "id": 29664,
+            "url": "http://shareaboutsapi-civicworks.dotcloud.com/api/v1/demo-user/datasets/demo-data/places/29664/"
+        },
+        "submitter_name": "Andy",
+        "type": "comments",
+        "updated_datetime": "2013-04-30T15:48:13.395Z",
+        "url": "http://shareaboutsapi-civicworks.dotcloud.com/api/v1/demo-user/datasets/demo-data/places/29664/comments/29671/",
+        "visible": true
+    }
+
+------------------------------------------------------------
+
+### DELETE /api/v1/*:owner*/datasets/*:slug*/places/*:place_id*/*:submission_type*/*:submission_id*/
+
+Delete a submission
+
+**Authentication**: Basic or session auth *(required)*
+
+**Sample URL**: http://shareabouts-civicworks.dotcloud.com/api/places/29664/comments/29671/
+
+**Sample Response**:
+
+    204 NO CONTENT
+
+------------------------------------------------------------
+
+### GET /api/v1/*:owner*/datasets/*:slug*/places/*:place_id*/*:submission_type*/*:submission_id*/
+
+Get a submission for a place
+
+**Request Parameters**:
+
+  * *include_invisible* *(only direct auth)*
+  * *include_private_data* *(only direct auth)*
+
+**Authentication**: Basic, session, or key auth *(optional)*
+
+**Response Formats**: JSON (default), CSV, HTML, XML
+
+**Sample URL**: http://shareabouts-civicworks.dotcloud.com/api/places/29664/comments/29671/
+
+**Sample Request Data**:
+
+    {
+        comment: "This is REALLY great."
+        submitter_name: "Andy"
+        visible: "on"
+    }
+
+**Sample Response**:
+
+    200 OK
+
+    {
+        "attachments": [],
+        "comment": "This is REALLY great.",
+        "created_datetime": "2013-04-30T15:38:54.449Z",
+        "id": 29671,
+        "place": {
+            "id": 29664,
+            "url": "http://shareaboutsapi-civicworks.dotcloud.com/api/v1/demo-user/datasets/demo-data/places/29664/"
+        },
+        "submitter_name": "Andy",
+        "type": "comments",
+        "updated_datetime": "2013-04-30T15:48:13.395Z",
+        "url": "http://shareaboutsapi-civicworks.dotcloud.com/api/v1/demo-user/datasets/demo-data/places/29664/comments/29671/",
+        "visible": true
+    }
+
+
+
 
 
 Attachments
