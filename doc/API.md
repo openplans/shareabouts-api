@@ -8,10 +8,11 @@ and a submission, respectively.
   * **/api/v1/** -- List of all the dataset owners
   * **[/api/v1/*:owner*/datasets/](#get-apiv1ownerdatasets)** -- List of a user's owned datasets
   * **[/api/v1/*:owner*/datasets/*:ds-slug*/](#get-apiv1ownerdatasetsds-slug)** -- A specific dataset instance
-  * **/api/v1/*:owner*/datasets/*:ds-slug*/places/** -- List of places in a
+  * **[/api/v1/*:owner*/datasets/*:ds-slug*/places/](#get-apiv1ownerdatasetsds-slugplaces)** -- List of places in a
     dataset
-  * **/api/v1/*:owner*/datasets/*:ds-slug*/places/*:p-id*/** -- A specific
+  * **[/api/v1/*:owner*/datasets/*:ds-slug*/places/*:p-id*/](#get-apiv1ownerdatasetsds-slugplacesp-id)** -- A specific
     place instance
+  * **[/api/v1/*:owner*/datasets/*:ds-slug*/places/table](#get-apiv1ownerdatasetsds-slugplacestable)** -- List of places in a dataset in a flat, tabular format
   * **/api/v1/*:owner*/datasets/*:ds-slug*/submissions/** -- List of all
     submissions in a dataset
   * **/api/v1/*:owner*/datasets/*:ds-slug*/*:ss-name*/** -- List of all
@@ -344,6 +345,46 @@ Create a place for a dataset
 
 ------------------------------------------------------------
 
+### GET /api/v1/*:owner*/datasets/*:ds-slug*/places/*:p-id*/
+
+Get a place
+
+**Request Parameters**:
+
+  * *include_invisible* *(only direct auth)*
+  * *include_private_data* *(only direct auth)*
+  * *include_submissions*
+
+**Authentication**: Basic, session, or key auth *(optional)*
+
+**Response Formats**: JSON (default), CSV, HTML, XML
+
+**Sample URL**: http://api.shareabouts.org/api/v1/demo-user/datasets/demo-data/places/29664/
+
+**Sample Response**:
+
+    200 OK
+
+    {
+        "location_type": "landmark",
+        "attachments": [],
+        "updated_datetime": "2013-04-29T22:20:58.010Z",
+        "created_datetime": "2013-04-29T22:20:58.010Z",
+        "description": "This is a REALLY great location.",
+        "dataset": {
+            "url": "http://shareaboutsapi-civicworks.dotcloud.com/api/v1/demo-user/datasets/demo-data/"
+        },
+        "visible": true,
+        "location": {"lat": 40.7204450013, "lng": -73.999908685700007},
+        "url": "http://shareaboutsapi-civicworks.dotcloud.com/api/v1/demo-user/datasets/demo-data/places/29664/",
+        "submitter_name": "Frank",
+        "submissions": [],
+        "id": 29664,
+        "name": "Location Name"
+    }
+
+------------------------------------------------------------
+
 ### PUT /api/v1/*:owner*/datasets/*:ds-slug*/places/*:p-id*/
 
 Update a place for a dataset
@@ -400,46 +441,6 @@ Delete a place
 **Sample Response**:
 
     204 NO CONTENT
-
-------------------------------------------------------------
-
-### GET /api/v1/*:owner*/datasets/*:ds-slug*/places/*:p-id*/
-
-Get a place
-
-**Request Parameters**:
-
-  * *include_invisible* *(only direct auth)*
-  * *include_private_data* *(only direct auth)*
-  * *include_submissions*
-
-**Authentication**: Basic, session, or key auth *(optional)*
-
-**Response Formats**: JSON (default), CSV, HTML, XML
-
-**Sample URL**: http://api.shareabouts.org/api/v1/demo-user/datasets/demo-data/places/29664/
-
-**Sample Response**:
-
-    200 OK
-
-    {
-        "location_type": "landmark",
-        "attachments": [],
-        "updated_datetime": "2013-04-29T22:20:58.010Z",
-        "created_datetime": "2013-04-29T22:20:58.010Z",
-        "description": "This is a REALLY great location.",
-        "dataset": {
-            "url": "http://shareaboutsapi-civicworks.dotcloud.com/api/v1/demo-user/datasets/demo-data/"
-        },
-        "visible": true,
-        "location": {"lat": 40.7204450013, "lng": -73.999908685700007},
-        "url": "http://shareaboutsapi-civicworks.dotcloud.com/api/v1/demo-user/datasets/demo-data/places/29664/",
-        "submitter_name": "Frank",
-        "submissions": [],
-        "id": 29664,
-        "name": "Location Name"
-    }
 
 ------------------------------------------------------------
 
