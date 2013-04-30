@@ -303,7 +303,7 @@ Get all places in a dataset
 
 Create a place for a dataset
 
-**Authentication**: Basic or session auth *(required)*
+**Authentication**: Basic, session, or key auth *(required)*
 
 **Content type**: application/json
 
@@ -348,7 +348,7 @@ Create a place for a dataset
 
 Update a place for a dataset
 
-**Authentication**: Basic or session auth *(required)*
+**Authentication**: Basic, session, or key auth *(required)*
 
 **Content type**: application/json
 
@@ -393,7 +393,7 @@ Update a place for a dataset
 
 Delete a place
 
-**Authentication**: Basic or session auth *(required)*
+**Authentication**: Basic, session, or key auth *(required)*
 
 **Sample URL**: http://api.shareabouts.org/api/v1/demo-user/datasets/demo-data/places/29664/
 
@@ -506,7 +506,7 @@ Get all submissions for a place
 
 Create a submission for a place
 
-**Authentication**: Basic or session auth *(required)*
+**Authentication**: Basic, session, or key auth *(required)*
 
 **Content type**: application/json
 
@@ -546,7 +546,7 @@ Create a submission for a place
 
 Update a submission for a place of a specific type
 
-**Authentication**: Basic or session auth *(required)*
+**Authentication**: Basic, session, or key auth *(required)*
 
 **Content type**: application/json
 
@@ -586,7 +586,7 @@ Update a submission for a place of a specific type
 
 Delete a submission
 
-**Authentication**: Basic or session auth *(required)*
+**Authentication**: Basic, session, or key auth *(required)*
 
 **Sample URL**: http://shareabouts-civicworks.dotcloud.com/api/places/29664/comments/29671/
 
