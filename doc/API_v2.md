@@ -7,6 +7,19 @@ Datasets
 The primary entry point into the API is a dataset. Each dataset has an owner,
 and a user can own any number of datasets.
 
+**Fields**:
+
+  * *slug*: the short name for the dataset, used in the url; no user can
+    own two datasets with the same slug
+  * *display_name*: the human-readable name for the dataset
+  * *url*: the URL of the dataset
+  * *owner*: an object with the `username` and `id` of the owner
+  * *places*: an object with places metadata -- the number (`length`) of
+    places, and the `url` of the place collection
+  * *submission_sets*: a list of objects with meta data about each submission
+    set -- `length`, and `url`
+  * *keys*: an object that contains only the URL to the dataset's API keys
+
 ------------------------------------------------------------
 
 ### GET /api/v2/*:owner*/datasets/
@@ -204,8 +217,19 @@ Delete a dataset
 Places
 ------
 
-The primary entry point into the API is a dataset. Each dataset has an owner,
-and a user can own any number of datasets.
+Places are the basic unit of a dataset. By default, a place is represented as a
+GeoJSON feature.
+
+**Property Fields**:
+
+* *id*:
+* *url*:
+* *created_datetime*:
+* *updated_datetime*:
+* *visible*:
+* *attachments*:
+* *dataset*:
+* *submission_sets*:
 
 ------------------------------------------------------------
 
