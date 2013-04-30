@@ -674,36 +674,41 @@ Delete a submission
     204 NO CONTENT
 
 
-
-
+------------------------------------------------------------
 
 Attachments
 -----------
 
-You can attach files to places and submissions.
+Attachments are file data that can be attached to a place or a submission. 
+Attachment files are stored as resources external to the Shareabouts API, but
+can be uploaded through the API.
 
-  * **Method**: POST
+### POST /api/v2/*:owner*/datasets/*:slug*/places/*:place_id*/attachments/
 
-    **URL**: /api/v2/&lt;owner&gt;/datasets/&lt;dataset&gt;/places/&lt;place&gt;/attachments/
+Create a new attachment for a place
 
-    **Content type**: multipart/form-data
+**Authentication**: Basic, session, or key auth *(required)*
 
-    **Fields**
-      * *name*: The attachment's name -- should be unique within the place.
-      * *file*: The attachment's file data.
+**Request Data**:
 
-    **Result**: A JSON object with the following fields:
-      * *name*: The attachment's name
-      * *url*: The URL of the attached file
+Multipart form data with two fields:
 
-For example, in Javascript (with jQuery), this can be done like:
+  * *name*: The attachment's name -- should be unique within the place.
+  * *file*: The attachment's file data.
 
-    var data = new FormData();
-    data.append('name', 'my-attachment')
+**Sample URL**: http://api.shareabouts.org/api/v2/openplans/patiosoftheworld/places/29664/attachments/
+
+**Sample Usage**
+
+In Javascript (with jQuery), this can be done like:
+
+    var data = new FormData(),
+        fileField = document.getElementById('patio-form');
+    data.append('name', 'patio-photo')
     data.append('file', fileField.files[0])
 
     jQuery.ajax({
-      url: '...',
+      url: 'http://api.shareabouts.org/api/v2/openplans/patiosoftheworld/places/29664/attachments/',
       type: 'POST',
       data: data,
 
@@ -716,7 +721,17 @@ Or, in Python, with requests:
     import requests
     requests.request(
         'POST',
-        '...',
-        data={'name': 'my-attachment'}
+        'http://api.shareabouts.org/api/v2/openplans/patiosoftheworld/places/29664/attachments/',
+        data={'name': 'patio-photo'}
         files={'file': open('filename.jpg')}
     )
+
+**Sample Response**:
+  
+    200 OK
+    
+    {
+      "name": "patio-photo",
+      "url": "http://patiosoftheworld.s3.amazon.com/patiomap-attachments/pDf3r4.jpg"
+    }
+
