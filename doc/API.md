@@ -5,25 +5,42 @@ Resources
 name of a submission set. `:p-id` and `:s-id` are the numeric ids of a place
 and a submission, respectively.
 
-  * **/api/v1/** -- List of all the dataset owners
-  * **[/api/v1/*:owner*/datasets/](#get-apiv1ownerdatasets)** -- List of a user's owned datasets
-  * **[/api/v1/*:owner*/datasets/*:ds-slug*/](#get-apiv1ownerdatasetsds-slug)** -- A specific dataset instance
-  * **[/api/v1/*:owner*/datasets/*:ds-slug*/places/](#get-apiv1ownerdatasetsds-slugplaces)** -- List of places in a
-    dataset
-  * **[/api/v1/*:owner*/datasets/*:ds-slug*/places/*:p-id*/](#get-apiv1ownerdatasetsds-slugplacesp-id)** -- A specific
-    place instance
-  * **[/api/v1/*:owner*/datasets/*:ds-slug*/places/table](#get-apiv1ownerdatasetsds-slugplacestable)** -- List of places in a dataset in a flat, tabular format
-  * **[/api/v1/*:owner*/datasets/*:ds-slug*/submissions/](#get-apiv1ownerdatasetsds-slugsubmissions)** -- List of all submissions in a dataset
-  * **[/api/v1/*:owner*/datasets/*:ds-slug*/*:ss-name*/](#get-apiv1ownerdatasetsds-slugss-name)** -- List of all
-    submissions belonging to a particular submission set in a dataset
-  * **[/api/v1/*:owner*/datasets/*:ds-slug*/*:ss-name*/table](#get-apiv1ownerdatasetsds-slugss-nametable)** -- List of all submissions belonging to a particular submission set in a dataset in a flat, tabular format
+Datasets
 
-  * **[/api/v1/*:owner*/datasets/*:ds-slug*/places/*:p-id*/*:ss-name*/](#get-apiv1ownerdatasetsds-slugplacesp-idss-name)** -- List
+  * /api/v1/ -- List of all the dataset owners
+  * [/api/v1/*:owner*/datasets/](#get-apiv1ownerdatasets) -- List of a user's owned datasets
+  * [/api/v1/*:owner*/datasets/*:ds-slug*/](#get-apiv1ownerdatasetsds-slug) -- A specific dataset instance
+
+Places
+
+  * [/api/v1/*:owner*/datasets/*:ds-slug*/places/](#get-apiv1ownerdatasetsds-slugplaces) -- List of places in a
+    dataset
+  * [/api/v1/*:owner*/datasets/*:ds-slug*/places/*:p-id*/](#get-apiv1ownerdatasetsds-slugplacesp-id) -- A specific
+    place instance
+  * [/api/v1/*:owner*/datasets/*:ds-slug*/places/table](#get-apiv1ownerdatasetsds-slugplacestable) -- List of places in a dataset in a flat, tabular format
+
+Submissions
+
+  * [/api/v1/*:owner*/datasets/*:ds-slug*/submissions/](#get-apiv1ownerdatasetsds-slugsubmissions) -- List of all submissions in a dataset
+  * [/api/v1/*:owner*/datasets/*:ds-slug*/*:ss-name*/](#get-apiv1ownerdatasetsds-slugss-name) -- List of all
+    submissions belonging to a particular submission set in a dataset
+  * [/api/v1/*:owner*/datasets/*:ds-slug*/*:ss-name*/table](#get-apiv1ownerdatasetsds-slugss-nametable) -- List of all submissions belonging to a particular submission set in a dataset in a flat, tabular format
+
+  * [/api/v1/*:owner*/datasets/*:ds-slug*/places/*:p-id*/*:ss-name*/](#get-apiv1ownerdatasetsds-slugplacesp-idss-name) -- List
     of all submissions belonging to a particular submission set attached to a
     place
-  * **[/api/v1/*:owner*/datasets/*:ds-slug*/places/*:p-id*/*:ss-name*/*:s-id*/](#get-apiv1ownerdatasetsds-slugplacesp-idss-names-id)**
+  * [/api/v1/*:owner*/datasets/*:ds-slug*/places/*:p-id*/*:ss-name*/*:s-id*/](#get-apiv1ownerdatasetsds-slugplacesp-idss-names-id)
     -- A specific submission instance
-  * **[/api/v1/*:owner*/datasets/*:ds-slug*/places/*:p-id*/*:ss-name*/table](#get-apiv1ownerdatasetsds-slugplacesp-idss-nametable)** -- List of submissions for a place in a flat, tabular format
+  * [/api/v1/*:owner*/datasets/*:ds-slug*/places/*:p-id*/*:ss-name*/table](#get-apiv1ownerdatasetsds-slugplacesp-idss-nametable) -- List of submissions for a place in a flat, tabular format
+
+Activity
+
+  * [/api/v1/*:owner*/datasets/*:ds-slug*/activity/](#get-apiv1ownerdatasetsds-slugactivity) -- List of all activity for a dataset
+
+Attachments
+
+  * [/api/v1/*:owner*/datasets/*:ds-slug*/places/*:p-id*/attachments/](#get-apiv1ownerdatasetsds-slugplacesp-idattachments) -- Save attachments to a place
+
 
 Datasets
 --------
@@ -262,9 +279,9 @@ Get all places in a dataset
 
 **Request Parameters**:
 
-  * *include_invisible* *(only direct auth)*
-  * *include_private_data* *(only direct auth)*
-  * *include_submissions*
+  * `include_invisible` *(only direct auth)*
+  * `include_private_data` *(only direct auth)*
+  * `include_submissions`
 
 **Authentication**: Basic, session, or key auth *(optional)*
 
@@ -351,9 +368,9 @@ Get a place
 
 **Request Parameters**:
 
-  * *include_invisible* *(only direct auth)*
-  * *include_private_data* *(only direct auth)*
-  * *include_submissions*
+  * `include_invisible` *(only direct auth)*
+  * `include_private_data` *(only direct auth)*
+  * `include_submissions`
 
 **Authentication**: Basic, session, or key auth *(optional)*
 
@@ -450,9 +467,9 @@ Get all places in a dataset
 
 **Request Parameters**:
 
-  * *include_invisible* *(only direct auth)*
-  * *include_private_data* *(only direct auth)*
-  * *include_submissions*
+  * `include_invisible` *(only direct auth)*
+  * `include_private_data` *(only direct auth)*
+  * `include_submissions`
 
 **Authentication**: Basic, session, or key auth *(optional)*
 
@@ -506,8 +523,8 @@ Get all submissions for a dataset
 
 **Request Parameters**:
 
-  * *include_invisible* *(only direct auth)*
-  * *include_private_data* *(only direct auth)*
+  * `include_invisible` *(only direct auth)*
+  * `include_private_data` *(only direct auth)*
 
 **Authentication**: Basic, session, or key auth *(optional)*
 
@@ -546,8 +563,8 @@ Get all submissions of a particular type for a dataset
 
 **Request Parameters**:
 
-  * *include_invisible* *(only direct auth)*
-  * *include_private_data* *(only direct auth)*
+  * `include_invisible` *(only direct auth)*
+  * `include_private_data` *(only direct auth)*
 
 **Authentication**: Basic, session, or key auth *(optional)*
 
@@ -587,8 +604,8 @@ Get a submissions for a dataset in a flat, tabular format. Very useful with
 
 **Request Parameters**:
 
-  * *include_invisible* *(only direct auth)*
-  * *include_private_data* *(only direct auth)*
+  * `include_invisible` *(only direct auth)*
+  * `include_private_data` *(only direct auth)*
 
 **Authentication**: Basic, session, or key auth *(optional)*
 
@@ -621,8 +638,8 @@ Get all submissions of a particular type for a place
 
 **Request Parameters**:
 
-  * *include_invisible* *(only direct auth)*
-  * *include_private_data* *(only direct auth)*
+  * `include_invisible` *(only direct auth)*
+  * `include_private_data` *(only direct auth)*
 
 **Authentication**: Basic, session, or key auth *(optional)*
 
@@ -702,8 +719,8 @@ Get a submission for a place
 
 **Request Parameters**:
 
-  * *include_invisible* *(only direct auth)*
-  * *include_private_data* *(only direct auth)*
+  * `include_invisible` *(only direct auth)*
+  * `include_private_data` *(only direct auth)*
 
 **Authentication**: Basic, session, or key auth *(optional)*
 
@@ -794,8 +811,8 @@ Get a submissions for a place in a flat, tabular format
 
 **Request Parameters**:
 
-  * *include_invisible* *(only direct auth)*
-  * *include_private_data* *(only direct auth)*
+  * `include_invisible` *(only direct auth)*
+  * `include_private_data` *(only direct auth)*
 
 **Authentication**: Basic, session, or key auth *(optional)*
 
@@ -820,38 +837,86 @@ Get a submissions for a place in a flat, tabular format
         ...
     ]
 
+Activity
+--------
 
+### GET /api/v1/*:owner*/datasets/*:ds-slug*/activity/
 
+Get the activity for a dataset
 
+**Request Parameters**:
+
+  * `before` -- The id of the latest activity to return.  The
+                most recent results with the given id or lower will be
+                returned.
+  * `after` -- The id of the earliest activity to return.  The
+               most recent results with ids higher than *but not including*
+               the given time will be returned.
+  * `limit` -- The maximum number of results to be returned.
+  * `visible` -- Set to `all` to return activity for both visible and
+                 invisible places.
+
+**Authentication**: Basic, session, or key auth *(optional)*
+
+**Response Formats**: JSON (default), CSV, HTML, XML
+
+**Sample URL**: http://api.shareabouts.org/api/v1/demo-user/datasets/demo-data/activity/
+
+**Sample Response**:
+
+    200 OK
+
+    [
+        {
+            "action": "create",
+            "data": {
+                "created_datetime": "2013-04-30T19:47:21.101Z",
+                "id": 29674,
+                "submitter_name": "",
+                "updated_datetime": "2013-04-30T19:47:21.101Z",
+                "user_token": "session:e574c75e35d2e418a5de663b4b0c0691"
+            },
+            "id": 159985,
+            "place_id": 29673,
+            "type": "support"
+        },
+        ...
+    ]
 
 
 Attachments
 -----------
 
-You can attach files to places and submissions.
+Attachments are file data that can be attached to a place or a submission.
+Attachment files are stored as resources external to the Shareabouts API, but
+can be uploaded through the API.
 
-  * **Method**: POST
+### POST /api/v1/*:owner*/datasets/*:ds-slug*/places/*:p-id*/attachments/
 
-    **URL**: /api/v1/&lt;owner&gt;/datasets/&lt;dataset&gt;/places/&lt;place&gt;/attachments/
+Create a new attachment for a place
 
-    **Content type**: multipart/form-data
+**Authentication**: Basic, session, or key auth *(required)*
 
-    **Fields**
-      * *name*: The attachment's name -- should be unique within the place.
-      * *file*: The attachment's file data.
+**Request Data**:
 
-    **Result**: A JSON object with the following fields:
-      * *name*: The attachment's name
-      * *url*: The URL of the attached file
+Multipart form data with two fields:
 
-For example, in Javascript (with jQuery), this can be done like:
+  * *name*: The attachment's name -- should be unique within the place.
+  * *file*: The attachment's file data.
 
-    var data = new FormData();
-    data.append('name', 'my-attachment')
+**Sample URL**: http://api.shareabouts.org/api/v1/openplans/patiosoftheworld/places/29664/attachments/
+
+**Sample Usage**
+
+In Javascript (with jQuery), this can be done like:
+
+    var data = new FormData(),
+        fileField = document.getElementById('patio-form');
+    data.append('name', 'patio-photo')
     data.append('file', fileField.files[0])
 
     jQuery.ajax({
-      url: '...',
+      url: 'http://api.shareabouts.org/api/v2/openplans/patiosoftheworld/places/29664/attachments/',
       type: 'POST',
       data: data,
 
@@ -864,7 +929,17 @@ Or, in Python, with requests:
     import requests
     requests.request(
         'POST',
-        '...',
-        data={'name': 'my-attachment'}
+        'http://api.shareabouts.org/api/v2/openplans/patiosoftheworld/places/29664/attachments/',
+        data={'name': 'patio-photo'}
         files={'file': open('filename.jpg')}
     )
+
+**Sample Response**:
+
+    200 OK
+
+    {
+      "name": "patio-photo",
+      "url": "http://patiosoftheworld.s3.amazon.com/patiomap-attachments/pDf3r4.jpg"
+    }
+
