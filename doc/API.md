@@ -6,8 +6,8 @@ name of a submission set. `:p-id` and `:s-id` are the numeric ids of a place
 and a submission, respectively.
 
   * **/api/v1/** -- List of all the dataset owners
-  * **/api/v1/*:owner*/datasets/** -- List of a user's owned datasets
-  * **/api/v1/*:owner*/datasets/*:ds-slug*/** -- A specific dataset instance
+  * **[/api/v1/*:owner*/datasets/](#get-apiv1ownerdatasets)** -- List of a user's owned datasets
+  * **[/api/v1/*:owner*/datasets/*:ds-slug*/](#get-apiv1ownerdatasetsds-slug)** -- A specific dataset instance
   * **/api/v1/*:owner*/datasets/*:ds-slug*/places/** -- List of places in a
     dataset
   * **/api/v1/*:owner*/datasets/*:ds-slug*/places/*:p-id*/** -- A specific
@@ -136,6 +136,51 @@ Create a user's datasets
 
 ------------------------------------------------------------
 
+### GET /api/v1/*:owner*/datasets/*:ds-slug*/
+
+Get the details of a dataset
+
+**Authentication**: Basic, session, or key auth *(optional)*
+
+**Response Formats**: JSON (default), CSV, HTML, XML
+
+**Sample URL**: http://api.shareabouts.org/api/v1/openplans/datasets/mctesty/
+
+**Sample Response**:
+
+      {
+        "id": 31,
+        "url": "http://api.shareabouts.org/api/v1/openplans/datasets/chicagobikes/",
+        "display_name": "Chicago Bike Share exports",
+        "slug": "chicagobikes",
+
+        "keys": {
+          "url": "http://api.shareabouts.org/api/v1/openplans/datasets/chicagobikes/keys/"
+        },
+        "owner": {
+          "username": "openplans",
+          "id": 7
+        },
+        "places": {
+          "url": "http://api.shareabouts.org/api/v1/openplans/datasets/chicagobikes/places/",
+          "length": 1281
+        },
+        "submissions": [
+          {
+            "url": "http://api.shareabouts.org/api/v1/openplans/datasets/chicagobikes/comments/",
+            "length": 1166,
+            "type": "comments"
+          },
+          {
+            "url": "http://api.shareabouts.org/api/v1/openplans/datasets/chicagobikes/support/",
+            "length": 12389,
+            "type": "support"
+          }
+        ]
+      }
+
+------------------------------------------------------------
+
 ### PUT /api/v1/*:owner*/datasets/*:ds-slug*/
 
 Update a user's dataset
@@ -189,51 +234,6 @@ Delete a user's dataset
 **Sample Response**:
 
     204 NO CONTENT
-
-------------------------------------------------------------
-
-### GET /api/v1/*:owner*/datasets/*:ds-slug*/
-
-Get the details of a dataset
-
-**Authentication**: Basic, session, or key auth *(optional)*
-
-**Response Formats**: JSON (default), CSV, HTML, XML
-
-**Sample URL**: http://api.shareabouts.org/api/v1/openplans/datasets/mctesty/
-
-**Sample Response**:
-
-      {
-        "id": 31,
-        "url": "http://api.shareabouts.org/api/v1/openplans/datasets/chicagobikes/",
-        "display_name": "Chicago Bike Share exports",
-        "slug": "chicagobikes",
-
-        "keys": {
-          "url": "http://api.shareabouts.org/api/v1/openplans/datasets/chicagobikes/keys/"
-        },
-        "owner": {
-          "username": "openplans",
-          "id": 7
-        },
-        "places": {
-          "url": "http://api.shareabouts.org/api/v1/openplans/datasets/chicagobikes/places/",
-          "length": 1281
-        },
-        "submissions": [
-          {
-            "url": "http://api.shareabouts.org/api/v1/openplans/datasets/chicagobikes/comments/",
-            "length": 1166,
-            "type": "comments"
-          },
-          {
-            "url": "http://api.shareabouts.org/api/v1/openplans/datasets/chicagobikes/support/",
-            "length": 12389,
-            "type": "support"
-          }
-        ]
-      }
 
 
 Places
