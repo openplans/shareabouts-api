@@ -136,7 +136,7 @@ Create a user's datasets
 
 ------------------------------------------------------------
 
-### PUT /api/v1/*:owner*/datasets/*:slug*/
+### PUT /api/v1/*:owner*/datasets/*:ds-slug*/
 
 Update a user's dataset
 
@@ -178,7 +178,7 @@ Update a user's dataset
 
 ------------------------------------------------------------
 
-### DELETE /api/v1/*:owner*/datasets/*:slug*/
+### DELETE /api/v1/*:owner*/datasets/*:ds-slug*/
 
 Delete a user's dataset
 
@@ -192,7 +192,7 @@ Delete a user's dataset
 
 ------------------------------------------------------------
 
-### GET /api/v1/*:owner*/datasets/*:slug*/
+### GET /api/v1/*:owner*/datasets/*:ds-slug*/
 
 Get the details of a dataset
 
@@ -255,7 +255,7 @@ Places are the basic unit of a dataset. They have a point geometry and attribute
 
 ------------------------------------------------------------
 
-### GET /api/v1/*:owner*/datasets/*:slug*/places/
+### GET /api/v1/*:owner*/datasets/*:ds-slug*/places/
 
 Get all places in a dataset
 
@@ -299,7 +299,7 @@ Get all places in a dataset
 
 ------------------------------------------------------------
 
-### POST /api/v1/*:owner*/datasets/*:slug*/places/
+### POST /api/v1/*:owner*/datasets/*:ds-slug*/places/
 
 Create a place for a dataset
 
@@ -344,7 +344,7 @@ Create a place for a dataset
 
 ------------------------------------------------------------
 
-### PUT /api/v1/*:owner*/datasets/*:slug*/places/*:place_id*/
+### PUT /api/v1/*:owner*/datasets/*:ds-slug*/places/*:p-id*/
 
 Update a place for a dataset
 
@@ -389,7 +389,7 @@ Update a place for a dataset
 
 ------------------------------------------------------------
 
-### DELETE /api/v1/*:owner*/datasets/*:slug*/places/*:place_id*/
+### DELETE /api/v1/*:owner*/datasets/*:ds-slug*/places/*:p-id*/
 
 Delete a place
 
@@ -403,7 +403,7 @@ Delete a place
 
 ------------------------------------------------------------
 
-### GET /api/v1/*:owner*/datasets/*:slug*/places/*:place_id*/
+### GET /api/v1/*:owner*/datasets/*:ds-slug*/places/*:p-id*/
 
 Get a place
 
@@ -443,7 +443,7 @@ Get a place
 
 ------------------------------------------------------------
 
-### GET /api/v1/*:owner*/datasets/*:slug*/places/table
+### GET /api/v1/*:owner*/datasets/*:ds-slug*/places/table
 
 Get all places in a dataset
 
@@ -499,7 +499,7 @@ can attach multiple submission sets to a place.
 
 ------------------------------------------------------------
 
-### GET /api/v1/*:owner*/datasets/*:slug*/places/*:place_id*/*:submission_type*/
+### GET /api/v1/*:owner*/datasets/*:ds-slug*/places/*:p-id*/*:ss-name*/
 
 Get all submissions for a place
 
@@ -539,7 +539,7 @@ Get all submissions for a place
 
 ------------------------------------------------------------
 
-### POST /api/v1/*:owner*/datasets/*:slug*/places/*:place_id*/*:submission_type*/
+### POST /api/v1/*:owner*/datasets/*:ds-slug*/places/*:p-id*/*:ss-name*/
 
 Create a submission for a place
 
@@ -579,7 +579,7 @@ Create a submission for a place
 
 ------------------------------------------------------------
 
-### PUT /api/v1/*:owner*/datasets/*:slug*/places/*:place_id*/*:submission_type*/*:submission_id*/
+### PUT /api/v1/*:owner*/datasets/*:ds-slug*/places/*:p-id*/*:ss-name*/*:s-id*/
 
 Update a submission for a place of a specific type
 
@@ -619,7 +619,7 @@ Update a submission for a place of a specific type
 
 ------------------------------------------------------------
 
-### DELETE /api/v1/*:owner*/datasets/*:slug*/places/*:place_id*/*:submission_type*/*:submission_id*/
+### DELETE /api/v1/*:owner*/datasets/*:ds-slug*/places/*:p-id*/*:ss-name*/*:s-id*/
 
 Delete a submission
 
@@ -633,7 +633,7 @@ Delete a submission
 
 ------------------------------------------------------------
 
-### GET /api/v1/*:owner*/datasets/*:slug*/places/*:place_id*/*:submission_type*/*:submission_id*/
+### GET /api/v1/*:owner*/datasets/*:ds-slug*/places/*:p-id*/*:ss-name*/*:s-id*/
 
 Get a submission for a place
 
@@ -670,7 +670,7 @@ Get a submission for a place
 
 ------------------------------------------------------------
 
-### GET /api/v1/*:owner*/datasets/*:slug*/places/*:place_id*/*:submission_type*/table
+### GET /api/v1/*:owner*/datasets/*:ds-slug*/places/*:p-id*/*:ss-name*/table
 
 Get a submissions for a place in a flat, tabular format
 
@@ -704,7 +704,7 @@ Get a submissions for a place in a flat, tabular format
 
 ------------------------------------------------------------
 
-### GET /api/v1/*:owner*/datasets/*:slug*/*:submission_type*/
+### GET /api/v1/*:owner*/datasets/*:ds-slug*/*:ss-name*/
 
 Get a submissions for a dataset
 
@@ -744,7 +744,7 @@ Get a submissions for a dataset
 
 ------------------------------------------------------------
 
-### GET /api/v1/*:owner*/datasets/*:slug*/*:submission_type*/table
+### GET /api/v1/*:owner*/datasets/*:ds-slug*/*:ss-name*/table
 
 Get a submissions for a dataset in a flat, tabular format. Very useful with
 `format=csv`
