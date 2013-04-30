@@ -16,11 +16,14 @@ and a submission, respectively.
   * **[/api/v1/*:owner*/datasets/*:ds-slug*/submissions/](#get-apiv1ownerdatasetsds-slugsubmissions)** -- List of all submissions in a dataset
   * **[/api/v1/*:owner*/datasets/*:ds-slug*/*:ss-name*/](#get-apiv1ownerdatasetsds-slugss-name)** -- List of all
     submissions belonging to a particular submission set in a dataset
-  * **/api/v1/*:owner*/datasets/*:ds-slug*/places/*:p-id*/*:ss-name*/** -- List
+  * **[/api/v1/*:owner*/datasets/*:ds-slug*/*:ss-name*/table](#get-apiv1ownerdatasetsds-slugss-nametable)** -- List of all submissions belonging to a particular submission set in a dataset in a flat, tabular format
+
+  * **[/api/v1/*:owner*/datasets/*:ds-slug*/places/*:p-id*/*:ss-name*/](#get-apiv1ownerdatasetsds-slugplacesp-idss-name)** -- List
     of all submissions belonging to a particular submission set attached to a
     place
-  * **/api/v1/*:owner*/datasets/*:ds-slug*/places/*:p-id*/*:ss-name*/*:s-id*/**
+  * **[/api/v1/*:owner*/datasets/*:ds-slug*/places/*:p-id*/*:ss-name*/*:s-id*/](#get-apiv1ownerdatasetsds-slugplacesp-idss-names-id)**
     -- A specific submission instance
+  * **[/api/v1/*:owner*/datasets/*:ds-slug*/places/*:p-id*/*:ss-name*/table](#get-apiv1ownerdatasetsds-slugplacesp-idss-nametable)** -- List of submissions for a place in a flat, tabular format
 
 Datasets
 --------
@@ -577,6 +580,41 @@ Get all submissions of a particular type for a dataset
 
 ------------------------------------------------------------
 
+### GET /api/v1/*:owner*/datasets/*:ds-slug*/*:ss-name*/table
+
+Get a submissions for a dataset in a flat, tabular format. Very useful with
+`format=csv`
+
+**Request Parameters**:
+
+  * *include_invisible* *(only direct auth)*
+  * *include_private_data* *(only direct auth)*
+
+**Authentication**: Basic, session, or key auth *(optional)*
+
+**Response Formats**: JSON (default), CSV, HTML, XML
+
+**Sample URL**: http://api.shareabouts.org/api/v1/demo-user/datasets/demo-data/comments/table
+
+**Sample Response**:
+
+    200 OK
+
+    [
+        {
+            "attachments": [],
+            "comment": "Moderately intelligent people.",
+            "comment_created_datetime": "2012-08-27T14:45:53.815Z",
+            "comment_id": 12,
+            "comment_submitter_name": "Mjumbe",
+            "comment_visible": true,
+            "place_id": 10
+        },
+        ...
+    ]
+
+------------------------------------------------------------
+
 ### GET /api/v1/*:owner*/datasets/*:ds-slug*/places/*:p-id*/*:ss-name*/
 
 Get all submissions of a particular type for a place
@@ -655,7 +693,46 @@ Create a submission for a place
         "id": 29671
     }
 
+
 ------------------------------------------------------------
+
+### GET /api/v1/*:owner*/datasets/*:ds-slug*/places/*:p-id*/*:ss-name*/*:s-id*/
+
+Get a submission for a place
+
+**Request Parameters**:
+
+  * *include_invisible* *(only direct auth)*
+  * *include_private_data* *(only direct auth)*
+
+**Authentication**: Basic, session, or key auth *(optional)*
+
+**Response Formats**: JSON (default), CSV, HTML, XML
+
+**Sample URL**: http://shareabouts-civicworks.dotcloud.com/api/places/29664/comments/29671/
+
+**Sample Response**:
+
+    200 OK
+
+    {
+        "attachments": [],
+        "comment": "This is REALLY great.",
+        "created_datetime": "2013-04-30T15:38:54.449Z",
+        "id": 29671,
+        "place": {
+            "id": 29664,
+            "url": "http://shareaboutsapi-civicworks.dotcloud.com/api/v1/demo-user/datasets/demo-data/places/29664/"
+        },
+        "submitter_name": "Andy",
+        "type": "comments",
+        "updated_datetime": "2013-04-30T15:48:13.395Z",
+        "url": "http://shareaboutsapi-civicworks.dotcloud.com/api/v1/demo-user/datasets/demo-data/places/29664/comments/29671/",
+        "visible": true
+    }
+
+------------------------------------------------------------
+
 
 ### PUT /api/v1/*:owner*/datasets/*:ds-slug*/places/*:p-id*/*:ss-name*/*:s-id*/
 
@@ -711,43 +788,6 @@ Delete a submission
 
 ------------------------------------------------------------
 
-### GET /api/v1/*:owner*/datasets/*:ds-slug*/places/*:p-id*/*:ss-name*/*:s-id*/
-
-Get a submission for a place
-
-**Request Parameters**:
-
-  * *include_invisible* *(only direct auth)*
-  * *include_private_data* *(only direct auth)*
-
-**Authentication**: Basic, session, or key auth *(optional)*
-
-**Response Formats**: JSON (default), CSV, HTML, XML
-
-**Sample URL**: http://shareabouts-civicworks.dotcloud.com/api/places/29664/comments/29671/
-
-**Sample Response**:
-
-    200 OK
-
-    {
-        "attachments": [],
-        "comment": "This is REALLY great.",
-        "created_datetime": "2013-04-30T15:38:54.449Z",
-        "id": 29671,
-        "place": {
-            "id": 29664,
-            "url": "http://shareaboutsapi-civicworks.dotcloud.com/api/v1/demo-user/datasets/demo-data/places/29664/"
-        },
-        "submitter_name": "Andy",
-        "type": "comments",
-        "updated_datetime": "2013-04-30T15:48:13.395Z",
-        "url": "http://shareaboutsapi-civicworks.dotcloud.com/api/v1/demo-user/datasets/demo-data/places/29664/comments/29671/",
-        "visible": true
-    }
-
-------------------------------------------------------------
-
 ### GET /api/v1/*:owner*/datasets/*:ds-slug*/places/*:p-id*/*:ss-name*/table
 
 Get a submissions for a place in a flat, tabular format
@@ -780,80 +820,6 @@ Get a submissions for a place in a flat, tabular format
         ...
     ]
 
-------------------------------------------------------------
-
-### GET /api/v1/*:owner*/datasets/*:ds-slug*/*:ss-name*/
-
-Get a submissions for a dataset
-
-**Request Parameters**:
-
-  * *include_invisible* *(only direct auth)*
-  * *include_private_data* *(only direct auth)*
-
-**Authentication**: Basic, session, or key auth *(optional)*
-
-**Response Formats**: JSON (default), CSV, HTML, XML
-
-**Sample URL**: http://api.shareabouts.org/api/v1/demo-user/datasets/demo-data/comments/
-
-**Sample Response**:
-
-    200 OK
-
-    [
-        {
-            "attachments": [],
-            "comment": "Moderately intelligent people.",
-            "created_datetime": "2012-08-27T14:45:53.815Z",
-            "id": 12,
-            "place": {
-                "id": 10,
-                "url": "http://shareaboutsapi-civicworks.dotcloud.com/api/v1/demo-user/datasets/demo-data/places/10/"
-            },
-            "submitter_name": "Mjumbe",
-            "type": "comments",
-            "updated_datetime": "2012-08-27T14:45:53.816Z",
-            "url": "http://shareaboutsapi-civicworks.dotcloud.com/api/v1/demo-user/datasets/demo-data/places/10/comments/12/",
-            "visible": true
-        },
-        ...
-    ]
-
-------------------------------------------------------------
-
-### GET /api/v1/*:owner*/datasets/*:ds-slug*/*:ss-name*/table
-
-Get a submissions for a dataset in a flat, tabular format. Very useful with
-`format=csv`
-
-**Request Parameters**:
-
-  * *include_invisible* *(only direct auth)*
-  * *include_private_data* *(only direct auth)*
-
-**Authentication**: Basic, session, or key auth *(optional)*
-
-**Response Formats**: JSON (default), CSV, HTML, XML
-
-**Sample URL**: http://api.shareabouts.org/api/v1/demo-user/datasets/demo-data/comments/table
-
-**Sample Response**:
-
-    200 OK
-
-    [
-        {
-            "attachments": [],
-            "comment": "Moderately intelligent people.",
-            "comment_created_datetime": "2012-08-27T14:45:53.815Z",
-            "comment_id": 12,
-            "comment_submitter_name": "Mjumbe",
-            "comment_visible": true,
-            "place_id": 10
-        },
-        ...
-    ]
 
 
 
