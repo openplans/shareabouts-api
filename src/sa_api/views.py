@@ -1,5 +1,5 @@
 from . import models
-#from . import serializers
+from . import serializers
 from . import utils
 from . import renderers
 from rest_framework import views, permissions, mixins, authentication, generics
@@ -12,6 +12,7 @@ logger = logging.getLogger('sa_api_v2.views')
 
 class PlaceInstanceView (generics.RetrieveUpdateDestroyAPIView):
     model = models.Place
+    serializer_class = serializers.PlaceSerializer
     renderer_classes = (renderers.GeoJSONRenderer,)
     
     def dispatch(self, request, owner_username, dataset_slug, place_id):

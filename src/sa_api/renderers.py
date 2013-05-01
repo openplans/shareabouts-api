@@ -15,16 +15,26 @@ class GeoJSONRenderer(JSONRenderer):
         """
         Renders *data* into a GeoJSON feature.
         """
+        if isinstance(data, list):
+            new_data = {
+              'type': 'FeatureCollection',
+              'features': [self.get_feature(elem) for elem in data]
+            }
+        else:
+            new_data = self.get_feature(data)
+
+        return super(GeoJSONRenderer, self).render(new_data, media_type, renderer_context)
+    
+    def get_feature(self, data):
         geometry = data.pop(self.geometry_field)
         
         if isinstance(geometry, basestring):
             geometry = GEOSGeometry(geometry)
             
-        new_data = {
+        feature = {
           'type': 'Feature',
           'geometry': geometry.json,
           'properties': data,
         }
         
-        return super(GeoJSONRenderer, self).render(new_data, media_type, renderer_context)
-
+        return feature

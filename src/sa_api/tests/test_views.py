@@ -15,11 +15,11 @@ class TestPlaceInstanceView (TestCase):
           submitter_name='Mjumbe',
           data=json.dumps({
             'type': 'ATM',
-            'mame': 'K-Mart'
+            'name': 'K-Mart'
           }),
         )
     
-    def test_GET_response_is_feature(self):
+    def test_GET_response(self):
         request_kwargs={
           'owner_username': self.owner.username,
           'dataset_slug': self.dataset.slug,
@@ -34,10 +34,18 @@ class TestPlaceInstanceView (TestCase):
         response = view(request, **request_kwargs)
         data = json.loads(response.rendered_content)
         
+        # Check that it's a feature
         self.assertIn('type', data)
         self.assertIn('geometry', data)
         self.assertIn('properties', data)
         
+        # Check that data attribute is not present
+        self.assertNotIn('data', data['properties'])
+        
+        # Check that the data attributes have been incorporated into the 
+        # properties
+        self.assertEqual(data['properties'].get('type'), 'ATM')
+        self.assertEqual(data['properties'].get('name'), 'K-Mart')
 
 # from django.test import TestCase
 # from django.test.client import Client

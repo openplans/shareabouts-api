@@ -4,6 +4,25 @@ from django.test import TestCase
 from nose.tools import istest
 from sa_api.renderers import GeoJSONRenderer
 
+#class TestGeoJSONRenderer (TestCase):
+#    def test_(self):
+#        renderer = GeoJSONRenderer()
+#        data = {
+#          u'updated_datetime': u'2013-05-01T20:41:34.097Z', 
+#          u'created_datetime': u'2013-05-01T20:41:34.097Z', 
+#          u'geometry': u'POINT (2.0000000000000000 3.0000000000000000)', 
+#          u'dataset': 1, 
+#          u'visible': True, 
+#          u'submitter_name': u'Mjumbe', 
+#          u'data': u'{"name": "K-Mart", "type": "ATM"}', 
+#          u'id': 1
+#        }
+#        renderer.render(data)
+
+
+
+
+
 # class TestCSVRenderer (TestCase):
 
 #     def test_tablize_a_list_with_no_elements(self):
