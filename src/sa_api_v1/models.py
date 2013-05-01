@@ -64,6 +64,7 @@ class SubmittedThing (CacheClearingModel, ModelWithDataBlob, TimeStampedModel):
 
     class Meta:
         db_table = 'sa_api_submittedthing'
+        managed = False
 
     def save(self, silent=False, *args, **kwargs):
         is_new = (self.id == None)
@@ -85,7 +86,7 @@ class DataSet (CacheClearingModel, models.Model):
     A DataSet is a named collection of data, eg. Places, owned by a user,
     and intended for a coherent purpose, eg. display on a single map.
     """
-    owner = models.ForeignKey(User, related_name='v1datasets')
+    owner = models.ForeignKey(User, related_name='datasets_v1')
     display_name = models.CharField(max_length=128)
     slug = models.SlugField(max_length=128, default=u'')
 
@@ -96,6 +97,7 @@ class DataSet (CacheClearingModel, models.Model):
 
     class Meta:
         db_table = 'sa_api_dataset'
+        managed = False
         unique_together = (('owner', 'slug'),
                            )
 
@@ -113,6 +115,7 @@ class Place (SubmittedThing):
 
     class Meta:
         db_table = 'sa_api_place'
+        managed = False
 
 
 class SubmissionSet (CacheClearingModel, models.Model):
@@ -129,6 +132,7 @@ class SubmissionSet (CacheClearingModel, models.Model):
 
     class Meta(object):
         db_table = 'sa_api_submissionset'
+        managed = False
         unique_together = (('place', 'submission_type'),
                            )
 
@@ -145,6 +149,7 @@ class Submission (SubmittedThing):
 
     class Meta:
         db_table = 'sa_api_submission'
+        managed = False
 
 
 class Activity (CacheClearingModel, TimeStampedModel):
@@ -162,6 +167,7 @@ class Activity (CacheClearingModel, TimeStampedModel):
         return self.data.submitter_name
 
     class Meta:
+        managed = False
         db_table = 'sa_api_activity'
 
 
@@ -184,6 +190,7 @@ class Attachment (CacheClearingModel, TimeStampedModel):
     cache = cache.AttachmentCache()
 
     class Meta:
+        managed = False
         db_table = 'sa_api_attachment'
 
 #

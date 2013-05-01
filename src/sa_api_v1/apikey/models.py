@@ -18,14 +18,14 @@ KEY_SIZE = 32
 
 
 class ApiKey(models.Model):
-    user = models.ForeignKey(User, related_name='api_keys')
+    user = models.ForeignKey(User, related_name='api_keys_v1')
     key = models.CharField(max_length=KEY_SIZE, unique=True)
     logged_ip = models.IPAddressField(blank=True, null=True)
     last_used = models.DateTimeField(blank=True, default=datetime.utcnow)
 
     # I think we are going to only have one key per dataset,
     # but that could change on either end.
-    datasets = models.ManyToManyField('sa_api.DataSet', blank=True,
+    datasets = models.ManyToManyField('sa_api_v1.DataSet', blank=True,
                                       related_name='api_keys')
 
     def login(self, ip_address):
