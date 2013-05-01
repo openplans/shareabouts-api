@@ -2,7 +2,7 @@
 DjangoRestFramework resources for the Shareabouts REST API.
 """
 import ujson as json
-import apikey.models
+import apikey_v1.models
 from collections import defaultdict
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
@@ -430,7 +430,7 @@ class ActivityResource (resources.ModelResource):
 
 class ApiKeyResource(resources.ModelResource):
 
-    model = apikey.models.ApiKey
+    model = apikey_v1.models.ApiKey
 
     fields = ('key', 'logged_ip', 'last_used')
 

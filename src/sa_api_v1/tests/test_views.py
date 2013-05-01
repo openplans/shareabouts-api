@@ -90,7 +90,7 @@ class TestAuthFunctions(object):
         # If not exceptions, we're OK.
         IsOwnerOrSuperuserWithoutApiKey(view).check_permission(user)
         # If API key, not allowed.
-        from ..apikey.auth import KEY_HEADER
+        from ..apikey_v1.auth import KEY_HEADER
         view.request = RequestFactory().get('', **{KEY_HEADER: 'oh no'})
         assert_raises(ErrorResponse,
                       IsOwnerOrSuperuserWithoutApiKey(view).check_permission,
@@ -99,7 +99,7 @@ class TestAuthFunctions(object):
 
 class TestDataSetCollectionView(TestCase):
     def setUp(self):
-        from ..apikey.models import ApiKey
+        from ..apikey_v1.models import ApiKey
         DataSet.objects.all().delete()
         ApiKey.objects.all().delete()
         User.objects.all().delete()
@@ -367,7 +367,7 @@ class TestMakingAPostRequestToASubmissionTypeCollectionUrl (TestCase):
 class TestSubmissionInstanceAPI (TestCase):
 
     def setUp(self):
-        from sa_api.apikey.models import ApiKey
+        from ..apikey_v1.models import ApiKey
 
         User.objects.all().delete()
         DataSet.objects.all().delete()
@@ -555,7 +555,7 @@ class TestSubmissionInstanceAPI (TestCase):
     @istest
     def submission_get_request_hides_private_data_when_authenticated_with_key(self):
         from django.contrib.sessions.models import SessionStore
-        from sa_api.apikey.auth import KEY_HEADER
+        from ..apikey_v1.auth import KEY_HEADER
 
         self.submission.data = json.dumps({'animal': 'tree frog', 'private-email': 'admin@example.com'})
         self.submission.save()
@@ -1317,8 +1317,8 @@ class TestPlaceCollectionView(TestCase):
 class TestApiKeyCollectionView(TestCase):
 
     def _cleanup(self):
-        from sa_api import models
-        from sa_api.apikey.models import ApiKey
+        from .. import models
+        from ..apikey_v1.models import ApiKey
         models.DataSet.objects.all().delete()
         User.objects.all().delete()
         ApiKey.objects.all().delete()
@@ -1363,7 +1363,7 @@ class TestApiKeyCollectionView(TestCase):
 
     @istest
     def get_not_allowed_with_api_key(self):
-        from ..apikey.auth import KEY_HEADER
+        from ..apikey_v1.auth import KEY_HEADER
         self.request.META[KEY_HEADER] = 'test'
         # ... Even if the user is good, the API key makes us
         # distrust this request.
