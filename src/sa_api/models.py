@@ -102,7 +102,7 @@ class Place (SubmittedThing):
     other submissions such as comments or surveys can be attached.
 
     """
-    location = models.PointField()
+    geometry = models.GeometryField()
 
     objects = models.GeoManager()
     cache = cache.PlaceCache()
