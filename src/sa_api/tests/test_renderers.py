@@ -1,8 +1,8 @@
-# #-*- coding:utf-8 -*-
+#-*- coding:utf-8 -*-
 
-# from django.test import TestCase
-# from nose.tools import istest
-# from sa_api.renderers import CSVRenderer
+from django.test import TestCase
+from nose.tools import istest
+from sa_api.renderers import GeoJSONRenderer
 
 # class TestCSVRenderer (TestCase):
 

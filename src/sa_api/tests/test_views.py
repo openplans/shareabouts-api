@@ -1,3 +1,44 @@
+from django.test import TestCase
+from django.test.client import RequestFactory
+from django.core.urlresolvers import reverse
+import json
+from ..models import User, DataSet, Place
+from ..views import PlaceInstanceView
+
+class TestPlaceInstanceView (TestCase):
+    def setUp(self):
+        self.owner = User.objects.create(username='aaron', password='123')
+        self.dataset = DataSet.objects.create(slug='ds', owner=self.owner)
+        self.place = Place.objects.create(
+          dataset=self.dataset,
+          geometry='POINT(2 3)',
+          submitter_name='Mjumbe',
+          data=json.dumps({
+            'type': 'ATM',
+            'mame': 'K-Mart'
+          }),
+        )
+    
+    def test_GET_response_is_feature(self):
+        request_kwargs={
+          'owner_username': self.owner.username,
+          'dataset_slug': self.dataset.slug,
+          'place_id': self.place.id
+        }
+
+        factory = RequestFactory()
+        path = reverse('v2:place_instance', kwargs=request_kwargs)
+        request = factory.get(path)
+        
+        view = PlaceInstanceView.as_view()
+        response = view(request, **request_kwargs)
+        data = json.loads(response.rendered_content)
+        
+        self.assertIn('type', data)
+        self.assertIn('geometry', data)
+        self.assertIn('properties', data)
+        
+
 # from django.test import TestCase
 # from django.test.client import Client
 # from django.test.client import RequestFactory
