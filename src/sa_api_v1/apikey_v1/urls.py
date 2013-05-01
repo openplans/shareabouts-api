@@ -6,7 +6,7 @@ BSD license.
 http://pypi.python.org/pypi/django-apikey
 """
 
-from django.conf.urls.defaults import *
+from django.conf.urls import *
 
 
 # urlpatterns = patterns('sa_api.apikey.views',
