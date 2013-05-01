@@ -62,6 +62,9 @@ class SubmittedThing (CacheClearingModel, ModelWithDataBlob, TimeStampedModel):
                                 blank=True)
     visible = models.BooleanField(default=True, blank=True)
 
+    class Meta:
+        db_table = 'sa_api_submittedthing'
+
     def save(self, silent=False, *args, **kwargs):
         is_new = (self.id == None)
 
@@ -82,7 +85,7 @@ class DataSet (CacheClearingModel, models.Model):
     A DataSet is a named collection of data, eg. Places, owned by a user,
     and intended for a coherent purpose, eg. display on a single map.
     """
-    owner = models.ForeignKey(User, related_name='datasets')
+    owner = models.ForeignKey(User, related_name='v1datasets')
     display_name = models.CharField(max_length=128)
     slug = models.SlugField(max_length=128, default=u'')
 
@@ -92,6 +95,7 @@ class DataSet (CacheClearingModel, models.Model):
         return self.slug
 
     class Meta:
+        db_table = 'sa_api_dataset'
         unique_together = (('owner', 'slug'),
                            )
 
@@ -107,6 +111,9 @@ class Place (SubmittedThing):
     objects = models.GeoManager()
     cache = cache.PlaceCache()
 
+    class Meta:
+        db_table = 'sa_api_place'
+
 
 class SubmissionSet (CacheClearingModel, models.Model):
     """
@@ -121,6 +128,7 @@ class SubmissionSet (CacheClearingModel, models.Model):
     cache = cache.SubmissionSetCache()
 
     class Meta(object):
+        db_table = 'sa_api_submissionset'
         unique_together = (('place', 'submission_type'),
                            )
 
@@ -134,6 +142,9 @@ class Submission (SubmittedThing):
     parent = models.ForeignKey(SubmissionSet, related_name='children')
 
     cache = cache.SubmissionCache()
+
+    class Meta:
+        db_table = 'sa_api_submission'
 
 
 class Activity (CacheClearingModel, TimeStampedModel):
@@ -149,6 +160,9 @@ class Activity (CacheClearingModel, TimeStampedModel):
     @property
     def submitter_name(self):
         return self.data.submitter_name
+
+    class Meta:
+        db_table = 'sa_api_activity'
 
 
 def timestamp_filename(attachment, filename):
@@ -168,5 +182,8 @@ class Attachment (CacheClearingModel, TimeStampedModel):
     thing = models.ForeignKey('SubmittedThing', related_name='attachments')
 
     cache = cache.AttachmentCache()
+
+    class Meta:
+        db_table = 'sa_api_attachment'
 
 #
