@@ -13,7 +13,7 @@ from django.shortcuts import get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
 from djangorestframework import views, permissions, mixins, authentication, status
 from djangorestframework.response import Response, ErrorResponse
-import apikey.auth
+import apikey_v1.auth
 import ujson as json
 import logging
 import os
@@ -63,7 +63,7 @@ class IsOwnerOrSuperuserWithoutApiKey(IsOwnerOrSuperuser):
         'real' authentication, to avoid users abusing one API key to
         obtain others.
         """
-        from .apikey.auth import KEY_HEADER
+        from .apikey_v1.auth import KEY_HEADER
         if KEY_HEADER in self.view.request.META:
             raise permissions._403_FORBIDDEN_RESPONSE
 
@@ -112,7 +112,7 @@ class AuthMixin(object):
     """
     authentication = [BasicAuthentication,
                       UserLoggedInAuthentication,
-                      apikey.auth.ApiKeyAuthentication]
+                      apikey_v1.auth.ApiKeyAuthentication]
 
     unsafe_permissions = [IsOwnerOrSuperuser]
 
@@ -355,11 +355,12 @@ class DataSetCollectionView (Ignore_CacheBusterMixin, AuthMixin, AbsUrlMixin, Mo
         response = super(DataSetCollectionView, self).post(request, *args, **kwargs)
         # Create an API key for the DataSet we just created.
         dataset = response.raw_content
-        from .apikey.models import ApiKey, generate_unique_api_key
+        from .apikey_v1.models import ApiKey, generate_unique_api_key
         key = ApiKey()
         key.user_id = dataset.owner.id  # TODO: do not allow anonymous
         key.key = generate_unique_api_key()
         key.save()
+#        import pdb; pdb.set_trace()
         dataset.api_keys.add(key)
         return response
 

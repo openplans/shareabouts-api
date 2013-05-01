@@ -28,6 +28,10 @@ class ApiKey(models.Model):
     datasets = models.ManyToManyField('sa_api_v1.DataSet', blank=True,
                                       related_name='api_keys')
 
+    class Meta:
+        db_table = 'apikey_apikey'
+        managed = False
+
     def login(self, ip_address):
         self.logged_ip = ip_address
         self.save()

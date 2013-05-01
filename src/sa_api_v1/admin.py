@@ -5,7 +5,7 @@ via django.contrib.admin.
 
 import models
 from django.contrib import admin
-from .apikey.models import ApiKey
+from .apikey_v1.models import ApiKey
 
 
 class SubmittedThingAdmin(admin.ModelAdmin):
