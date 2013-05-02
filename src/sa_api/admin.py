@@ -30,8 +30,8 @@ class PlaceAdmin(SubmittedThingAdmin):
 
 
 class SubmissionSetAdmin(admin.ModelAdmin):
-    list_display = ('id', 'submission_type',)
-    list_filter = ('submission_type',)
+    list_display = ('id', 'name',)
+    list_filter = ('name',)
 
 
 class SubmissionAdmin(SubmittedThingAdmin):
