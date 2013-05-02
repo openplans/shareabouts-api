@@ -2,7 +2,6 @@ from django.contrib.auth.models import User
 from django.contrib.gis.db import models
 from django.conf import settings
 from django.core.files.storage import get_storage_class
-from django.core.urlresolvers import reverse
 from . import cache
 from . import utils
 

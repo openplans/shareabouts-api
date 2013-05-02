@@ -5,6 +5,7 @@ import json
 from ..models import User, DataSet, Place, SubmissionSet, Submission
 from ..views import PlaceInstanceView
 
+
 class TestPlaceInstanceView (TestCase):
     def setUp(self):
         self.owner = User.objects.create(username='aaron', password='123')
@@ -15,7 +16,8 @@ class TestPlaceInstanceView (TestCase):
           submitter_name='Mjumbe',
           data=json.dumps({
             'type': 'ATM',
-            'name': 'K-Mart'
+            'name': 'K-Mart',
+            'private-secrets': 42
           }),
         )
         self.submission_set = SubmissionSet.objects.create(place=self.place, name='hello')
@@ -24,7 +26,7 @@ class TestPlaceInstanceView (TestCase):
         ]
 
     def test_GET_response(self):
-        request_kwargs={
+        request_kwargs = {
           'owner_username': self.owner.username,
           'dataset_slug': self.dataset.slug,
           'place_id': self.place.id
@@ -56,6 +58,26 @@ class TestPlaceInstanceView (TestCase):
         self.assertIn('dataset', data['properties'])
         self.assertIn('attachments', data['properties'])
         self.assertIn('submission_sets', data['properties'])
+
+    def test_GET_response_with_private_data(self):
+        request_kwargs = {
+          'owner_username': self.owner.username,
+          'dataset_slug': self.dataset.slug,
+          'place_id': self.place.id
+        }
+
+        factory = RequestFactory()
+        path = reverse('place-detail', kwargs=request_kwargs)
+        request = factory.get(path)
+
+        view = PlaceInstanceView.as_view()
+        response = view(request, **request_kwargs)
+        data = json.loads(response.rendered_content)
+
+        # Check that the appropriate attributes are in the properties
+        self.assertNotIn('private-secrets', data['properties'])
+
+
 
 # from django.test import TestCase
 # from django.test.client import Client

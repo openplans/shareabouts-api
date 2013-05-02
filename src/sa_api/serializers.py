@@ -134,7 +134,16 @@ class DataBlobProcessor (object):
     def to_native(self, obj):
         data = super(DataBlobProcessor, self).to_native(obj)
         blob = data.pop('data')
-        data.update(json.loads(blob))
+
+        blob_data = json.loads(blob)
+        request = self.context['request']
+
+        if 'include_private' not in request.GET:
+            for key in blob_data.keys():
+                if key.startswith('private'):
+                    del blob_data[key]
+
+        data.update(blob_data)
         return data
 
 
