@@ -123,13 +123,13 @@ class DataSetCache (Cache):
         owner, dataset = map(params.get, ('owner', 'dataset'))
         prefixes = super(DataSetCache, self).get_request_prefixes(**params)
 
-        instance_path = reverse('dataset_instance_by_user', args=[owner, dataset])
-        collection_path = reverse('dataset_collection_by_user', args=[owner])
+        instance_path = reverse('v1:dataset_instance_by_user', args=[owner, dataset])
+        collection_path = reverse('v1:dataset_collection_by_user', args=[owner])
         prefixes.update([instance_path, collection_path])
 
         # TODO: Deprecated paths
-        instance_path = reverse('dataset_instance_by_user_1', args=[owner, dataset])
-        collection_path = reverse('dataset_collection_by_user_1', args=[owner])
+        instance_path = reverse('v1:dataset_instance_by_user_1', args=[owner, dataset])
+        collection_path = reverse('v1:dataset_collection_by_user_1', args=[owner])
         prefixes.update([instance_path, collection_path])
 
         return prefixes
@@ -221,15 +221,15 @@ class PlaceCache (ThingWithAttachmentCache, Cache):
         owner, dataset, place = map(params.get, ('owner', 'dataset', 'place'))
         prefixes = super(PlaceCache, self).get_request_prefixes(**params)
 
-        instance_path = reverse('place_instance_by_dataset', args=[owner, dataset, place])
-        collection_path = reverse('place_collection_by_dataset', args=[owner, dataset])
-        activity_path = reverse('activity_collection_by_dataset', args=[owner, dataset])
+        instance_path = reverse('v1:place_instance_by_dataset', args=[owner, dataset, place])
+        collection_path = reverse('v1:place_collection_by_dataset', args=[owner, dataset])
+        activity_path = reverse('v1:activity_collection_by_dataset', args=[owner, dataset])
         prefixes.update([instance_path, collection_path, activity_path])
 
         # TODO: Deprecated paths
-        instance_path = reverse('place_instance_by_dataset_1', args=[owner, dataset, place])
-        collection_path = reverse('place_collection_by_dataset_1', args=[owner, dataset])
-        activity_path = reverse('activity_collection_by_dataset_1', args=[owner, dataset])
+        instance_path = reverse('v1:place_instance_by_dataset_1', args=[owner, dataset, place])
+        collection_path = reverse('v1:place_collection_by_dataset_1', args=[owner, dataset])
+        activity_path = reverse('v1:activity_collection_by_dataset_1', args=[owner, dataset])
         prefixes.update([instance_path, collection_path, activity_path])
 
         return prefixes
@@ -294,18 +294,18 @@ class SubmissionSetCache (Cache):
         owner, dataset, place = map(params.get, ['owner', 'dataset', 'place'])
         prefixes = super(SubmissionSetCache, self).get_request_prefixes(**params)
 
-        instance_path = reverse('place_instance_by_dataset', args=[owner, dataset, place])
-        collection_path = reverse('place_collection_by_dataset', args=[owner, dataset])
-        dataset_path = reverse('dataset_instance_by_user', args=[owner, dataset])
-        activity_path = reverse('activity_collection_by_dataset', args=[owner, dataset])
+        instance_path = reverse('v1:place_instance_by_dataset', args=[owner, dataset, place])
+        collection_path = reverse('v1:place_collection_by_dataset', args=[owner, dataset])
+        dataset_path = reverse('v1:dataset_instance_by_user', args=[owner, dataset])
+        activity_path = reverse('v1:activity_collection_by_dataset', args=[owner, dataset])
 
         prefixes.update([instance_path, collection_path, dataset_path, activity_path])
 
         # TODO: Deprecated paths
-        instance_path = reverse('place_instance_by_dataset_1', args=[owner, dataset, place])
-        collection_path = reverse('place_collection_by_dataset_1', args=[owner, dataset])
-        dataset_path = reverse('dataset_instance_by_user_1', args=[owner, dataset])
-        activity_path = reverse('activity_collection_by_dataset_1', args=[owner, dataset])
+        instance_path = reverse('v1:place_instance_by_dataset_1', args=[owner, dataset, place])
+        collection_path = reverse('v1:place_collection_by_dataset_1', args=[owner, dataset])
+        dataset_path = reverse('v1:dataset_instance_by_user_1', args=[owner, dataset])
+        activity_path = reverse('v1:activity_collection_by_dataset_1', args=[owner, dataset])
 
         prefixes.update([instance_path, collection_path, dataset_path, activity_path])
 
@@ -335,17 +335,17 @@ class SubmissionCache (ThingWithAttachmentCache, Cache):
         owner, dataset, place, set_name, submission = map(params.get, ['owner', 'dataset', 'place', 'set_name', 'submission'])
         prefixes = super(SubmissionCache, self).get_request_prefixes(**params)
 
-        specific_instance_path = reverse('submission_instance_by_dataset', args=[owner, dataset, place, set_name, submission])
-        general_instance_path = reverse('submission_instance_by_dataset', args=[owner, dataset, place, 'submissions', submission])
-        specific_collection_path = reverse('submission_collection_by_dataset', args=[owner, dataset, place, set_name])
-        general_collection_path = reverse('submission_collection_by_dataset', args=[owner, dataset, place, 'submissions'])
-        specific_all_path = reverse('all_submissions_by_dataset', args=[owner, dataset, set_name])
-        general_all_path = reverse('all_submissions_by_dataset', args=[owner, dataset, 'submissions'])
-        place_instance_path = reverse('place_instance_by_dataset', args=[owner, dataset, place])
-        place_collection_path = reverse('place_collection_by_dataset', args=[owner, dataset])
-        dataset_instance_path = reverse('dataset_instance_by_user', args=[owner, dataset])
-        dataset_collection_path = reverse('dataset_collection_by_user', args=[owner])
-        activity_path = reverse('activity_collection_by_dataset', args=[owner, dataset])
+        specific_instance_path = reverse('v1:submission_instance_by_dataset', args=[owner, dataset, place, set_name, submission])
+        general_instance_path = reverse('v1:submission_instance_by_dataset', args=[owner, dataset, place, 'submissions', submission])
+        specific_collection_path = reverse('v1:submission_collection_by_dataset', args=[owner, dataset, place, set_name])
+        general_collection_path = reverse('v1:submission_collection_by_dataset', args=[owner, dataset, place, 'submissions'])
+        specific_all_path = reverse('v1:all_submissions_by_dataset', args=[owner, dataset, set_name])
+        general_all_path = reverse('v1:all_submissions_by_dataset', args=[owner, dataset, 'submissions'])
+        place_instance_path = reverse('v1:place_instance_by_dataset', args=[owner, dataset, place])
+        place_collection_path = reverse('v1:place_collection_by_dataset', args=[owner, dataset])
+        dataset_instance_path = reverse('v1:dataset_instance_by_user', args=[owner, dataset])
+        dataset_collection_path = reverse('v1:dataset_collection_by_user', args=[owner])
+        activity_path = reverse('v1:activity_collection_by_dataset', args=[owner, dataset])
 
         prefixes.update([specific_instance_path, general_instance_path,
                          specific_collection_path, general_collection_path,
@@ -355,14 +355,14 @@ class SubmissionCache (ThingWithAttachmentCache, Cache):
                          activity_path])
 
         # TODO: Deprecated paths
-        specific_instance_path = reverse('submission_instance_by_dataset_1', args=[owner, dataset, place, set_name, submission])
-        general_instance_path = reverse('submission_instance_by_dataset_1', args=[owner, dataset, place, 'submissions', submission])
-        specific_collection_path = reverse('submission_collection_by_dataset_1', args=[owner, dataset, place, set_name])
-        general_collection_path = reverse('submission_collection_by_dataset_1', args=[owner, dataset, place, 'submissions'])
-        specific_all_path = reverse('all_submissions_by_dataset_1', args=[owner, dataset, set_name])
-        general_all_path = reverse('all_submissions_by_dataset_1', args=[owner, dataset, 'submissions'])
-        dataset_path = reverse('dataset_instance_by_user_1', args=[owner, dataset])
-        activity_path = reverse('activity_collection_by_dataset_1', args=[owner, dataset])
+        specific_instance_path = reverse('v1:submission_instance_by_dataset_1', args=[owner, dataset, place, set_name, submission])
+        general_instance_path = reverse('v1:submission_instance_by_dataset_1', args=[owner, dataset, place, 'submissions', submission])
+        specific_collection_path = reverse('v1:submission_collection_by_dataset_1', args=[owner, dataset, place, set_name])
+        general_collection_path = reverse('v1:submission_collection_by_dataset_1', args=[owner, dataset, place, 'submissions'])
+        specific_all_path = reverse('v1:all_submissions_by_dataset_1', args=[owner, dataset, set_name])
+        general_all_path = reverse('v1:all_submissions_by_dataset_1', args=[owner, dataset, 'submissions'])
+        dataset_path = reverse('v1:dataset_instance_by_user_1', args=[owner, dataset])
+        activity_path = reverse('v1:activity_collection_by_dataset_1', args=[owner, dataset])
 
         prefixes.update([specific_instance_path, general_instance_path,
                          specific_collection_path, general_collection_path,

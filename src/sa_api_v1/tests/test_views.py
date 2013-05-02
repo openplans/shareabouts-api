@@ -115,7 +115,7 @@ class TestDataSetCollectionView(TestCase):
         view = DataSetCollectionView.as_view()
 
         kwargs = {'owner__username': user.username}
-        url = reverse('dataset_collection_by_user', kwargs=kwargs)
+        url = reverse('v1:dataset_collection_by_user', kwargs=kwargs)
 
         get_request = factory.get(url, content_type='application/json',  headers={'Accept': 'application/json'})
         get_request.user = user
@@ -150,7 +150,7 @@ class TestDataSetCollectionView(TestCase):
         view = DataSetCollectionView.as_view()
 
         kwargs = {'owner__username': user.username}
-        url = reverse('dataset_collection_by_user', kwargs=kwargs)
+        url = reverse('v1:dataset_collection_by_user', kwargs=kwargs)
 
         get_request = factory.get(url, content_type='application/json')
         get_request.user = user
@@ -184,7 +184,7 @@ class TestDataSetCollectionView(TestCase):
         user = User.objects.create(username='bob')
 
         kwargs = {'owner__username': user.username}
-        url = reverse('dataset_collection_by_user', kwargs=kwargs)
+        url = reverse('v1:dataset_collection_by_user', kwargs=kwargs)
         data = {
             'display_name': 'Test DataSet',
             'slug': 'test-dataset',
@@ -221,7 +221,7 @@ class TestDataSetInstanceView(TestCase):
     @istest
     def put_with_slug_gives_a_new_location(self):
         kwargs = dict(owner__username='bob', slug='dataset')
-        url = reverse('dataset_instance_by_user', kwargs=kwargs)
+        url = reverse('v1:dataset_instance_by_user', kwargs=kwargs)
         data = {'slug': 'new-name', 'display_name': 'dataset'}
         request = RequestFactory().put(url, data=json.dumps(data),
                                        content_type='application/json'
@@ -237,7 +237,7 @@ class TestDataSetInstanceView(TestCase):
     def put_with_wrong_user_is_not_allowed(self):
         # Regression test for https://www.pivotaltracker.com/story/show/34080763
         kwargs = dict(owner__username='bob', slug='dataset')
-        url = reverse('dataset_instance_by_user', kwargs=kwargs)
+        url = reverse('v1:dataset_instance_by_user', kwargs=kwargs)
         data = {'slug': 'dataset', 'display_name': 'New Title'}
         request = RequestFactory().put(url, data=json.dumps(data),
                                        content_type='application/json'
@@ -257,7 +257,7 @@ class TestMakingAGetRequestToASubmissionTypeCollectionUrl (TestCase):
     def should_call_view_with_place_id_and_submission_type_name(self):
         client = Client()
 
-        with patch('sa_api.views.SubmissionCollectionView.get') as getter:
+        with patch('sa_api_v1.views.SubmissionCollectionView.get') as getter:
             client.get('/api/v1/datasets/somebody/something/places/1/comments/',
                        HTTP_ACCEPT='application/json')
             args, kwargs = getter.call_args
@@ -388,14 +388,14 @@ class TestSubmissionInstanceAPI (TestCase):
                                                      submission_type='comments')
         self.submission = Submission.objects.create(parent_id=self.comments.id,
                                                     dataset_id=self.dataset.id)
-        self.url = reverse('submission_instance_by_dataset',
+        self.url = reverse('v1:submission_instance_by_dataset',
                            kwargs=dict(place_id=self.place.id,
                                        pk=self.submission.id,
                                        submission_type='comments',
                                        dataset__owner__username=self.owner.username,
                                        dataset__slug=self.dataset.slug,
                                        ))
-        self.place_url = reverse('place_instance_by_dataset',
+        self.place_url = reverse('v1:place_instance_by_dataset',
                                  kwargs=dict(pk=self.place.id,
                                              dataset__owner__username=self.owner.username,
                                              dataset__slug=self.dataset.slug,
@@ -692,7 +692,7 @@ class TestSubmissionCollectionView(TestCase):
                                                          data=json.dumps({'x': 3, 'private-y': 4}))
 
         request = RequestFactory().get(
-            reverse('submission_collection_by_dataset', kwargs=request_kwargs) + '?include_invisible=true&include_private_data=true',
+            reverse('v1:submission_collection_by_dataset', kwargs=request_kwargs) + '?include_invisible=true&include_private_data=true',
             content_type='application/json')
         request.user = self.owner
         request.META['HTTP_ACCEPT'] = 'application/json'
@@ -723,7 +723,7 @@ class TestSubmissionCollectionView(TestCase):
                                                          data=json.dumps({'x': 3, 'private-y': 4}))
 
         request = RequestFactory().get(
-            reverse('submission_collection_by_dataset', kwargs=request_kwargs) + '?include_invisible=true&include_private_data=true',
+            reverse('v1:submission_collection_by_dataset', kwargs=request_kwargs) + '?include_invisible=true&include_private_data=true',
             content_type='application/json')
         request.META['HTTP_ACCEPT'] = 'application/json'
 
@@ -767,11 +767,11 @@ class TestActivityView(TestCase):
         ]
 
         kwargs = dict(data__dataset__owner__username=self.owner.username, data__dataset__slug='data')
-        self.url = reverse('activity_collection_by_dataset', kwargs=kwargs)
+        self.url = reverse('v1:activity_collection_by_dataset', kwargs=kwargs)
 
         # This was here first and marked as deprecated, but above doesn't
         # work either.
-        # self.url = reverse('activity_collection')
+        # self.url = reverse('v1:activity_collection')
 
     @istest
     def get_queryset_no_params_returns_visible(self):
@@ -925,7 +925,7 @@ class TestPlaceCollectionView(TestCase):
             'dataset__owner__username': user.username,
             'dataset__slug': ds.slug,
         }
-        uri = reverse('place_collection_by_dataset', kwargs=uri_args)
+        uri = reverse('v1:place_collection_by_dataset', kwargs=uri_args)
         factory = RequestFactory()
 
         get_request = factory.get(uri, content_type='application/json')
@@ -972,7 +972,7 @@ class TestPlaceCollectionView(TestCase):
             'dataset__owner__username': user.username,
             'dataset__slug': ds.slug,
         }
-        uri = reverse('place_collection_by_dataset', kwargs=uri_args)
+        uri = reverse('v1:place_collection_by_dataset', kwargs=uri_args)
         factory = RequestFactory()
 
         get_request = factory.get(uri, content_type='application/json')
@@ -1009,7 +1009,7 @@ class TestPlaceCollectionView(TestCase):
             'dataset__owner__username': user.username,
             'dataset__slug': ds.slug,
         }
-        uri = reverse('place_collection_by_dataset', kwargs=uri_args)
+        uri = reverse('v1:place_collection_by_dataset', kwargs=uri_args)
         data = {'location': {'lat': 39.94494, 'lng': -75.06144},
                 'description': 'hello', 'location_type': 'School',
                 'name': 'Ward Melville HS',
@@ -1051,7 +1051,7 @@ class TestPlaceCollectionView(TestCase):
             'dataset__owner__username': user.username,
             'dataset__slug': ds.slug,
         }
-        uri = reverse('place_collection_by_dataset', kwargs=uri_args)
+        uri = reverse('v1:place_collection_by_dataset', kwargs=uri_args)
         data = {'location': {'lat': 39.94494, 'lng': -75.06144},
                 'description': 'hello', 'location_type': 'School',
                 'name': 'Ward Melville HS',
@@ -1237,7 +1237,7 @@ class TestPlaceCollectionView(TestCase):
                                                data=json.dumps({'x': 3, 'private-y': 4}))
 
         request = RequestFactory().get(
-            reverse('place_collection_by_dataset', kwargs=request_kwargs) + '?include_invisible=true&include_private_data=true',
+            reverse('v1:place_collection_by_dataset', kwargs=request_kwargs) + '?include_invisible=true&include_private_data=true',
             content_type='application/json')
         request.user = owner
         request.META['HTTP_ACCEPT'] = 'application/json'
@@ -1255,7 +1255,7 @@ class TestPlaceCollectionView(TestCase):
 
         # ... first without private data flag
         request = RequestFactory().get(
-            reverse('place_collection_by_dataset', kwargs=request_kwargs) + '?include_private_data=false&include_submissions=true',
+            reverse('v1:place_collection_by_dataset', kwargs=request_kwargs) + '?include_private_data=false&include_submissions=true',
             content_type='application/json')
         request.user = owner
         request.META['HTTP_ACCEPT'] = 'application/json'
@@ -1270,7 +1270,7 @@ class TestPlaceCollectionView(TestCase):
 
         # ... and then with private data flag
         request = RequestFactory().get(
-            reverse('place_collection_by_dataset', kwargs=request_kwargs) + '?include_private_data=true&include_submissions=true',
+            reverse('v1:place_collection_by_dataset', kwargs=request_kwargs) + '?include_private_data=true&include_submissions=true',
             content_type='application/json')
         request.user = owner
         request.META['HTTP_ACCEPT'] = 'application/json'
@@ -1305,7 +1305,7 @@ class TestPlaceCollectionView(TestCase):
                                                data=json.dumps({'x': 3, 'private-y': 4}))
 
         request = RequestFactory().get(
-            reverse('place_collection_by_dataset', kwargs=request_kwargs) + '?include_invisible=true&include_private_data=true',
+            reverse('v1:place_collection_by_dataset', kwargs=request_kwargs) + '?include_invisible=true&include_private_data=true',
             content_type='application/json')
         request.META['HTTP_ACCEPT'] = 'application/json'
 
@@ -1333,7 +1333,7 @@ class TestApiKeyCollectionView(TestCase):
             'datasets__owner__username': user.username,
             'datasets__slug': self.dataset.slug,
         }
-        uri = reverse('api_key_collection_by_dataset',
+        uri = reverse('v1:api_key_collection_by_dataset',
                       kwargs=self.uri_args)
         self.request = RequestFactory().get(uri)
         self.view = ApiKeyCollectionView().as_view()
@@ -1393,7 +1393,7 @@ class TestOwnerPasswordView(TestCase):
         self.uri_args = {
             'owner__username': self.user1.username,
         }
-        self.uri = reverse('owner_password',
+        self.uri = reverse('v1:owner_password',
                            kwargs=self.uri_args)
         self.request = RequestFactory().get(self.uri)
         self.view = OwnerPasswordView().as_view()
@@ -1465,8 +1465,8 @@ class TestAttachmentView (TestCase):
                                                            submission_type='comments')
         self.submission = Submission.objects.create(parent=self.submission_set,
                                                     dataset_id=self.dataset.id)
-        self.place_url = reverse('place_attachment_by_dataset', args=['user', 'data', self.place.id])
-        self.submission_url = reverse('submission_attachment_by_dataset',
+        self.place_url = reverse('v1:place_attachment_by_dataset', args=['user', 'data', self.place.id])
+        self.submission_url = reverse('v1:submission_attachment_by_dataset',
                                       args=['user', 'data', self.place.id, 'comments', self.submission.id])
 
     @istest
