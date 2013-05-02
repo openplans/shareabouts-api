@@ -2,7 +2,7 @@ from django.test import TestCase
 from django.test.client import RequestFactory
 from django.core.urlresolvers import reverse
 import json
-from ..models import User, DataSet, Place
+from ..models import User, DataSet, Place, SubmissionSet, Submission
 from ..views import PlaceInstanceView
 
 class TestPlaceInstanceView (TestCase):
@@ -18,6 +18,10 @@ class TestPlaceInstanceView (TestCase):
             'name': 'K-Mart'
           }),
         )
+        self.submission_set = SubmissionSet.objects.create(place=self.place, submission_type='hello')
+        self.submissions = [
+          Submission.objects.create(parent=self.submission_set, dataset=self.dataset, data='{}')
+        ]
     
     def test_GET_response(self):
         request_kwargs={
@@ -27,7 +31,7 @@ class TestPlaceInstanceView (TestCase):
         }
 
         factory = RequestFactory()
-        path = reverse('v2:place_instance', kwargs=request_kwargs)
+        path = reverse('place-detail', kwargs=request_kwargs)
         request = factory.get(path)
         
         view = PlaceInstanceView.as_view()
@@ -46,6 +50,12 @@ class TestPlaceInstanceView (TestCase):
         # properties
         self.assertEqual(data['properties'].get('type'), 'ATM')
         self.assertEqual(data['properties'].get('name'), 'K-Mart')
+        
+        # Check that the appropriate attributes are in the properties
+        self.assertIn('url', data['properties'])
+        self.assertIn('dataset', data['properties'])
+        self.assertIn('attachments', data['properties'])
+        self.assertIn('submission_sets', data['properties'])
 
 # from django.test import TestCase
 # from django.test.client import Client

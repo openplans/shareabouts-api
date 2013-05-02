@@ -2,9 +2,34 @@ from django.conf.urls import patterns, url
 from . import views
 
 urlpatterns = patterns('sa_api',
+    url(r'^(?P<owner_username>[^/]+)/datasets/(?P<dataset_slug>[^/]+)/places/(?P<place_id>\d+)/(?P<submission_set_name>[^/]+)/(?P<submission_id>\d+)$',
+        lambda *a, **k: None,
+        name='submission-detail'),
+    url(r'^(?P<owner_username>[^/]+)/datasets/(?P<dataset_slug>[^/]+)/places/(?P<place_id>\d+)/(?P<submission_set_name>[^/]+)$',
+        lambda *a, **k: None,
+        name='submission-list'),
+
+    url(r'^(?P<owner_username>[^/]+)/datasets/(?P<dataset_slug>[^/]+)/(?P<submission_set_name>[^/]+)$',
+        lambda *a, **k: None,
+        name='dataset-submission-list'),
+
     url(r'^(?P<owner_username>[^/]+)/datasets/(?P<dataset_slug>[^/]+)/places/(?P<place_id>\d+)$',
         views.PlaceInstanceView.as_view(),
-        name='place_instance'),
+        name='place-detail'),
+    url(r'^(?P<owner_username>[^/]+)/datasets/(?P<dataset_slug>[^/]+)/places$',
+        lambda *a, **k: None,
+        name='place-list'),
+
+    url(r'^(?P<owner_username>[^/]+)/datasets/(?P<dataset_slug>[^/]+)$',
+        lambda *a, **k: None,
+        name='dataset-detail'),
+    url(r'^(?P<owner_username>[^/]+)/datasets$',
+        lambda *a, **k: None,
+        name='dataset-list'),
+
+    url(r'^(?P<owner_username>[^/]+)/datasets/(?P<dataset_slug>[^/]+)/activity$',
+        lambda *a, **k: None,
+        name='action-list'),
 )
 
 #places_base_regex = r'^(?P<dataset__owner__username>[^/]+)/datasets/(?P<dataset__slug>[^/]+)/places/'
