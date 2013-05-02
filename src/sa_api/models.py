@@ -116,12 +116,12 @@ class SubmissionSet (CacheClearingModel, models.Model):
 
     """
     place = models.ForeignKey(Place, related_name='submission_sets')
-    submission_type = models.CharField(max_length=128)
+    name = models.CharField(max_length=128)
 
     cache = cache.SubmissionSetCache()
 
     class Meta(object):
-        unique_together = (('place', 'submission_type'),
+        unique_together = (('place', 'name'),
                            )
 
 
