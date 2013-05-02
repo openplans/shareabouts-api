@@ -126,7 +126,7 @@ class SubmissionSet (CacheClearingModel, models.Model):
 
     """
     place = models.ForeignKey(Place, related_name='submission_sets')
-    submission_type = models.CharField(max_length=128)
+    submission_type = models.CharField(max_length=128, db_column='name')
 
     cache = cache.SubmissionSetCache()
 

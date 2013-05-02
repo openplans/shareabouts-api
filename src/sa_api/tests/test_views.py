@@ -18,11 +18,11 @@ class TestPlaceInstanceView (TestCase):
             'name': 'K-Mart'
           }),
         )
-        self.submission_set = SubmissionSet.objects.create(place=self.place, submission_type='hello')
+        self.submission_set = SubmissionSet.objects.create(place=self.place, name='hello')
         self.submissions = [
           Submission.objects.create(parent=self.submission_set, dataset=self.dataset, data='{}')
         ]
-    
+
     def test_GET_response(self):
         request_kwargs={
           'owner_username': self.owner.username,
@@ -33,24 +33,24 @@ class TestPlaceInstanceView (TestCase):
         factory = RequestFactory()
         path = reverse('place-detail', kwargs=request_kwargs)
         request = factory.get(path)
-        
+
         view = PlaceInstanceView.as_view()
         response = view(request, **request_kwargs)
         data = json.loads(response.rendered_content)
-        
+
         # Check that it's a feature
         self.assertIn('type', data)
         self.assertIn('geometry', data)
         self.assertIn('properties', data)
-        
+
         # Check that data attribute is not present
         self.assertNotIn('data', data['properties'])
-        
-        # Check that the data attributes have been incorporated into the 
+
+        # Check that the data attributes have been incorporated into the
         # properties
         self.assertEqual(data['properties'].get('type'), 'ATM')
         self.assertEqual(data['properties'].get('name'), 'K-Mart')
-        
+
         # Check that the appropriate attributes are in the properties
         self.assertIn('url', data['properties'])
         self.assertIn('dataset', data['properties'])

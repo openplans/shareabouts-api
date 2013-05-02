@@ -12,7 +12,7 @@ from . import cache
 
 
 class ShareaboutsFieldMixin (object):
-    
+
     # These names should match the names of the cache parameters, and should be
     # in the same order as the corresponding URL arguments.
     url_arg_names = ()
@@ -38,7 +38,7 @@ class ShareaboutsRelatedField (ShareaboutsFieldMixin, serializers.HyperlinkedRel
         if self.view_name is not None:
             kwargs['view_name'] = self.view_name
         super(ShareaboutsRelatedField, self).__init__(*args, **kwargs)
-    
+
     def to_native(self, obj):
         view_name = self.view_name
         request = self.context.get('request', None)
@@ -59,7 +59,7 @@ class DataSetRelatedField (ShareaboutsRelatedField):
 
 class ShareaboutsIdentityField (ShareaboutsFieldMixin, serializers.HyperlinkedIdentityField):
     read_only = True
-    
+
     def field_to_native(self, obj, field_name):
         request = self.context.get('request', None)
         format = self.context.get('format', None)
@@ -147,22 +147,22 @@ class PlaceSerializer (DataBlobProcessor, serializers.HyperlinkedModelSerializer
     url = PlaceIdentityField()
     dataset = DataSetRelatedField()
     attachments = AttachmentSerializer()
-    
+
     def to_native(self, obj):
         data = super(PlaceSerializer, self).to_native(obj)
-        
+
         # TODO: This should be retrieved through the get_submission_sets
         #       method (self.model.cache.get_submission_sets).
         data['submission_sets'] = {}
         sets = models.SubmissionSet.objects.filter(place=obj).annotate(length=Count('children'))
         # TODO: Use the SubmissionSetSerializer to render these.
         for submission_set in sets:
-            data['submission_sets'][submission_set.submission_type] = {
+            data['submission_sets'][submission_set.name] = {
               'length': submission_set.length,
             }
-        
+
         return data
-    
+
     class Meta:
         model = models.Place
 

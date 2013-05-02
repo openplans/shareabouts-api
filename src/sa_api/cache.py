@@ -80,7 +80,7 @@ class Cache (object):
         Get the instance parameters cached for the given instance key. If no
         params are cached, run the obj_getter to get the actual instance and
         calculate the parameters based on that object. The getter is a function
-        so that it does not get evaluated if it doesn't have to be, since 
+        so that it does not get evaluated if it doesn't have to be, since
         evaluating it may involve additional queries.
         """
         instance_params_key = self.get_instance_params_key(inst_key)
@@ -276,7 +276,7 @@ class SubmissionSetCache (Cache):
         params = self.place_cache.get_cached_instance_params(
             submissionset_obj.place_id, lambda: submissionset_obj.place)
         params.update({
-            'submission_set_name': submissionset_obj.submission_type
+            'submission_set_name': submissionset_obj.name
         })
         return params
 
