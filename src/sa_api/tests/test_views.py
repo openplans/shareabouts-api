@@ -142,6 +142,21 @@ class TestPlaceInstanceView (TestCase):
         
         # Check that the private data is in the properties
         self.assertIn('private-secrets', data['properties'])
+    
+    def test_GET_invalid_url(self):
+        # Make sure that we respond with 404 if a place_id is supplied, but for
+        # the wrong dataset or owner.
+        request_kwargs = {
+          'owner_username': 'mischevious_owner',
+          'dataset_slug': self.dataset.slug,
+          'place_id': self.place.id
+        }
+
+        path = reverse('place-detail', kwargs=request_kwargs)
+        request = self.factory.get(path)
+        response = self.view(request, **request_kwargs)
+        
+        self.assertEqual(response.status_code, 404)
 
 
 # from django.test import TestCase

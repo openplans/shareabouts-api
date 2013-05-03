@@ -1,11 +1,13 @@
+from django.http import Http404
+from django.shortcuts import get_object_or_404
+from rest_framework import views, permissions, mixins, authentication, generics
+from rest_framework.response import Response
+from rest_framework.exceptions import APIException
 from . import models
 from . import serializers
 from . import utils
 from . import renderers
 from . import apikey
-from rest_framework import views, permissions, mixins, authentication, generics
-from rest_framework.response import Response
-from rest_framework.exceptions import APIException
 import ujson as json
 import logging
 
@@ -89,6 +91,24 @@ class OwnedObjectMixin (object):
     def dispatch(self, request, *args, **kwargs):
         request.allowed_username = kwargs[self.allowed_user_kwarg]
         return super(OwnedObjectMixin, self).dispatch(request, *args, **kwargs)
+    
+    def get_verified_object(self, obj):
+        # Get the instance parameters from the cache
+        params = self.model.cache.get_cached_instance_params(obj.pk, lambda: obj)
+        
+        # Make sure that the instance parameters match what we got in the URL.
+        # We do not want to risk assuming a user owns a place, for example, just
+        # because their username is in the URL.
+        for attr in self.kwargs:
+            if attr in params and self.kwargs[attr] != params[attr]:
+                return None
+        
+        return obj
+    
+    def verify_object_or_404(self, obj):
+        verified_object = self.get_verified_object(obj)
+        if verified_object is None:
+            raise Http404
 
 
 ###############################################################################
@@ -106,7 +126,9 @@ class PlaceInstanceView (OwnedObjectMixin, generics.RetrieveUpdateDestroyAPIView
     
     def get_object(self):
         place_id = self.kwargs['place_id']
-        return self.model.objects.get(pk=place_id)
+        obj = get_object_or_404(self.model, pk=place_id)
+        self.verify_object_or_404(obj)
+        return obj
 
 
 
