@@ -10,19 +10,59 @@ import logging
 
 logger = logging.getLogger('sa_api_v2.views')
 
+
+class IsOwnerOrSuperuser(permissions.BasePermission):
+    def has_permission(self, request, view):
+        """
+        Allows only superusers or the user named by
+        ``self.view.allowed_username``.
+
+        (If the view has no such attribute, raises a 403 Forbidden
+        exception.  Subclasses of AuthMixin should have it.)
+        """
+        user = request.user
+        if user.is_superuser:
+            # XXX Watch out when mocking users in tests: bool(mock.Mock()) is True
+            return
+        username = getattr(user, 'username', None)
+        if username and (view.allowed_username == username):
+            return True
+        return False
+
+
+class IsLoggedInPublicDataOnly(IsOwnerOrSuperuser):
+    def has_permission(self, request, view):
+        """Like IsOwnerOrSuperuser, but will not respond to any
+        request with the API key http header.
+
+        For protecting views related to API keys that should require
+        'real' authentication, to avoid users abusing one API key to
+        obtain others.
+        """
+        from .apikey.auth import KEY_HEADER
+        if KEY_HEADER in view.request.META:
+            return False
+
+        return super(IsLoggedInPublicDataOnly, self).has_permission(request, view)
+
+
 class PlaceInstanceView (generics.RetrieveUpdateDestroyAPIView):
     model = models.Place
     serializer_class = serializers.PlaceSerializer
     renderer_classes = (renderers.GeoJSONRenderer,)
-    
+    permission_classes = (IsOwnerOrReadOnly, IsLoggedInPublicDataOnly)
+
     def dispatch(self, request, owner_username, dataset_slug, place_id):
         return super(PlaceInstanceView, self).dispatch(
-            request, 
+            request,
             owner_username=owner_username,
             dataset_slug=dataset_slug,
             place_id=place_id,
             pk=place_id
         )
+
+
+
 
 #from . import forms
 #from . import models

@@ -138,6 +138,7 @@ class DataBlobProcessor (object):
         blob_data = json.loads(blob)
         request = self.context['request']
 
+        # Did the user not ask for private data? Remove it!
         if 'include_private' not in request.GET:
             for key in blob_data.keys():
                 if key.startswith('private'):
