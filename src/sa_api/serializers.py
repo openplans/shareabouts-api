@@ -57,6 +57,16 @@ class DataSetRelatedField (ShareaboutsRelatedField):
     url_arg_names = ('owner_username', 'dataset_slug')
 
 
+class PlaceRelatedField (ShareaboutsRelatedField):
+    view_name = 'place-detail'
+    url_arg_names = ('owner_username', 'dataset_slug', 'place_id')
+
+
+class SubmissionSetRelatedField (ShareaboutsRelatedField):
+    view_name = 'submission-list'
+    url_arg_names = ('owner_username', 'dataset_slug', 'place_id', 'submission_set_name')
+
+
 class ShareaboutsIdentityField (ShareaboutsFieldMixin, serializers.HyperlinkedIdentityField):
     read_only = True
 
@@ -79,6 +89,10 @@ class PlaceIdentityField (ShareaboutsIdentityField):
 
 class SubmissionSetIdentityField (ShareaboutsIdentityField):
     url_arg_names = ('owner_username', 'dataset_slug', 'place_id', 'submission_set_name')
+
+
+class SubmissionIdentityField (ShareaboutsIdentityField):
+    url_arg_names = ('owner_username', 'dataset_slug', 'place_id', 'submission_set_name', 'submission_id')
 
 
 class AttachmentSerializer (serializers.ModelSerializer):
@@ -177,3 +191,26 @@ class PlaceSerializer (DataBlobProcessor, serializers.HyperlinkedModelSerializer
     class Meta:
         model = models.Place
 
+
+class SubmissionSerializer (DataBlobProcessor, serializers.HyperlinkedModelSerializer):
+    url = SubmissionIdentityField()
+    dataset = DataSetRelatedField()
+    parent = SubmissionSetRelatedField()
+    attachments = AttachmentSerializer()
+
+    def to_native(self, obj):
+        data = super(SubmissionSerializer, self).to_native(obj)
+
+        # Parent is not a useful name. TODO: is there a better way to do this?
+        data['set'] = data['parent']
+        del data['parent']
+
+        # TODO: the spec calls for a place property, but place is only indirectly
+        # available via the submission parent (the submission set). Not sure if
+        # we want to include that, and how.
+        # data['place'] = ???
+
+        return data
+
+    class Meta:
+        model = models.Submission

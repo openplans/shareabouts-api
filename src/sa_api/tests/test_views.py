@@ -5,7 +5,7 @@ import json
 from ..models import User, DataSet, Place, SubmissionSet, Submission
 from ..apikey.models import ApiKey
 from ..apikey.auth import KEY_HEADER
-from ..views import PlaceInstanceView
+from ..views import PlaceInstanceView, SubmissionInstanceView
 
 
 class TestPlaceInstanceView (TestCase):
@@ -45,7 +45,7 @@ class TestPlaceInstanceView (TestCase):
         self.factory = RequestFactory()
         self.path = reverse('place-detail', kwargs=self.request_kwargs)
         self.view = PlaceInstanceView.as_view()
-    
+
     def tearDown(self):
         User.objects.all().delete()
         DataSet.objects.all().delete()
@@ -61,7 +61,7 @@ class TestPlaceInstanceView (TestCase):
 
         # Check that the request was successful
         self.assertEqual(response.status_code, 200, response.render())
-        
+
         # Check that it's a feature
         self.assertIn('type', data)
         self.assertIn('geometry', data)
@@ -80,7 +80,7 @@ class TestPlaceInstanceView (TestCase):
         self.assertIn('dataset', data['properties'])
         self.assertIn('attachments', data['properties'])
         self.assertIn('submission_sets', data['properties'])
-        
+
         # Check that the submission sets look right
         self.assertEqual(len(data['properties']['submission_sets']), 2)
         self.assertIn('comments', data['properties']['submission_sets'].keys())
@@ -97,12 +97,12 @@ class TestPlaceInstanceView (TestCase):
 
         # Check that the request was successful
         self.assertEqual(response.status_code, 200)
-        
+
         # Check that the private data is not in the properties
         self.assertNotIn('private-secrets', data['properties'])
 
         # --------------------------------------------------
-        
+
         #
         # View should 403 when not allowed to request private data (not authenticated)
         #
@@ -114,7 +114,7 @@ class TestPlaceInstanceView (TestCase):
         self.assertEqual(response.status_code, 401)
 
         # --------------------------------------------------
-        
+
         #
         # View should 403 when not allowed to request private data (api key)
         #
@@ -127,7 +127,7 @@ class TestPlaceInstanceView (TestCase):
         self.assertEqual(response.status_code, 403)
 
         # --------------------------------------------------
-        
+
         #
         # View should 403 when not allowed to request private data (not owner)
         #
@@ -140,7 +140,7 @@ class TestPlaceInstanceView (TestCase):
         self.assertEqual(response.status_code, 403)
 
         # --------------------------------------------------
-        
+
         #
         # View should return private data when owner is really logged in
         #
@@ -151,10 +151,10 @@ class TestPlaceInstanceView (TestCase):
 
         # Check that the request was successful
         self.assertEqual(response.status_code, 200)
-        
+
         # Check that the private data is in the properties
         self.assertIn('private-secrets', data['properties'])
-    
+
     def test_GET_invalid_url(self):
         # Make sure that we respond with 404 if a place_id is supplied, but for
         # the wrong dataset or owner.
@@ -167,8 +167,86 @@ class TestPlaceInstanceView (TestCase):
         path = reverse('place-detail', kwargs=request_kwargs)
         request = self.factory.get(path)
         response = self.view(request, **request_kwargs)
-        
+
         self.assertEqual(response.status_code, 404)
+
+
+class TestSubmissionInstanceView (TestCase):
+    def setUp(self):
+        self.owner = User.objects.create(username='aaron', password='123')
+        self.dataset = DataSet.objects.create(slug='ds', owner=self.owner)
+        self.place = Place.objects.create(
+          dataset=self.dataset,
+          geometry='POINT(2 3)',
+          submitter_name='Mjumbe',
+          data=json.dumps({
+            'type': 'ATM',
+            'name': 'K-Mart',
+            'private-secrets': 42
+          }),
+        )
+        self.comments = SubmissionSet.objects.create(place=self.place, name='comments')
+        self.likes = SubmissionSet.objects.create(place=self.place, name='likes')
+        self.applause = SubmissionSet.objects.create(place=self.place, name='applause')
+        self.submissions = [
+          Submission.objects.create(parent=self.comments, dataset=self.dataset, data='{"comment": "Wow!"}'),
+          Submission.objects.create(parent=self.comments, dataset=self.dataset, data='{}'),
+          Submission.objects.create(parent=self.likes, dataset=self.dataset, data='{}'),
+          Submission.objects.create(parent=self.likes, dataset=self.dataset, data='{}'),
+          Submission.objects.create(parent=self.likes, dataset=self.dataset, data='{}'),
+        ]
+
+        self.apikey = ApiKey.objects.create(user=self.owner, key='abc')
+        self.apikey.datasets.add(self.dataset)
+
+        self.request_kwargs = {
+          'owner_username': self.owner.username,
+          'dataset_slug': self.dataset.slug,
+          'place_id': self.place.id,
+          'submission_set_name': self.comments.name,
+          'submission_id': self.comments.children.values()[0]['id']
+        }
+
+        self.factory = RequestFactory()
+        self.path = reverse('submission-detail', kwargs=self.request_kwargs)
+        self.view = SubmissionInstanceView.as_view()
+
+    def tearDown(self):
+        User.objects.all().delete()
+        DataSet.objects.all().delete()
+        Place.objects.all().delete()
+        SubmissionSet.objects.all().delete()
+        Submission.objects.all().delete()
+        ApiKey.objects.all().delete()
+
+    def test_GET_response(self):
+        request = self.factory.get(self.path)
+        response = self.view(request, **self.request_kwargs)
+        data = json.loads(response.rendered_content)
+
+        print data
+
+        # Check that the request was successful
+        self.assertEqual(response.status_code, 200, response.render())
+
+        # Check that data attribute is not present
+        self.assertNotIn('data', data)
+
+        # Check that the data attributes have been incorporated into the
+        # properties
+        self.assertEqual(data.get('comment'), 'Wow!')
+
+        # Check that the appropriate attributes are in the properties
+        self.assertIn('url', data)
+        self.assertIn('dataset', data)
+        self.assertIn('attachments', data)
+        self.assertIn('set', data)
+        self.assertIn('submitter_name', data)
+        self.assertIn('place', data)
+
+
+
+
 
 
 # from django.test import TestCase

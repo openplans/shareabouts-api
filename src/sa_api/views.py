@@ -19,17 +19,21 @@ logger = logging.getLogger('sa_api.views')
 # -----------
 #
 
+
 def is_owner(user, request):
     username = getattr(user, 'username', None)
     allowed_username = getattr(request, 'allowed_username', None)
     # XXX Watch out when mocking users in tests: bool(mock.Mock()) is True
     return (username and allowed_username == username)
 
+
 def is_apikey_auth(auth):
     return isinstance(auth, apikey.models.ApiKey)
 
+
 def is_origin_auth(auth):
     return isinstance(auth, basestring) and auth.startswith('origin')
+
 
 def is_really_logged_in(user, request):
     auth = getattr(request, 'auth', None)
@@ -131,6 +135,15 @@ class PlaceInstanceView (OwnedObjectMixin, generics.RetrieveUpdateDestroyAPIView
         return obj
 
 
+class SubmissionInstanceView (OwnedObjectMixin, generics.RetrieveUpdateDestroyAPIView):
+    model = models.Submission
+    serializer_class = serializers.SubmissionSerializer
+
+    def get_object(self, queryset):
+        submission_id = self.kwargs['submission_id']
+        obj = get_object_or_404(self.model, pk=submission_id)
+        self.verify_object_or_404(obj)
+        return obj
 
 
 #from . import forms

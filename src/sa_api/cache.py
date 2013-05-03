@@ -303,7 +303,7 @@ class SubmissionCache (ThingWithAttachmentCache, Cache):
         params = self.submissionset_cache.get_cached_instance_params(
             submission_obj.parent_id, lambda: submission_obj.parent)
         params.update({
-            'submission': submission_obj.pk
+            'submission_id': submission_obj.pk
         })
         return params
 
@@ -314,7 +314,7 @@ class SubmissionCache (ThingWithAttachmentCache, Cache):
         return dataset_submission_sets_keys | place_submission_sets_keys
 
     def get_request_prefixes(self, **params):
-        owner, dataset, place, submission_set_name, submission = map(params.get, ['owner_username', 'dataset_slug', 'place_id', 'submission_set_name', 'submission'])
+        owner, dataset, place, submission_set_name, submission = map(params.get, ['owner_username', 'dataset_slug', 'place_id', 'submission_set_name', 'submission_id'])
         prefixes = super(SubmissionCache, self).get_request_prefixes(**params)
 
         specific_instance_path = reverse('submission-detail', args=[owner, dataset, place, submission_set_name, submission])

@@ -3,7 +3,7 @@ from . import views
 
 urlpatterns = patterns('sa_api',
     url(r'^(?P<owner_username>[^/]+)/datasets/(?P<dataset_slug>[^/]+)/places/(?P<place_id>\d+)/(?P<submission_set_name>[^/]+)/(?P<submission_id>\d+)$',
-        lambda *a, **k: None,
+        views.SubmissionInstanceView.as_view(),
         name='submission-detail'),
     url(r'^(?P<owner_username>[^/]+)/datasets/(?P<dataset_slug>[^/]+)/places/(?P<place_id>\d+)/(?P<submission_set_name>[^/]+)$',
         lambda *a, **k: None,
