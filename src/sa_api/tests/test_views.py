@@ -76,7 +76,6 @@ class TestPlaceInstanceView (TestCase):
         self.assertIn('submission_sets', data['properties'])
 
     def test_GET_response_with_private_data(self):
-        
         #
         # View should not return private data normally
         #

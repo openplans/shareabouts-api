@@ -11,6 +11,11 @@ import logging
 
 logger = logging.getLogger('sa_api.views')
 
+###############################################################################
+#
+# Permissions
+# -----------
+#
 
 def is_owner(user, request):
     username = getattr(user, 'username', None)
@@ -35,7 +40,7 @@ class IsOwnerOrReadOnly(permissions.BasePermission):
     def has_permission(self, request, view):
         """
         Allows only superusers or the user named by
-        ``request.allowed_username`` to write.
+        `request.allowed_username` to write.
 
         (If the view has no such attribute, assumes not allowed)
         """
@@ -68,13 +73,29 @@ class IsLoggedInOwnerOrPublicDataOnly(permissions.BasePermission):
         return False
 
 
+###############################################################################
+#
+# View Mixins
+# -----------
+#
+
 class OwnedObjectMixin (object):
+    """
+    A view mixin that retrieves the username of the resource owner, as provided
+    in the URL, and stores it on the request object.
+    """
     allowed_user_kwarg = 'owner_username'
     
     def dispatch(self, request, *args, **kwargs):
         request.allowed_username = kwargs[self.allowed_user_kwarg]
         return super(OwnedObjectMixin, self).dispatch(request, *args, **kwargs)
 
+
+###############################################################################
+#
+# Resource Views
+# --------------
+#
 
 class PlaceInstanceView (OwnedObjectMixin, generics.RetrieveUpdateDestroyAPIView):
     model = models.Place
