@@ -1,6 +1,6 @@
 from django.contrib.auth import login
 from django.core.exceptions import PermissionDenied
-from djangorestframework import authentication
+from rest_framework import authentication
 from .models import ApiKey
 
 KEY_HEADER = 'HTTP_X_SHAREABOUTS_KEY'
@@ -29,6 +29,7 @@ class APIKeyBackend(object):
         if None in (user, key_instance):
             return None
         key_instance.login(ip_address)
+        self.key_instance = key_instance
         return user
 
     def get_user(self, user_id):
@@ -54,27 +55,21 @@ def check_api_authorization(request):
 
     This should become more configurable.
     """ % KEY_HEADER
-    user = getattr(request, 'user', None)
-    if user is not None and user.is_authenticated():
-        user = request.user
-        if user.is_active:
-            return True
-        else:
-            raise PermissionDenied("Your account is disabled.")
+    ip_address = request.META['REMOTE_ADDR']
+    key = request.META.get(KEY_HEADER)
+    
+    auth_backend = APIKeyBackend()
+    user = auth_backend.authenticate(key=key, ip_address=ip_address)
+    auth = auth_backend.key_instance if (user is not None) else None
+    
+    if user is None:
+        raise PermissionDenied("invalid key?")
+        
+    if user.is_active:
+        user.backend = APIKeyBackend.backend_name
+        return (user, auth)
     else:
-        ip_address = request.META['REMOTE_ADDR']
-        key = request.META.get(KEY_HEADER)
-        user = APIKeyBackend().authenticate(key=key, ip_address=ip_address)
-        if user is None:
-            raise PermissionDenied("invalid key?")
-        if user.is_active:
-            # login() expects a dotted name at user.backend.
-            user.backend = APIKeyBackend.backend_name
-            request.user = user
-            login(request, user)
-            return True
-        else:
-            raise PermissionDenied("Your account is disabled.")
+        raise PermissionDenied("Your account is disabled.")
 
 
 class ApiKeyAuthentication(authentication.BaseAuthentication):
@@ -88,9 +83,9 @@ class ApiKeyAuthentication(authentication.BaseAuthentication):
         by djangorestframework.
         """
         try:
-            check_api_authorization(request)
+            user, auth = check_api_authorization(request)
         except PermissionDenied:
             # Does djrf allow you to provide a message with auth failures?
             return None
 
-        return request.user
+        return (user, auth)

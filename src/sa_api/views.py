@@ -2,34 +2,45 @@ from . import models
 from . import serializers
 from . import utils
 from . import renderers
+from . import apikey
 from rest_framework import views, permissions, mixins, authentication, generics
 from rest_framework.response import Response
 from rest_framework.exceptions import APIException
 import ujson as json
 import logging
 
-logger = logging.getLogger('sa_api_v2.views')
+logger = logging.getLogger('sa_api.views')
 
 
-def is_owner(user, view):
+def is_owner(user, request):
     username = getattr(user, 'username', None)
+    allowed_username = getattr(request, 'allowed_username', None)
     # XXX Watch out when mocking users in tests: bool(mock.Mock()) is True
-    return username and view.allowed_username == username
+    return (username and allowed_username == username)
 
-def is_logged_in(user, request, view):
-    from .apikey.auth import KEY_HEADER
-    return not (user.is_authenticated() and KEY_HEADER in request.META)
+def is_apikey_auth(auth):
+    return isinstance(auth, apikey.models.ApiKey)
+
+def is_origin_auth(auth):
+    return isinstance(auth, basestring) and auth.startswith('origin')
+
+def is_really_logged_in(user, request):
+    auth = getattr(request, 'auth', None)
+    return (user.is_authenticated() and
+            not is_apikey_auth(auth) and
+            not is_origin_auth(auth))
+
 
 class IsOwnerOrReadOnly(permissions.BasePermission):
     def has_permission(self, request, view):
         """
         Allows only superusers or the user named by
-        ``view.allowed_username`` to write.
+        ``request.allowed_username`` to write.
 
         (If the view has no such attribute, assumes not allowed)
         """
         if (request.method in permissions.SAFE_METHODS or
-            is_owner(request.user, view) or request.user.is_superuser):
+            is_owner(request.user, request) or request.user.is_superuser):
             return True
         return False
 
@@ -48,29 +59,33 @@ class IsLoggedInOwnerOrPublicDataOnly(permissions.BasePermission):
         if not any([flag in request.GET for flag in private_data_flags]):
             return True
         
-        if not is_logged_in(request.user, request, view):
+        if not is_really_logged_in(request.user, request):
             return False
         
-        if is_owner(request.user, view) or request.user.is_superuser:
+        if is_owner(request.user, request) or request.user.is_superuser:
             return True
         
         return False
 
 
-class PlaceInstanceView (generics.RetrieveUpdateDestroyAPIView):
+class OwnedObjectMixin (object):
+    allowed_user_kwarg = 'owner_username'
+    
+    def dispatch(self, request, *args, **kwargs):
+        request.allowed_username = kwargs[self.allowed_user_kwarg]
+        return super(OwnedObjectMixin, self).dispatch(request, *args, **kwargs)
+
+
+class PlaceInstanceView (OwnedObjectMixin, generics.RetrieveUpdateDestroyAPIView):
     model = models.Place
     serializer_class = serializers.PlaceSerializer
     renderer_classes = (renderers.GeoJSONRenderer,)
     permission_classes = (IsOwnerOrReadOnly, IsLoggedInOwnerOrPublicDataOnly)
-
-    def dispatch(self, request, owner_username, dataset_slug, place_id):
-        return super(PlaceInstanceView, self).dispatch(
-            request,
-            owner_username=owner_username,
-            dataset_slug=dataset_slug,
-            place_id=place_id,
-            pk=place_id
-        )
+    authentication_classes = (authentication.BasicAuthentication, authentication.SessionAuthentication, apikey.auth.ApiKeyAuthentication)
+    
+    def get_object(self):
+        place_id = self.kwargs['place_id']
+        return self.model.objects.get(pk=place_id)
 
 
 

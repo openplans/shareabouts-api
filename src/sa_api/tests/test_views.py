@@ -3,6 +3,8 @@ from django.test.client import RequestFactory
 from django.core.urlresolvers import reverse
 import json
 from ..models import User, DataSet, Place, SubmissionSet, Submission
+from ..apikey.models import ApiKey
+from ..apikey.auth import KEY_HEADER
 from ..views import PlaceInstanceView
 
 
@@ -25,6 +27,9 @@ class TestPlaceInstanceView (TestCase):
           Submission.objects.create(parent=self.submission_set, dataset=self.dataset, data='{}')
         ]
 
+        self.apikey = ApiKey.objects.create(user=self.owner, key='abc')
+        self.apikey.datasets.add(self.dataset)
+
         self.request_kwargs = {
           'owner_username': self.owner.username,
           'dataset_slug': self.dataset.slug,
@@ -34,6 +39,14 @@ class TestPlaceInstanceView (TestCase):
         self.factory = RequestFactory()
         self.path = reverse('place-detail', kwargs=self.request_kwargs)
         self.view = PlaceInstanceView.as_view()
+    
+    def tearDown(self):
+        User.objects.all().delete()
+        DataSet.objects.all().delete()
+        Place.objects.all().delete()
+        SubmissionSet.objects.all().delete()
+        Submission.objects.all().delete()
+        ApiKey.objects.all().delete()
 
     def test_GET_response(self):
         request = self.factory.get(self.path)
@@ -66,7 +79,7 @@ class TestPlaceInstanceView (TestCase):
         
         #
         # View should not return private data normally
-
+        #
         request = self.factory.get(self.path)
         response = self.view(request, **self.request_kwargs)
         data = json.loads(response.rendered_content)
@@ -77,15 +90,59 @@ class TestPlaceInstanceView (TestCase):
         # Check that the private data is not in the properties
         self.assertNotIn('private-secrets', data['properties'])
 
+        # --------------------------------------------------
+        
         #
-        # View should 403 when not allowed to request private data (not authenticated, api key, not owner)
+        # View should 403 when not allowed to request private data (not authenticated)
+        #
         request = self.factory.get(self.path + '?include_private')
         response = self.view(request, **self.request_kwargs)
         data = json.loads(response.rendered_content)
 
-        # Check that the request was successful
+        # Check that the request was restricted
+        self.assertEqual(response.status_code, 401)
+
+        # --------------------------------------------------
+        
+        #
+        # View should 403 when not allowed to request private data (api key)
+        #
+        request = self.factory.get(self.path + '?include_private')
+        request.META[KEY_HEADER] = self.apikey.key
+        response = self.view(request, **self.request_kwargs)
+        data = json.loads(response.rendered_content)
+
+        # Check that the request was restricted
         self.assertEqual(response.status_code, 403)
 
+        # --------------------------------------------------
+        
+        #
+        # View should 403 when not allowed to request private data (not owner)
+        #
+        request = self.factory.get(self.path + '?include_private')
+        request.user = User.objects.create(username='new_user', password='password')
+        response = self.view(request, **self.request_kwargs)
+        data = json.loads(response.rendered_content)
+
+        # Check that the request was restricted
+        self.assertEqual(response.status_code, 403)
+
+        # --------------------------------------------------
+        
+        #
+        # View should return private data when owner is really logged in
+        #
+        request = self.factory.get(self.path + '?include_private')
+        request.user = self.owner
+        response = self.view(request, **self.request_kwargs)
+        data = json.loads(response.rendered_content)
+
+        # Check that the request was successful
+        self.assertEqual(response.status_code, 200)
+        
+        # Check that the private data is in the properties
+        self.assertIn('private-secrets', data['properties'])
 
 
 # from django.test import TestCase
