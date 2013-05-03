@@ -18,14 +18,17 @@ class GeoJSONRenderer(JSONRenderer):
         if isinstance(data, list):
             new_data = {
               'type': 'FeatureCollection',
-              'features': [self.get_feature(elem) for elem in data]
+              'features': [(self.get_feature(elem) or elem) for elem in data]
             }
         else:
-            new_data = self.get_feature(data)
+            new_data = self.get_feature(data) or data
 
         return super(GeoJSONRenderer, self).render(new_data, media_type, renderer_context)
     
     def get_feature(self, data):
+        if 'geometry' not in data:
+            return None
+        
         geometry = data.pop(self.geometry_field)
         
         if isinstance(geometry, basestring):

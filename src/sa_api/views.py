@@ -11,46 +11,44 @@ import logging
 logger = logging.getLogger('sa_api_v2.views')
 
 
-class IsOwnerOrSuperuser(permissions.BasePermission):
+class IsOwnerOrReadOnly(permissions.BasePermission):
     def has_permission(self, request, view):
         """
         Allows only superusers or the user named by
-        ``self.view.allowed_username``.
+        ``view.allowed_username`` to write.
 
-        (If the view has no such attribute, raises a 403 Forbidden
-        exception.  Subclasses of AuthMixin should have it.)
+        (If the view has no such attribute, assumes not allowed)
         """
-        user = request.user
-        if user.is_superuser:
+        username = getattr(request.user, 'username', None)
+        if (request.method in permissions.SAFE_METHODS or
+            (username and view.allowed_username == username) or
+            request.user.is_superuser):
             # XXX Watch out when mocking users in tests: bool(mock.Mock()) is True
-            return
-        username = getattr(user, 'username', None)
-        if username and (view.allowed_username == username):
             return True
         return False
 
 
-class IsLoggedInPublicDataOnly(IsOwnerOrSuperuser):
+class IsLoggedInOrPublicDataOnly(permissions.BasePermission):
     def has_permission(self, request, view):
-        """Like IsOwnerOrSuperuser, but will not respond to any
-        request with the API key http header.
+        """
+        Disallows any request for public data from a user authenticated 
+        by API key.
 
         For protecting views related to API keys that should require
         'real' authentication, to avoid users abusing one API key to
         obtain others.
         """
         from .apikey.auth import KEY_HEADER
-        if KEY_HEADER in view.request.META:
+        if request.user.is_authenticated() and KEY_HEADER in request.META:
             return False
-
-        return super(IsLoggedInPublicDataOnly, self).has_permission(request, view)
+        return True
 
 
 class PlaceInstanceView (generics.RetrieveUpdateDestroyAPIView):
     model = models.Place
     serializer_class = serializers.PlaceSerializer
     renderer_classes = (renderers.GeoJSONRenderer,)
-    permission_classes = (IsOwnerOrReadOnly, IsLoggedInPublicDataOnly)
+    permission_classes = (IsOwnerOrReadOnly, IsLoggedInOrPublicDataOnly)
 
     def dispatch(self, request, owner_username, dataset_slug, place_id):
         return super(PlaceInstanceView, self).dispatch(

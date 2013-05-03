@@ -40,6 +40,9 @@ class TestPlaceInstanceView (TestCase):
         response = view(request, **request_kwargs)
         data = json.loads(response.rendered_content)
 
+        # Check that the request was successful
+        self.assertEqual(response.status_code, 200, response.render())
+        
         # Check that it's a feature
         self.assertIn('type', data)
         self.assertIn('geometry', data)
@@ -74,7 +77,10 @@ class TestPlaceInstanceView (TestCase):
         response = view(request, **request_kwargs)
         data = json.loads(response.rendered_content)
 
-        # Check that the appropriate attributes are in the properties
+        # Check that the request was successful
+        self.assertEqual(response.status_code, 200)
+        
+        # Check that the private data is not in the properties
         self.assertNotIn('private-secrets', data['properties'])
 
 
