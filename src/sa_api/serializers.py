@@ -167,9 +167,10 @@ class PlaceSerializer (DataBlobProcessor, serializers.HyperlinkedModelSerializer
         sets = models.SubmissionSet.objects.filter(place=obj).annotate(length=Count('children'))
         # TODO: Use the SubmissionSetSerializer to render these.
         for submission_set in sets:
-            data['submission_sets'][submission_set.name] = {
-              'length': submission_set.length,
-            }
+            if submission_set.length > 0:
+                data['submission_sets'][submission_set.name] = {
+                  'length': submission_set.length,
+                }
 
         return data
 

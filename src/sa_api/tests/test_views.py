@@ -22,9 +22,15 @@ class TestPlaceInstanceView (TestCase):
             'private-secrets': 42
           }),
         )
-        self.submission_set = SubmissionSet.objects.create(place=self.place, name='hello')
+        self.comments = SubmissionSet.objects.create(place=self.place, name='comments')
+        self.likes = SubmissionSet.objects.create(place=self.place, name='likes')
+        self.applause = SubmissionSet.objects.create(place=self.place, name='applause')
         self.submissions = [
-          Submission.objects.create(parent=self.submission_set, dataset=self.dataset, data='{}')
+          Submission.objects.create(parent=self.comments, dataset=self.dataset, data='{}'),
+          Submission.objects.create(parent=self.comments, dataset=self.dataset, data='{}'),
+          Submission.objects.create(parent=self.likes, dataset=self.dataset, data='{}'),
+          Submission.objects.create(parent=self.likes, dataset=self.dataset, data='{}'),
+          Submission.objects.create(parent=self.likes, dataset=self.dataset, data='{}'),
         ]
 
         self.apikey = ApiKey.objects.create(user=self.owner, key='abc')
@@ -74,6 +80,12 @@ class TestPlaceInstanceView (TestCase):
         self.assertIn('dataset', data['properties'])
         self.assertIn('attachments', data['properties'])
         self.assertIn('submission_sets', data['properties'])
+        
+        # Check that the submission sets look right
+        self.assertEqual(len(data['properties']['submission_sets']), 2)
+        self.assertIn('comments', data['properties']['submission_sets'].keys())
+        self.assertIn('likes', data['properties']['submission_sets'].keys())
+        self.assertNotIn('applause', data['properties']['submission_sets'].keys())
 
     def test_GET_response_with_private_data(self):
         #
