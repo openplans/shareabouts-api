@@ -189,7 +189,7 @@ class TestSubmissionInstanceView (TestCase):
         self.likes = SubmissionSet.objects.create(place=self.place, name='likes')
         self.applause = SubmissionSet.objects.create(place=self.place, name='applause')
         self.submissions = [
-          Submission.objects.create(parent=self.comments, dataset=self.dataset, data='{"comment": "Wow!"}'),
+          Submission.objects.create(parent=self.comments, dataset=self.dataset, data='{"comment": "Wow!", "private-email": "mp@example.com"}'),
           Submission.objects.create(parent=self.comments, dataset=self.dataset, data='{}'),
           Submission.objects.create(parent=self.likes, dataset=self.dataset, data='{}'),
           Submission.objects.create(parent=self.likes, dataset=self.dataset, data='{}'),
@@ -224,8 +224,6 @@ class TestSubmissionInstanceView (TestCase):
         response = self.view(request, **self.request_kwargs)
         data = json.loads(response.rendered_content)
 
-        print data
-
         # Check that the request was successful
         self.assertEqual(response.status_code, 200, response.render())
 
@@ -244,7 +242,90 @@ class TestSubmissionInstanceView (TestCase):
         self.assertIn('submitter_name', data)
         self.assertIn('place', data)
 
+    def test_GET_response_with_private_data(self):
+        #
+        # View should not return private data normally
+        #
+        request = self.factory.get(self.path)
+        response = self.view(request, **self.request_kwargs)
+        data = json.loads(response.rendered_content)
 
+        # Check that the request was successful
+        self.assertEqual(response.status_code, 200)
+
+        # Check that the private data is not in the properties
+        self.assertNotIn('private-email', data)
+
+        # --------------------------------------------------
+
+        #
+        # View should 401 when not allowed to request private data (not authenticated)
+        #
+        request = self.factory.get(self.path + '?include_private')
+        response = self.view(request, **self.request_kwargs)
+        data = json.loads(response.rendered_content)
+
+        # Check that the request was restricted
+        self.assertEqual(response.status_code, 401)
+
+        # --------------------------------------------------
+
+        #
+        # View should 403 when not allowed to request private data (api key)
+        #
+        request = self.factory.get(self.path + '?include_private')
+        request.META[KEY_HEADER] = self.apikey.key
+        response = self.view(request, **self.request_kwargs)
+        data = json.loads(response.rendered_content)
+
+        # Check that the request was restricted
+        self.assertEqual(response.status_code, 403)
+
+        # --------------------------------------------------
+
+        #
+        # View should 403 when not allowed to request private data (not owner)
+        #
+        request = self.factory.get(self.path + '?include_private')
+        request.user = User.objects.create(username='new_user', password='password')
+        response = self.view(request, **self.request_kwargs)
+        data = json.loads(response.rendered_content)
+
+        # Check that the request was restricted
+        self.assertEqual(response.status_code, 403)
+
+        # --------------------------------------------------
+
+        #
+        # View should return private data when owner is really logged in
+        #
+        request = self.factory.get(self.path + '?include_private')
+        request.user = self.owner
+        response = self.view(request, **self.request_kwargs)
+        data = json.loads(response.rendered_content)
+
+        # Check that the request was successful
+        self.assertEqual(response.status_code, 200)
+
+        # Check that the private data is in the properties
+        self.assertIn('private-email', data)
+
+    def test_GET_invalid_url(self):
+        # Make sure that we respond with 404 if a place_id is supplied, but for
+        # the wrong dataset or owner.
+        request_kwargs = {
+          'owner_username': 'mischevious_owner',
+          'dataset_slug': self.dataset.slug,
+          'place_id': self.place.id,
+          'submission_set_name': self.comments.name,
+          'submission_id': self.comments.children.values()[0]['id']
+        }
+
+        path = reverse('submission-detail', kwargs=request_kwargs)
+        request = self.factory.get(path)
+        response = self.view(request, **request_kwargs)
+
+        self.assertEqual(response.status_code, 404)
 
 
 

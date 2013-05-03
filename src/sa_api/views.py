@@ -138,6 +138,8 @@ class PlaceInstanceView (OwnedObjectMixin, generics.RetrieveUpdateDestroyAPIView
 class SubmissionInstanceView (OwnedObjectMixin, generics.RetrieveUpdateDestroyAPIView):
     model = models.Submission
     serializer_class = serializers.SubmissionSerializer
+    permission_classes = (IsOwnerOrReadOnly, IsLoggedInOwnerOrPublicDataOnly)
+    authentication_classes = (authentication.BasicAuthentication, authentication.SessionAuthentication, apikey.auth.ApiKeyAuthentication)
 
     def get_object(self, queryset):
         submission_id = self.kwargs['submission_id']
