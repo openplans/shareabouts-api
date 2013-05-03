@@ -25,19 +25,19 @@ class TestPlaceInstanceView (TestCase):
           Submission.objects.create(parent=self.submission_set, dataset=self.dataset, data='{}')
         ]
 
-    def test_GET_response(self):
-        request_kwargs = {
+        self.request_kwargs = {
           'owner_username': self.owner.username,
           'dataset_slug': self.dataset.slug,
           'place_id': self.place.id
         }
 
-        factory = RequestFactory()
-        path = reverse('place-detail', kwargs=request_kwargs)
-        request = factory.get(path)
+        self.factory = RequestFactory()
+        self.path = reverse('place-detail', kwargs=self.request_kwargs)
+        self.view = PlaceInstanceView.as_view()
 
-        view = PlaceInstanceView.as_view()
-        response = view(request, **request_kwargs)
+    def test_GET_response(self):
+        request = self.factory.get(self.path)
+        response = self.view(request, **self.request_kwargs)
         data = json.loads(response.rendered_content)
 
         # Check that the request was successful
@@ -63,18 +63,12 @@ class TestPlaceInstanceView (TestCase):
         self.assertIn('submission_sets', data['properties'])
 
     def test_GET_response_with_private_data(self):
-        request_kwargs = {
-          'owner_username': self.owner.username,
-          'dataset_slug': self.dataset.slug,
-          'place_id': self.place.id
-        }
+        
+        #
+        # View should not return private data normally
 
-        factory = RequestFactory()
-        path = reverse('place-detail', kwargs=request_kwargs)
-        request = factory.get(path)
-
-        view = PlaceInstanceView.as_view()
-        response = view(request, **request_kwargs)
+        request = self.factory.get(self.path)
+        response = self.view(request, **self.request_kwargs)
         data = json.loads(response.rendered_content)
 
         # Check that the request was successful
@@ -82,6 +76,15 @@ class TestPlaceInstanceView (TestCase):
         
         # Check that the private data is not in the properties
         self.assertNotIn('private-secrets', data['properties'])
+
+        #
+        # View should 403 when not allowed to request private data (not authenticated, api key, not owner)
+        request = self.factory.get(self.path + '?include_private')
+        response = self.view(request, **self.request_kwargs)
+        data = json.loads(response.rendered_content)
+
+        # Check that the request was successful
+        self.assertEqual(response.status_code, 403)
 
 
 

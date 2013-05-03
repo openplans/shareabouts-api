@@ -11,6 +11,15 @@ import logging
 logger = logging.getLogger('sa_api_v2.views')
 
 
+def is_owner(user, view):
+    username = getattr(user, 'username', None)
+    # XXX Watch out when mocking users in tests: bool(mock.Mock()) is True
+    return username and view.allowed_username == username
+
+def is_logged_in(user, request, view):
+    from .apikey.auth import KEY_HEADER
+    return not (user.is_authenticated() and KEY_HEADER in request.META)
+
 class IsOwnerOrReadOnly(permissions.BasePermission):
     def has_permission(self, request, view):
         """
@@ -19,16 +28,13 @@ class IsOwnerOrReadOnly(permissions.BasePermission):
 
         (If the view has no such attribute, assumes not allowed)
         """
-        username = getattr(request.user, 'username', None)
         if (request.method in permissions.SAFE_METHODS or
-            (username and view.allowed_username == username) or
-            request.user.is_superuser):
-            # XXX Watch out when mocking users in tests: bool(mock.Mock()) is True
+            is_owner(request.user, view) or request.user.is_superuser):
             return True
         return False
 
 
-class IsLoggedInOrPublicDataOnly(permissions.BasePermission):
+class IsLoggedInOwnerOrPublicDataOnly(permissions.BasePermission):
     def has_permission(self, request, view):
         """
         Disallows any request for public data from a user authenticated 
@@ -38,17 +44,24 @@ class IsLoggedInOrPublicDataOnly(permissions.BasePermission):
         'real' authentication, to avoid users abusing one API key to
         obtain others.
         """
-        from .apikey.auth import KEY_HEADER
-        if request.user.is_authenticated() and KEY_HEADER in request.META:
+        private_data_flags = ['include_private']
+        if not any([flag in request.GET for flag in private_data_flags]):
+            return True
+        
+        if not is_logged_in(request.user, request, view):
             return False
-        return True
+        
+        if is_owner(request.user, view) or request.user.is_superuser:
+            return True
+        
+        return False
 
 
 class PlaceInstanceView (generics.RetrieveUpdateDestroyAPIView):
     model = models.Place
     serializer_class = serializers.PlaceSerializer
     renderer_classes = (renderers.GeoJSONRenderer,)
-    permission_classes = (IsOwnerOrReadOnly, IsLoggedInOrPublicDataOnly)
+    permission_classes = (IsOwnerOrReadOnly, IsLoggedInOwnerOrPublicDataOnly)
 
     def dispatch(self, request, owner_username, dataset_slug, place_id):
         return super(PlaceInstanceView, self).dispatch(
