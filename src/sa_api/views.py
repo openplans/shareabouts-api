@@ -55,7 +55,7 @@ class IsOwnerOrReadOnly(permissions.BasePermission):
 class IsLoggedInOwnerOrPublicDataOnly(permissions.BasePermission):
     def has_permission(self, request, view):
         """
-        Disallows any request for public data from a user authenticated 
+        Disallows any request for public data from a user authenticated
         by API key.
 
         For protecting views related to API keys that should require
@@ -65,13 +65,13 @@ class IsLoggedInOwnerOrPublicDataOnly(permissions.BasePermission):
         private_data_flags = ['include_private']
         if not any([flag in request.GET for flag in private_data_flags]):
             return True
-        
+
         if not is_really_logged_in(request.user, request):
             return False
-        
+
         if is_owner(request.user, request) or request.user.is_superuser:
             return True
-        
+
         return False
 
 
@@ -87,24 +87,24 @@ class OwnedObjectMixin (object):
     in the URL, and stores it on the request object.
     """
     allowed_user_kwarg = 'owner_username'
-    
+
     def dispatch(self, request, *args, **kwargs):
         request.allowed_username = kwargs[self.allowed_user_kwarg]
         return super(OwnedObjectMixin, self).dispatch(request, *args, **kwargs)
-    
+
     def get_verified_object(self, obj):
         # Get the instance parameters from the cache
         params = self.model.cache.get_cached_instance_params(obj.pk, lambda: obj)
-        
+
         # Make sure that the instance parameters match what we got in the URL.
         # We do not want to risk assuming a user owns a place, for example, just
         # because their username is in the URL.
         for attr in self.kwargs:
             if attr in params and self.kwargs[attr] != params[attr]:
                 return None
-        
+
         return obj
-    
+
     def verify_object_or_404(self, obj):
         verified_object = self.get_verified_object(obj)
         if verified_object is None:
@@ -123,8 +123,8 @@ class PlaceInstanceView (OwnedObjectMixin, generics.RetrieveUpdateDestroyAPIView
     renderer_classes = (renderers.GeoJSONRenderer,)
     permission_classes = (IsOwnerOrReadOnly, IsLoggedInOwnerOrPublicDataOnly)
     authentication_classes = (authentication.BasicAuthentication, authentication.SessionAuthentication, apikey.auth.ApiKeyAuthentication)
-    
-    def get_object(self):
+
+    def get_object(self, queryset):
         place_id = self.kwargs['place_id']
         obj = get_object_or_404(self.model, pk=place_id)
         self.verify_object_or_404(obj)
