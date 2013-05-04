@@ -128,7 +128,7 @@ class PlaceInstanceView (OwnedObjectMixin, generics.RetrieveUpdateDestroyAPIView
     permission_classes = (IsOwnerOrReadOnly, IsLoggedInOwnerOrPublicDataOnly)
     authentication_classes = (authentication.BasicAuthentication, authentication.SessionAuthentication, apikey.auth.ApiKeyAuthentication)
 
-    def get_object(self, queryset):
+    def get_object(self, queryset=None):
         place_id = self.kwargs['place_id']
         obj = get_object_or_404(self.model, pk=place_id)
         self.verify_object_or_404(obj)
@@ -141,7 +141,7 @@ class SubmissionInstanceView (OwnedObjectMixin, generics.RetrieveUpdateDestroyAP
     permission_classes = (IsOwnerOrReadOnly, IsLoggedInOwnerOrPublicDataOnly)
     authentication_classes = (authentication.BasicAuthentication, authentication.SessionAuthentication, apikey.auth.ApiKeyAuthentication)
 
-    def get_object(self, queryset):
+    def get_object(self, queryset=None):
         submission_id = self.kwargs['submission_id']
         obj = get_object_or_404(self.model, pk=submission_id)
         self.verify_object_or_404(obj)
