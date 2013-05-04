@@ -89,6 +89,11 @@ class PlaceIdentityField (ShareaboutsIdentityField):
 
 class SubmissionSetIdentityField (ShareaboutsIdentityField):
     url_arg_names = ('owner_username', 'dataset_slug', 'place_id', 'submission_set_name')
+    
+    def __init__(self, *args, **kwargs):
+        super(SubmissionSetIdentityField, self).__init__(
+            view_name=kwargs.pop('view_name', 'submission-list'), 
+            *args, **kwargs)
 
 
 class SubmissionIdentityField (ShareaboutsIdentityField):
@@ -167,24 +172,35 @@ class SubmissionSetSerializer (serializers.Serializer):
     url = SubmissionSetIdentityField()
 
 
+class SubmissionSetSummarySerializer (serializers.HyperlinkedModelSerializer):
+    length = serializers.IntegerField()
+    url = SubmissionSetIdentityField()
+    
+    class Meta:
+        model = models.SubmissionSet
+        fields = ('length', 'url')
+
+
 class PlaceSerializer (DataBlobProcessor, serializers.HyperlinkedModelSerializer):
     url = PlaceIdentityField()
     dataset = DataSetRelatedField()
     attachments = AttachmentSerializer()
+
+    def get_submission_set_summaries(self, obj):
+        summaries = {}
+        sets = models.SubmissionSet.objects.filter(place=obj).annotate(length=Count('children'))
+        for submission_set in sets:
+            if submission_set.length > 0:
+                serializer = SubmissionSetSummarySerializer(submission_set)
+                summaries[submission_set.name] = serializer.data
+        return summaries
 
     def to_native(self, obj):
         data = super(PlaceSerializer, self).to_native(obj)
 
         # TODO: This should be retrieved through the get_submission_sets
         #       method (self.model.cache.get_submission_sets).
-        data['submission_sets'] = {}
-        sets = models.SubmissionSet.objects.filter(place=obj).annotate(length=Count('children'))
-        # TODO: Use the SubmissionSetSerializer to render these.
-        for submission_set in sets:
-            if submission_set.length > 0:
-                data['submission_sets'][submission_set.name] = {
-                  'length': submission_set.length,
-                }
+        data['submission_sets'] = self.get_submission_set_summaries(obj)
 
         return data
 
