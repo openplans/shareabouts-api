@@ -226,22 +226,15 @@ class PlaceSerializer (DataBlobProcessor, serializers.HyperlinkedModelSerializer
 class SubmissionSerializer (DataBlobProcessor, serializers.HyperlinkedModelSerializer):
     url = SubmissionIdentityField()
     dataset = DataSetRelatedField()
-    parent = SubmissionSetRelatedField()
+    set = SubmissionSetRelatedField(source='parent')
+    place = PlaceRelatedField(source='parent.place')
     attachments = AttachmentSerializer(read_only=True)
-
-    def to_native(self, obj):
-        data = super(SubmissionSerializer, self).to_native(obj)
-
-        # Parent is not a useful name. TODO: is there a better way to do this?
-        data['set'] = data['parent']
-        del data['parent']
-
-        # TODO: the spec calls for a place property, but place is only indirectly
-        # available via the submission parent (the submission set). Not sure if
-        # we want to include that, and how.
-        # data['place'] = ???
-
-        return data
 
     class Meta:
         model = models.Submission
+        exclude = ('parent',)
+
+
+
+        return data
+
