@@ -17,7 +17,7 @@ urlpatterns = patterns('sa_api',
         views.PlaceInstanceView.as_view(),
         name='place-detail'),
     url(r'^(?P<owner_username>[^/]+)/datasets/(?P<dataset_slug>[^/]+)/places$',
-        lambda *a, **k: None,
+        views.PlaceListView.as_view(),
         name='place-list'),
 
     url(r'^(?P<owner_username>[^/]+)/datasets/(?P<dataset_slug>[^/]+)$',

@@ -154,7 +154,7 @@ class DataBlobProcessor (object):
                 data_copy[key] = data[key]
             else:
                 blob[key] = data[key]
-        
+
         data_copy['data'] = json.dumps(blob)
 
         if not self.partial:

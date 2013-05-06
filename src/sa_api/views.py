@@ -135,6 +135,25 @@ class PlaceInstanceView (OwnedObjectMixin, generics.RetrieveUpdateDestroyAPIView
         return obj
 
 
+class PlaceListView (OwnedObjectMixin, generics.ListCreateAPIView):
+    model = models.Place
+    serializer_class = serializers.PlaceSerializer
+    renderer_classes = (renderers.GeoJSONRenderer,)
+    permission_classes = (IsOwnerOrReadOnly, IsLoggedInOwnerOrPublicDataOnly)
+    authentication_classes = (authentication.BasicAuthentication, authentication.SessionAuthentication, apikey.auth.ApiKeyAuthentication)
+
+    def pre_save(self, obj):
+        super(PlaceListView, self).pre_save(obj)
+
+        owner_username = self.kwargs['owner_username']
+        dataset_slug = self.kwargs['dataset_slug']
+
+        owner = get_object_or_404(models.User, username=owner_username)
+        dataset = get_object_or_404(models.DataSet, slug=dataset_slug, owner=owner)
+
+        obj.dataset = dataset
+
+
 class SubmissionInstanceView (OwnedObjectMixin, generics.RetrieveUpdateDestroyAPIView):
     model = models.Submission
     serializer_class = serializers.SubmissionSerializer
