@@ -143,16 +143,23 @@ class PlaceListView (OwnedObjectMixin, generics.ListCreateAPIView):
     permission_classes = (IsOwnerOrReadOnly, IsLoggedInOwnerOrPublicDataOnly)
     authentication_classes = (authentication.BasicAuthentication, authentication.SessionAuthentication, apikey.auth.ApiKeyAuthentication)
 
-    def pre_save(self, obj):
-        super(PlaceListView, self).pre_save(obj)
-
+    def get_dataset(self):
         owner_username = self.kwargs['owner_username']
         dataset_slug = self.kwargs['dataset_slug']
 
         owner = get_object_or_404(models.User, username=owner_username)
         dataset = get_object_or_404(models.DataSet, slug=dataset_slug, owner=owner)
 
-        obj.dataset = dataset
+        return dataset
+
+    def pre_save(self, obj):
+        super(PlaceListView, self).pre_save(obj)
+        obj.dataset = self.get_dataset()
+
+    def get_queryset(self):
+        dataset = self.get_dataset()
+        queryset = super(PlaceListView, self).get_queryset()
+        return queryset.filter(dataset=dataset)
 
 
 class SubmissionInstanceView (OwnedObjectMixin, generics.RetrieveUpdateDestroyAPIView):

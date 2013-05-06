@@ -2,6 +2,7 @@ import json
 from rest_framework.renderers import JSONRenderer
 from django.contrib.gis.geos import GEOSGeometry
 
+
 class GeoJSONRenderer(JSONRenderer):
     """
     Renderer which serializes to GeoJSON
@@ -20,6 +21,9 @@ class GeoJSONRenderer(JSONRenderer):
               'type': 'FeatureCollection',
               'features': [(self.get_feature(elem) or elem) for elem in data]
             }
+        elif isinstance(data, dict) and data.get('type') == 'FeatureCollection':
+            new_data = data
+            new_data['features'] = [(self.get_feature(elem) or elem) for elem in data['features']]
         else:
             new_data = self.get_feature(data) or data
 

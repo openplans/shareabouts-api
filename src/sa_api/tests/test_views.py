@@ -275,6 +275,12 @@ class TestPlaceListView (TestCase):
           Submission.objects.create(parent=self.likes, dataset=self.dataset, data='{}'),
         ]
 
+        dataset2 = DataSet.objects.create(slug='ds2', owner=self.owner)
+        place2 = Place.objects.create(
+          dataset=dataset2,
+          geometry='point(3 4)',
+        )
+
         self.apikey = ApiKey.objects.create(user=self.owner, key='abc')
         self.apikey.datasets.add(self.dataset)
 
@@ -307,114 +313,117 @@ class TestPlaceListView (TestCase):
         self.assertIn('type', data)
         self.assertIn('features', data)
         self.assertIn('metadata', data)
-        
+
         # Check that the metadata looks right
         self.assertIn('length', data['metadata'])
         self.assertIn('next', data['metadata'])
         self.assertIn('previous', data['metadata'])
         self.assertIn('page', data['metadata'])
-        
+
         # Check that we have the right number of features
         self.assertEqual(len(data['features']), 1)
 
-    # def test_GET_response_with_private_data(self):
-    #     #
-    #     # View should not return private data normally
-    #     #
-    #     request = self.factory.get(self.path)
-    #     response = self.view(request, **self.request_kwargs)
-    #     data = json.loads(response.rendered_content)
+        self.assertIn('properties', data['features'][0])
+        self.assertIn('geometry', data['features'][0])
+        self.assertIn('type', data['features'][0])
 
-    #     # Check that the request was successful
-    #     self.assertEqual(response.status_code, 200)
+    def test_GET_response_with_private_data(self):
+        #
+        # View should not return private data normally
+        #
+        request = self.factory.get(self.path)
+        response = self.view(request, **self.request_kwargs)
+        data = json.loads(response.rendered_content)
 
-    #     # Check that the private data is not in the properties
-    #     self.assertNotIn('private-secrets', data['properties'])
+        # Check that the request was successful
+        self.assertEqual(response.status_code, 200)
 
-    #     # --------------------------------------------------
+        # Check that the private data is not in the properties
+        self.assertNotIn('private-secrets', data['features'][0]['properties'])
 
-    #     #
-    #     # View should 401 when not allowed to request private data (not authenticated)
-    #     #
-    #     request = self.factory.get(self.path + '?include_private')
-    #     response = self.view(request, **self.request_kwargs)
-    #     data = json.loads(response.rendered_content)
+        # --------------------------------------------------
 
-    #     # Check that the request was restricted
-    #     self.assertEqual(response.status_code, 401)
+        #
+        # View should 401 when not allowed to request private data (not authenticated)
+        #
+        request = self.factory.get(self.path + '?include_private')
+        response = self.view(request, **self.request_kwargs)
+        data = json.loads(response.rendered_content)
 
-    #     # --------------------------------------------------
+        # Check that the request was restricted
+        self.assertEqual(response.status_code, 401)
 
-    #     #
-    #     # View should 403 when not allowed to request private data (api key)
-    #     #
-    #     request = self.factory.get(self.path + '?include_private')
-    #     request.META[KEY_HEADER] = self.apikey.key
-    #     response = self.view(request, **self.request_kwargs)
-    #     data = json.loads(response.rendered_content)
+        # --------------------------------------------------
 
-    #     # Check that the request was restricted
-    #     self.assertEqual(response.status_code, 403)
+        #
+        # View should 403 when not allowed to request private data (api key)
+        #
+        request = self.factory.get(self.path + '?include_private')
+        request.META[KEY_HEADER] = self.apikey.key
+        response = self.view(request, **self.request_kwargs)
+        data = json.loads(response.rendered_content)
 
-    #     # --------------------------------------------------
+        # Check that the request was restricted
+        self.assertEqual(response.status_code, 403)
 
-    #     #
-    #     # View should 403 when not allowed to request private data (not owner)
-    #     #
-    #     request = self.factory.get(self.path + '?include_private')
-    #     request.user = User.objects.create(username='new_user', password='password')
-    #     response = self.view(request, **self.request_kwargs)
-    #     data = json.loads(response.rendered_content)
+        # --------------------------------------------------
 
-    #     # Check that the request was restricted
-    #     self.assertEqual(response.status_code, 403)
+        #
+        # View should 403 when not allowed to request private data (not owner)
+        #
+        request = self.factory.get(self.path + '?include_private')
+        request.user = User.objects.create(username='new_user', password='password')
+        response = self.view(request, **self.request_kwargs)
+        data = json.loads(response.rendered_content)
 
-    #     # --------------------------------------------------
+        # Check that the request was restricted
+        self.assertEqual(response.status_code, 403)
 
-    #     #
-    #     # View should return private data when owner is logged in (Session Auth)
-    #     #
-    #     request = self.factory.get(self.path + '?include_private')
-    #     request.user = self.owner
-    #     response = self.view(request, **self.request_kwargs)
-    #     data = json.loads(response.rendered_content)
+        # --------------------------------------------------
 
-    #     # Check that the request was successful
-    #     self.assertEqual(response.status_code, 200)
+        #
+        # View should return private data when owner is logged in (Session Auth)
+        #
+        request = self.factory.get(self.path + '?include_private')
+        request.user = self.owner
+        response = self.view(request, **self.request_kwargs)
+        data = json.loads(response.rendered_content)
 
-    #     # Check that the private data is in the properties
-    #     self.assertIn('private-secrets', data['properties'])
+        # Check that the request was successful
+        self.assertEqual(response.status_code, 200)
 
-    #     # --------------------------------------------------
+        # Check that the private data is in the properties
+        self.assertIn('private-secrets', data['features'][0]['properties'])
 
-    #     #
-    #     # View should return private data when owner is logged in (Basic Auth)
-    #     #
-    #     request = self.factory.get(self.path + '?include_private')
-    #     request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(':'.join([self.owner.username, '123']))
-    #     response = self.view(request, **self.request_kwargs)
-    #     data = json.loads(response.rendered_content)
+        # --------------------------------------------------
 
-    #     # Check that the request was successful
-    #     self.assertEqual(response.status_code, 200)
+        #
+        # View should return private data when owner is logged in (Basic Auth)
+        #
+        request = self.factory.get(self.path + '?include_private')
+        request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(':'.join([self.owner.username, '123']))
+        response = self.view(request, **self.request_kwargs)
+        data = json.loads(response.rendered_content)
 
-    #     # Check that the private data is in the properties
-    #     self.assertIn('private-secrets', data['properties'])
+        # Check that the request was successful
+        self.assertEqual(response.status_code, 200)
 
-    # def test_GET_invalid_url(self):
-    #     # Make sure that we respond with 404 if a place_id is supplied, but for
-    #     # the wrong dataset or owner.
-    #     request_kwargs = {
-    #       'owner_username': 'mischevious_owner',
-    #       'dataset_slug': self.dataset.slug,
-    #       'place_id': self.place.id
-    #     }
+        # Check that the private data is in the properties
+        self.assertIn('private-secrets', data['features'][0]['properties'])
 
-    #     path = reverse('place-detail', kwargs=request_kwargs)
-    #     request = self.factory.get(path)
-    #     response = self.view(request, **request_kwargs)
+    def test_GET_invalid_url(self):
+        # Make sure that we respond with 404 if a slug is supplied, but for
+        # the wrong dataset or owner.
+        request_kwargs = {
+          'owner_username': 'mischevious_owner',
+          'dataset_slug': self.dataset.slug
+        }
 
-    #     self.assertEqual(response.status_code, 404)
+        path = reverse('place-list', kwargs=request_kwargs)
+        request = self.factory.get(path)
+        response = self.view(request, **request_kwargs)
+
+        self.assertEqual(response.status_code, 404)
 
     def test_POST_response(self):
         place_data = json.dumps({
@@ -458,7 +467,7 @@ class TestPlaceListView (TestCase):
         # private-secrets is not special, but is private, so should not come
         # back down
         self.assertNotIn('private-secrets', data['properties'])
-        
+
         # Check that we actually created a place
         final_num_places = Place.objects.all().count()
         self.assertEqual(final_num_places, start_num_places + 1)
