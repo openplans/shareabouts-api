@@ -291,6 +291,8 @@ class TestPlaceListView (TestCase):
         User.objects.all().delete()
         DataSet.objects.all().delete()
         Place.objects.all().delete()
+        SubmissionSet.objects.all().delete()
+        Submission.objects.all().delete()
         ApiKey.objects.all().delete()
 
     def test_GET_response(self):
@@ -305,6 +307,15 @@ class TestPlaceListView (TestCase):
         self.assertIn('type', data)
         self.assertIn('features', data)
         self.assertIn('metadata', data)
+        
+        # Check that the metadata looks right
+        self.assertIn('length', data['metadata'])
+        self.assertIn('next', data['metadata'])
+        self.assertIn('previous', data['metadata'])
+        self.assertIn('page', data['metadata'])
+        
+        # Check that we have the right number of features
+        self.assertEqual(len(data['features']), 1)
 
     # def test_GET_response_with_private_data(self):
     #     #
@@ -412,6 +423,7 @@ class TestPlaceListView (TestCase):
           'private-secrets': 'The mayor loves this bench',
           'geometry': {"type": "Point", "coordinates": [-73.99, 40.75]}
         })
+        start_num_places = Place.objects.all().count()
 
         #
         # View should 401 when trying to create when not authenticated
@@ -446,6 +458,10 @@ class TestPlaceListView (TestCase):
         # private-secrets is not special, but is private, so should not come
         # back down
         self.assertNotIn('private-secrets', data['properties'])
+        
+        # Check that we actually created a place
+        final_num_places = Place.objects.all().count()
+        self.assertEqual(final_num_places, start_num_places + 1)
 
 
 class TestSubmissionInstanceView (TestCase):

@@ -4,6 +4,7 @@ DjangoRestFramework resources for the Shareabouts REST API.
 import ujson as json
 from django.contrib.gis.geos import GEOSGeometry
 from django.db.models import Count
+from rest_framework import pagination
 from rest_framework import serializers
 from rest_framework.reverse import reverse
 
@@ -235,6 +236,28 @@ class SubmissionSerializer (DataBlobProcessor, serializers.HyperlinkedModelSeria
         exclude = ('parent',)
 
 
+###############################################################################
+#
+# Pagination Serializers
+# ----------------------
+#
 
+class PaginationMetadataSerializer (serializers.Serializer):
+    length = serializers.Field(source='paginator.count')
+    next = pagination.NextPageField(source='*')
+    previous = pagination.PreviousPageField(source='*')
+    page = serializers.Field(source='number')
+
+
+class PaginatedResultsSerializer (pagination.BasePaginationSerializer):
+    metadata = PaginationMetadataSerializer(source='*')
+
+    
+class FeatureCollectionSerializer (PaginatedResultsSerializer):
+    results_field = 'features'
+    
+    def to_native(self, obj):
+        data = super(FeatureCollectionSerializer, self).to_native(obj)
+        data['type'] = 'FeatureCollection'
         return data
 

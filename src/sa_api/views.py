@@ -138,6 +138,7 @@ class PlaceInstanceView (OwnedObjectMixin, generics.RetrieveUpdateDestroyAPIView
 class PlaceListView (OwnedObjectMixin, generics.ListCreateAPIView):
     model = models.Place
     serializer_class = serializers.PlaceSerializer
+    pagination_serializer_class = serializers.FeatureCollectionSerializer
     renderer_classes = (renderers.GeoJSONRenderer,)
     permission_classes = (IsOwnerOrReadOnly, IsLoggedInOwnerOrPublicDataOnly)
     authentication_classes = (authentication.BasicAuthentication, authentication.SessionAuthentication, apikey.auth.ApiKeyAuthentication)
