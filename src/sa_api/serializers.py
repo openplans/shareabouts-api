@@ -2,6 +2,7 @@
 DjangoRestFramework resources for the Shareabouts REST API.
 """
 import ujson as json
+from itertools import groupby
 from django.contrib.gis.geos import GEOSGeometry
 from django.db.models import Count
 from rest_framework import pagination
@@ -204,19 +205,41 @@ class PlaceSerializer (DataBlobProcessor, serializers.HyperlinkedModelSerializer
 
     def get_submission_set_summaries(self, obj):
         summaries = {}
+        
+        # TODO: Only count visible children, if include_invisible is absent.
+        
         sets = models.SubmissionSet.objects.filter(place=obj).annotate(length=Count('children'))
         for submission_set in sets:
             if submission_set.length > 0:
-                serializer = SubmissionSetSummarySerializer(submission_set)
+                serializer = SubmissionSetSummarySerializer(submission_set, context=self.context)
                 summaries[submission_set.name] = serializer.data
         return summaries
+    
+    def get_detailed_submission_sets(self, obj):
+        all_submissions = models.Submission.objects.filter(parent__place=obj)
+        
+        request = self.context['request']
+        if 'include_invisible' not in request.GET:
+            all_submissions = all_submissions.filter(visible=True)
+        
+        sets = groupby(all_submissions, 
+                       lambda submission: submission.parent.name)
+        details = {}
+        for name, submissions in sets:
+            serializer = SubmissionSerializer(submissions, context=self.context)
+            details[name] = serializer.data
+        return details
 
     def to_native(self, obj):
         data = super(PlaceSerializer, self).to_native(obj)
+        request = self.context['request']
 
         # TODO: This should be retrieved through the get_submission_sets
         #       method (self.model.cache.get_submission_sets).
-        data['submission_sets'] = self.get_submission_set_summaries(obj)
+        if 'include_submissions' not in request.GET:
+            data['submission_sets'] = self.get_submission_set_summaries(obj)
+        else:
+            data['submission_sets'] = self.get_detailed_submission_sets(obj)
 
         return data
 

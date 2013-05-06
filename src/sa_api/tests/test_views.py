@@ -108,6 +108,52 @@ class TestPlaceInstanceView (TestCase):
         self.assertIn('likes', data['properties']['submission_sets'].keys())
         self.assertNotIn('applause', data['properties']['submission_sets'].keys())
 
+        # --------------------------------------------------
+
+        #
+        # View should include submissions when requested
+        #
+        request = self.factory.get(self.path + '?include_submissions')
+        response = self.view(request, **self.request_kwargs)
+        data = json.loads(response.rendered_content)
+
+        # Check that the submission_sets are in the properties
+        self.assertIn('submission_sets', data['properties'])
+
+        # Check that the submission sets look right
+        comments_set = data['properties']['submission_sets'].get('comments')
+        self.assertIsInstance(comments_set, list)
+        self.assertEqual(len(comments_set), 2)
+        self.assertIn('foo', comments_set[0])
+        self.assert_(all([comment['visible'] for comment in comments_set]))
+
+        # --------------------------------------------------
+
+        #
+        # View should include invisible submissions when requested and allowed
+        #
+        
+        # Not logged in  - - - - - - - - - - - - - - - - - - 
+        request = self.factory.get(self.path + '?include_submissions&include_invisible')
+        response = self.view(request, **self.request_kwargs)
+        data = json.loads(response.rendered_content)
+
+        self.assertEqual(response.status_code, 401)
+
+        # Authenticated as owner - - - - - - - - - - - - - -
+        request = self.factory.get(self.path + '?include_submissions&include_invisible')
+        request.user = self.owner
+        response = self.view(request, **self.request_kwargs)
+        data = json.loads(response.rendered_content)
+
+        # Check that the submission_sets are in the properties
+        self.assertIn('submission_sets', data['properties'])
+
+        # Check that the invisible submissions are included
+        comments_set = data['properties']['submission_sets'].get('comments')
+        self.assertEqual(len(comments_set), 3)
+        self.assert_(not all([comment['visible'] for comment in comments_set]))
+
     def test_GET_response_with_private_data(self):
         #
         # View should not return private data normally
