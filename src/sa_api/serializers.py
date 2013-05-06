@@ -2,6 +2,7 @@
 DjangoRestFramework resources for the Shareabouts REST API.
 """
 import ujson as json
+from django.contrib.gis.geos import GEOSGeometry
 from django.db.models import Count
 from rest_framework import serializers
 from rest_framework.reverse import reverse
@@ -9,6 +10,14 @@ from rest_framework.reverse import reverse
 from . import models
 from . import utils
 from . import cache
+
+
+class GeometryField(serializers.WritableField):
+    def to_native(self, obj):
+        return obj.json
+
+    def from_native(self, data):
+        return GEOSGeometry(json.dumps(data))
 
 
 class ShareaboutsFieldMixin (object):
@@ -89,10 +98,10 @@ class PlaceIdentityField (ShareaboutsIdentityField):
 
 class SubmissionSetIdentityField (ShareaboutsIdentityField):
     url_arg_names = ('owner_username', 'dataset_slug', 'place_id', 'submission_set_name')
-    
+
     def __init__(self, *args, **kwargs):
         super(SubmissionSetIdentityField, self).__init__(
-            view_name=kwargs.pop('view_name', 'submission-list'), 
+            view_name=kwargs.pop('view_name', 'submission-list'),
             *args, **kwargs)
 
 
@@ -134,7 +143,7 @@ class DataBlobProcessor (object):
 
         # Also ignore the following field names (treat them like reserved
         # words).
-        known_fields.update(['submissions'])
+        known_fields.update(self.fields.keys())
 
         # And allow an arbitrary value field named 'data' (don't let the
         # data blob get in the way).
@@ -145,8 +154,13 @@ class DataBlobProcessor (object):
                 data_copy[key] = data[key]
             else:
                 blob[key] = data[key]
-
+        
         data_copy['data'] = json.dumps(blob)
+
+        if not self.partial:
+            for field_name, field in self.fields.items():
+                if (not field.read_only and field_name not in data_copy):
+                    data_copy[field_name] = field.default
 
         return super(DataBlobProcessor, self).restore_fields(data_copy, files)
 
@@ -175,7 +189,7 @@ class SubmissionSetSerializer (serializers.Serializer):
 class SubmissionSetSummarySerializer (serializers.HyperlinkedModelSerializer):
     length = serializers.IntegerField()
     url = SubmissionSetIdentityField()
-    
+
     class Meta:
         model = models.SubmissionSet
         fields = ('length', 'url')
@@ -183,8 +197,9 @@ class SubmissionSetSummarySerializer (serializers.HyperlinkedModelSerializer):
 
 class PlaceSerializer (DataBlobProcessor, serializers.HyperlinkedModelSerializer):
     url = PlaceIdentityField()
+    geometry = GeometryField()
     dataset = DataSetRelatedField()
-    attachments = AttachmentSerializer()
+    attachments = AttachmentSerializer(read_only=True)
 
     def get_submission_set_summaries(self, obj):
         summaries = {}
@@ -212,7 +227,7 @@ class SubmissionSerializer (DataBlobProcessor, serializers.HyperlinkedModelSeria
     url = SubmissionIdentityField()
     dataset = DataSetRelatedField()
     parent = SubmissionSetRelatedField()
-    attachments = AttachmentSerializer()
+    attachments = AttachmentSerializer(read_only=True)
 
     def to_native(self, obj):
         data = super(SubmissionSerializer, self).to_native(obj)

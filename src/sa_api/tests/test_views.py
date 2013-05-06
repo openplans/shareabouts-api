@@ -1,6 +1,7 @@
 from django.test import TestCase
 from django.test.client import RequestFactory
 from django.core.urlresolvers import reverse
+import base64
 import json
 from ..models import User, DataSet, Place, SubmissionSet, Submission
 from ..apikey.models import ApiKey
@@ -10,7 +11,7 @@ from ..views import PlaceInstanceView, SubmissionInstanceView
 
 class TestPlaceInstanceView (TestCase):
     def setUp(self):
-        self.owner = User.objects.create(username='aaron', password='123')
+        self.owner = User.objects.create_user(username='aaron', password='123', email='abc@example.com')
         self.dataset = DataSet.objects.create(slug='ds', owner=self.owner)
         self.place = Place.objects.create(
           dataset=self.dataset,
@@ -104,7 +105,7 @@ class TestPlaceInstanceView (TestCase):
         # --------------------------------------------------
 
         #
-        # View should 403 when not allowed to request private data (not authenticated)
+        # View should 401 when not allowed to request private data (not authenticated)
         #
         request = self.factory.get(self.path + '?include_private')
         response = self.view(request, **self.request_kwargs)
@@ -142,10 +143,26 @@ class TestPlaceInstanceView (TestCase):
         # --------------------------------------------------
 
         #
-        # View should return private data when owner is really logged in
+        # View should return private data when owner is logged in (Session Auth)
         #
         request = self.factory.get(self.path + '?include_private')
         request.user = self.owner
+        response = self.view(request, **self.request_kwargs)
+        data = json.loads(response.rendered_content)
+
+        # Check that the request was successful
+        self.assertEqual(response.status_code, 200)
+
+        # Check that the private data is in the properties
+        self.assertIn('private-secrets', data['properties'])
+
+        # --------------------------------------------------
+
+        #
+        # View should return private data when owner is logged in (Basic Auth)
+        #
+        request = self.factory.get(self.path + '?include_private')
+        request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(':'.join([self.owner.username, '123']))
         response = self.view(request, **self.request_kwargs)
         data = json.loads(response.rendered_content)
 
@@ -169,6 +186,68 @@ class TestPlaceInstanceView (TestCase):
         response = self.view(request, **request_kwargs)
 
         self.assertEqual(response.status_code, 404)
+
+    def test_DELETE_response(self):
+        #
+        # View should 401 when trying to delete when not authenticated
+        #
+        request = self.factory.delete(self.path)
+        response = self.view(request, **self.request_kwargs)
+        self.assertEqual(response.status_code, 401)
+
+        #
+        # View should delete the place when owner is authenticated
+        #
+        request = self.factory.delete(self.path)
+        request.META[KEY_HEADER] = self.apikey.key
+        response = self.view(request, **self.request_kwargs)
+
+        # Check that the request was successful
+        self.assertEqual(response.status_code, 204)
+
+        # Check that no data was returned
+        self.assertIsNone(response.data)
+
+    def test_PUT_response(self):
+        place_data = json.dumps({
+          'type': 'Park Bench',
+          'private-secrets': 'The mayor loves this bench',
+          'geometry': {"type": "Point", "coordinates": [-73.99, 40.75]}
+        })
+
+        #
+        # View should 401 when trying to delete when not authenticated
+        #
+        request = self.factory.put(self.path, data=place_data, content_type='application/json')
+        response = self.view(request, **self.request_kwargs)
+        self.assertEqual(response.status_code, 401)
+
+        #
+        # View should delete the place when owner is authenticated
+        #
+        request = self.factory.put(self.path, data=place_data, content_type='application/json')
+        request.META[KEY_HEADER] = self.apikey.key
+
+        response = self.view(request, **self.request_kwargs)
+
+        data = json.loads(response.rendered_content)
+
+        # Check that the request was successful
+        self.assertEqual(response.status_code, 200)
+
+        # Check that the data attributes have been incorporated into the
+        # properties
+        self.assertEqual(data['properties'].get('type'), 'Park Bench')
+
+        # submitter_name is special, and so should be present and None
+        self.assertIsNone(data['properties']['submitter_name'])
+
+        # name is not special (lives in the data blob), so should just be unset
+        self.assertNotIn('name', data['properties'])
+
+        # private-secrets is not special, but is private, so should not come 
+        # back down
+        self.assertNotIn('private-secrets', data['properties'])
 
 
 class TestSubmissionInstanceView (TestCase):

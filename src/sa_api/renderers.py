@@ -24,20 +24,20 @@ class GeoJSONRenderer(JSONRenderer):
             new_data = self.get_feature(data) or data
 
         return super(GeoJSONRenderer, self).render(new_data, media_type, renderer_context)
-    
+
     def get_feature(self, data):
         if 'geometry' not in data:
             return None
-        
+
         geometry = data.pop(self.geometry_field)
-        
+
         if isinstance(geometry, basestring):
             geometry = GEOSGeometry(geometry)
-            
+
         feature = {
           'type': 'Feature',
           'geometry': geometry.json,
           'properties': data,
         }
-        
+
         return feature
