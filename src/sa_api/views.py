@@ -1,6 +1,7 @@
 from django.http import Http404
 from django.shortcuts import get_object_or_404
-from rest_framework import views, permissions, mixins, authentication, generics
+from rest_framework import (views, permissions, mixins, authentication, 
+                            generics, exceptions, status)
 from rest_framework.response import Response
 from rest_framework.exceptions import APIException
 from . import models
@@ -66,7 +67,7 @@ class IsLoggedInOwnerOrPublicDataOnly(permissions.BasePermission):
         'real' authentication, to avoid users abusing one API key to
         obtain others.
         """
-        private_data_flags = ['include_private']
+        private_data_flags = ['include_private', 'include_invisible']
         if not any([flag in request.GET for flag in private_data_flags]):
             return True
 
@@ -121,6 +122,11 @@ class OwnedObjectMixin (object):
 # --------------
 #
 
+class QueryError(exceptions.APIException):
+    status_code = status.HTTP_400_BAD_REQUEST
+    detail = 'Malformed or missing query parameters.'
+
+
 class PlaceInstanceView (OwnedObjectMixin, generics.RetrieveUpdateDestroyAPIView):
     model = models.Place
     serializer_class = serializers.PlaceSerializer
@@ -132,6 +138,11 @@ class PlaceInstanceView (OwnedObjectMixin, generics.RetrieveUpdateDestroyAPIView
         place_id = self.kwargs['place_id']
         obj = get_object_or_404(self.model, pk=place_id)
         self.verify_object_or_404(obj)
+        
+        # TODO: This should go in a verification step.
+        if not obj.visible and 'include_invisible' not in self.request.GET:
+            raise QueryError
+        
         return obj
 
 

@@ -27,12 +27,25 @@ class TestPlaceInstanceView (TestCase):
         self.likes = SubmissionSet.objects.create(place=self.place, name='likes')
         self.applause = SubmissionSet.objects.create(place=self.place, name='applause')
         self.submissions = [
-          Submission.objects.create(parent=self.comments, dataset=self.dataset, data='{}'),
-          Submission.objects.create(parent=self.comments, dataset=self.dataset, data='{}'),
-          Submission.objects.create(parent=self.likes, dataset=self.dataset, data='{}'),
-          Submission.objects.create(parent=self.likes, dataset=self.dataset, data='{}'),
-          Submission.objects.create(parent=self.likes, dataset=self.dataset, data='{}'),
+          Submission.objects.create(parent=self.comments, dataset=self.dataset, data='{"foo": 3}'),
+          Submission.objects.create(parent=self.comments, dataset=self.dataset, data='{"foo": 3}'),
+          Submission.objects.create(parent=self.comments, dataset=self.dataset, data='{"foo": 3}', visible=False),
+          Submission.objects.create(parent=self.likes, dataset=self.dataset, data='{"bar": 3}'),
+          Submission.objects.create(parent=self.likes, dataset=self.dataset, data='{"bar": 3}'),
+          Submission.objects.create(parent=self.likes, dataset=self.dataset, data='{"bar": 3}'),
+          Submission.objects.create(parent=self.likes, dataset=self.dataset, data='{"bar": 3}', visible=False),
         ]
+
+        self.invisible_place = Place.objects.create(
+          dataset=self.dataset,
+          geometry='POINT(3 4)',
+          submitter_name='Mjumbe',
+          visible=False,
+          data=json.dumps({
+            'type': 'ATM',
+            'name': 'K-Mart',
+          }),
+        )
 
         self.apikey = ApiKey.objects.create(user=self.owner, key='abc')
         self.apikey.datasets.add(self.dataset)
@@ -43,8 +56,15 @@ class TestPlaceInstanceView (TestCase):
           'place_id': self.place.id
         }
 
+        self.invisible_request_kwargs = {
+          'owner_username': self.owner.username,
+          'dataset_slug': self.dataset.slug,
+          'place_id': self.invisible_place.id
+        }
+
         self.factory = RequestFactory()
         self.path = reverse('place-detail', kwargs=self.request_kwargs)
+        self.invisible_path = reverse('place-detail', kwargs=self.invisible_request_kwargs)
         self.view = PlaceInstanceView.as_view()
 
     def tearDown(self):
@@ -171,6 +191,94 @@ class TestPlaceInstanceView (TestCase):
 
         # Check that the private data is in the properties
         self.assertIn('private-secrets', data['properties'])
+
+    def test_GET_response_with_invisible_data(self):
+        #
+        # View should not return invisible data normally
+        #
+        request = self.factory.get(self.invisible_path)
+        response = self.view(request, **self.invisible_request_kwargs)
+        data = json.loads(response.rendered_content)
+
+        # Check that the request was successful
+        self.assertEqual(response.status_code, 400)
+
+        # --------------------------------------------------
+
+        #
+        # View should 401 when not allowed to request private data (not authenticated)
+        #
+        request = self.factory.get(self.invisible_path + '?include_invisible')
+        response = self.view(request, **self.invisible_request_kwargs)
+        data = json.loads(response.rendered_content)
+
+        # Check that the request was restricted
+        self.assertEqual(response.status_code, 401)
+
+        # --------------------------------------------------
+
+        #
+        # View should 403 when not allowed to request private data (api key)
+        #
+        request = self.factory.get(self.invisible_path + '?include_invisible')
+        request.META[KEY_HEADER] = self.apikey.key
+        response = self.view(request, **self.invisible_request_kwargs)
+        data = json.loads(response.rendered_content)
+
+        # Check that the request was restricted
+        self.assertEqual(response.status_code, 403)
+
+        # --------------------------------------------------
+
+        #
+        # View should 403 when not allowed to request private data (not owner)
+        #
+        request = self.factory.get(self.invisible_path + '?include_invisible')
+        request.user = User.objects.create(username='new_user', password='password')
+        response = self.view(request, **self.invisible_request_kwargs)
+        data = json.loads(response.rendered_content)
+
+        # Check that the request was restricted
+        self.assertEqual(response.status_code, 403)
+
+        # --------------------------------------------------
+
+        #
+        # View should return private data when owner is logged in (Session Auth)
+        #
+        request = self.factory.get(self.invisible_path + '?include_invisible')
+        request.user = self.owner
+        response = self.view(request, **self.invisible_request_kwargs)
+        data = json.loads(response.rendered_content)
+
+        # Check that the request was successful
+        self.assertEqual(response.status_code, 200)
+
+        # --------------------------------------------------
+
+        #
+        # View should return private data when owner is logged in (Basic Auth)
+        #
+        request = self.factory.get(self.invisible_path + '?include_invisible')
+        request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(':'.join([self.owner.username, '123']))
+        response = self.view(request, **self.invisible_request_kwargs)
+        data = json.loads(response.rendered_content)
+
+        # Check that the request was successful
+        self.assertEqual(response.status_code, 200)
+
+        # --------------------------------------------------
+
+        #
+        # View should 400 when owner is logged in but doesn't request invisible
+        #
+        request = self.factory.get(self.invisible_path)
+        request.user = self.owner
+        response = self.view(request, **self.invisible_request_kwargs)
+        data = json.loads(response.rendered_content)
+
+        # Check that the request was successful
+        self.assertEqual(response.status_code, 400)
 
     def test_GET_invalid_url(self):
         # Make sure that we respond with 404 if a place_id is supplied, but for
@@ -460,6 +568,9 @@ class TestPlaceListView (TestCase):
 
         # submitter_name is special, and so should be present and None
         self.assertEqual(data['properties'].get('submitter_name'), 'Andy')
+        
+        # visible should be true by default
+        self.assert_(data['properties'].get('visible'))
 
         # Check that geometry exists
         self.assertIn('geometry', data)
@@ -471,6 +582,26 @@ class TestPlaceListView (TestCase):
         # Check that we actually created a place
         final_num_places = Place.objects.all().count()
         self.assertEqual(final_num_places, start_num_places + 1)
+
+    def test_POST_invisible_response(self):
+        place_data = json.dumps({
+          'submitter_name': 'Andy',
+          'type': 'Park Bench',
+          'private-secrets': 'The mayor loves this bench',
+          'geometry': {"type": "Point", "coordinates": [-73.99, 40.75]},
+          'visible': False
+        })
+
+        request = self.factory.post(self.path, data=place_data, content_type='application/json')
+        request.META[KEY_HEADER] = self.apikey.key
+        response = self.view(request, **self.request_kwargs)
+        data = json.loads(response.rendered_content)
+
+        # Check that the request was successful
+        self.assertEqual(response.status_code, 201)
+
+        # Check that visible is false
+        self.assertEqual(data.get('properties').get('visible'), False)
 
 
 class TestSubmissionInstanceView (TestCase):
