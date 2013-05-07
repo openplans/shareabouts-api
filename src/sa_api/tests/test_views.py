@@ -133,14 +133,14 @@ class TestPlaceInstanceView (TestCase):
         # View should include invisible submissions when requested and allowed
         #
         
-        # Not logged in  - - - - - - - - - - - - - - - - - - 
+        # - - - - - Not logged in  - - - - - - - - - - - - - 
         request = self.factory.get(self.path + '?include_submissions&include_invisible')
         response = self.view(request, **self.request_kwargs)
         data = json.loads(response.rendered_content)
 
         self.assertEqual(response.status_code, 401)
 
-        # Authenticated as owner - - - - - - - - - - - - - -
+        # - - - - - Authenticated as owner - - - - - - - - -
         request = self.factory.get(self.path + '?include_submissions&include_invisible')
         request.user = self.owner
         response = self.view(request, **self.request_kwargs)

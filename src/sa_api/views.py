@@ -86,18 +86,38 @@ class IsLoggedInOwnerOrPublicDataOnly(permissions.BasePermission):
 # -----------
 #
 
-class OwnedObjectMixin (object):
+class OwnedResourceMixin (object):
     """
     A view mixin that retrieves the username of the resource owner, as provided
     in the URL, and stores it on the request object.
+    
+    Permissions
+    -----------
+    Owned resource views are available for reading to all users, and available
+    for writing to the owner, logged in by key or directly. Only the owner
+    logged in directly is allowed to read invisible resources or private data
+    attributes on visible resources.
     """
-    allowed_user_kwarg = 'owner_username'
+    permission_classes = (IsOwnerOrReadOnly, IsLoggedInOwnerOrPublicDataOnly)
+    authentication_classes = (authentication.BasicAuthentication, authentication.SessionAuthentication, apikey.auth.ApiKeyAuthentication)
 
+    owner_username_kwarg = 'owner_username'
+    dataset_slug_kwarg = 'dataset_slug'
+    
     def dispatch(self, request, *args, **kwargs):
-        request.allowed_username = kwargs[self.allowed_user_kwarg]
-        return super(OwnedObjectMixin, self).dispatch(request, *args, **kwargs)
+        request.allowed_username = kwargs[self.owner_username_kwarg]
+        return super(OwnedResourceMixin, self).dispatch(request, *args, **kwargs)
 
-    def get_verified_object(self, obj):
+    def get_dataset(self):
+        owner_username = self.kwargs[self.owner_username_kwarg]
+        dataset_slug = self.kwargs[self.dataset_slug_kwarg]
+
+        owner = get_object_or_404(models.User, username=owner_username)
+        dataset = get_object_or_404(models.DataSet, slug=dataset_slug, owner=owner)
+
+        return dataset
+
+    def is_verified_object(self, obj):
         # Get the instance parameters from the cache
         params = self.model.cache.get_cached_instance_params(obj.pk, lambda: obj)
 
@@ -106,14 +126,24 @@ class OwnedObjectMixin (object):
         # because their username is in the URL.
         for attr in self.kwargs:
             if attr in params and self.kwargs[attr] != params[attr]:
-                return None
+                return False
 
-        return obj
+        return True
 
     def verify_object_or_404(self, obj):
-        verified_object = self.get_verified_object(obj)
-        if verified_object is None:
+        if not self.is_verified_object(obj):
             raise Http404
+
+
+###############################################################################
+#
+# Exceptions
+# ----------
+#
+
+class QueryError(exceptions.APIException):
+    status_code = status.HTTP_400_BAD_REQUEST
+    detail = 'Malformed or missing query parameters.'
 
 
 ###############################################################################
@@ -122,17 +152,10 @@ class OwnedObjectMixin (object):
 # --------------
 #
 
-class QueryError(exceptions.APIException):
-    status_code = status.HTTP_400_BAD_REQUEST
-    detail = 'Malformed or missing query parameters.'
-
-
-class PlaceInstanceView (OwnedObjectMixin, generics.RetrieveUpdateDestroyAPIView):
+class PlaceInstanceView (OwnedResourceMixin, generics.RetrieveUpdateDestroyAPIView):
     model = models.Place
     serializer_class = serializers.PlaceSerializer
     renderer_classes = (renderers.GeoJSONRenderer,)
-    permission_classes = (IsOwnerOrReadOnly, IsLoggedInOwnerOrPublicDataOnly)
-    authentication_classes = (authentication.BasicAuthentication, authentication.SessionAuthentication, apikey.auth.ApiKeyAuthentication)
 
     def get_object(self, queryset=None):
         place_id = self.kwargs['place_id']
@@ -146,22 +169,11 @@ class PlaceInstanceView (OwnedObjectMixin, generics.RetrieveUpdateDestroyAPIView
         return obj
 
 
-class PlaceListView (OwnedObjectMixin, generics.ListCreateAPIView):
+class PlaceListView (OwnedResourceMixin, generics.ListCreateAPIView):
     model = models.Place
     serializer_class = serializers.PlaceSerializer
     pagination_serializer_class = serializers.FeatureCollectionSerializer
     renderer_classes = (renderers.GeoJSONRenderer,)
-    permission_classes = (IsOwnerOrReadOnly, IsLoggedInOwnerOrPublicDataOnly)
-    authentication_classes = (authentication.BasicAuthentication, authentication.SessionAuthentication, apikey.auth.ApiKeyAuthentication)
-
-    def get_dataset(self):
-        owner_username = self.kwargs['owner_username']
-        dataset_slug = self.kwargs['dataset_slug']
-
-        owner = get_object_or_404(models.User, username=owner_username)
-        dataset = get_object_or_404(models.DataSet, slug=dataset_slug, owner=owner)
-
-        return dataset
 
     def pre_save(self, obj):
         super(PlaceListView, self).pre_save(obj)
@@ -173,11 +185,9 @@ class PlaceListView (OwnedObjectMixin, generics.ListCreateAPIView):
         return queryset.filter(dataset=dataset)
 
 
-class SubmissionInstanceView (OwnedObjectMixin, generics.RetrieveUpdateDestroyAPIView):
+class SubmissionInstanceView (OwnedResourceMixin, generics.RetrieveUpdateDestroyAPIView):
     model = models.Submission
     serializer_class = serializers.SubmissionSerializer
-    permission_classes = (IsOwnerOrReadOnly, IsLoggedInOwnerOrPublicDataOnly)
-    authentication_classes = (authentication.BasicAuthentication, authentication.SessionAuthentication, apikey.auth.ApiKeyAuthentication)
 
     def get_object(self, queryset=None):
         submission_id = self.kwargs['submission_id']
@@ -295,7 +305,7 @@ class SubmissionInstanceView (OwnedObjectMixin, generics.RetrieveUpdateDestroyAP
 #    Inherit from this to protect all unsafe requests
 #    with permissions listed in ``self.unsafe_permissions``.
 
-#    You should set the ``allowed_user_kwarg`` attribute to tell dispatch()
+#    You should set the ``owner_username_kwarg`` attribute to tell dispatch()
 #    how to get the name of the resource's owner from the request kwargs;
 #    """
 #    authentication = [BasicAuthentication,
@@ -305,7 +315,7 @@ class SubmissionInstanceView (OwnedObjectMixin, generics.RetrieveUpdateDestroyAP
 #    unsafe_permissions = [IsOwnerOrSuperuser]
 
 #    allowed_username = None
-#    allowed_user_kwarg = None
+#    owner_username_kwarg = None
 
 #    def dispatch(self, request, *args, **kwargs):
 #        # We do this in dispatch() so we can apply permission checks
@@ -315,12 +325,12 @@ class SubmissionInstanceView (OwnedObjectMixin, generics.RetrieveUpdateDestroyAP
 #        # This triggers authentication (view.user is a property).
 #        user = self.user
 
-#        if self.allowed_user_kwarg:
-#            self.allowed_username = kwargs[self.allowed_user_kwarg]
+#        if self.owner_username_kwarg:
+#            self.allowed_username = kwargs[self.owner_username_kwarg]
 #        elif self.allowed_username:
 #            pass
 #        else:
-#            logger.error("Subclass %s of AuthMixin is supposed to provide .allowed_user_kwarg or .allowed_username" % self)
+#            logger.error("Subclass %s of AuthMixin is supposed to provide .owner_username_kwarg or .allowed_username" % self)
 #            return permissions._403_FORBIDDEN_RESPONSE.response
 
 #        if request.method not in ('GET', 'HEAD', 'OPTIONS'):
@@ -470,9 +480,9 @@ class SubmissionInstanceView (OwnedObjectMixin, generics.RetrieveUpdateDestroyAP
 
 #class OwnerAwareMixin (object):
 #    def dispatch(self, request, *args, **kwargs):
-#        # allowed_user_kwarg should be the name of the kwarg in the URL that
+#        # owner_username_kwarg should be the name of the kwarg in the URL that
 #        # designates the username of the owner of the resource
-#        self.allowed_username = kwargs[self.allowed_user_kwarg]
+#        self.allowed_username = kwargs[self.owner_username_kwarg]
 #        return super(OwnerAwareMixin, self).dispatch(request, *args, **kwargs)
 
 
@@ -531,7 +541,7 @@ class SubmissionInstanceView (OwnedObjectMixin, generics.RetrieveUpdateDestroyAP
 #class DataSetCollectionView (Ignore_CacheBusterMixin, AuthMixin, AbsUrlMixin, ModelViewWithDataBlobMixin, CachedMixin, views.ListOrCreateModelView):
 #    resource = resources.DataSetResource
 
-#    allowed_user_kwarg = 'owner__username'
+#    owner_username_kwarg = 'owner__username'
 
 #    def get_instance_data(self, model, content, **kwargs):
 #        # Used by djangorestframework to make args to build an instance for POST
@@ -555,7 +565,7 @@ class SubmissionInstanceView (OwnedObjectMixin, generics.RetrieveUpdateDestroyAP
 #class DataSetInstanceView (Ignore_CacheBusterMixin, AuthMixin, AbsUrlMixin, ModelViewWithDataBlobMixin, CachedMixin, views.InstanceModelView):
 #    resource = resources.DataSetResource
 
-#    allowed_user_kwarg = 'owner__username'
+#    owner_username_kwarg = 'owner__username'
 
 #    def put(self, request, *args, **kwargs):
 #        instance = super(DataSetInstanceView, self).put(request, *args, **kwargs)
@@ -576,7 +586,7 @@ class SubmissionInstanceView (OwnedObjectMixin, generics.RetrieveUpdateDestroyAP
 #    # TODO: Decide whether pagination is appropriate/necessary.
 #    resource = resources.PlaceResource
 
-#    allowed_user_kwarg = 'dataset__owner__username'
+#    owner_username_kwarg = 'dataset__owner__username'
 
 #    def get_instance_data(self, model, content, **kwargs):
 #        # Used by djangorestframework to make args to build an instance for POST
@@ -626,7 +636,7 @@ class SubmissionInstanceView (OwnedObjectMixin, generics.RetrieveUpdateDestroyAP
 
 #class PlaceInstanceView (Ignore_CacheBusterMixin, AuthMixin, AbsUrlMixin, ActivityGeneratingMixin, ModelViewWithDataBlobMixin, CachedMixin, views.InstanceModelView):
 
-#    allowed_user_kwarg = 'dataset__owner__username'
+#    owner_username_kwarg = 'dataset__owner__username'
 
 #    resource = resources.PlaceResource
 
@@ -652,13 +662,13 @@ class SubmissionInstanceView (OwnedObjectMixin, generics.RetrieveUpdateDestroyAP
 #    authentication = (authentication.BasicAuthentication,
 #                      authentication.UserLoggedInAuthentication)
 
-#    allowed_user_kwarg = 'datasets__owner__username'
+#    owner_username_kwarg = 'datasets__owner__username'
 
 #    def dispatch(self, request, *args, **kwargs):
 #        # Set up context needed by permissions checks.
 #        self.dataset = get_object_or_404(
 #            models.DataSet,
-#            owner__username=kwargs[self.allowed_user_kwarg],
+#            owner__username=kwargs[self.owner_username_kwarg],
 #            slug=kwargs['datasets__slug'])
 #        self.request = request  # Not sure what needs this.
 #        return super(ApiKeyCollectionView, self).dispatch(request, *args, **kwargs)
@@ -669,7 +679,7 @@ class SubmissionInstanceView (OwnedObjectMixin, generics.RetrieveUpdateDestroyAP
 #class AllSubmissionCollectionsView (Ignore_CacheBusterMixin, AuthMixin, AbsUrlMixin, ActivityGeneratingMixin, ModelViewWithDataBlobMixin, CachedMixin, views.ListModelView):
 #    resource = resources.SubmissionResource
 
-#    allowed_user_kwarg = 'dataset__owner__username'
+#    owner_username_kwarg = 'dataset__owner__username'
 
 #    def get(self, request, submission_type, **kwargs):
 #        # If the submission_type is specific, then filter by that type.
@@ -685,7 +695,7 @@ class SubmissionInstanceView (OwnedObjectMixin, generics.RetrieveUpdateDestroyAP
 #class SubmissionCollectionView (Ignore_CacheBusterMixin, AuthMixin, AbsUrlMixin, ActivityGeneratingMixin, ModelViewWithDataBlobMixin, CachedMixin, views.ListOrCreateModelView):
 #    resource = resources.SubmissionResource
 
-#    allowed_user_kwarg = 'dataset__owner__username'
+#    owner_username_kwarg = 'dataset__owner__username'
 
 #    def get(self, request, place_id, submission_type, **kwargs):
 #        # rename the URL parameters as necessary, and pass to the
@@ -738,7 +748,7 @@ class SubmissionInstanceView (OwnedObjectMixin, generics.RetrieveUpdateDestroyAP
 #class SubmissionInstanceView (Ignore_CacheBusterMixin, AuthMixin, AbsUrlMixin, ActivityGeneratingMixin, ModelViewWithDataBlobMixin, CachedMixin, views.InstanceModelView):
 #    resource = resources.SubmissionResource
 
-#    allowed_user_kwarg = 'dataset__owner__username'
+#    owner_username_kwarg = 'dataset__owner__username'
 
 #    def get_instance(self, **kwargs):
 #        """
@@ -780,7 +790,7 @@ class SubmissionInstanceView (OwnedObjectMixin, generics.RetrieveUpdateDestroyAP
 #    resource = resources.ActivityResource
 #    form = forms.ActivityForm
 
-#    allowed_user_kwarg = 'data__dataset__owner__username'
+#    owner_username_kwarg = 'data__dataset__owner__username'
 
 #    def get_places(self):
 #        visibility = self.PARAMS.get('visible', 'true')
@@ -836,7 +846,7 @@ class SubmissionInstanceView (OwnedObjectMixin, generics.RetrieveUpdateDestroyAP
 
 
 #class OwnerPasswordView (Ignore_CacheBusterMixin, AuthMixin, AbsUrlMixin, views.View):
-#    allowed_user_kwarg = 'owner__username'
+#    owner_username_kwarg = 'owner__username'
 #    parsers = [parsers.PlainTextParser]
 
 #    def put(self, request, owner__username):
@@ -861,7 +871,7 @@ class SubmissionInstanceView (OwnedObjectMixin, generics.RetrieveUpdateDestroyAP
 
 #class AttachmentView (Ignore_CacheBusterMixin, AuthMixin, views.ListOrCreateModelView):
 #    resource = resources.AttachmentResource
-#    allowed_user_kwarg = 'dataset__owner__username'
+#    owner_username_kwarg = 'dataset__owner__username'
 
 #    def post(self, request, **kwargs):
 #        return super(AttachmentView, self).post(request, thing_id=kwargs['thing_id'])
