@@ -205,24 +205,24 @@ class PlaceSerializer (DataBlobProcessor, serializers.HyperlinkedModelSerializer
 
     def get_submission_set_summaries(self, obj):
         summaries = {}
-        
+
         # TODO: Only count visible children, if include_invisible is absent.
-        
+
         sets = models.SubmissionSet.objects.filter(place=obj).annotate(length=Count('children'))
         for submission_set in sets:
             if submission_set.length > 0:
                 serializer = SubmissionSetSummarySerializer(submission_set, context=self.context)
                 summaries[submission_set.name] = serializer.data
         return summaries
-    
+
     def get_detailed_submission_sets(self, obj):
         all_submissions = models.Submission.objects.filter(parent__place=obj)
-        
+
         request = self.context['request']
         if 'include_invisible' not in request.GET:
             all_submissions = all_submissions.filter(visible=True)
-        
-        sets = groupby(all_submissions, 
+
+        sets = groupby(all_submissions,
                        lambda submission: submission.parent.name)
         details = {}
         for name, submissions in sets:
@@ -275,10 +275,10 @@ class PaginationMetadataSerializer (serializers.Serializer):
 class PaginatedResultsSerializer (pagination.BasePaginationSerializer):
     metadata = PaginationMetadataSerializer(source='*')
 
-    
+
 class FeatureCollectionSerializer (PaginatedResultsSerializer):
     results_field = 'features'
-    
+
     def to_native(self, obj):
         data = super(FeatureCollectionSerializer, self).to_native(obj)
         data['type'] = 'FeatureCollection'

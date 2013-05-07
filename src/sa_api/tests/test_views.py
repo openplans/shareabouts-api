@@ -132,8 +132,8 @@ class TestPlaceInstanceView (TestCase):
         #
         # View should include invisible submissions when requested and allowed
         #
-        
-        # - - - - - Not logged in  - - - - - - - - - - - - - 
+
+        # - - - - - Not logged in  - - - - - - - - - - - - -
         request = self.factory.get(self.path + '?include_submissions&include_invisible')
         response = self.view(request, **self.request_kwargs)
         data = json.loads(response.rendered_content)
@@ -418,6 +418,16 @@ class TestPlaceListView (TestCase):
             'private-secrets': 42
           }),
         )
+        self.invisible_place = Place.objects.create(
+          dataset=self.dataset,
+          geometry='POINT(3 4)',
+          submitter_name='Mjumbe',
+          visible=False,
+          data=json.dumps({
+            'type': 'ATM',
+            'name': 'Walmart',
+          }),
+        )
         self.comments = SubmissionSet.objects.create(place=self.place, name='comments')
         self.likes = SubmissionSet.objects.create(place=self.place, name='likes')
         self.applause = SubmissionSet.objects.create(place=self.place, name='applause')
@@ -614,7 +624,7 @@ class TestPlaceListView (TestCase):
 
         # submitter_name is special, and so should be present and None
         self.assertEqual(data['properties'].get('submitter_name'), 'Andy')
-        
+
         # visible should be true by default
         self.assert_(data['properties'].get('visible'))
 
@@ -628,6 +638,84 @@ class TestPlaceListView (TestCase):
         # Check that we actually created a place
         final_num_places = Place.objects.all().count()
         self.assertEqual(final_num_places, start_num_places + 1)
+
+    def test_GET_response_with_invisible_data(self):
+        #
+        # View should not return invisible data normally
+        #
+        request = self.factory.get(self.path)
+        response = self.view(request, **self.request_kwargs)
+        data = json.loads(response.rendered_content)
+
+        # Check that the request was successful
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(data['features']), 1)
+
+        # --------------------------------------------------
+
+        #
+        # View should 401 when not allowed to request private data (not authenticated)
+        #
+        request = self.factory.get(self.path + '?include_invisible')
+        response = self.view(request, **self.request_kwargs)
+        data = json.loads(response.rendered_content)
+
+        # Check that the request was restricted
+        self.assertEqual(response.status_code, 401)
+
+        # --------------------------------------------------
+
+        #
+        # View should 403 when not allowed to request private data (api key)
+        #
+        request = self.factory.get(self.path + '?include_invisible')
+        request.META[KEY_HEADER] = self.apikey.key
+        response = self.view(request, **self.request_kwargs)
+        data = json.loads(response.rendered_content)
+
+        # Check that the request was restricted
+        self.assertEqual(response.status_code, 403)
+
+        # --------------------------------------------------
+
+        #
+        # View should 403 when not allowed to request private data (not owner)
+        #
+        request = self.factory.get(self.path + '?include_invisible')
+        request.user = User.objects.create(username='new_user', password='password')
+        response = self.view(request, **self.request_kwargs)
+        data = json.loads(response.rendered_content)
+
+        # Check that the request was restricted
+        self.assertEqual(response.status_code, 403)
+
+        # --------------------------------------------------
+
+        #
+        # View should return private data when owner is logged in (Session Auth)
+        #
+        request = self.factory.get(self.path + '?include_invisible')
+        request.user = self.owner
+        response = self.view(request, **self.request_kwargs)
+        data = json.loads(response.rendered_content)
+
+        # Check that the request was successful
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(data['features']), 2)
+
+        # --------------------------------------------------
+
+        #
+        # View should return private data when owner is logged in (Basic Auth)
+        #
+        request = self.factory.get(self.path + '?include_invisible')
+        request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(':'.join([self.owner.username, '123']))
+        response = self.view(request, **self.request_kwargs)
+        data = json.loads(response.rendered_content)
+
+        # Check that the request was successful
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(data['features']), 2)
 
     def test_POST_invisible_response(self):
         place_data = json.dumps({

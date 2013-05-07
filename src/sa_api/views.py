@@ -1,6 +1,6 @@
 from django.http import Http404
 from django.shortcuts import get_object_or_404
-from rest_framework import (views, permissions, mixins, authentication, 
+from rest_framework import (views, permissions, mixins, authentication,
                             generics, exceptions, status)
 from rest_framework.response import Response
 from rest_framework.exceptions import APIException
@@ -103,7 +103,7 @@ class OwnedResourceMixin (object):
 
     owner_username_kwarg = 'owner_username'
     dataset_slug_kwarg = 'dataset_slug'
-    
+
     def dispatch(self, request, *args, **kwargs):
         request.allowed_username = kwargs[self.owner_username_kwarg]
         return super(OwnedResourceMixin, self).dispatch(request, *args, **kwargs)
@@ -161,11 +161,11 @@ class PlaceInstanceView (OwnedResourceMixin, generics.RetrieveUpdateDestroyAPIVi
         place_id = self.kwargs['place_id']
         obj = get_object_or_404(self.model, pk=place_id)
         self.verify_object_or_404(obj)
-        
+
         # TODO: This should go in a verification step.
         if not obj.visible and 'include_invisible' not in self.request.GET:
             raise QueryError
-        
+
         return obj
 
 
@@ -182,6 +182,12 @@ class PlaceListView (OwnedResourceMixin, generics.ListCreateAPIView):
     def get_queryset(self):
         dataset = self.get_dataset()
         queryset = super(PlaceListView, self).get_queryset()
+
+        # If the user is not allowed to request invisible data then we won't
+        # be here in the first place.
+        if 'include_invisible' not in self.request.GET:
+            queryset = queryset.filter(visible=True)
+
         return queryset.filter(dataset=dataset)
 
 
