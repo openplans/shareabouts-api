@@ -14,6 +14,12 @@ import logging
 
 logger = logging.getLogger('sa_api.views')
 
+# Querystring Parameter Names
+INCLUDE_INVISIBLE_PARAM = 'include_invisible'
+INCLUDE_PRIVATE_PARAM = 'include_private'
+INCLUDE_SUBMISSIONS_PARAM = 'include_submissions'
+NEAR_PARAM = 'near'
+
 ###############################################################################
 #
 # Permissions
@@ -86,11 +92,37 @@ class IsLoggedInOwnerOrPublicDataOnly(permissions.BasePermission):
 # -----------
 #
 
-class OwnedResourceMixin (object):
+class FilteredResourceMixin (object):
+    def get_queryset(self):
+        queryset = super(FilteredResourceMixin, self).get_queryset()
+
+        # These filters will have been applied when constructing the queryset
+        special_filters = set([INCLUDE_SUBMISSIONS_PARAM, INCLUDE_PRIVATE_PARAM, INCLUDE_INVISIBLE_PARAM, NEAR_PARAM])
+
+        for key, values in self.request.GET.iterlists():
+            if key not in special_filters:
+                # Filter!
+                for obj in queryset:
+                    if hasattr(obj, key):
+                        if getattr(obj, key) not in values:
+                            queryset = queryset.exclude(pk=obj.pk)
+                    else:
+                        # Is it in the data blob?
+                        data = json.loads(obj.data)
+                        if key in data:
+                            if data[key] not in values:
+                                queryset = queryset.exclude(pk=obj.pk)
+
+        # Handle the 'near' query param
+
+        return queryset
+
+
+class OwnedResourceMixin (FilteredResourceMixin):
     """
     A view mixin that retrieves the username of the resource owner, as provided
     in the URL, and stores it on the request object.
-    
+
     Permissions
     -----------
     Owned resource views are available for reading to all users, and available

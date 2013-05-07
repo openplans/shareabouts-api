@@ -491,6 +491,24 @@ class TestPlaceListView (TestCase):
         self.assertIn('geometry', data['features'][0])
         self.assertIn('type', data['features'][0])
 
+    def test_GET_filtered_response(self):
+        request = self.factory.get(self.path + '?type=ATM')
+        response = self.view(request, **self.request_kwargs)
+        data = json.loads(response.rendered_content)
+
+        # Check that there are ATM features
+        self.assertEqual(response.status_code, 200)
+        self.assert_(all([feature['properties']['type'] == 'ATM' for feature in data['features']]))
+        self.assertEqual(len(data['features']), 1)
+
+        request = self.factory.get(self.path + '?type=FOO')
+        response = self.view(request, **self.request_kwargs)
+        data = json.loads(response.rendered_content)
+
+        # Check that the request was successful
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(data['features']), 0)
+
     def test_GET_response_with_private_data(self):
         #
         # View should not return private data normally
