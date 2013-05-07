@@ -9,16 +9,16 @@ urlpatterns = patterns('sa_api',
         lambda *a, **k: None,
         name='submission-list'),
 
-    url(r'^(?P<owner_username>[^/]+)/datasets/(?P<dataset_slug>[^/]+)/(?P<submission_set_name>[^/]+)$',
-        lambda *a, **k: None,
-        name='dataset-submission-list'),
-
     url(r'^(?P<owner_username>[^/]+)/datasets/(?P<dataset_slug>[^/]+)/places/(?P<place_id>\d+)$',
         views.PlaceInstanceView.as_view(),
         name='place-detail'),
     url(r'^(?P<owner_username>[^/]+)/datasets/(?P<dataset_slug>[^/]+)/places$',
         views.PlaceListView.as_view(),
         name='place-list'),
+
+    url(r'^(?P<owner_username>[^/]+)/datasets/(?P<dataset_slug>[^/]+)/(?P<submission_set_name>[^/]+)$',
+        lambda *a, **k: None,
+        name='dataset-submission-list'),
 
     url(r'^(?P<owner_username>[^/]+)/datasets/(?P<dataset_slug>[^/]+)$',
         lambda *a, **k: None,

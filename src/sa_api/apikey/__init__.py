@@ -1,1 +1,1 @@
-# a package
+from . import auth

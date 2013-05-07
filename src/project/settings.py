@@ -142,6 +142,7 @@ INSTALLED_APPS = (
 
     # 3rd-party reusaple apps
     'djangorestframework',
+    'rest_framework',
     'south',
     'django_nose',
     'debug_toolbar',

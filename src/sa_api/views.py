@@ -3,6 +3,7 @@ from django.shortcuts import get_object_or_404
 from rest_framework import (views, permissions, mixins, authentication,
                             generics, exceptions, status)
 from rest_framework.response import Response
+from rest_framework.renderers import BrowsableAPIRenderer
 from rest_framework.exceptions import APIException
 from . import models
 from . import serializers
@@ -205,7 +206,7 @@ class PlaceListView (OwnedResourceMixin, generics.ListCreateAPIView):
     model = models.Place
     serializer_class = serializers.PlaceSerializer
     pagination_serializer_class = serializers.FeatureCollectionSerializer
-    renderer_classes = (renderers.GeoJSONRenderer,)
+    renderer_classes = (renderers.GeoJSONRenderer,BrowsableAPIRenderer)
 
     def pre_save(self, obj):
         super(PlaceListView, self).pre_save(obj)
