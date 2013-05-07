@@ -1,3 +1,4 @@
+from django.contrib.gis.geos import GEOSGeometry, Point
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 from rest_framework import (views, permissions, mixins, authentication,
@@ -94,6 +95,10 @@ class IsLoggedInOwnerOrPublicDataOnly(permissions.BasePermission):
 #
 
 class FilteredResourceMixin (object):
+    """
+    A view mixin that filters queryset of ModelWithDataBlob results based on
+    the URL query parameters.
+    """
     def get_queryset(self):
         queryset = super(FilteredResourceMixin, self).get_queryset()
 
@@ -110,16 +115,31 @@ class FilteredResourceMixin (object):
                     else:
                         # Is it in the data blob?
                         data = json.loads(obj.data)
-                        if key in data:
-                            if data[key] not in values:
-                                queryset = queryset.exclude(pk=obj.pk)
-
-        # Handle the 'near' query param
+                        if key not in data or data[key] not in values:
+                            queryset = queryset.exclude(pk=obj.pk)
 
         return queryset
 
 
-class OwnedResourceMixin (FilteredResourceMixin):
+class LocatedResourceMixin (object):
+    """
+    A view mixin that orders queryset results by distance from a geometry, if
+    requested.
+    """
+    def get_queryset(self):
+        queryset = super(LocatedResourceMixin, self).get_queryset()
+
+        if NEAR_PARAM in self.request.GET:
+            try:
+                reference = utils.to_geom(self.request.GET[NEAR_PARAM])
+            except ValueError:
+                raise QueryError
+            queryset = queryset.distance(reference).order_by('distance')
+
+        return queryset
+
+
+class OwnedResourceMixin (object):
     """
     A view mixin that retrieves the username of the resource owner, as provided
     in the URL, and stores it on the request object.
@@ -185,7 +205,7 @@ class QueryError(exceptions.APIException):
 # --------------
 #
 
-class PlaceInstanceView (OwnedResourceMixin, generics.RetrieveUpdateDestroyAPIView):
+class PlaceInstanceView (LocatedResourceMixin, OwnedResourceMixin, FilteredResourceMixin, generics.RetrieveUpdateDestroyAPIView):
     model = models.Place
     serializer_class = serializers.PlaceSerializer
     renderer_classes = (renderers.GeoJSONRenderer,)
@@ -202,7 +222,7 @@ class PlaceInstanceView (OwnedResourceMixin, generics.RetrieveUpdateDestroyAPIVi
         return obj
 
 
-class PlaceListView (OwnedResourceMixin, generics.ListCreateAPIView):
+class PlaceListView (LocatedResourceMixin, OwnedResourceMixin, FilteredResourceMixin, generics.ListCreateAPIView):
     model = models.Place
     serializer_class = serializers.PlaceSerializer
     pagination_serializer_class = serializers.FeatureCollectionSerializer

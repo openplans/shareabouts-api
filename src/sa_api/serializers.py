@@ -240,6 +240,9 @@ class PlaceSerializer (DataBlobProcessor, serializers.HyperlinkedModelSerializer
             data['submission_sets'] = self.get_submission_set_summaries(obj)
         else:
             data['submission_sets'] = self.get_detailed_submission_sets(obj)
+        
+        if hasattr(obj, 'distance'):
+            data['distance'] = str(obj.distance)
 
         return data
 

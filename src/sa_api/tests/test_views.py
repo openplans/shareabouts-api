@@ -492,22 +492,52 @@ class TestPlaceListView (TestCase):
         self.assertIn('type', data['features'][0])
 
     def test_GET_filtered_response(self):
-        request = self.factory.get(self.path + '?type=ATM')
+        Place.objects.create(dataset=self.dataset, geometry='POINT(0 0)', data=json.dumps({'foo': 'bar', 'name': 1})),
+        Place.objects.create(dataset=self.dataset, geometry='POINT(1 0)', data=json.dumps({'foo': 'bar', 'name': 2})),
+        Place.objects.create(dataset=self.dataset, geometry='POINT(2 0)', data=json.dumps({'foo': 'baz', 'name': 3})),
+        Place.objects.create(dataset=self.dataset, geometry='POINT(3 0)', data=json.dumps({'name': 4})),
+        
+        request = self.factory.get(self.path + '?foo=bar')
         response = self.view(request, **self.request_kwargs)
         data = json.loads(response.rendered_content)
 
         # Check that there are ATM features
         self.assertEqual(response.status_code, 200)
-        self.assert_(all([feature['properties']['type'] == 'ATM' for feature in data['features']]))
-        self.assertEqual(len(data['features']), 1)
+        self.assert_(all([feature['properties'].get('foo') == 'bar' for feature in data['features']]))
+        self.assertEqual(len(data['features']), 2)
 
-        request = self.factory.get(self.path + '?type=FOO')
+        request = self.factory.get(self.path + '?foo=qux')
         response = self.view(request, **self.request_kwargs)
         data = json.loads(response.rendered_content)
 
         # Check that the request was successful
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(data['features']), 0)
+    
+        request = self.factory.get(self.path + '?nonexistent=foo')
+        response = self.view(request, **self.request_kwargs)
+        data = json.loads(response.rendered_content)
+
+        # Check that the request was successful
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(data['features']), 0)
+    
+    def test_GET_nearby_response(self):
+        Place.objects.create(dataset=self.dataset, geometry='POINT(0 0)', data=json.dumps({'new_place': 'yes', 'name': 1})),
+        Place.objects.create(dataset=self.dataset, geometry='POINT(10 0)', data=json.dumps({'new_place': 'yes', 'name': 2})),
+        Place.objects.create(dataset=self.dataset, geometry='POINT(20 0)', data=json.dumps({'new_place': 'yes', 'name': 3})),
+        Place.objects.create(dataset=self.dataset, geometry='POINT(30 0)', data=json.dumps({'new_place': 'yes', 'name': 4})),
+        
+        request = self.factory.get(self.path + '?near=0,19&new_place=yes')
+        response = self.view(request, **self.request_kwargs)
+        data = json.loads(response.rendered_content)
+
+        # Check that we have all the places, sorted by distance
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(data['features']), 4)
+        self.assertEqual([feature['properties']['name'] for feature in data['features']],
+                         [3,2,4,1])
+        self.assertIn('distance', data['features'][0]['properties'])
 
     def test_GET_response_with_private_data(self):
         #

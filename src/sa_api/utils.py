@@ -1,6 +1,5 @@
 import time
-from djangorestframework import status
-
+from django.contrib.gis.geos import GEOSGeometry, Point
 
 def isiterable(obj):
     try:
@@ -10,53 +9,24 @@ def isiterable(obj):
     else:
         return True
 
-
-def to_wkt(orig):
+def to_geom(string):
     """
-    Given a dict, convert 'lat' and 'lng' keys to a WKT POINT.
-    Given a string, return it.
+    Given a string, convert it to a geometry.
     """
-    if isinstance(orig, basestring):
-        # assume it's already WKT
-        return orig
-    if isiterable(orig) and 'lat' in orig and 'lng' in orig:
-        # Raises TypeError if orig isn't a mapping
-        return 'POINT ({lng} {lat})'.format(**orig)
-    else:
-        raise TypeError("to_wkt should take a mapping or string, not %s"
-                        % type(orig))
-
-
-def unpack_data_blob(data):
-    """
-    Input is a mapping.  Find a key named 'data', decode it as a JSON
-    blob, and merge the result into the mapping (in place; returns
-    None).
-    """
-    import ujson as json
-    from djangorestframework.response import ErrorResponse
-
-    # Don't let the CSRF middleware token muck up our data.
-    if 'csrfmiddlewaretoken' in data:
-        del data['csrfmiddlewaretoken']
-
-    # Handle the JSON data blob submitted through a form.
-    if 'data' in data:
+    try:
+        geom = GEOSGeometry(string)
+    except ValueError:
         try:
-            data_blob = json.loads(data['data'])
+            lat, lng = [float(coord.strip()) for coord in string.split(',')]
         except ValueError:
-            raise ErrorResponse(
-                status.HTTP_400_BAD_REQUEST,
-                {'detail': 'data blob must be a valid JSON object string'})
-
-        if not isinstance(data_blob, dict):
-            raise ErrorResponse(
-                status.HTTP_400_BAD_REQUEST,
-                {'detail': 'data blob must be a valid JSON object string'})
-
-        del data['data']
-        data.update(data_blob)
-
+            raise ValueError(
+                ('Argument must be a comma-separated pair of numbers or a '
+                 'string that the GEOSGeometry constructor can handle: %r')
+                % string
+            )
+        else:
+            geom = Point(lng, lat)
+    return geom
 
 def cached_method(f):
     @wraps(f)
