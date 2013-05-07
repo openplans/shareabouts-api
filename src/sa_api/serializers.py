@@ -14,6 +14,12 @@ from . import utils
 from . import cache
 
 
+###############################################################################
+#
+# Geo-related fields
+# ------------------
+#
+
 class GeometryField(serializers.WritableField):
     def to_native(self, obj):
         return json.loads(obj.json)
@@ -23,6 +29,12 @@ class GeometryField(serializers.WritableField):
             data = json.dumps(data)
         return GEOSGeometry(data)
 
+
+###############################################################################
+#
+# Shareabouts-specific fields
+# ---------------------------
+#
 
 class ShareaboutsFieldMixin (object):
 
@@ -118,6 +130,12 @@ class AttachmentSerializer (serializers.ModelSerializer):
         model = models.Attachment
 
 
+###############################################################################
+#
+# Serializer Mixins
+# -----------------
+#
+
 class DataBlobProcessor (object):
     """
     Like ModelSerializer, but automatically serializes/deserializes a
@@ -184,6 +202,12 @@ class DataBlobProcessor (object):
         data.update(blob_data)
         return data
 
+
+###############################################################################
+#
+# Serializers
+# -----------
+#
 
 class SubmissionSetSerializer (serializers.Serializer):
     length = serializers.IntegerField
