@@ -16,10 +16,12 @@ from . import cache
 
 class GeometryField(serializers.WritableField):
     def to_native(self, obj):
-        return obj.json
+        return json.loads(obj.json)
 
     def from_native(self, data):
-        return GEOSGeometry(json.dumps(data))
+        if not isinstance(data, basestring):
+            data = json.dumps(data)
+        return GEOSGeometry(data)
 
 
 class ShareaboutsFieldMixin (object):

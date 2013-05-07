@@ -95,6 +95,11 @@ class TestPlaceInstanceView (TestCase):
         # properties
         self.assertEqual(data['properties'].get('type'), 'ATM')
         self.assertEqual(data['properties'].get('name'), 'K-Mart')
+        
+        # Check that the geometry attribute looks right
+        self.assertIsInstance(data['geometry'], dict)
+        self.assertIn('type', data['geometry'])
+        self.assertIn('coordinates', data['geometry'])
 
         # Check that the appropriate attributes are in the properties
         self.assertIn('url', data['properties'])

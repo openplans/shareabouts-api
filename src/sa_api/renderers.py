@@ -36,11 +36,11 @@ class GeoJSONRenderer(JSONRenderer):
         geometry = data.pop(self.geometry_field)
 
         if isinstance(geometry, basestring):
-            geometry = GEOSGeometry(geometry)
+            geometry = json.loads(GEOSGeometry(geometry).json)
 
         feature = {
           'type': 'Feature',
-          'geometry': geometry.json,
+          'geometry': geometry,
           'properties': data,
         }
 
