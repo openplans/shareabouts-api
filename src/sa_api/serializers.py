@@ -12,6 +12,8 @@ from rest_framework.reverse import reverse
 from . import models
 from . import utils
 from . import cache
+from .params import (INCLUDE_INVISIBLE_PARAM, INCLUDE_PRIVATE_PARAM, 
+    INCLUDE_SUBMISSIONS_PARAM)
 
 
 ###############################################################################
@@ -207,7 +209,7 @@ class DataBlobProcessor (object):
         request = self.context['request']
 
         # Did the user not ask for private data? Remove it!
-        if 'include_private' not in request.GET:
+        if INCLUDE_PRIVATE_PARAM not in request.GET:
             for key in blob_data.keys():
                 if key.startswith('private'):
                     del blob_data[key]
@@ -250,7 +252,7 @@ class PlaceSerializer (DataBlobProcessor, serializers.HyperlinkedModelSerializer
         all_sets = models.SubmissionSet.objects.filter(place__dataset_id=dataset_id)
         
         request = self.context['request']
-        if 'include_invisible' not in request.GET:
+        if INCLUDE_INVISIBLE_PARAM not in request.GET:
             all_sets = all_sets.filter(children__visible=True)
         
         all_sets = all_sets.annotate(length=Count('children')).filter(length__gt=0)
@@ -273,7 +275,7 @@ class PlaceSerializer (DataBlobProcessor, serializers.HyperlinkedModelSerializer
             .filter(dataset_id=dataset_id).select_related('parent')
 
         request = self.context['request']
-        if 'include_invisible' not in request.GET:
+        if INCLUDE_INVISIBLE_PARAM not in request.GET:
             all_submissions = all_submissions.filter(visible=True)
 
         sets = groupby(all_submissions, lambda s: (s.place_id, s.set_name))
@@ -293,16 +295,16 @@ class PlaceSerializer (DataBlobProcessor, serializers.HyperlinkedModelSerializer
         """
         request = self.context['request']
         return {
-            'include_submissions': 'include_submissions' in request.GET,
-            'include_private': 'include_private' in request.GET,
-            'include_invisible': 'include_invisible' in request.GET,
+            'include_submissions': INCLUDE_SUBMISSIONS_PARAM in request.GET,
+            'include_private': INCLUDE_PRIVATE_PARAM in request.GET,
+            'include_invisible': INCLUDE_INVISIBLE_PARAM in request.GET,
         }
     
     def to_native(self, obj):
         data = super(PlaceSerializer, self).to_native(obj)
         request = self.context['request']
 
-        if 'include_submissions' not in request.GET:
+        if INCLUDE_SUBMISSIONS_PARAM not in request.GET:
             submission_sets_getter = self.get_submission_set_summaries
         else:
             submission_sets_getter = self.get_detailed_submission_sets

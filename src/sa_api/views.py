@@ -14,18 +14,13 @@ from . import serializers
 from . import utils
 from . import renderers
 from . import apikey
+from .params import (INCLUDE_INVISIBLE_PARAM, INCLUDE_PRIVATE_PARAM,
+    INCLUDE_SUBMISSIONS_PARAM, NEAR_PARAM, FORMAT_PARAM)
 import re
 import ujson as json
 import logging
 
 logger = logging.getLogger('sa_api.views')
-
-# Querystring Parameter Names
-INCLUDE_INVISIBLE_PARAM = 'include_invisible'
-INCLUDE_PRIVATE_PARAM = 'include_private'
-INCLUDE_SUBMISSIONS_PARAM = 'include_submissions'
-NEAR_PARAM = 'near'
-FORMAT_PARAM = 'format'
 
 ###############################################################################
 #
@@ -80,7 +75,7 @@ class IsLoggedInOwnerOrPublicDataOnly(permissions.BasePermission):
         'real' authentication, to avoid users abusing one API key to
         obtain others.
         """
-        private_data_flags = ['include_private', 'include_invisible']
+        private_data_flags = [INCLUDE_PRIVATE_PARAM, INCLUDE_INVISIBLE_PARAM]
         if not any([flag in request.GET for flag in private_data_flags]):
             return True
 
@@ -108,7 +103,8 @@ class FilteredResourceMixin (object):
         queryset = super(FilteredResourceMixin, self).get_queryset()
 
         # These filters will have been applied when constructing the queryset
-        special_filters = set([INCLUDE_SUBMISSIONS_PARAM, INCLUDE_PRIVATE_PARAM, INCLUDE_INVISIBLE_PARAM, NEAR_PARAM, FORMAT_PARAM])
+        special_filters = set([INCLUDE_SUBMISSIONS_PARAM, INCLUDE_PRIVATE_PARAM,
+            INCLUDE_INVISIBLE_PARAM, NEAR_PARAM, FORMAT_PARAM])
 
         for key, values in self.request.GET.iterlists():
             if key not in special_filters:
@@ -302,7 +298,7 @@ class PlaceInstanceView (CachedResourceMixin, LocatedResourceMixin, OwnedResourc
 
     **Request Parameters**:
 
-      * include_hidden *(only direct auth)*
+      * include_hidden *(only direct auth)* -- Show 
       * include_private *(only direct auth)*
       * include_submissions
 
@@ -325,7 +321,7 @@ class PlaceInstanceView (CachedResourceMixin, LocatedResourceMixin, OwnedResourc
 
     model = models.Place
     serializer_class = serializers.PlaceSerializer
-    renderer_classes = (renderers.GeoJSONRenderer,) + OwnedResourceMixin.renderer_classes
+    renderer_classes = (renderers.GeoJSONRenderer,) + OwnedResourceMixin.renderer_classes[1:]
 
     def get_object(self, queryset=None):
         place_id = self.kwargs['place_id']
@@ -333,7 +329,7 @@ class PlaceInstanceView (CachedResourceMixin, LocatedResourceMixin, OwnedResourc
         self.verify_object_or_404(obj)
 
         # TODO: This should go in a verification step.
-        if not obj.visible and 'include_invisible' not in self.request.GET:
+        if not obj.visible and INCLUDE_INVISIBLE_PARAM not in self.request.GET:
             raise QueryError
 
         return obj
@@ -341,7 +337,9 @@ class PlaceInstanceView (CachedResourceMixin, LocatedResourceMixin, OwnedResourc
 
 class PlaceListView (CachedResourceMixin, LocatedResourceMixin, OwnedResourceMixin, FilteredResourceMixin, generics.ListCreateAPIView):
     """
-    ### GET /api/v2/*:owner*/datasets/*:slug*/places/
+    
+    GET
+    ---
 
     Get all the places in a dataset
 
@@ -354,7 +352,8 @@ class PlaceListView (CachedResourceMixin, LocatedResourceMixin, OwnedResourceMix
     **Authentication**: Basic, session, or key auth *(optional)*
 
 
-    ### POST /api/v2/*:owner*/datasets/*:slug*/places/
+    POST
+    ----
 
     Create a place
 
@@ -364,7 +363,7 @@ class PlaceListView (CachedResourceMixin, LocatedResourceMixin, OwnedResourceMix
     model = models.Place
     serializer_class = serializers.PlaceSerializer
     pagination_serializer_class = serializers.FeatureCollectionSerializer
-    renderer_classes = (renderers.GeoJSONRenderer,) + OwnedResourceMixin.renderer_classes
+    renderer_classes = (renderers.GeoJSONRenderer,) + OwnedResourceMixin.renderer_classes[1:]
 
     def pre_save(self, obj):
         super(PlaceListView, self).pre_save(obj)
@@ -376,7 +375,7 @@ class PlaceListView (CachedResourceMixin, LocatedResourceMixin, OwnedResourceMix
 
         # If the user is not allowed to request invisible data then we won't
         # be here in the first place.
-        if 'include_invisible' not in self.request.GET:
+        if INCLUDE_INVISIBLE_PARAM not in self.request.GET:
             queryset = queryset.filter(visible=True)
 
         return queryset.filter(dataset=dataset)
