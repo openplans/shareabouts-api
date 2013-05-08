@@ -232,8 +232,6 @@ class PlaceSerializer (DataBlobProcessor, serializers.HyperlinkedModelSerializer
     def get_submission_set_summaries(self, obj):
         summaries = {}
 
-        # TODO: Only count visible children, if include_invisible is absent.
-
         sets = models.SubmissionSet.objects.filter(place=obj)
         
         request = self.context['request']
