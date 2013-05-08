@@ -13,6 +13,7 @@ django-storages
 
 # REST API
 djangorestframework>=2.2
+djangorestframework-csv>=1.1
 markdown
 python-dateutil
 ujson

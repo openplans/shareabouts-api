@@ -2,7 +2,9 @@ from django.test import TestCase
 from django.test.client import RequestFactory
 from django.core.urlresolvers import reverse
 import base64
+import csv
 import json
+from StringIO import StringIO
 from ..models import User, DataSet, Place, SubmissionSet, Submission
 from ..apikey.models import ApiKey
 from ..apikey.auth import KEY_HEADER
@@ -498,6 +500,28 @@ class TestPlaceListView (TestCase):
         self.assertIn('properties', data['features'][0])
         self.assertIn('geometry', data['features'][0])
         self.assertIn('type', data['features'][0])
+        
+        self.assertEqual(data['features'][0]['properties']['url'],
+            'http://testserver/api/v2/%s/datasets/%s/places/%s' %
+            (self.owner.username, self.dataset.slug, self.place.id))
+
+    def test_GET_csv_response(self):
+        request = self.factory.get(self.path + '?format=csv')
+        response = self.view(request, **self.request_kwargs)
+        
+        rows = list(csv.reader(StringIO(response.rendered_content)))
+        headers = rows[0]
+
+        # Check that the request was successful
+        self.assertEqual(response.status_code, 200, response.render())
+
+        # Check that it's got good headers
+        self.assertIn('dataset', headers)
+        self.assertIn('geometry', headers)
+        self.assertIn('name', headers)
+
+        # Check that we have the right number of rows
+        self.assertEqual(len(rows), 2)
 
     def test_GET_filtered_response(self):
         Place.objects.create(dataset=self.dataset, geometry='POINT(0 0)', data=json.dumps({'foo': 'bar', 'name': 1})),

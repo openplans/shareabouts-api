@@ -1,10 +1,11 @@
+from django.conf import settings
 from django.contrib.gis.geos import GEOSGeometry, Point
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 from rest_framework import (views, permissions, mixins, authentication,
                             generics, exceptions, status)
 from rest_framework.response import Response
-from rest_framework.renderers import BrowsableAPIRenderer
+from rest_framework.renderers import JSONRenderer, BrowsableAPIRenderer
 from rest_framework.exceptions import APIException
 from . import models
 from . import serializers
@@ -21,6 +22,7 @@ INCLUDE_INVISIBLE_PARAM = 'include_invisible'
 INCLUDE_PRIVATE_PARAM = 'include_private'
 INCLUDE_SUBMISSIONS_PARAM = 'include_submissions'
 NEAR_PARAM = 'near'
+FORMAT_PARAM = 'format'
 
 ###############################################################################
 #
@@ -103,7 +105,7 @@ class FilteredResourceMixin (object):
         queryset = super(FilteredResourceMixin, self).get_queryset()
 
         # These filters will have been applied when constructing the queryset
-        special_filters = set([INCLUDE_SUBMISSIONS_PARAM, INCLUDE_PRIVATE_PARAM, INCLUDE_INVISIBLE_PARAM, NEAR_PARAM])
+        special_filters = set([INCLUDE_SUBMISSIONS_PARAM, INCLUDE_PRIVATE_PARAM, INCLUDE_INVISIBLE_PARAM, NEAR_PARAM, FORMAT_PARAM])
 
         for key, values in self.request.GET.iterlists():
             if key not in special_filters:
@@ -151,6 +153,7 @@ class OwnedResourceMixin (object):
     logged in directly is allowed to read invisible resources or private data
     attributes on visible resources.
     """
+    renderer_classes = (JSONRenderer, BrowsableAPIRenderer, renderers.PaginatedCSVRenderer)
     permission_classes = (IsOwnerOrReadOnly, IsLoggedInOwnerOrPublicDataOnly)
     authentication_classes = (authentication.BasicAuthentication, authentication.SessionAuthentication, apikey.auth.ApiKeyAuthentication)
 
@@ -208,7 +211,7 @@ class QueryError(exceptions.APIException):
 class PlaceInstanceView (LocatedResourceMixin, OwnedResourceMixin, FilteredResourceMixin, generics.RetrieveUpdateDestroyAPIView):
     model = models.Place
     serializer_class = serializers.PlaceSerializer
-    renderer_classes = (renderers.GeoJSONRenderer,)
+    renderer_classes = (renderers.GeoJSONRenderer,) + OwnedResourceMixin.renderer_classes
 
     def get_object(self, queryset=None):
         place_id = self.kwargs['place_id']
@@ -226,7 +229,7 @@ class PlaceListView (LocatedResourceMixin, OwnedResourceMixin, FilteredResourceM
     model = models.Place
     serializer_class = serializers.PlaceSerializer
     pagination_serializer_class = serializers.FeatureCollectionSerializer
-    renderer_classes = (renderers.GeoJSONRenderer,BrowsableAPIRenderer)
+    renderer_classes = (renderers.GeoJSONRenderer,) + OwnedResourceMixin.renderer_classes
 
     def pre_save(self, obj):
         super(PlaceListView, self).pre_save(obj)

@@ -1,6 +1,14 @@
 import json
 from rest_framework.renderers import JSONRenderer
+from rest_framework_csv.renderers import CSVRenderer
 from django.contrib.gis.geos import GEOSGeometry
+
+
+class PaginatedCSVRenderer (CSVRenderer):
+    def render(self, data, media_type=None, renderer_context=None):
+        if not isinstance(data, list):
+            data = data.get('results') or data.get('features')
+        return super(PaginatedCSVRenderer, self).render(data, media_type, renderer_context)
 
 
 class GeoJSONRenderer(JSONRenderer):

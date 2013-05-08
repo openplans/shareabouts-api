@@ -21,8 +21,21 @@ from . import cache
 #
 
 class GeometryField(serializers.WritableField):
+    def __init__(self, format='dict', *args, **kwargs):
+        self.format = format
+        
+        if self.format not in ('json', 'wkt'):
+            raise ValueError('Invalid format: %s' % self.format)
+        
+        super(GeometryField, self).__init__(*args, **kwargs)
+    
     def to_native(self, obj):
-        return json.loads(obj.json)
+        if self.format == 'json':
+            return obj.json
+        elif self.format == 'wkt':
+            return obj.wkt
+        else:
+            raise ValueError('Cannot output as %s' % self.format)
 
     def from_native(self, data):
         if not isinstance(data, basestring):
@@ -225,7 +238,7 @@ class SubmissionSetSummarySerializer (serializers.HyperlinkedModelSerializer):
 
 class PlaceSerializer (DataBlobProcessor, serializers.HyperlinkedModelSerializer):
     url = PlaceIdentityField()
-    geometry = GeometryField()
+    geometry = GeometryField(format='wkt')
     dataset = DataSetRelatedField()
     attachments = AttachmentSerializer(read_only=True)
 
