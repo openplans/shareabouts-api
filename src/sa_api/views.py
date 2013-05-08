@@ -228,7 +228,7 @@ class CachedResourceMixin (object):
             handler_name = self.method.lower()
             def cached_handler(*args, **kwargs):
                 return cached_response
-            
+
             # Patch the HTTP method
             with patch.object(self, handler_name, new_callable=cached_handler):
                 response = super(CachedResourceMixin, self).dispatch(request, *args, **kwargs)
@@ -298,6 +298,33 @@ class QueryError(exceptions.APIException):
 #
 
 class PlaceInstanceView (LocatedResourceMixin, OwnedResourceMixin, FilteredResourceMixin, generics.RetrieveUpdateDestroyAPIView):
+    """
+    ### GET /api/v2/*:owner*/datasets/*:slug*/places/*:placeid*/
+
+    Get a specific place
+
+    **Request Parameters**:
+
+      * include_hidden *(only direct auth)*
+      * include_private *(only direct auth)*
+      * include_submissions
+
+    **Authentication**: Basic, session, or key auth *(optional)*
+
+
+    ### PUT /api/v2/*:owner*/datasets/*:slug*/places/*:placeid*/
+
+    Update a place
+
+    **Authentication**: Basic, session, or key auth *(required)*
+
+
+    ### DELETE /api/v2/*:owner*/datasets/*:slug*/places/*:placeid*/
+
+    Delete a place
+
+    **Authentication**: Basic, session, or key auth *(required)*
+    """
     model = models.Place
     serializer_class = serializers.PlaceSerializer
     renderer_classes = (renderers.GeoJSONRenderer,) + OwnedResourceMixin.renderer_classes
@@ -315,6 +342,27 @@ class PlaceInstanceView (LocatedResourceMixin, OwnedResourceMixin, FilteredResou
 
 
 class PlaceListView (LocatedResourceMixin, OwnedResourceMixin, FilteredResourceMixin, generics.ListCreateAPIView):
+    """
+    ### GET /api/v2/*:owner*/datasets/*:slug*/places/
+
+    Get all the places in a dataset
+
+    **Request Parameters**:
+
+      * include_hidden *(only direct auth)*
+      * include_private *(only direct auth)*
+      * include_submissions
+
+    **Authentication**: Basic, session, or key auth *(optional)*
+
+
+    ### POST /api/v2/*:owner*/datasets/*:slug*/places/
+
+    Create a place
+
+    **Authentication**: Basic, session, or key auth *(required)*
+    """
+
     model = models.Place
     serializer_class = serializers.PlaceSerializer
     pagination_serializer_class = serializers.FeatureCollectionSerializer
@@ -337,6 +385,18 @@ class PlaceListView (LocatedResourceMixin, OwnedResourceMixin, FilteredResourceM
 
 
 class SubmissionInstanceView (OwnedResourceMixin, generics.RetrieveUpdateDestroyAPIView):
+    """
+    ### GET /api/v2/*:owner*/datasets/*:slug*/places/*:place_id*/*:submission_set_name*/*:submission_id*/
+
+    Get a particular submission
+
+    **Request Parameters**:
+
+      * *include_invisible* *(only direct auth)*
+      * *include_private_data* *(only direct auth)*
+
+    **Authentication**: Basic, session, or key auth *(optional)*
+    """
     model = models.Submission
     serializer_class = serializers.SubmissionSerializer
 
