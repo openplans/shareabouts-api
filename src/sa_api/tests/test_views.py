@@ -112,6 +112,9 @@ class TestPlaceInstanceView (TestCase):
         self.assertIn('comments', data['properties']['submission_sets'].keys())
         self.assertIn('likes', data['properties']['submission_sets'].keys())
         self.assertNotIn('applause', data['properties']['submission_sets'].keys())
+        
+        # Check that only the visible comments were counted
+        self.assertEqual(data['properties']['submission_sets']['comments']['length'], 2)
 
         # --------------------------------------------------
 

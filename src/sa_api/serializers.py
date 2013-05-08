@@ -234,7 +234,14 @@ class PlaceSerializer (DataBlobProcessor, serializers.HyperlinkedModelSerializer
 
         # TODO: Only count visible children, if include_invisible is absent.
 
-        sets = models.SubmissionSet.objects.filter(place=obj).annotate(length=Count('children'))
+        sets = models.SubmissionSet.objects.filter(place=obj)
+        
+        request = self.context['request']
+        if 'include_invisible' not in request.GET:
+            sets = sets.filter(children__visible=True)
+        
+        sets = sets.annotate(length=Count('children'))
+        
         for submission_set in sets:
             if submission_set.length > 0:
                 serializer = SubmissionSetSummarySerializer(submission_set, context=self.context)
