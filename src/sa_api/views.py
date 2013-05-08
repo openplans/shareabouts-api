@@ -383,6 +383,11 @@ class PlaceListView (CachedResourceMixin, LocatedResourceMixin, OwnedResourceMix
         [GeoJSON](http://www.geojson.org/geojson-spec.html) or
         [WKT](http://en.wikipedia.org/wiki/Well-known_text), or as a
         comma-separated latitude and longitude, if it is a point.
+      
+      * `<attr>=<value>`
+      
+        Filter the place list to only return the places where the attribute is
+        equal to the given value.
 
     POST
     ----
