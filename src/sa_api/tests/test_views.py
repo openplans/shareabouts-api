@@ -1,6 +1,7 @@
 from django.test import TestCase
 from django.test.client import RequestFactory
 from django.core.urlresolvers import reverse
+from django.core.cache import cache
 import base64
 import csv
 import json
@@ -13,6 +14,8 @@ from ..views import PlaceInstanceView, PlaceListView, SubmissionInstanceView
 
 class TestPlaceInstanceView (TestCase):
     def setUp(self):
+        cache.clear()
+
         self.owner = User.objects.create_user(username='aaron', password='123', email='abc@example.com')
         self.dataset = DataSet.objects.create(slug='ds', owner=self.owner)
         self.place = Place.objects.create(
@@ -55,13 +58,13 @@ class TestPlaceInstanceView (TestCase):
         self.request_kwargs = {
           'owner_username': self.owner.username,
           'dataset_slug': self.dataset.slug,
-          'place_id': self.place.id
+          'place_id': str(self.place.id)
         }
 
         self.invisible_request_kwargs = {
           'owner_username': self.owner.username,
           'dataset_slug': self.dataset.slug,
-          'place_id': self.invisible_place.id
+          'place_id': str(self.invisible_place.id)
         }
 
         self.factory = RequestFactory()
@@ -76,6 +79,8 @@ class TestPlaceInstanceView (TestCase):
         SubmissionSet.objects.all().delete()
         Submission.objects.all().delete()
         ApiKey.objects.all().delete()
+        
+        cache.clear()
 
     def test_GET_response(self):
         request = self.factory.get(self.path)
@@ -108,6 +113,11 @@ class TestPlaceInstanceView (TestCase):
         self.assertIn('dataset', data['properties'])
         self.assertIn('attachments', data['properties'])
         self.assertIn('submission_sets', data['properties'])
+        
+        # Check that the URL is right
+        self.assertEqual(data['properties']['url'], 
+          'http://testserver/api/v2/%s/datasets/%s/places/%s' % 
+          (self.owner.username, self.dataset.slug, self.place.id))
 
         # Check that the submission sets look right
         self.assertEqual(len(data['properties']['submission_sets']), 2)
@@ -351,6 +361,20 @@ class TestPlaceInstanceView (TestCase):
 
         self.assertEqual(response.status_code, 404)
 
+    def test_GET_from_cache(self):
+        path = reverse('place-detail', kwargs=self.request_kwargs)
+        request = self.factory.get(path)
+        response = self.view(request, **self.request_kwargs)
+
+        self.assertEqual(response.status_code, 200)
+
+        # TODO: Test that this performs the minimum number of queries
+        path = reverse('place-detail', kwargs=self.request_kwargs)
+        request = self.factory.get(path)
+        response = self.view(request, **self.request_kwargs)
+
+        self.assertEqual(response.status_code, 200)
+
     def test_DELETE_response(self):
         #
         # View should 401 when trying to delete when not authenticated
@@ -416,6 +440,8 @@ class TestPlaceInstanceView (TestCase):
 
 class TestPlaceListView (TestCase):
     def setUp(self):
+        cache.clear()
+
         self.owner = User.objects.create_user(username='aaron', password='123', email='abc@example.com')
         self.dataset = DataSet.objects.create(slug='ds', owner=self.owner)
         self.place = Place.objects.create(
@@ -474,6 +500,8 @@ class TestPlaceListView (TestCase):
         SubmissionSet.objects.all().delete()
         Submission.objects.all().delete()
         ApiKey.objects.all().delete()
+
+        cache.clear()
 
     def test_GET_response(self):
         request = self.factory.get(self.path)
@@ -820,6 +848,8 @@ class TestPlaceListView (TestCase):
 
 class TestSubmissionInstanceView (TestCase):
     def setUp(self):
+        cache.clear()
+
         self.owner = User.objects.create(username='aaron', password='123')
         self.dataset = DataSet.objects.create(slug='ds', owner=self.owner)
         self.place = Place.objects.create(
@@ -865,6 +895,8 @@ class TestSubmissionInstanceView (TestCase):
         SubmissionSet.objects.all().delete()
         Submission.objects.all().delete()
         ApiKey.objects.all().delete()
+
+        cache.clear()
 
     def test_GET_response(self):
         request = self.factory.get(self.path)

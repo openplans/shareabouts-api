@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.contrib.gis.geos import GEOSGeometry, Point
+from django.core.cache import cache
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 from rest_framework import (views, permissions, mixins, authentication,
@@ -7,11 +8,13 @@ from rest_framework import (views, permissions, mixins, authentication,
 from rest_framework.response import Response
 from rest_framework.renderers import JSONRenderer, BrowsableAPIRenderer
 from rest_framework.exceptions import APIException
+from mock import patch
 from . import models
 from . import serializers
 from . import utils
 from . import renderers
 from . import apikey
+import re
 import ujson as json
 import logging
 
@@ -181,7 +184,7 @@ class OwnedResourceMixin (object):
         # We do not want to risk assuming a user owns a place, for example, just
         # because their username is in the URL.
         for attr in self.kwargs:
-            if attr in params and self.kwargs[attr] != params[attr]:
+            if attr in params and unicode(self.kwargs[attr]) != unicode(params[attr]):
                 return False
 
         return True
@@ -189,6 +192,92 @@ class OwnedResourceMixin (object):
     def verify_object_or_404(self, obj):
         if not self.is_verified_object(obj):
             raise Http404
+
+
+class CachedResourceMixin (object):
+    @property
+    def cache_prefix(self):
+        return self.request.path
+
+    def get_cache_prefix(self):
+        return self.cache_prefix
+
+    def get_cache_metakey(self):
+        prefix = self.cache_prefix
+        return prefix + '_keys'
+
+    def dispatch(self, request, *args, **kwargs):
+        # Only do the cache for GET, OPTIONS, or HEAD method.
+        if request.method.upper() not in permissions.SAFE_METHODS:
+            return super(CachedResourceMixin, self).dispatch(request, *args, **kwargs)
+
+        # Check whether the response data is in the cache.
+        key = self.get_cache_key(request, *args, **kwargs)
+        response_data = cache.get(key) or None
+
+        # Also check whether the request cache key is managed in the cache.
+        # This is important, because if it's not managed, then we'll never
+        # know when to invalidate it. If it's not managed we should just
+        # assume that it's invalid.
+        metakey = self.get_cache_metakey()
+        keyset = cache.get(metakey) or set()
+
+        if (response_data is not None) and (key in keyset):
+            cached_response = self.respond_from_cache(response_data)
+
+            handler_name = self.method.lower()
+            def cached_handler(*args, **kwargs):
+                return cached_response
+            
+            # Patch the HTTP method
+            with patch.object(self, handler_name, new_callable=cached_handler):
+                response = super(CachedResourceMixin, self).dispatch(request, *args, **kwargs)
+        else:
+            response = super(CachedResourceMixin, self).dispatch(request, *args, **kwargs)
+
+            # Only cache on OK resposne
+            if response.status_code == 200:
+                self.cache_response(key, response)
+
+        # Disable client-side caching. Cause IE wrongly assumes that it should
+        # cache.
+        response['Cache-Control'] = 'no-cache'
+        return response
+
+    def get_cache_key(self, request, *args, **kwargs):
+        querystring = request.META.get('QUERY_STRING', '')
+        contenttype = request.META.get('HTTP_ACCEPT', '')
+
+        # TODO: Eliminate the jQuery cache busting parameter for now. Get
+        # rid of this after the old API has been deprecated.
+        cache_buster_pattern = re.compile(r'&?_=\d+')
+        querystring = re.sub(cache_buster_pattern, '', querystring)
+
+        return ':'.join([self.cache_prefix, contenttype, querystring])
+
+    def respond_from_cache(self, cached_data):
+        # Given some cached data, construct a response.
+        content, status, headers = cached_data
+        response = HttpResponse(content,
+                                status=status)
+        for key, value in headers:
+            response[key] = value
+
+        return response
+
+    def cache_response(self, key, response):
+        content = response.rendered_content
+        status = response.status_code
+        headers = response.items()
+
+        # Cache enough info to recreate the response.
+        cache.set(key, (content, status, headers), settings.API_CACHE_TIMEOUT)
+
+        # Also, add the key to the set of pages cached from this view.
+        meta_key = self.cache_prefix + '_keys'
+        keys = cache.get(meta_key) or set()
+        keys.add(key)
+        cache.set(meta_key, keys, settings.API_CACHE_TIMEOUT)
 
 
 ###############################################################################
