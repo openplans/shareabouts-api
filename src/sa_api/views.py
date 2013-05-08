@@ -185,7 +185,10 @@ class OwnedResourceMixin (object):
 
         return True
 
-    def verify_object_or_404(self, obj):
+    def verify_object(self, obj):
+        if not obj.visible and INCLUDE_INVISIBLE_PARAM not in self.request.GET:
+            raise QueryError
+
         if not self.is_verified_object(obj):
             raise Http404
 
@@ -340,12 +343,7 @@ class PlaceInstanceView (CachedResourceMixin, LocatedResourceMixin, OwnedResourc
     def get_object(self, queryset=None):
         place_id = self.kwargs['place_id']
         obj = get_object_or_404(self.model, pk=place_id)
-        self.verify_object_or_404(obj)
-
-        # TODO: This should go in a verification step.
-        if not obj.visible and INCLUDE_INVISIBLE_PARAM not in self.request.GET:
-            raise QueryError
-
+        self.verify_object(obj)
         return obj
 
 
@@ -447,7 +445,7 @@ class SubmissionInstanceView (CachedResourceMixin, OwnedResourceMixin, generics.
     def get_object(self, queryset=None):
         submission_id = self.kwargs['submission_id']
         obj = get_object_or_404(self.model, pk=submission_id)
-        self.verify_object_or_404(obj)
+        self.verify_object(obj)
         return obj
 
 
