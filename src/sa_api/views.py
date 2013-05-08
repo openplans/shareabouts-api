@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.contrib.gis.geos import GEOSGeometry, Point
 from django.core.cache import cache
-from django.http import Http404
+from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404
 from rest_framework import (views, permissions, mixins, authentication,
                             generics, exceptions, status)
@@ -224,13 +224,12 @@ class CachedResourceMixin (object):
 
         if (response_data is not None) and (key in keyset):
             cached_response = self.respond_from_cache(response_data)
-
-            handler_name = self.method.lower()
+            handler_name = request.method.lower()
             def cached_handler(*args, **kwargs):
                 return cached_response
 
             # Patch the HTTP method
-            with patch.object(self, handler_name, new_callable=cached_handler):
+            with patch.object(self, handler_name, new=cached_handler):
                 response = super(CachedResourceMixin, self).dispatch(request, *args, **kwargs)
         else:
             response = super(CachedResourceMixin, self).dispatch(request, *args, **kwargs)
@@ -247,7 +246,7 @@ class CachedResourceMixin (object):
     def get_cache_key(self, request, *args, **kwargs):
         querystring = request.META.get('QUERY_STRING', '')
         contenttype = request.META.get('HTTP_ACCEPT', '')
-
+        
         # TODO: Eliminate the jQuery cache busting parameter for now. Get
         # rid of this after the old API has been deprecated.
         cache_buster_pattern = re.compile(r'&?_=\d+')
@@ -258,26 +257,24 @@ class CachedResourceMixin (object):
     def respond_from_cache(self, cached_data):
         # Given some cached data, construct a response.
         content, status, headers = cached_data
-        response = HttpResponse(content,
-                                status=status)
-        for key, value in headers:
-            response[key] = value
-
+        response = Response(content, status=status, headers=dict(headers))
         return response
 
     def cache_response(self, key, response):
-        content = response.rendered_content
+        data = response.data
         status = response.status_code
         headers = response.items()
 
         # Cache enough info to recreate the response.
-        cache.set(key, (content, status, headers), settings.API_CACHE_TIMEOUT)
+        cache.set(key, (data, status, headers), settings.API_CACHE_TIMEOUT)
 
         # Also, add the key to the set of pages cached from this view.
         meta_key = self.cache_prefix + '_keys'
         keys = cache.get(meta_key) or set()
         keys.add(key)
         cache.set(meta_key, keys, settings.API_CACHE_TIMEOUT)
+        
+        return response
 
 
 ###############################################################################
@@ -297,7 +294,7 @@ class QueryError(exceptions.APIException):
 # --------------
 #
 
-class PlaceInstanceView (LocatedResourceMixin, OwnedResourceMixin, FilteredResourceMixin, generics.RetrieveUpdateDestroyAPIView):
+class PlaceInstanceView (CachedResourceMixin, LocatedResourceMixin, OwnedResourceMixin, FilteredResourceMixin, generics.RetrieveUpdateDestroyAPIView):
     """
     ### GET /api/v2/*:owner*/datasets/*:slug*/places/*:placeid*/
 
@@ -325,6 +322,7 @@ class PlaceInstanceView (LocatedResourceMixin, OwnedResourceMixin, FilteredResou
 
     **Authentication**: Basic, session, or key auth *(required)*
     """
+
     model = models.Place
     serializer_class = serializers.PlaceSerializer
     renderer_classes = (renderers.GeoJSONRenderer,) + OwnedResourceMixin.renderer_classes
@@ -341,7 +339,7 @@ class PlaceInstanceView (LocatedResourceMixin, OwnedResourceMixin, FilteredResou
         return obj
 
 
-class PlaceListView (LocatedResourceMixin, OwnedResourceMixin, FilteredResourceMixin, generics.ListCreateAPIView):
+class PlaceListView (CachedResourceMixin, LocatedResourceMixin, OwnedResourceMixin, FilteredResourceMixin, generics.ListCreateAPIView):
     """
     ### GET /api/v2/*:owner*/datasets/*:slug*/places/
 
@@ -384,7 +382,7 @@ class PlaceListView (LocatedResourceMixin, OwnedResourceMixin, FilteredResourceM
         return queryset.filter(dataset=dataset)
 
 
-class SubmissionInstanceView (OwnedResourceMixin, generics.RetrieveUpdateDestroyAPIView):
+class SubmissionInstanceView (CachedResourceMixin, OwnedResourceMixin, generics.RetrieveUpdateDestroyAPIView):
     """
     ### GET /api/v2/*:owner*/datasets/*:slug*/places/*:place_id*/*:submission_set_name*/*:submission_id*/
 
@@ -397,6 +395,7 @@ class SubmissionInstanceView (OwnedResourceMixin, generics.RetrieveUpdateDestroy
 
     **Authentication**: Basic, session, or key auth *(optional)*
     """
+
     model = models.Submission
     serializer_class = serializers.SubmissionSerializer
 

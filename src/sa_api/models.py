@@ -131,6 +131,18 @@ class Submission (SubmittedThing):
     Used for representing eg. comments, votes, ...
     """
     parent = models.ForeignKey(SubmissionSet, related_name='children')
+    
+    @property
+    def place(self):
+        return self.parent.place
+    
+    @property
+    def place_id(self):
+        return self.parent.place_id
+    
+    @property
+    def set_name(self):
+        return self.parent.name
 
     cache = cache.SubmissionCache()
 

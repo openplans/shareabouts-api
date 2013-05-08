@@ -242,48 +242,80 @@ class PlaceSerializer (DataBlobProcessor, serializers.HyperlinkedModelSerializer
     dataset = DataSetRelatedField()
     attachments = AttachmentSerializer(read_only=True)
 
-    def get_submission_set_summaries(self, obj):
-        summaries = {}
-
-        sets = models.SubmissionSet.objects.filter(place=obj)
+    def get_submission_set_summaries(self, dataset_id):
+        """
+        Get a mapping from place id to a submission set summary dictionary.
+        Get this for the entire dataset at once.
+        """
+        all_sets = models.SubmissionSet.objects.filter(place__dataset_id=dataset_id)
         
         request = self.context['request']
         if 'include_invisible' not in request.GET:
-            sets = sets.filter(children__visible=True)
+            all_sets = all_sets.filter(children__visible=True)
         
-        sets = sets.annotate(length=Count('children'))
+        all_sets = all_sets.annotate(length=Count('children')).filter(length__gt=0)
+        all_sets = groupby(all_sets, lambda s: s.place_id)
         
-        for submission_set in sets:
-            if submission_set.length > 0:
+        summaries = {}
+        for place_id, submission_sets in all_sets:
+            summaries[place_id] = {}
+            for submission_set in submission_sets:
                 serializer = SubmissionSetSummarySerializer(submission_set, context=self.context)
-                summaries[submission_set.name] = serializer.data
+                summaries[place_id][submission_set.name] = serializer.data
         return summaries
 
-    def get_detailed_submission_sets(self, obj):
-        all_submissions = models.Submission.objects.filter(parent__place=obj)
+    def get_detailed_submission_sets(self, dataset_id):
+        """
+        Get a mapping from place id to a detiled submission set dictionary.
+        Get this for the entire dataset at once.
+        """
+        all_submissions = models.Submission.objects\
+            .filter(dataset_id=dataset_id).select_related('parent')
 
         request = self.context['request']
         if 'include_invisible' not in request.GET:
             all_submissions = all_submissions.filter(visible=True)
 
-        sets = groupby(all_submissions,
-                       lambda submission: submission.parent.name)
+        sets = groupby(all_submissions, lambda s: (s.place_id, s.set_name))
+
         details = {}
-        for name, submissions in sets:
+        for (place_id, set_name), submissions in sets:
             serializer = SubmissionSerializer(submissions, context=self.context)
-            details[name] = serializer.data
+            if place_id not in details: details[place_id] = {}
+            details[place_id][set_name] = serializer.data
         return details
 
+    def get_submission_set_flags(self):
+        """
+        Get a dictionary of flags that determine the contents of the place's
+        submission sets. These flags are used primarily to determine the cache
+        key for the submission sets structure.
+        """
+        request = self.context['request']
+        return {
+            'include_submissions': 'include_submissions' in request.GET,
+            'include_private': 'include_private' in request.GET,
+            'include_invisible': 'include_invisible' in request.GET,
+        }
+    
     def to_native(self, obj):
         data = super(PlaceSerializer, self).to_native(obj)
         request = self.context['request']
 
-        # TODO: This should be retrieved through the get_submission_sets
-        #       method (self.model.cache.get_submission_sets).
         if 'include_submissions' not in request.GET:
-            data['submission_sets'] = self.get_submission_set_summaries(obj)
+            submission_sets_getter = self.get_submission_set_summaries
         else:
-            data['submission_sets'] = self.get_detailed_submission_sets(obj)
+            submission_sets_getter = self.get_detailed_submission_sets
+
+        # Get the submission sets related to this dataset, mapped by place id.
+        # This is done to decrease the number of queries we have to run, 
+        # especially when getting the list of places in the dataset.
+        submission_sets_map = models.Place.cache.get_submission_sets(
+            obj.dataset_id,
+            submission_sets_getter,
+            **self.get_submission_set_flags()
+        )
+        data['submission_sets'] = submission_sets_map.get(obj.id, {})
         
         if hasattr(obj, 'distance'):
             data['distance'] = str(obj.distance)
