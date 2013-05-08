@@ -292,31 +292,45 @@ class QueryError(exceptions.APIException):
 
 class PlaceInstanceView (CachedResourceMixin, LocatedResourceMixin, OwnedResourceMixin, FilteredResourceMixin, generics.RetrieveUpdateDestroyAPIView):
     """
-    ### GET /api/v2/*:owner*/datasets/*:slug*/places/*:placeid*/
-
+    GET
+    ---
     Get a specific place
-
-    **Request Parameters**:
-
-      * include_hidden *(only direct auth)* -- Show 
-      * include_private *(only direct auth)*
-      * include_submissions
 
     **Authentication**: Basic, session, or key auth *(optional)*
 
+    **Request Parameters**:
 
-    ### PUT /api/v2/*:owner*/datasets/*:slug*/places/*:placeid*/
+      * `include_submissions`
+        
+        List the submissions in each submission set instead of just a summary of
+        the set.
+        
+      * `include_invisible` *(only direct auth)*
+        
+        Show the place even if it is set as. You must specify use this flag to
+        view an invisible place. The flag will also apply to submissions, if the
+        `include_submissions` flag is set. Only the dataset owner is allowed to
+        request invisible resoruces.
+        
+      * `include_private` *(only direct auth)*
+        
+        Show private data attributes on the place, and on any submissions if the
+        `include_submissions` flag is set. Only the dataset owner is allowed to
+        request private attributes.
 
+    PUT
+    ---
     Update a place
 
     **Authentication**: Basic, session, or key auth *(required)*
 
-
-    ### DELETE /api/v2/*:owner*/datasets/*:slug*/places/*:placeid*/
-
+    DELETE
+    ------
     Delete a place
 
     **Authentication**: Basic, session, or key auth *(required)*
+
+    ------------------------------------------------------------
     """
 
     model = models.Place
@@ -340,17 +354,37 @@ class PlaceListView (CachedResourceMixin, LocatedResourceMixin, OwnedResourceMix
     
     GET
     ---
-
     Get all the places in a dataset
-
-    **Request Parameters**:
-
-      * include_hidden *(only direct auth)*
-      * include_private *(only direct auth)*
-      * include_submissions
 
     **Authentication**: Basic, session, or key auth *(optional)*
 
+    **Request Parameters**:
+
+      * `include_submissions`
+        
+        List the submissions in each submission set instead of just a summary of
+        the set.
+        
+      * `include_invisible` *(only direct auth)*
+        
+        Show the place even if it is set as. You must specify use this flag to
+        view an invisible place. The flag will also apply to submissions, if the
+        `include_submissions` flag is set. Only the dataset owner is allowed to
+        request invisible resoruces.
+        
+      * `include_private` *(only direct auth)*
+        
+        Show private data attributes on the place, and on any submissions if the
+        `include_submissions` flag is set. Only the dataset owner is allowed to
+        request private attributes.
+      
+      * `near=<reference_geometry>`
+      
+        Order the place list by distance from some reference geometry. The 
+        reference geometry may be represented as
+        [GeoJSON](http://www.geojson.org/geojson-spec.html) or
+        [WKT](http://en.wikipedia.org/wiki/Well-known_text), or as a
+        comma-separated latitude and longitude, if it is a point.
 
     POST
     ----
@@ -358,6 +392,8 @@ class PlaceListView (CachedResourceMixin, LocatedResourceMixin, OwnedResourceMix
     Create a place
 
     **Authentication**: Basic, session, or key auth *(required)*
+    
+    ------------------------------------------------------------
     """
 
     model = models.Place
@@ -383,16 +419,26 @@ class PlaceListView (CachedResourceMixin, LocatedResourceMixin, OwnedResourceMix
 
 class SubmissionInstanceView (CachedResourceMixin, OwnedResourceMixin, generics.RetrieveUpdateDestroyAPIView):
     """
-    ### GET /api/v2/*:owner*/datasets/*:slug*/places/*:place_id*/*:submission_set_name*/*:submission_id*/
-
+    GET
+    ---
     Get a particular submission
+
+    **Authentication**: Basic, session, or key auth *(optional)*
 
     **Request Parameters**:
 
-      * *include_invisible* *(only direct auth)*
-      * *include_private_data* *(only direct auth)*
-
-    **Authentication**: Basic, session, or key auth *(optional)*
+      * `include_invisible` *(only direct auth)*
+        
+        Show the submission even if it is set as invisible. You must specify use
+        this flag to view an invisible submission. Only the dataset owner is
+        allowed to request invisible resoruces.
+        
+      * `include_private` *(only direct auth)*
+        
+        Show private data attributes on the submission. Only the dataset owner
+        is allowed to request private attributes.
+    
+    ------------------------------------------------------------
     """
 
     model = models.Submission
