@@ -64,7 +64,7 @@ class Cache (object):
             obj = inst_key
             inst_key = obj.pk
         return '%s:%s' % (self.__class__.__name__, inst_key)
-
+    
     def clear_instance_params(self, obj):
         """
         Clear the instance parameters. Useful for when we delete a particular
@@ -95,6 +95,39 @@ class Cache (object):
             logger.debug('Found instance parameters for "%s": %r' % (instance_params_key, params))
         return params
 
+    def get_serialized_data_meta_key(self, inst_key):
+        inst_params_key = self.get_instance_params_key(inst_key)
+        return inst_params_key + ':_keys'
+    
+    def get_serialized_data_key(self, inst_key, **params):
+        inst_params_key = self.get_instance_params_key(inst_key)
+        keyvals = ['='.join(map(str, item)) for item in sorted(params.items())]
+        return '%s:%s' % (inst_params_key, ':'.join(keyvals))
+    
+    def get_serialized_data(self, inst_key, data_getter, **params):
+        key = self.get_serialized_data_key(inst_key, **params)
+        data = cache.get(key)
+        
+        if data is None:
+            data = data_getter()
+            cache.set(key, data)
+            
+            # Cache the key itself
+            meta_key = self.get_serialized_data_meta_key(inst_key)
+            keys = cache.get(meta_key) or set()
+            keys.add(key)
+            cache.set(meta_key, keys, settings.API_CACHE_TIMEOUT)
+        
+        return data
+    
+    def get_serialized_data_keys(self, inst_key):
+        meta_key = self.get_serialized_data_meta_key(inst_key)
+        if meta_key is not None:
+            keys = cache.get(meta_key)
+            return (keys or set()) | set([meta_key])
+        else:
+            return set()
+
     def get_other_keys(self, **params):
         return set()
 
@@ -104,10 +137,12 @@ class Cache (object):
         # Collect the prefixes for cached requests
         prefixes = self.get_request_prefixes(**params)
         prefixed_keys = self.get_keys_with_prefixes(*prefixes)
+        #Serialized data keys
+        data_keys = self.get_serialized_data_keys(obj)
         # Collect other related keys
         other_keys = self.get_other_keys(**params) | set([self.get_instance_params_key(obj.pk)])
         # Clear all the keys
-        self.clear_keys(*(prefixed_keys | other_keys))
+        self.clear_keys(*(prefixed_keys | data_keys | other_keys))
 
 
 class DataSetCache (Cache):
@@ -129,22 +164,6 @@ class DataSetCache (Cache):
         prefixes.update([instance_path, collection_path])
 
         return prefixes
-
-    def get_submission_sets_key_prefix(self, owner_id):
-        return '%s:%s:%s' % (self.__class__.__name__, owner_id, 'submission_sets')
-
-    def get_submission_sets_key(self, owner_id, **params):
-        prefix = self.get_submission_sets_key_prefix(owner_id)
-        if params:
-            paramstring = ','.join(['%s=%s' % (k, v) for k, v in params.iteritems()])
-            return ':'.join([prefix, paramstring])
-        else:
-            return prefix
-
-    def get_submission_sets_keys(self, owner_id):
-        prefix = self.get_submission_sets_key_prefix(owner_id)
-        keys = self.get_keys_with_prefixes(prefix)
-        return keys
 
 
 class ThingWithAttachmentCache (Cache):
@@ -224,48 +243,6 @@ class PlaceCache (ThingWithAttachmentCache, Cache):
 
         return prefixes
 
-    def get_submission_sets_key_prefix(self, dataset_id):
-        return 'dataset:%s:%s' % (dataset_id, 'submission_sets-by-thing_id')
-
-    def get_submission_sets_key(self, dataset_id, **params):
-        prefix = self.get_submission_sets_key_prefix(dataset_id)
-        if params:
-            paramstring = ','.join(['%s=%s' % (k, v) for k, v in params.iteritems()])
-            return ':'.join([prefix, paramstring])
-        else:
-            return prefix
-
-    def get_submission_sets_keys(self, dataset_id):
-        prefix = self.get_submission_sets_key_prefix(dataset_id)
-        keys = self.get_keys_with_prefixes(prefix)
-        return keys
-
-    def get_submission_sets(self, dataset_id, calculate_func, **params):
-        """
-        A mapping from Place ids to attributes.  Helps to cut down
-        significantly on the number of queries.
-
-        There should be at most one SubmissionSet of a given type for one place.
-
-        If the mapping is not already cached, the calculate_func will be called
-        to build it. Because of this, it's more efficient to PUT to many places
-        in a batch, as opposed to doing a few places, then a few submissions,
-        etc. Staggering places and submissions will result in a high number of
-        cache invalidations.
-        """
-        submission_sets_key = self.get_submission_sets_key(dataset_id, **params)
-        submission_sets = cache.get(submission_sets_key)
-        if submission_sets is None:
-            submission_sets = calculate_func(dataset_id)
-            cache.set(submission_sets_key, submission_sets, settings.API_CACHE_TIMEOUT)
-
-            # Cache the key itself
-            meta_key = self.get_meta_key(self.get_submission_sets_key_prefix(dataset_id))
-            keys = cache.get(meta_key) or set()
-            keys.add(submission_sets_key)
-            cache.set(meta_key, keys, settings.API_CACHE_TIMEOUT)
-        return submission_sets
-
 
 class SubmissionSetCache (Cache):
     place_cache = PlaceCache()
@@ -308,10 +285,10 @@ class SubmissionCache (ThingWithAttachmentCache, Cache):
         return params
 
     def get_other_keys(self, **params):
-        owner_id, dataset_id = map(params.get, ['owner_id', 'dataset_id'])
-        dataset_submission_sets_keys = self.dataset_cache.get_submission_sets_keys(owner_id)
-        place_submission_sets_keys = self.place_cache.get_submission_sets_keys(dataset_id)
-        return dataset_submission_sets_keys | place_submission_sets_keys
+        dataset_id, place_id = map(params.get, ['dataset_id', 'place_id'])
+        dataset_serialized_data_keys = self.dataset_cache.get_serialized_data_keys(dataset_id)
+        place_serialized_data_keys = self.place_cache.get_serialized_data_keys(place_id)
+        return dataset_serialized_data_keys | place_serialized_data_keys
 
     def get_request_prefixes(self, **params):
         owner, dataset, place, submission_set_name, submission = map(params.get, ['owner_username', 'dataset_slug', 'place_id', 'submission_set_name', 'submission_id'])
@@ -364,4 +341,5 @@ class AttachmentCache (Cache):
     def get_other_keys(self, **params):
         dataset_id = params.get('dataset_id')
         thing_attachments_key = self.thing_cache.get_attachments_key(dataset_id)
+        thing_serialized_data_keys = self.thing_cache.get_serialized_data_keys(thing_id)
         return set([thing_attachments_key])

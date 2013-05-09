@@ -340,9 +340,22 @@ class PlaceInstanceView (CachedResourceMixin, LocatedResourceMixin, OwnedResourc
     serializer_class = serializers.PlaceSerializer
     renderer_classes = (renderers.GeoJSONRenderer,) + OwnedResourceMixin.renderer_classes[1:]
 
+    def get_object_or_404(self, pk):
+        try:
+            return self.model.objects\
+                .filter(pk=pk)\
+                .select_related('dataset')\
+                .prefetch_related('submission_sets__children', 
+                                  'submission_sets__children__dataset', 
+                                  'submission_sets__children__attachments', 
+                                  'attachments')\
+                .get()
+        except self.model.DoesNotExist:
+            raise Http404
+
     def get_object(self, queryset=None):
         place_id = self.kwargs['place_id']
-        obj = get_object_or_404(self.model, pk=place_id)
+        obj = self.get_object_or_404(place_id)
         self.verify_object(obj)
         return obj
 
@@ -417,7 +430,8 @@ class PlaceListView (CachedResourceMixin, LocatedResourceMixin, OwnedResourceMix
         if INCLUDE_INVISIBLE_PARAM not in self.request.GET:
             queryset = queryset.filter(visible=True)
 
-        return queryset.filter(dataset=dataset)
+        return queryset.filter(dataset=dataset).select_related('dataset')\
+            .prefetch_related('submission_sets', 'submission_sets__children', 'submission_sets__children__dataset', 'submission_sets__children__attachments', 'attachments')
 
 
 class SubmissionInstanceView (CachedResourceMixin, OwnedResourceMixin, generics.RetrieveUpdateDestroyAPIView):
@@ -446,10 +460,20 @@ class SubmissionInstanceView (CachedResourceMixin, OwnedResourceMixin, generics.
 
     model = models.Submission
     serializer_class = serializers.SubmissionSerializer
+    
+    def get_object_or_404(self, pk):
+        try:
+            return self.model.objects\
+                .filter(pk=pk)\
+                .select_related('dataset')\
+                .prefetch_related('attachments')\
+                .get()
+        except self.model.DoesNotExist:
+            raise Http404
 
     def get_object(self, queryset=None):
         submission_id = self.kwargs['submission_id']
-        obj = get_object_or_404(self.model, pk=submission_id)
+        obj = self.get_object_or_404(submission_id)
         self.verify_object(obj)
         return obj
 

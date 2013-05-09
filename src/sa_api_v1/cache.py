@@ -63,7 +63,7 @@ class Cache (object):
         if isinstance(inst_key, Model):
             obj = inst_key
             inst_key = obj.pk
-        return '%s:%s' % (self.__class__.__name__, inst_key)
+        return '%s:v1:%s' % (self.__class__.__name__, inst_key)
 
     def clear_instance_params(self, obj):
         """
@@ -135,7 +135,7 @@ class DataSetCache (Cache):
         return prefixes
 
     def get_submission_sets_key_prefix(self, owner_id):
-        return '%s:%s:%s' % (self.__class__.__name__, owner_id, 'submission_sets')
+        return '%s:v1:%s:%s' % (self.__class__.__name__, owner_id, 'submission_sets')
 
     def get_submission_sets_key(self, owner_id, **params):
         prefix = self.get_submission_sets_key_prefix(owner_id)
@@ -163,7 +163,7 @@ class ThingWithAttachmentCache (Cache):
         return params
 
     def get_attachments_key(self, dataset_id):
-        return 'dataset:%s:%s' % (dataset_id, 'attachments-by-thing_id')
+        return 'dataset:v1:%s:%s' % (dataset_id, 'attachments-by-thing_id')
 
     def calculate_attachments(self, dataset_id):
         """
@@ -235,7 +235,7 @@ class PlaceCache (ThingWithAttachmentCache, Cache):
         return prefixes
 
     def get_submission_sets_key_prefix(self, dataset_id):
-        return 'dataset:%s:%s' % (dataset_id, 'submission_sets-by-thing_id')
+        return 'dataset:v1:%s:%s' % (dataset_id, 'submission_sets-by-thing_id')
 
     def get_submission_sets_key(self, dataset_id, **params):
         prefix = self.get_submission_sets_key_prefix(dataset_id)

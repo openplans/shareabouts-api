@@ -13,7 +13,7 @@ from . import models
 from . import utils
 from . import cache
 from .params import (INCLUDE_INVISIBLE_PARAM, INCLUDE_PRIVATE_PARAM, 
-    INCLUDE_SUBMISSIONS_PARAM)
+    INCLUDE_SUBMISSIONS_PARAM, FORMAT_PARAM)
 
 
 ###############################################################################
@@ -218,18 +218,50 @@ class DataBlobProcessor (object):
         return data
 
 
+class CachedSerializer (object):
+    def to_native(self, obj):
+        cache = self.opts.model.cache
+        cache_params = self.get_cache_params()
+        data_getter = lambda: super(CachedSerializer, self).to_native(obj)
+        
+        data = cache.get_serialized_data(obj, data_getter, **cache_params)
+        return data
+
+    def get_cache_params(self):
+        """
+        Get a dictionary of flags that determine the contents of the place's
+        submission sets. These flags are used primarily to determine the cache
+        key for the submission sets structure.
+        """
+        request = self.context['request']
+        request_params = dict(request.GET.iterlists())
+        
+        params = {
+            'include_submissions': INCLUDE_SUBMISSIONS_PARAM in request_params,
+            'include_private': INCLUDE_PRIVATE_PARAM in request_params,
+            'include_invisible': INCLUDE_INVISIBLE_PARAM in request_params,
+        }
+        
+        request_params.pop(INCLUDE_SUBMISSIONS_PARAM, None)
+        request_params.pop(INCLUDE_PRIVATE_PARAM, None)
+        request_params.pop(INCLUDE_INVISIBLE_PARAM, None)
+        request_params.pop(FORMAT_PARAM, None)
+        
+        # If this doesn't have a parent serializer, then use all the rest of the
+        # query parameters
+        if self.parent is None:
+            params.update(request_params)
+        
+        return params
+
+
 ###############################################################################
 #
 # Serializers
 # -----------
 #
 
-class SubmissionSetSerializer (serializers.Serializer):
-    length = serializers.IntegerField
-    url = SubmissionSetIdentityField()
-
-
-class SubmissionSetSummarySerializer (serializers.HyperlinkedModelSerializer):
+class SubmissionSetSummarySerializer (CachedSerializer, serializers.HyperlinkedModelSerializer):
     length = serializers.IntegerField()
     url = SubmissionSetIdentityField()
 
@@ -238,68 +270,59 @@ class SubmissionSetSummarySerializer (serializers.HyperlinkedModelSerializer):
         fields = ('length', 'url')
 
 
-class PlaceSerializer (DataBlobProcessor, serializers.HyperlinkedModelSerializer):
+class PlaceSerializer (CachedSerializer, DataBlobProcessor, serializers.HyperlinkedModelSerializer):
     url = PlaceIdentityField()
     geometry = GeometryField(format='wkt')
     dataset = DataSetRelatedField()
     attachments = AttachmentSerializer(read_only=True)
 
-    def get_submission_set_summaries(self, dataset_id):
+    def get_submission_set_summaries(self, obj):
         """
         Get a mapping from place id to a submission set summary dictionary.
         Get this for the entire dataset at once.
         """
-        all_sets = models.SubmissionSet.objects.filter(place__dataset_id=dataset_id)
-        
         request = self.context['request']
-        if INCLUDE_INVISIBLE_PARAM not in request.GET:
-            all_sets = all_sets.filter(children__visible=True)
-        
-        all_sets = all_sets.annotate(length=Count('children')).filter(length__gt=0)
-        all_sets = groupby(all_sets, lambda s: s.place_id)
+        include_invisible = INCLUDE_INVISIBLE_PARAM in request.GET
         
         summaries = {}
-        for place_id, submission_sets in all_sets:
-            summaries[place_id] = {}
-            for submission_set in submission_sets:
-                serializer = SubmissionSetSummarySerializer(submission_set, context=self.context)
-                summaries[place_id][submission_set.name] = serializer.data
+        for submission_set in obj.submission_sets.all():
+            submissions = submission_set.children.all()
+            if not include_invisible:
+                submissions = filter(lambda s: s.visible, submissions)
+            submission_set.length = len(submissions)
+
+            if submission_set.length == 0:
+                continue
+            
+            serializer = SubmissionSetSummarySerializer(submission_set, context=self.context)
+            serializer.parent = self
+            summaries[submission_set.name] = serializer.data
+        
         return summaries
 
-    def get_detailed_submission_sets(self, dataset_id):
+    def get_detailed_submission_sets(self, obj):
         """
         Get a mapping from place id to a detiled submission set dictionary.
         Get this for the entire dataset at once.
         """
-        all_submissions = models.Submission.objects\
-            .filter(dataset_id=dataset_id).select_related('parent')
-
         request = self.context['request']
-        if INCLUDE_INVISIBLE_PARAM not in request.GET:
-            all_submissions = all_submissions.filter(visible=True)
-
-        sets = groupby(all_submissions, lambda s: (s.place_id, s.set_name))
+        include_invisible = INCLUDE_INVISIBLE_PARAM in request.GET
 
         details = {}
-        for (place_id, set_name), submissions in sets:
+        for submission_set in obj.submission_sets.all():
+            submissions = submission_set.children.all()
+            if not include_invisible:
+                submissions = filter(lambda s: s.visible, submissions)
+
+            if len(submissions) == 0:
+                continue
+
             serializer = SubmissionSerializer(submissions, context=self.context)
-            if place_id not in details: details[place_id] = {}
-            details[place_id][set_name] = serializer.data
+            serializer.parent = self
+            details[submission_set.name] = serializer.data
+
         return details
 
-    def get_submission_set_flags(self):
-        """
-        Get a dictionary of flags that determine the contents of the place's
-        submission sets. These flags are used primarily to determine the cache
-        key for the submission sets structure.
-        """
-        request = self.context['request']
-        return {
-            'include_submissions': INCLUDE_SUBMISSIONS_PARAM in request.GET,
-            'include_private': INCLUDE_PRIVATE_PARAM in request.GET,
-            'include_invisible': INCLUDE_INVISIBLE_PARAM in request.GET,
-        }
-    
     def to_native(self, obj):
         data = super(PlaceSerializer, self).to_native(obj)
         request = self.context['request']
@@ -308,16 +331,8 @@ class PlaceSerializer (DataBlobProcessor, serializers.HyperlinkedModelSerializer
             submission_sets_getter = self.get_submission_set_summaries
         else:
             submission_sets_getter = self.get_detailed_submission_sets
-
-        # Get the submission sets related to this dataset, mapped by place id.
-        # This is done to decrease the number of queries we have to run, 
-        # especially when getting the list of places in the dataset.
-        submission_sets_map = models.Place.cache.get_submission_sets(
-            obj.dataset_id,
-            submission_sets_getter,
-            **self.get_submission_set_flags()
-        )
-        data['submission_sets'] = submission_sets_map.get(obj.id, {})
+        
+        data['submission_sets'] = submission_sets_getter(obj)
         
         if hasattr(obj, 'distance'):
             data['distance'] = str(obj.distance)
@@ -328,7 +343,7 @@ class PlaceSerializer (DataBlobProcessor, serializers.HyperlinkedModelSerializer
         model = models.Place
 
 
-class SubmissionSerializer (DataBlobProcessor, serializers.HyperlinkedModelSerializer):
+class SubmissionSerializer (CachedSerializer, DataBlobProcessor, serializers.HyperlinkedModelSerializer):
     url = SubmissionIdentityField()
     dataset = DataSetRelatedField()
     set = SubmissionSetRelatedField(source='parent')
