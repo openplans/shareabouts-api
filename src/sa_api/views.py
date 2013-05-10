@@ -477,6 +477,92 @@ class SubmissionInstanceView (CachedResourceMixin, OwnedResourceMixin, generics.
         return obj
 
 
+class SubmissionListView (CachedResourceMixin, LocatedResourceMixin, OwnedResourceMixin, FilteredResourceMixin, generics.ListCreateAPIView):
+    """
+    
+    GET
+    ---
+    Get all the submissions in a place's submission set
+
+    **Authentication**: Basic, session, or key auth *(optional)*
+
+    **Request Parameters**:
+
+      * `include_invisible` *(only direct auth)*
+        
+        Show the place even if it is set as. You must specify use this flag to
+        view an invisible place. The flag will also apply to submissions, if the
+        `include_submissions` flag is set. Only the dataset owner is allowed to
+        request invisible resoruces.
+        
+      * `include_private` *(only direct auth)*
+        
+        Show private data attributes on the place, and on any submissions if the
+        `include_submissions` flag is set. Only the dataset owner is allowed to
+        request private attributes.
+      
+      * `<attr>=<value>`
+      
+        Filter the place list to only return the places where the attribute is
+        equal to the given value.
+
+    POST
+    ----
+
+    Create a submission
+
+    **Authentication**: Basic, session, or key auth *(required)*
+    
+    ------------------------------------------------------------
+    """
+
+    model = models.Submission
+    serializer_class = serializers.SubmissionSerializer
+    pagination_serializer_class = serializers.PaginatedResultsSerializer
+    
+    place_id_kwarg = 'place_id'
+    submission_set_name_kwarg = 'submission_set_name'
+
+    def get_submission_set(self, dataset):
+        place_id = self.kwargs[self.place_id_kwarg]
+        submission_set_name = self.kwargs[self.submission_set_name_kwarg]
+
+        place = get_object_or_404(models.Place, dataset=dataset, id=place_id)
+
+        try:
+            submission_set = models.SubmissionSet.objects.get(name=submission_set_name, place=place)
+        except models.SubmissionSet.DoesNotExist:
+            submission_set = models.SubmissionSet(name=submission_set_name, place=place)
+
+        return submission_set
+
+    def pre_save(self, obj):
+        super(SubmissionListView, self).pre_save(obj)
+        obj.dataset = self.get_dataset()
+
+        # Before we save the submission, we need a submission set as the parent.
+        # Check that we have one that exists, and save it if it is not saved.
+        parent = self.get_submission_set(obj.dataset)
+        if parent.pk is None:
+            parent.save()
+        obj.parent = parent
+
+    def get_queryset(self):
+        dataset = self.get_dataset()
+        submission_set = self.get_submission_set(dataset)
+
+        queryset = super(SubmissionListView, self).get_queryset()
+
+        # If the user is not allowed to request invisible data then we won't
+        # be here in the first place -- auth or permissions woulda got us.
+        if INCLUDE_INVISIBLE_PARAM not in self.request.GET:
+            queryset = queryset.filter(visible=True)
+
+        return queryset.filter(parent=submission_set)\
+            .select_related('dataset', 'parent', 'parent__place')\
+            .prefetch_related('attachments')
+
+
 #from . import forms
 #from . import models
 #from . import parsers

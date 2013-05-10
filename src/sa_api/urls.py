@@ -6,7 +6,7 @@ urlpatterns = patterns('sa_api',
         views.SubmissionInstanceView.as_view(),
         name='submission-detail'),
     url(r'^(?P<owner_username>[^/]+)/datasets/(?P<dataset_slug>[^/]+)/places/(?P<place_id>\d+)/(?P<submission_set_name>[^/]+)$',
-        lambda *a, **k: None,
+        views.SubmissionListView.as_view(),
         name='submission-list'),
 
     url(r'^(?P<owner_username>[^/]+)/datasets/(?P<dataset_slug>[^/]+)/places/(?P<place_id>\d+)$',
