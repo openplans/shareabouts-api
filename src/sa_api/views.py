@@ -464,7 +464,7 @@ class SubmissionInstanceView (CachedResourceMixin, OwnedResourceMixin, generics.
         try:
             return self.model.objects\
                 .filter(pk=pk)\
-                .select_related('dataset')\
+                .select_related('dataset', 'parent', 'parent__place')\
                 .prefetch_related('attachments')\
                 .get()
         except self.model.DoesNotExist:

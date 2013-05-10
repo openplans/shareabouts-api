@@ -116,8 +116,8 @@ class TestPlaceInstanceView (TestCase):
         
         # Check that the URL is right
         self.assertEqual(data['properties']['url'], 
-          'http://testserver/api/v2/%s/datasets/%s/places/%s' % 
-          (self.owner.username, self.dataset.slug, self.place.id))
+            'http://testserver' + reverse('place-detail', args=[
+                self.owner.username, self.dataset.slug, self.place.id]))
 
         # Check that the submission sets look right
         self.assertEqual(len(data['properties']['submission_sets']), 2)
@@ -871,7 +871,7 @@ class TestSubmissionInstanceView (TestCase):
     def setUp(self):
         cache.clear()
 
-        self.owner = User.objects.create(username='aaron', password='123')
+        self.owner = User.objects.create_user(username='aaron', password='123', email='abc@example.com')
         self.dataset = DataSet.objects.create(slug='ds', owner=self.owner)
         self.place = Place.objects.create(
           dataset=self.dataset,
@@ -887,12 +887,15 @@ class TestSubmissionInstanceView (TestCase):
         self.likes = SubmissionSet.objects.create(place=self.place, name='likes')
         self.applause = SubmissionSet.objects.create(place=self.place, name='applause')
         self.submissions = [
-          Submission.objects.create(parent=self.comments, dataset=self.dataset, data='{"comment": "Wow!", "private-email": "mp@example.com"}'),
-          Submission.objects.create(parent=self.comments, dataset=self.dataset, data='{}'),
-          Submission.objects.create(parent=self.likes, dataset=self.dataset, data='{}'),
-          Submission.objects.create(parent=self.likes, dataset=self.dataset, data='{}'),
-          Submission.objects.create(parent=self.likes, dataset=self.dataset, data='{}'),
+          Submission.objects.create(parent=self.comments, dataset=self.dataset, data='{"comment": "Wow!", "private-email": "abc@example.com", "foo": 3}'),
+          Submission.objects.create(parent=self.comments, dataset=self.dataset, data='{"foo": 3}'),
+          Submission.objects.create(parent=self.comments, dataset=self.dataset, data='{"foo": 3}', visible=False),
+          Submission.objects.create(parent=self.likes, dataset=self.dataset, data='{"bar": 3}'),
+          Submission.objects.create(parent=self.likes, dataset=self.dataset, data='{"bar": 3}'),
+          Submission.objects.create(parent=self.likes, dataset=self.dataset, data='{"bar": 3}'),
+          Submission.objects.create(parent=self.likes, dataset=self.dataset, data='{"bar": 3}', visible=False),
         ]
+        self.submission = self.comments.children.all()[0]
 
         self.apikey = ApiKey.objects.create(user=self.owner, key='abc')
         self.apikey.datasets.add(self.dataset)
@@ -902,7 +905,7 @@ class TestSubmissionInstanceView (TestCase):
           'dataset_slug': self.dataset.slug,
           'place_id': self.place.id,
           'submission_set_name': self.comments.name,
-          'submission_id': self.comments.children.values()[0]['id']
+          'submission_id': self.submission.id
         }
 
         self.factory = RequestFactory()
@@ -941,6 +944,12 @@ class TestSubmissionInstanceView (TestCase):
         self.assertIn('set', data)
         self.assertIn('submitter_name', data)
         self.assertIn('place', data)
+        
+        # Check that the URL is right
+        self.assertEqual(data['url'], 
+            'http://testserver' + reverse('submission-detail', args=[
+                self.owner.username, self.dataset.slug, self.place.id,
+                self.submission.set_name, self.submission.id]))
 
     def test_GET_response_with_private_data(self):
         #
@@ -997,10 +1006,26 @@ class TestSubmissionInstanceView (TestCase):
         # --------------------------------------------------
 
         #
-        # View should return private data when owner is really logged in
+        # View should return private data when owner is logged in (Session Auth)
         #
         request = self.factory.get(self.path + '?include_private')
         request.user = self.owner
+        response = self.view(request, **self.request_kwargs)
+        data = json.loads(response.rendered_content)
+
+        # Check that the request was successful
+        self.assertEqual(response.status_code, 200)
+
+        # Check that the private data is in the properties
+        self.assertIn('private-email', data)
+
+        # --------------------------------------------------
+
+        #
+        # View should return private data when owner is logged in (Basic Auth)
+        #
+        request = self.factory.get(self.path + '?include_private')
+        request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(':'.join([self.owner.username, '123']))
         response = self.view(request, **self.request_kwargs)
         data = json.loads(response.rendered_content)
 
@@ -1026,6 +1051,95 @@ class TestSubmissionInstanceView (TestCase):
         response = self.view(request, **request_kwargs)
 
         self.assertEqual(response.status_code, 404)
+
+    def test_GET_from_cache(self):
+        path = reverse('submission-detail', kwargs=self.request_kwargs)
+        request = self.factory.get(path)
+        
+        # Check that we make a finite number of queries
+        # - SELECT * FROM sa_api_submission AS s 
+        #     JOIN sa_api_submittedthing AS st ON (s.submittedthing_ptr_id = st.id)
+        #     JOIN sa_api_dataset AS ds ON (st.dataset_id = ds.id) 
+        #     JOIN sa_api_submissionset AS ss ON (s.parent_id = ss.id) 
+        #     JOIN sa_api_place AS p ON (ss.place_id = p.submittedthing_ptr_id) 
+        #     JOIN sa_api_submittedthing AS pt ON (p.submittedthing_ptr_id = pt.id) 
+        #    WHERE st.id = <self.submission.id>;
+        #
+        # - SELECT * FROM sa_api_attachment AS a
+        #    WHERE a.thing_id IN (<self.submission.id>);
+        #
+        with self.assertNumQueries(2):
+            response = self.view(request, **self.request_kwargs)
+            self.assertEqual(response.status_code, 200)
+
+        path = reverse('submission-detail', kwargs=self.request_kwargs)
+        request = self.factory.get(path)
+
+        # Check that this performs no more queries, since it's all cached
+        with self.assertNumQueries(0):
+            response = self.view(request, **self.request_kwargs)
+            self.assertEqual(response.status_code, 200)
+
+    def test_DELETE_response(self):
+        #
+        # View should 401 when trying to delete when not authenticated
+        #
+        request = self.factory.delete(self.path)
+        response = self.view(request, **self.request_kwargs)
+        self.assertEqual(response.status_code, 401)
+
+        #
+        # View should delete the place when owner is authenticated
+        #
+        request = self.factory.delete(self.path)
+        request.META[KEY_HEADER] = self.apikey.key
+        response = self.view(request, **self.request_kwargs)
+
+        # Check that the request was successful
+        self.assertEqual(response.status_code, 204)
+
+        # Check that no data was returned
+        self.assertIsNone(response.data)
+
+    def test_PUT_response(self):
+        submission_data = json.dumps({
+          'comment': 'Revised opinion',
+          'private-email': 'newemail@gmail.com'
+        })
+
+        #
+        # View should 401 when trying to update when not authenticated
+        #
+        request = self.factory.put(self.path, data=submission_data, content_type='application/json')
+        response = self.view(request, **self.request_kwargs)
+        self.assertEqual(response.status_code, 401)
+
+        #
+        # View should update the place when owner is authenticated
+        #
+        request = self.factory.put(self.path, data=submission_data, content_type='application/json')
+        request.META[KEY_HEADER] = self.apikey.key
+
+        response = self.view(request, **self.request_kwargs)
+
+        data = json.loads(response.rendered_content)
+
+        # Check that the request was successful
+        self.assertEqual(response.status_code, 200)
+
+        # Check that the data attributes have been incorporated into the
+        # properties
+        self.assertEqual(data.get('comment'), 'Revised opinion')
+
+        # submitter_name is special, and so should be present and None
+        self.assertIsNone(data['submitter_name'])
+
+        # foo is not special (lives in the data blob), so should just be unset
+        self.assertNotIn('foo', data)
+
+        # private-email is not special, but is private, so should not come
+        # back down
+        self.assertNotIn('private-email', data)
 
 
 
