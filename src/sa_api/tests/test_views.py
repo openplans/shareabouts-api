@@ -364,16 +364,37 @@ class TestPlaceInstanceView (TestCase):
     def test_GET_from_cache(self):
         path = reverse('place-detail', kwargs=self.request_kwargs)
         request = self.factory.get(path)
-        response = self.view(request, **self.request_kwargs)
+        
+        # Check that we make a finite number of queries
+        # - SELECT * FROM sa_api_place AS p 
+        #     JOIN sa_api_submittedthing AS t ON (p.submittedthing_ptr_id = t.id)
+        #     JOIN sa_api_dataset AS ds ON (t.dataset_id = ds.id) 
+        #    WHERE t.id = <self.place.id>;
+        #
+        # - SELECT * FROM sa_api_submissionset AS ss
+        #    WHERE ss.place_id IN (<self.place.id>);
+        #
+        # - SELECT * FROM sa_api_submission AS s
+        #     JOIN sa_api_submittedthing AS t ON (s.submittedthing_ptr_id = t.id)
+        #    WHERE s.parent_id IN (<self.comments.id>, <self.likes.id>, <self.applause.id>);
+        #
+        # - SELECT * FROM sa_api_attachment AS a
+        #    WHERE a.thing_id IN (<[each submission id]>);
+        #
+        # - SELECT * FROM sa_api_attachment AS a
+        #    WHERE a.thing_id IN (<self.place.id>);
+        #
+        with self.assertNumQueries(5):
+            response = self.view(request, **self.request_kwargs)
+            self.assertEqual(response.status_code, 200)
 
-        self.assertEqual(response.status_code, 200)
-
-        # TODO: Test that this performs the minimum number of queries
         path = reverse('place-detail', kwargs=self.request_kwargs)
         request = self.factory.get(path)
-        response = self.view(request, **self.request_kwargs)
 
-        self.assertEqual(response.status_code, 200)
+        # Check that this performs no more queries, since it's all cached
+        with self.assertNumQueries(0):
+            response = self.view(request, **self.request_kwargs)
+            self.assertEqual(response.status_code, 200)
 
     def test_DELETE_response(self):
         #

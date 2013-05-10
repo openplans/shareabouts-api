@@ -317,6 +317,11 @@ class PlaceSerializer (CachedSerializer, DataBlobProcessor, serializers.Hyperlin
             if len(submissions) == 0:
                 continue
 
+            # We know that the submission datasets will be the same as the place
+            # dataset, so say so and avoid an extra query for each.
+            for submission in submissions:
+                submission.dataset = obj.dataset
+            
             serializer = SubmissionSerializer(submissions, context=self.context)
             serializer.parent = self
             details[submission_set.name] = serializer.data

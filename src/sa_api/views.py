@@ -346,7 +346,6 @@ class PlaceInstanceView (CachedResourceMixin, LocatedResourceMixin, OwnedResourc
                 .filter(pk=pk)\
                 .select_related('dataset')\
                 .prefetch_related('submission_sets__children', 
-                                  'submission_sets__children__dataset', 
                                   'submission_sets__children__attachments', 
                                   'attachments')\
                 .get()
@@ -431,7 +430,7 @@ class PlaceListView (CachedResourceMixin, LocatedResourceMixin, OwnedResourceMix
             queryset = queryset.filter(visible=True)
 
         return queryset.filter(dataset=dataset).select_related('dataset')\
-            .prefetch_related('submission_sets', 'submission_sets__children', 'submission_sets__children__dataset', 'submission_sets__children__attachments', 'attachments')
+            .prefetch_related('submission_sets', 'submission_sets__children', 'submission_sets__children__attachments', 'attachments')
 
 
 class SubmissionInstanceView (CachedResourceMixin, OwnedResourceMixin, generics.RetrieveUpdateDestroyAPIView):
