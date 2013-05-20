@@ -2296,6 +2296,12 @@ class TestDataSetListView (TestCase):
           Submission.objects.create(parent=comments2, dataset=dataset2, data='{"foo": 3}'),
           Submission.objects.create(parent=comments2, dataset=dataset2, data='{"foo": 3}', visible=False),
         ]
+        
+        other_owner = User.objects.create_user(
+            username='mjumbe', 
+            password='456', 
+            email='def@example.com')
+        dataset3 = DataSet.objects.create(owner=other_owner, slug='slug', display_name="Display Name")
 
         self.apikey = ApiKey.objects.create(user=self.owner, key='abc')
         self.apikey.datasets.add(self.dataset)
@@ -2390,6 +2396,7 @@ class TestDataSetListView (TestCase):
         request = self.factory.get(self.path)
         view = DataSetListView()
         view.request = request
+        view.kwargs = self.request_kwargs
         
         sets = view.get_all_submission_sets()
         self.assertIn('likes', [s['parent__name'] for s in sets[self.dataset.pk]])

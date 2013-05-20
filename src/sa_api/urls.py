@@ -16,6 +16,10 @@ urlpatterns = patterns('sa_api',
         views.PlaceListView.as_view(),
         name='place-list'),
 
+    url(r'^~/datasets$',
+        views.AdminDataSetListView.as_view(),
+        name='admin-dataset-list'),
+
     url(r'^(?P<owner_username>[^/]+)/datasets/(?P<dataset_slug>[^/]+)/keys$',
         lambda *a, **k: None,
         name='apikey-list'),

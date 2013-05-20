@@ -15,6 +15,7 @@ from . import serializers
 from . import utils
 from . import renderers
 from . import apikey
+from . import utils
 from .params import (INCLUDE_INVISIBLE_PARAM, INCLUDE_PRIVATE_PARAM,
     INCLUDE_SUBMISSIONS_PARAM, NEAR_PARAM, FORMAT_PARAM)
 from itertools import groupby
@@ -88,6 +89,17 @@ class IsLoggedInOwnerOrPublicDataOnly(permissions.BasePermission):
         if is_owner(request.user, request) or request.user.is_superuser:
             return True
 
+        return False
+
+
+class IsLoggedInAdmin(permissions.BasePermission):
+    def has_permission(self, request, view):
+        if not is_really_logged_in(request.user, request):
+            return False
+        
+        if request.user.is_superuser:
+            return True
+        
         return False
 
 
@@ -739,15 +751,13 @@ class DataSetInstanceView (CachedResourceMixin, OwnedResourceMixin, generics.Ret
         return response
 
 
-class DataSetListView (CachedResourceMixin, OwnedResourceMixin, generics.ListCreateAPIView):
-    """
-    """
-
+class DataSetListMixin (object):
     model = models.DataSet
     serializer_class = serializers.DataSetSerializer
     pagination_serializer_class = serializers.PaginatedResultsSerializer
     authentication_classes = (authentication.BasicAuthentication, authentication.SessionAuthentication)
 
+    @utils.memo
     def get_place_counts(self):
         include_invisible = INCLUDE_INVISIBLE_PARAM in self.request.GET
         places = models.Place.objects.filter(dataset__in=self.get_queryset())
@@ -756,20 +766,21 @@ class DataSetListView (CachedResourceMixin, OwnedResourceMixin, generics.ListCre
         places = places.values('dataset').annotate(length=Count('dataset'))
         return dict([(place['dataset'], place['length']) for place in places])
     
+    @utils.memo
     def get_all_submission_sets(self):
         include_invisible = INCLUDE_INVISIBLE_PARAM in self.request.GET
-        submissions = models.Submission.objects.filter(dataset__in=self.get_queryset()).select_related('parent')
+        summaries = models.Submission.objects.filter(dataset__in=self.get_queryset()).select_related('parent')
         if not include_invisible:
-            submissions = submissions.extra(where=['"sa_api_submittedthing"."visible" = True'])
-        submissions = submissions.values('dataset', 'parent__name').annotate(length=Count('dataset'))
+            summaries = summaries.extra(where=['"sa_api_submittedthing"."visible" = True'])
+        summaries = summaries.values('dataset', 'parent__name').annotate(length=Count('dataset'))
         
         sets = defaultdict(list)
-        for summary in submissions:
+        for summary in summaries:
             sets[summary['dataset']].append(summary)
         return sets
     
     def get_serializer_context(self):
-        context = super(DataSetListView, self).get_serializer_context()
+        context = super(DataSetListMixin, self).get_serializer_context()
         include_invisible = INCLUDE_INVISIBLE_PARAM in self.request.GET
 
         # The place_count_map_getter returns a dictionary where the keys are 
@@ -786,9 +797,64 @@ class DataSetListView (CachedResourceMixin, OwnedResourceMixin, generics.ListCre
         
         return context
 
+
+class DataSetListView (CachedResourceMixin, OwnedResourceMixin, DataSetListMixin, generics.ListCreateAPIView):
+    """
+    
+    GET
+    ---
+    Get all the datasets for a dataset owner
+
+    **Authentication**: Basic, or session auth *(optional)*
+
+    **Request Parameters**:
+
+      * `include_invisible` *(only direct auth)*
+        
+        Count visible and invisible places and submissions in the dataset. Only
+        the dataset owner is allowed to request invisible resoruces.
+
+    POST
+    ----
+
+    Create a dataset
+
+    **Authentication**: Basic or session auth *(required)*
+    
+    ------------------------------------------------------------
+    """
+
     def pre_save(self, obj):
         super(DataSetListView, self).pre_save(obj)
         obj.owner = self.get_owner()
+
+
+    def get_queryset(self):
+        owner = self.get_owner()
+        queryset = super(DataSetListView, self).get_queryset()
+        return queryset.filter(owner=owner).order_by('id')
+
+class AdminDataSetListView (CachedResourceMixin, DataSetListMixin, generics.ListAPIView):
+    """
+    
+    GET
+    ---
+    Get all the datasets
+
+    **Authentication**: Basic or session auth *(required)*
+
+    **Request Parameters**:
+
+      * `include_invisible`
+        
+        Count visible and invisible places and submissions in the dataset. Only
+        the dataset owner is allowed to request invisible resoruces.
+    
+    ------------------------------------------------------------
+    """
+
+    permission_classes = (IsLoggedInAdmin,)
+
 
 
 #from . import forms

@@ -1,5 +1,6 @@
 import time
 from django.contrib.gis.geos import GEOSGeometry, Point
+from functools import wraps
 
 def isiterable(obj):
     try:
@@ -28,18 +29,21 @@ def to_geom(string):
             geom = Point(lng, lat)
     return geom
 
-def cached_method(f):
+def memo(f):
+    """
+    A memoization decorator.
+    """
     @wraps(f)
     def get(self, *args, **kwargs):
         key = (f, args, tuple(kwargs.items()))
         try:
-            return self._method_cache[key]
+            return self._method_memos[key]
         except AttributeError:
-            self._method_cache = {}
-            x = self._method_cache[key] = f(self, *args, **kwargs)
+            self._method_memos = {}
+            x = self._method_memos[key] = f(self, *args, **kwargs)
             return x
         except KeyError:
-            x = self._method_cache[key] = f(self, *args, **kwargs)
+            x = self._method_memos[key] = f(self, *args, **kwargs)
             return x
 
     return get
