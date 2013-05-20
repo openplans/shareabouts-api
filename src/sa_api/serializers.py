@@ -61,8 +61,11 @@ class ShareaboutsFieldMixin (object):
         """
         Pull the appropriate arguments off of the cache to construct the URL.
         """
-        instance_kwargs = obj.cache.get_cached_instance_params(obj.pk, lambda: obj)
-        url_kwargs = dict([(arg_name, instance_kwargs[arg_name])
+        if isinstance(obj, models.User):
+            instance_kwargs = {'owner_username': obj.username}
+        else:
+            instance_kwargs = obj.cache.get_cached_instance_params(obj.pk, lambda: obj)
+        url_kwargs = dict([(arg_name, instance_kwargs.get(arg_name, None) or getattr(obj, arg_name))
                            for arg_name in self.url_arg_names])
         return url_kwargs
 
@@ -97,6 +100,16 @@ class DataSetRelatedField (ShareaboutsRelatedField):
     url_arg_names = ('owner_username', 'dataset_slug')
 
 
+class DataSetKeysRelatedField (ShareaboutsRelatedField):
+    view_name = 'apikey-list'
+    url_arg_names = ('owner_username', 'dataset_slug')
+
+
+class UserRelatedField (ShareaboutsRelatedField):
+    view_name = 'user-detail'
+    url_arg_names = ('owner_username',)
+
+
 class PlaceRelatedField (ShareaboutsRelatedField):
     view_name = 'place-detail'
     url_arg_names = ('owner_username', 'dataset_slug', 'place_id')
@@ -110,6 +123,10 @@ class SubmissionSetRelatedField (ShareaboutsRelatedField):
 class ShareaboutsIdentityField (ShareaboutsFieldMixin, serializers.HyperlinkedIdentityField):
     read_only = True
 
+    def __init__(self, *args, **kwargs):
+        view_name = kwargs.pop('view_name', None) or getattr(self, 'view_name', None)
+        super(ShareaboutsIdentityField, self).__init__(view_name=view_name, *args, **kwargs)
+    
     def field_to_native(self, obj, field_name):
         request = self.context.get('request', None)
         format = self.context.get('format', None)
@@ -129,15 +146,25 @@ class PlaceIdentityField (ShareaboutsIdentityField):
 
 class SubmissionSetIdentityField (ShareaboutsIdentityField):
     url_arg_names = ('owner_username', 'dataset_slug', 'place_id', 'submission_set_name')
+    view_name = 'submission-list'
 
-    def __init__(self, *args, **kwargs):
-        super(SubmissionSetIdentityField, self).__init__(
-            view_name=kwargs.pop('view_name', 'submission-list'),
-            *args, **kwargs)
+
+class DataSetPlaceSetIdentityField (ShareaboutsIdentityField):
+    url_arg_names = ('owner_username', 'dataset_slug')
+    view_name = 'place-list'
+
+
+class DataSetSubmissionSetIdentityField (ShareaboutsIdentityField):
+    url_arg_names = ('owner_username', 'dataset_slug', 'submission_set_name')
+    view_name = 'dataset-submission-list'
 
 
 class SubmissionIdentityField (ShareaboutsIdentityField):
     url_arg_names = ('owner_username', 'dataset_slug', 'place_id', 'submission_set_name', 'submission_id')
+
+
+class DataSetIdentityField (ShareaboutsIdentityField):
+    url_arg_names = ('owner_username', 'dataset_slug')
 
 
 class AttachmentSerializer (serializers.ModelSerializer):
@@ -270,11 +297,49 @@ class SubmissionSetSummarySerializer (CachedSerializer, serializers.HyperlinkedM
         fields = ('length', 'url')
 
 
+class DataSetPlaceSetSummarySerializer (serializers.HyperlinkedModelSerializer):
+    length = serializers.IntegerField(source='places_length')
+    url = DataSetPlaceSetIdentityField()
+
+    class Meta:
+        model = models.DataSet
+        fields = ('length', 'url')
+
+    def to_native(self, obj):
+        place_count_map = self.context['place_count_map_getter']()
+        obj.places_length = place_count_map[obj.pk]
+        data = super(DataSetPlaceSetSummarySerializer, self).to_native(obj)
+        return data
+
+
+class DataSetSubmissionSetSummarySerializer (serializers.HyperlinkedModelSerializer):
+    length = serializers.IntegerField(source='submission_set_length')
+    url = DataSetSubmissionSetIdentityField()
+
+    class Meta:
+        model = models.DataSet
+        fields = ('length', 'url')
+
+    def to_native(self, obj):
+        submission_sets_map = self.context['submission_sets_map_getter']()
+        sets = submission_sets_map[obj.id]
+        summaries = {}
+        for submission_set in sets:
+            set_name = submission_set['parent__name']
+            obj.submission_set_name = set_name
+            obj.submission_set_length = submission_set['length']
+            summaries[set_name] = super(DataSetSubmissionSetSummarySerializer, self).to_native(obj)
+        return summaries
+
+
 class PlaceSerializer (CachedSerializer, DataBlobProcessor, serializers.HyperlinkedModelSerializer):
     url = PlaceIdentityField()
     geometry = GeometryField(format='wkt')
     dataset = DataSetRelatedField()
     attachments = AttachmentSerializer(read_only=True)
+
+    class Meta:
+        model = models.Place
 
     def get_submission_set_summaries(self, obj):
         """
@@ -344,9 +409,6 @@ class PlaceSerializer (CachedSerializer, DataBlobProcessor, serializers.Hyperlin
 
         return data
 
-    class Meta:
-        model = models.Place
-
 
 class SubmissionSerializer (CachedSerializer, DataBlobProcessor, serializers.HyperlinkedModelSerializer):
     url = SubmissionIdentityField()
@@ -358,6 +420,26 @@ class SubmissionSerializer (CachedSerializer, DataBlobProcessor, serializers.Hyp
     class Meta:
         model = models.Submission
         exclude = ('parent',)
+
+
+class DataSetSerializer (CachedSerializer, serializers.HyperlinkedModelSerializer):
+    url = DataSetIdentityField()
+    owner = UserRelatedField()
+    keys = DataSetKeysRelatedField(source='*')
+    
+    places = DataSetPlaceSetSummarySerializer(source='*', read_only=True)
+    submission_sets = DataSetSubmissionSetSummarySerializer(source='*', read_only=True)
+
+    class Meta:
+        model = models.DataSet
+    
+    def to_native(self, obj):
+        data = super(DataSetSerializer, self).to_native(obj)
+
+        if hasattr(obj, 'distance'):
+            data['distance'] = str(obj.distance)
+
+        return data
 
 
 ###############################################################################

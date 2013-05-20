@@ -10,7 +10,7 @@ from ..models import User, DataSet, Place, SubmissionSet, Submission
 from ..apikey.models import ApiKey
 from ..apikey.auth import KEY_HEADER
 from ..views import (PlaceInstanceView, PlaceListView, SubmissionInstanceView,
-    SubmissionListView)
+    SubmissionListView, DataSetSubmissionListView, DataSetInstanceView)
 
 
 class TestPlaceInstanceView (TestCase):
@@ -1389,10 +1389,12 @@ class TestSubmissionListView (TestCase):
         # the wrong dataset or owner.
         request_kwargs = {
           'owner_username': 'mischevious_owner',
-          'dataset_slug': self.dataset.slug
+          'dataset_slug': self.dataset.slug,
+          'place_id': self.place.id,
+          'submission_set_name': self.submission.set_name
         }
 
-        path = reverse('place-list', kwargs=request_kwargs)
+        path = reverse('submission-list', kwargs=request_kwargs)
         request = self.factory.get(path)
         response = self.view(request, **request_kwargs)
 
@@ -1599,6 +1601,643 @@ class TestSubmissionListView (TestCase):
         self.assertEqual(final_num_submissions, start_num_submissions + 1)
         final_num_sets = SubmissionSet.objects.all().count()
         self.assertEqual(final_num_sets, start_num_sets + 1)
+
+
+class TestDataSetSubmissionListView (TestCase):
+    def setUp(self):
+        cache.clear()
+
+        self.owner_password = '123'
+        self.owner = User.objects.create_user(
+            username='aaron', 
+            password=self.owner_password, 
+            email='abc@example.com')
+        self.dataset = DataSet.objects.create(slug='ds', owner=self.owner)
+        self.place1 = Place.objects.create(
+          dataset=self.dataset,
+          geometry='POINT(2 3)',
+          submitter_name='Mjumbe',
+          data=json.dumps({
+            'type': 'ATM',
+            'name': 'K-Mart',
+            'private-secrets': 42
+          }),
+        )
+        self.invisible_place = Place.objects.create(
+          dataset=self.dataset,
+          geometry='POINT(3 4)',
+          submitter_name='Mjumbe',
+          visible=False,
+          data=json.dumps({
+            'type': 'ATM',
+            'name': 'Walmart',
+          }),
+        )
+        self.comments1 = SubmissionSet.objects.create(place=self.place1, name='comments')
+        self.likes1 = SubmissionSet.objects.create(place=self.place1, name='likes')
+        self.applause1 = SubmissionSet.objects.create(place=self.place1, name='applause')
+        self.submissions1 = [
+          Submission.objects.create(parent=self.comments1, dataset=self.dataset, data='{"comment": "Wow!", "private-email": "abc@example.com", "foo": 3}'),
+          Submission.objects.create(parent=self.comments1, dataset=self.dataset, data='{"foo": 3}'),
+          Submission.objects.create(parent=self.comments1, dataset=self.dataset, data='{"foo": 3}', visible=False),
+          Submission.objects.create(parent=self.likes1, dataset=self.dataset, data='{"bar": 3}'),
+          Submission.objects.create(parent=self.likes1, dataset=self.dataset, data='{"bar": 3}'),
+          Submission.objects.create(parent=self.likes1, dataset=self.dataset, data='{"bar": 3}'),
+          Submission.objects.create(parent=self.likes1, dataset=self.dataset, data='{"bar": 3}', visible=False),
+        ]
+        self.submission1 = self.submissions1[0]
+
+        self.place2 = Place.objects.create(
+          dataset=self.dataset,
+          geometry='POINT(2 3)',
+          submitter_name='Mjumbe',
+          data=json.dumps({
+            'type': 'ATM',
+            'name': 'K-Mart',
+            'private-secrets': 42
+          }),
+        )
+        self.comments2 = SubmissionSet.objects.create(place=self.place2, name='comments')
+        self.likes2 = SubmissionSet.objects.create(place=self.place2, name='likes')
+        self.applause2 = SubmissionSet.objects.create(place=self.place2, name='applause')
+        self.submissions2 = [
+          Submission.objects.create(parent=self.comments2, dataset=self.dataset, data='{"comment": "Wow!", "private-email": "abc@example.com", "foo": 3}'),
+          Submission.objects.create(parent=self.comments2, dataset=self.dataset, data='{"foo": 3}'),
+          Submission.objects.create(parent=self.comments2, dataset=self.dataset, data='{"foo": 3}', visible=False),
+          Submission.objects.create(parent=self.likes2, dataset=self.dataset, data='{"bar": 3}'),
+          Submission.objects.create(parent=self.likes2, dataset=self.dataset, data='{"bar": 3}'),
+          Submission.objects.create(parent=self.likes2, dataset=self.dataset, data='{"bar": 3}'),
+          Submission.objects.create(parent=self.likes2, dataset=self.dataset, data='{"bar": 3}', visible=False),
+        ]
+        self.submission2 = self.submissions2[0]
+
+        # These are mainly around to ensure that we don't get spillover from
+        # other datasets.
+        dataset2 = DataSet.objects.create(slug='ds2', owner=self.owner)
+        place3 = Place.objects.create(
+          dataset=dataset2,
+          geometry='point(3 4)',
+        )
+        comments3 = SubmissionSet.objects.create(place=place3, name='comments')
+        submissions3 = [
+          Submission.objects.create(parent=comments3, dataset=dataset2, data='{"comment": "Wow!", "private-email": "abc@example.com", "foo": 3}'),
+          Submission.objects.create(parent=comments3, dataset=dataset2, data='{"foo": 3}'),
+          Submission.objects.create(parent=comments3, dataset=dataset2, data='{"foo": 3}', visible=False),
+        ]
+
+        self.apikey = ApiKey.objects.create(user=self.owner, key='abc')
+        self.apikey.datasets.add(self.dataset)
+
+        self.request_kwargs = {
+          'owner_username': self.owner.username,
+          'dataset_slug': self.dataset.slug,
+          'submission_set_name': self.comments1.name
+        }
+
+        self.factory = RequestFactory()
+        self.path = reverse('dataset-submission-list', kwargs=self.request_kwargs)
+        self.view = DataSetSubmissionListView.as_view()
+
+    def tearDown(self):
+        User.objects.all().delete()
+        DataSet.objects.all().delete()
+        Place.objects.all().delete()
+        SubmissionSet.objects.all().delete()
+        Submission.objects.all().delete()
+        ApiKey.objects.all().delete()
+
+        cache.clear()
+
+    def test_GET_response(self):
+        request = self.factory.get(self.path)
+        response = self.view(request, **self.request_kwargs)
+        data = json.loads(response.rendered_content)
+
+        # Check that the request was successful
+        self.assertEqual(response.status_code, 200, response.render())
+
+        # Check that it's a results collection
+        self.assertIn('results', data)
+        self.assertIn('metadata', data)
+
+        # Check that the metadata looks right
+        self.assertIn('length', data['metadata'])
+        self.assertIn('next', data['metadata'])
+        self.assertIn('previous', data['metadata'])
+        self.assertIn('page', data['metadata'])
+
+        # Check that we have the right number of results
+        self.assertEqual(len(data['results']), 4)
+
+        self.assertEqual(data['results'][0]['url'],
+            'http://testserver' + reverse('submission-detail', args=[
+                self.owner.username, self.dataset.slug, self.place1.id,
+                self.submission1.set_name, self.submission1.id]))
+
+    def test_GET_csv_response(self):
+        request = self.factory.get(self.path + '?format=csv')
+        response = self.view(request, **self.request_kwargs)
+        
+        rows = list(csv.reader(StringIO(response.rendered_content)))
+        headers = rows[0]
+
+        # Check that the request was successful
+        self.assertEqual(response.status_code, 200, response.render())
+
+        # Check that it's got good headers
+        self.assertIn('dataset', headers)
+        self.assertIn('comment', headers)
+        self.assertIn('foo', headers)
+
+        # Check that we have the right number of rows
+        self.assertEqual(len(rows), 5)
+
+    def test_GET_filtered_response(self):
+        Submission.objects.create(dataset=self.dataset, parent=self.comments1, data=json.dumps({'baz': 'bar', 'name': 1})),
+        Submission.objects.create(dataset=self.dataset, parent=self.comments2, data=json.dumps({'baz': 'bar', 'name': 2})),
+        Submission.objects.create(dataset=self.dataset, parent=self.comments1, data=json.dumps({'baz': 'bam', 'name': 3})),
+        Submission.objects.create(dataset=self.dataset, parent=self.comments2, data=json.dumps({'name': 4})),
+        
+        request = self.factory.get(self.path + '?baz=bar')
+        response = self.view(request, **self.request_kwargs)
+        data = json.loads(response.rendered_content)
+
+        # Check that there are ATM features
+        self.assertEqual(response.status_code, 200)
+        self.assert_(all([result.get('baz') == 'bar' for result in data['results']]))
+        self.assertEqual(len(data['results']), 2)
+
+        request = self.factory.get(self.path + '?baz=qux')
+        response = self.view(request, **self.request_kwargs)
+        data = json.loads(response.rendered_content)
+
+        # Check that the request was successful
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(data['results']), 0)
+    
+        request = self.factory.get(self.path + '?nonexistent=foo')
+        response = self.view(request, **self.request_kwargs)
+        data = json.loads(response.rendered_content)
+
+        # Check that the request was successful
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(data['results']), 0)
+    
+    def test_GET_response_with_private_data(self):
+        #
+        # View should not return private data normally
+        #
+        request = self.factory.get(self.path)
+        response = self.view(request, **self.request_kwargs)
+        data = json.loads(response.rendered_content)
+
+        # Check that the request was successful
+        self.assertEqual(response.status_code, 200)
+
+        # Check that the private data is not in the properties
+        self.assertNotIn('private-email', data['results'][0])
+
+        # --------------------------------------------------
+
+        #
+        # View should 401 when not allowed to request private data (not authenticated)
+        #
+        request = self.factory.get(self.path + '?include_private')
+        response = self.view(request, **self.request_kwargs)
+        data = json.loads(response.rendered_content)
+
+        # Check that the request was restricted
+        self.assertEqual(response.status_code, 401)
+
+        # --------------------------------------------------
+
+        #
+        # View should 403 when not allowed to request private data (api key)
+        #
+        request = self.factory.get(self.path + '?include_private')
+        request.META[KEY_HEADER] = self.apikey.key
+        response = self.view(request, **self.request_kwargs)
+        data = json.loads(response.rendered_content)
+
+        # Check that the request was restricted
+        self.assertEqual(response.status_code, 403)
+
+        # --------------------------------------------------
+
+        #
+        # View should 403 when not allowed to request private data (not owner)
+        #
+        request = self.factory.get(self.path + '?include_private')
+        request.user = User.objects.create(username='new_user', password='password')
+        response = self.view(request, **self.request_kwargs)
+        data = json.loads(response.rendered_content)
+
+        # Check that the request was restricted
+        self.assertEqual(response.status_code, 403)
+
+        # --------------------------------------------------
+
+        #
+        # View should return private data when owner is logged in (Session Auth)
+        #
+        request = self.factory.get(self.path + '?include_private')
+        request.user = self.owner
+        response = self.view(request, **self.request_kwargs)
+        data = json.loads(response.rendered_content)
+
+        # Check that the request was successful
+        self.assertEqual(response.status_code, 200)
+
+        # Check that the private data is in the properties
+        self.assertIn('private-email', data['results'][0])
+
+        # --------------------------------------------------
+
+        #
+        # View should return private data when owner is logged in (Basic Auth)
+        #
+        request = self.factory.get(self.path + '?include_private')
+        request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(':'.join([self.owner.username, '123']))
+        response = self.view(request, **self.request_kwargs)
+        data = json.loads(response.rendered_content)
+
+        # Check that the request was successful
+        self.assertEqual(response.status_code, 200)
+
+        # Check that the private data is in the properties
+        self.assertIn('private-email', data['results'][0])
+
+    def test_GET_invalid_url(self):
+        # Make sure that we respond with 404 if a slug is supplied, but for
+        # the wrong dataset or owner.
+        request_kwargs = {
+          'owner_username': 'mischevious_owner',
+          'dataset_slug': self.dataset.slug,
+          'submission_set_name': self.comments1.name
+        }
+
+        path = reverse('dataset-submission-list', kwargs=request_kwargs)
+        request = self.factory.get(path)
+        response = self.view(request, **request_kwargs)
+
+        self.assertEqual(response.status_code, 404)
+ 
+    def test_GET_response_with_invisible_data(self):
+        #
+        # View should not return invisible data normally
+        #
+        request = self.factory.get(self.path)
+        response = self.view(request, **self.request_kwargs)
+        data = json.loads(response.rendered_content)
+
+        # Check that the request was successful
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(data['results']), 4)
+
+        # --------------------------------------------------
+
+        #
+        # View should 401 when not allowed to request private data (not authenticated)
+        #
+        request = self.factory.get(self.path + '?include_invisible')
+        response = self.view(request, **self.request_kwargs)
+        data = json.loads(response.rendered_content)
+
+        # Check that the request was restricted
+        self.assertEqual(response.status_code, 401)
+
+        # --------------------------------------------------
+
+        #
+        # View should 403 when not allowed to request private data (api key)
+        #
+        request = self.factory.get(self.path + '?include_invisible')
+        request.META[KEY_HEADER] = self.apikey.key
+        response = self.view(request, **self.request_kwargs)
+        data = json.loads(response.rendered_content)
+
+        # Check that the request was restricted
+        self.assertEqual(response.status_code, 403)
+
+        # --------------------------------------------------
+
+        #
+        # View should 403 when not allowed to request private data (not owner)
+        #
+        request = self.factory.get(self.path + '?include_invisible')
+        request.user = User.objects.create(username='new_user', password='password')
+        response = self.view(request, **self.request_kwargs)
+        data = json.loads(response.rendered_content)
+
+        # Check that the request was restricted
+        self.assertEqual(response.status_code, 403)
+
+        # --------------------------------------------------
+
+        #
+        # View should return private data when owner is logged in (Session Auth)
+        #
+        request = self.factory.get(self.path + '?include_invisible')
+        request.user = self.owner
+        response = self.view(request, **self.request_kwargs)
+        data = json.loads(response.rendered_content)
+
+        # Check that the request was successful
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(data['results']), 6)
+
+        # --------------------------------------------------
+
+        #
+        # View should return private data when owner is logged in (Basic Auth)
+        #
+        request = self.factory.get(self.path + '?include_invisible')
+        request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(':'.join([self.owner.username, '123']))
+        response = self.view(request, **self.request_kwargs)
+        data = json.loads(response.rendered_content)
+
+        # Check that the request was successful
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(data['results']), 6)
+
+
+class TestDataSetInstanceView (TestCase):
+    def setUp(self):
+        cache.clear()
+
+        self.owner = User.objects.create_user(username='aaron', password='123', email='abc@example.com')
+        self.dataset = DataSet.objects.create(slug='ds', owner=self.owner)
+        self.place = Place.objects.create(
+          dataset=self.dataset,
+          geometry='POINT(2 3)',
+          submitter_name='Mjumbe',
+          data=json.dumps({
+            'type': 'ATM',
+            'name': 'K-Mart',
+            'private-secrets': 42
+          }),
+        )
+        self.comments = SubmissionSet.objects.create(place=self.place, name='comments')
+        self.likes = SubmissionSet.objects.create(place=self.place, name='likes')
+        self.applause = SubmissionSet.objects.create(place=self.place, name='applause')
+        self.submissions = [
+          Submission.objects.create(parent=self.comments, dataset=self.dataset, data='{"comment": "Wow!", "private-email": "abc@example.com", "foo": 3}'),
+          Submission.objects.create(parent=self.comments, dataset=self.dataset, data='{"foo": 3}'),
+          Submission.objects.create(parent=self.comments, dataset=self.dataset, data='{"foo": 3}', visible=False),
+          Submission.objects.create(parent=self.likes, dataset=self.dataset, data='{"bar": 3}'),
+          Submission.objects.create(parent=self.likes, dataset=self.dataset, data='{"bar": 3}'),
+          Submission.objects.create(parent=self.likes, dataset=self.dataset, data='{"bar": 3}'),
+          Submission.objects.create(parent=self.likes, dataset=self.dataset, data='{"bar": 3}', visible=False),
+        ]
+        self.submission = self.comments.children.all()[0]
+
+
+        self.invisible_place = Place.objects.create(
+          dataset=self.dataset,
+          geometry='POINT(3 4)',
+          submitter_name='Mjumbe',
+          visible=False,
+          data=json.dumps({
+            'type': 'ATM',
+            'name': 'K-Mart',
+          }),
+        )
+
+        self.apikey = ApiKey.objects.create(user=self.owner, key='abc')
+        self.apikey.datasets.add(self.dataset)
+
+        self.request_kwargs = {
+          'owner_username': self.owner.username,
+          'dataset_slug': self.dataset.slug
+        }
+
+        self.factory = RequestFactory()
+        self.path = reverse('dataset-detail', kwargs=self.request_kwargs)
+        self.view = DataSetInstanceView.as_view()
+
+    def tearDown(self):
+        User.objects.all().delete()
+        DataSet.objects.all().delete()
+        Place.objects.all().delete()
+        SubmissionSet.objects.all().delete()
+        Submission.objects.all().delete()
+        ApiKey.objects.all().delete()
+
+        cache.clear()
+
+    def test_GET_response(self):
+        request = self.factory.get(self.path)
+        response = self.view(request, **self.request_kwargs)
+        data = json.loads(response.rendered_content)
+
+        # Check that the request was successful
+        self.assertEqual(response.status_code, 200, response.render())
+
+        # Check that data attribute is not present
+        self.assertNotIn('data', data)
+
+        # Check that the appropriate attributes are in the properties
+        self.assertIn('url', data)
+        self.assertIn('slug', data)
+        self.assertIn('display_name', data)
+        self.assertIn('keys', data)
+        self.assertIn('owner', data)
+        self.assertIn('places', data)
+        self.assertIn('submission_sets', data)
+        
+        # Check that the URL is right
+        self.assertEqual(data['url'], 
+            'http://testserver' + reverse('dataset-detail', args=[
+                self.owner.username, self.dataset.slug]))
+
+    def test_GET_from_cache(self):
+        path = reverse('dataset-detail', kwargs=self.request_kwargs)
+        request = self.factory.get(path)
+        
+        # Check that we make a finite number of queries
+        # - SELECT * FROM sa_api_dataset 
+        #       INNER JOIN auth_user ON (owner_id = auth_user.id) 
+        #       WHERE (username = '<owner_username>'  AND slug = '<dataset_slug>' );
+        #
+        # - SELECT * FROM sa_api_submittedthing 
+        #       WHERE dataset_id IN (<dataset_id>);
+        #
+        # - SELECT * FROM sa_api_place
+        #       INNER JOIN sa_api_submittedthing ON (submittedthing_ptr_id = sa_api_submittedthing.id) 
+        #       WHERE submittedthing_ptr_id IN (<place_ids>);
+        #
+        # - SELECT * FROM "auth_user" 
+        #       WHERE id = <owner_id>;
+        #
+        # - SELECT COUNT(*) FROM sa_api_place 
+        #       INNER JOIN sa_api_submittedthing ON (submittedthing_ptr_id = sa_api_submittedthing.id) 
+        #       WHERE dataset_id = <dataset_id>  AND visible = True;
+        #
+        # - SELECT sa_api_submittedthing.dataset_id, sa_api_submissionset.name, COUNT(*) AS "length" FROM sa_api_submission 
+        #       LEFT OUTER JOIN sa_api_submittedthing ON (submittedthing_ptr_id = sa_api_submittedthing.id) 
+        #       INNER JOIN sa_api_submissionset ON (parent_id = sa_api_submissionset.id) 
+        #       WHERE dataset_id = <dataset_id> 
+        #       GROUP BY dataset_id, sa_api_submissionset.name;
+        with self.assertNumQueries(6):
+            response = self.view(request, **self.request_kwargs)
+            self.assertEqual(response.status_code, 200)
+
+        path = reverse('dataset-detail', kwargs=self.request_kwargs)
+        request = self.factory.get(path)
+
+        # Check that this performs no more queries, since it's all cached
+        with self.assertNumQueries(0):
+            response = self.view(request, **self.request_kwargs)
+            self.assertEqual(response.status_code, 200)
+
+    def test_DELETE_response(self):
+        #
+        # View should 401 when trying to delete when not authenticated
+        #
+        request = self.factory.delete(self.path)
+        response = self.view(request, **self.request_kwargs)
+        self.assertEqual(response.status_code, 401)
+
+        #
+        # View should 401 or 403 when authenticated with an API key
+        #
+        request = self.factory.delete(self.path)
+        request.META[KEY_HEADER] = self.apikey.key
+        response = self.view(request, **self.request_kwargs)
+
+        # Check that the request was successful
+        self.assertIn(response.status_code, (401, 403))
+
+        #
+        # View should delete the dataset when owner is directly authenticated
+        #
+        request = self.factory.delete(self.path)
+        request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(':'.join([self.owner.username, '123']))
+        response = self.view(request, **self.request_kwargs)
+
+        # Check that the request was successful
+        self.assertEqual(response.status_code, 204)
+
+        # Check that no data was returned
+        self.assertIsNone(response.data)
+ 
+    def test_GET_response_with_invisible_data(self):
+        #
+        # View should not return invisible data normally
+        #
+        request = self.factory.get(self.path)
+        response = self.view(request, **self.request_kwargs)
+        data = json.loads(response.rendered_content)
+
+        # Check that the request was successful
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(data['submission_sets']['likes']['length'], 3)
+
+        # --------------------------------------------------
+
+        #
+        # View should 401 when not allowed to request private data (not authenticated)
+        #
+        request = self.factory.get(self.path + '?include_invisible')
+        response = self.view(request, **self.request_kwargs)
+        data = json.loads(response.rendered_content)
+
+        # Check that the request was restricted
+        self.assertEqual(response.status_code, 401)
+
+        # --------------------------------------------------
+
+        #
+        # View should 403 when not allowed to request private data (api key)
+        #
+        request = self.factory.get(self.path + '?include_invisible')
+        request.META[KEY_HEADER] = self.apikey.key
+        response = self.view(request, **self.request_kwargs)
+        data = json.loads(response.rendered_content)
+
+        # Check that the request was restricted
+        self.assertIn(response.status_code, (401, 403))
+
+        # --------------------------------------------------
+
+        #
+        # View should 403 when not allowed to request private data (not owner)
+        #
+        request = self.factory.get(self.path + '?include_invisible')
+        request.user = User.objects.create(username='new_user', password='password')
+        response = self.view(request, **self.request_kwargs)
+        data = json.loads(response.rendered_content)
+
+        # Check that the request was restricted
+        self.assertEqual(response.status_code, 403)
+
+        # --------------------------------------------------
+
+        #
+        # View should return private data when owner is logged in (Session Auth)
+        #
+        request = self.factory.get(self.path + '?include_invisible')
+        request.user = self.owner
+        response = self.view(request, **self.request_kwargs)
+        data = json.loads(response.rendered_content)
+
+        # Check that the request was successful
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(data['submission_sets']['likes']['length'], 4)
+
+        # --------------------------------------------------
+
+        #
+        # View should return private data when owner is logged in (Basic Auth)
+        #
+        request = self.factory.get(self.path + '?include_invisible')
+        request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(':'.join([self.owner.username, '123']))
+        response = self.view(request, **self.request_kwargs)
+        data = json.loads(response.rendered_content)
+
+        # Check that the request was successful
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(data['submission_sets']['likes']['length'], 4)
+
+    def test_PUT_response(self):
+        dataset_data = json.dumps({
+          'slug': 'newds',
+          'display_name': 'New Name for the DataSet'
+        })
+
+        #
+        # View should 401 when trying to update when not authenticated
+        #
+        request = self.factory.put(self.path, data=dataset_data, content_type='application/json')
+        response = self.view(request, **self.request_kwargs)
+        self.assertEqual(response.status_code, 401)
+
+        #
+        # View should 401 or 403 when authenticated with API key
+        #
+        request = self.factory.put(self.path, data=dataset_data, content_type='application/json')
+        request.META[KEY_HEADER] = self.apikey.key
+        response = self.view(request, **self.request_kwargs)
+        self.assertIn(response.status_code, (401, 403))
+
+        #
+        # View should update the place and 301 when owner is authenticated
+        #
+        request = self.factory.put(self.path, data=dataset_data, content_type='application/json')
+        request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(':'.join([self.owner.username, '123']))
+
+        response = self.view(request, **self.request_kwargs)
+
+        data = json.loads(response.rendered_content)
+
+        # Check that the request was successful
+        self.assertEqual(response.status_code, 301)
+
+        # Check that the summaries have been incorporated into the data
+        self.assertEqual(data.get('places').get('length'), 1)
+        self.assertEqual(data.get('submission_sets').get('likes').get('length'), 3)
+
+
 
 
 

@@ -57,7 +57,7 @@ class SubmittedThing (CacheClearingModel, ModelWithDataBlob, TimeStampedModel):
     """
 #    submitter = models.ForeignKey('Submitter', related_name='things')
     submitter_name = models.CharField(max_length=256, null=True, blank=True)
-    dataset = models.ForeignKey('DataSet', related_name='submitted_thing_set',
+    dataset = models.ForeignKey('DataSet', related_name='things',
                                 blank=True)
     visible = models.BooleanField(default=True, blank=True)
 
@@ -93,6 +93,18 @@ class DataSet (CacheClearingModel, models.Model):
     class Meta:
         unique_together = (('owner', 'slug'),
                            )
+    
+    @property
+    def places(self):
+        if not hasattr(self, '_places'):
+            self._places = Place.objects.filter(dataset=self)
+        return self._places
+    
+    @property
+    def submissions(self):
+        if not hasattr(self, '_submissions'):
+            self._submissions = Submission.objects.filter(dataset=self)
+        return self._submissions
 
 
 class Place (SubmittedThing):

@@ -16,20 +16,40 @@ urlpatterns = patterns('sa_api',
         views.PlaceListView.as_view(),
         name='place-list'),
 
-    url(r'^(?P<owner_username>[^/]+)/datasets/(?P<dataset_slug>[^/]+)/(?P<submission_set_name>[^/]+)$',
+    url(r'^(?P<owner_username>[^/]+)/datasets/(?P<dataset_slug>[^/]+)/keys$',
         lambda *a, **k: None,
+        name='apikey-list'),
+
+    url(r'^(?P<owner_username>[^/]+)/datasets/(?P<dataset_slug>[^/]+)/(?P<submission_set_name>[^/]+)$',
+        views.DataSetSubmissionListView.as_view(),
         name='dataset-submission-list'),
 
     url(r'^(?P<owner_username>[^/]+)/datasets/(?P<dataset_slug>[^/]+)$',
-        lambda *a, **k: None,
+        views.DataSetInstanceView.as_view(),
         name='dataset-detail'),
     url(r'^(?P<owner_username>[^/]+)/datasets$',
         lambda *a, **k: None,
         name='dataset-list'),
 
+    url(r'^(?P<owner_username>[^/]+)$',
+        lambda *a, **k: None,
+        name='user-detail'),
+
     url(r'^(?P<owner_username>[^/]+)/datasets/(?P<dataset_slug>[^/]+)/activity$',
         lambda *a, **k: None,
         name='action-list'),
+
+    url(r'^(?P<owner_username>[^/]+)/datasets/(?P<dataset_slug>[^/]+)/places/(?P<place_id>\d+)/attachments$',
+        lambda *a, **k: None,
+        name='place-attachments'),
+    url(r'^(?P<owner_username>[^/]+)/datasets/(?P<dataset_slug>[^/]+)/places/(?P<place_id>\d+)/(?P<submission_set_name>[^/]+)/(?P<submission_id>\d+)/attachments$',
+        lambda *a, **k: None,
+        name='submission-attachments'),
+
+    url(r'^(?P<owner_username>[^/]+)/password$',
+        lambda *a, **k: None,
+        name='user-password'),
+
 )
 
 #places_base_regex = r'^(?P<dataset__owner__username>[^/]+)/datasets/(?P<dataset__slug>[^/]+)/places/'

@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.contrib.gis.geos import GEOSGeometry, Point
 from django.core.cache import cache
+from django.db.models import Count
 from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404
 from rest_framework import (views, permissions, mixins, authentication,
@@ -186,8 +187,10 @@ class OwnedResourceMixin (object):
         return True
 
     def verify_object(self, obj):
-        if not obj.visible and INCLUDE_INVISIBLE_PARAM not in self.request.GET:
-            raise QueryError
+        # If the object is invisible, check that include_invisible is on
+        if not getattr(obj, 'visible', True):
+            if INCLUDE_INVISIBLE_PARAM not in self.request.GET:
+                raise QueryError
 
         if not self.is_verified_object(obj):
             raise Http404
@@ -453,7 +456,19 @@ class SubmissionInstanceView (CachedResourceMixin, OwnedResourceMixin, generics.
         
         Show private data attributes on the submission. Only the dataset owner
         is allowed to request private attributes.
-    
+
+    PUT
+    ---
+    Update a submission
+
+    **Authentication**: Basic, session, or key auth *(required)*
+
+    DELETE
+    ------
+    Delete a submission
+
+    **Authentication**: Basic, session, or key auth *(required)*
+
     ------------------------------------------------------------
     """
 
@@ -477,7 +492,7 @@ class SubmissionInstanceView (CachedResourceMixin, OwnedResourceMixin, generics.
         return obj
 
 
-class SubmissionListView (CachedResourceMixin, LocatedResourceMixin, OwnedResourceMixin, FilteredResourceMixin, generics.ListCreateAPIView):
+class SubmissionListView (CachedResourceMixin, OwnedResourceMixin, FilteredResourceMixin, generics.ListCreateAPIView):
     """
     
     GET
@@ -523,11 +538,13 @@ class SubmissionListView (CachedResourceMixin, LocatedResourceMixin, OwnedResour
     place_id_kwarg = 'place_id'
     submission_set_name_kwarg = 'submission_set_name'
 
-    def get_submission_set(self, dataset):
+    def get_place(self, dataset):
         place_id = self.kwargs[self.place_id_kwarg]
-        submission_set_name = self.kwargs[self.submission_set_name_kwarg]
-
         place = get_object_or_404(models.Place, dataset=dataset, id=place_id)
+        return place
+
+    def get_submission_set(self, dataset, place):
+        submission_set_name = self.kwargs[self.submission_set_name_kwarg]
 
         try:
             submission_set = models.SubmissionSet.objects.get(name=submission_set_name, place=place)
@@ -538,18 +555,21 @@ class SubmissionListView (CachedResourceMixin, LocatedResourceMixin, OwnedResour
 
     def pre_save(self, obj):
         super(SubmissionListView, self).pre_save(obj)
-        obj.dataset = self.get_dataset()
+        dataset = self.get_dataset()
+        place = self.get_place(dataset)
 
         # Before we save the submission, we need a submission set as the parent.
         # Check that we have one that exists, and save it if it is not saved.
-        parent = self.get_submission_set(obj.dataset)
+        parent = self.get_submission_set(dataset, place)
         if parent.pk is None:
             parent.save()
+        obj.dataset = dataset
         obj.parent = parent
 
     def get_queryset(self):
         dataset = self.get_dataset()
-        submission_set = self.get_submission_set(dataset)
+        place = self.get_place(dataset)
+        submission_set = self.get_submission_set(dataset, place)
 
         queryset = super(SubmissionListView, self).get_queryset()
 
@@ -561,6 +581,179 @@ class SubmissionListView (CachedResourceMixin, LocatedResourceMixin, OwnedResour
         return queryset.filter(parent=submission_set)\
             .select_related('dataset', 'parent', 'parent__place')\
             .prefetch_related('attachments')
+
+
+class DataSetSubmissionListView (CachedResourceMixin, OwnedResourceMixin, FilteredResourceMixin, generics.ListAPIView):
+    """
+    
+    GET
+    ---
+    Get all the submissions across a dataset's place's submission sets
+
+    **Authentication**: Basic, session, or key auth *(optional)*
+
+    **Request Parameters**:
+
+      * `include_invisible` *(only direct auth)*
+        
+        Show the place even if it is set as. You must specify use this flag to
+        view an invisible place. The flag will also apply to submissions, if the
+        `include_submissions` flag is set. Only the dataset owner is allowed to
+        request invisible resoruces.
+        
+      * `include_private` *(only direct auth)*
+        
+        Show private data attributes on the place, and on any submissions if the
+        `include_submissions` flag is set. Only the dataset owner is allowed to
+        request private attributes.
+      
+      * `<attr>=<value>`
+      
+        Filter the place list to only return the places where the attribute is
+        equal to the given value.
+    
+    ------------------------------------------------------------
+    """
+
+    model = models.Submission
+    serializer_class = serializers.SubmissionSerializer
+    pagination_serializer_class = serializers.PaginatedResultsSerializer
+    
+    submission_set_name_kwarg = 'submission_set_name'
+
+    def get_submission_sets(self, dataset):
+        submission_set_name = self.kwargs[self.submission_set_name_kwarg]
+        submission_sets = models.SubmissionSet.objects.filter(name=submission_set_name, place__dataset=dataset)
+        return submission_sets
+
+    def get_queryset(self):
+        dataset = self.get_dataset()
+        submission_sets = self.get_submission_sets(dataset)
+
+        queryset = super(DataSetSubmissionListView, self).get_queryset()
+
+        # If the user is not allowed to request invisible data then we won't
+        # be here in the first place -- auth or permissions woulda got us.
+        if INCLUDE_INVISIBLE_PARAM not in self.request.GET:
+            queryset = queryset.filter(visible=True)
+
+        return queryset.filter(parent__in=submission_sets)\
+            .select_related('dataset', 'parent', 'parent__place')\
+            .prefetch_related('attachments')
+
+
+class DataSetInstanceView (CachedResourceMixin, OwnedResourceMixin, generics.RetrieveUpdateDestroyAPIView):
+    """
+    GET
+    ---
+    Get a particular submission
+
+    **Authentication**: Basic, session, or key auth *(optional)*
+
+    **Request Parameters**:
+
+      * `include_invisible` *(only direct auth)*
+        
+        Count visible and invisible places and submissions in the dataset. Only
+        the dataset owner is allowed to request invisible resoruces.
+        
+    PUT
+    ---
+    Update a submission
+
+    **Authentication**: Basic or session auth *(required)*
+
+    DELETE
+    ------
+    Delete a submission
+
+    **Authentication**: Basic or session auth *(required)*
+
+    ------------------------------------------------------------
+    """
+
+    model = models.DataSet
+    serializer_class = serializers.DataSetSerializer
+    authentication_classes = (authentication.BasicAuthentication, authentication.SessionAuthentication)
+    
+    def get_object_or_404(self, owner_username, dataset_slug):
+        try:
+            return self.model.objects\
+                .filter(slug=dataset_slug, owner__username=owner_username)\
+                .select_related('dataset', 'parent__place')\
+                .prefetch_related('things__place')\
+                .get()
+        except self.model.DoesNotExist:
+            raise Http404
+    
+    def get_place_count(self):
+        include_invisible = INCLUDE_INVISIBLE_PARAM in self.request.GET
+        places = self.object.places
+        if not include_invisible:
+            places = places.extra(where=['"sa_api_submittedthing"."visible" = True'])
+        return places.count()
+    
+    def get_submission_sets(self):
+        include_invisible = INCLUDE_INVISIBLE_PARAM in self.request.GET
+        submissions = self.object.submissions.select_related('parent')
+        if not include_invisible:
+            submissions = submissions.extra(where=['"sa_api_submittedthing"."visible" = True'])
+        submissions = submissions.values('dataset', 'parent__name').annotate(length=Count('dataset'))
+        return submissions
+    
+    def get_serializer_context(self):
+        context = super(DataSetInstanceView, self).get_serializer_context()
+        include_invisible = INCLUDE_INVISIBLE_PARAM in self.request.GET
+
+        # The place_count_map_getter returns a dictionary where the keys are 
+        # dataset ids and the values are corresponding place counts.
+        context['place_count_map_getter'] = (
+            lambda: {self.object.pk: self.get_place_count()}
+        )
+        
+        # The submission_sets_map_getter returns a dictionary where the keys are 
+        # dataset ids and the values are corresponding submission set summaries.
+        context['submission_sets_map_getter'] = (
+            lambda: {self.object.pk: self.get_submission_sets()}
+        )
+        
+        return context
+    
+    def get_object(self, queryset=None):
+        dataset_slug = self.kwargs[self.dataset_slug_kwarg]
+        owner_username = self.kwargs[self.owner_username_kwarg]
+        obj = self.get_object_or_404(owner_username, dataset_slug)
+        self.verify_object(obj)
+        return obj
+    
+    def put(self, request, owner_username, dataset_slug):
+        response = super(DataSetInstanceView, self).put(request, owner_username=owner_username, dataset_slug=dataset_slug)
+        if 'slug' in response.data and response.data['slug'] != dataset_slug:
+            response.status_code = 301
+            response['Location'] = response.data['url']
+        return response
+
+
+class DataSetListView (CachedResourceMixin, OwnedResourceMixin, FilteredResourceMixin, generics.ListCreateAPIView):
+    
+    def get_serializer_context(self):
+        context = super(DataSetListView, self).get_serializer_context()
+        include_invisible = INCLUDE_INVISIBLE_PARAM in self.request.GET
+
+        # Get the number of places
+        places = self.object.places
+        if not include_invisible:
+            places = places.extra(where=['"sa_api_submittedthing"."visible" = True'])
+        context['places_map'] = {self.object.pk: places}
+        
+        # Get the numbers of submissions
+        submissions = self.object.submissions.select_related('parent')
+        if not include_invisible:
+            subimssions = submissions.extra(where=['"sa_api_submittedthing"."visible" = True'])
+        submissions = submissions.values('dataset', 'parent__name').annotate(length=Count('dataset'))
+        context['submissions_set_summary_map'] = {self.object.pk: places.count()}
+        
+        return context
 
 
 #from . import forms
