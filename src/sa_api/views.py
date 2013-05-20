@@ -17,6 +17,8 @@ from . import renderers
 from . import apikey
 from .params import (INCLUDE_INVISIBLE_PARAM, INCLUDE_PRIVATE_PARAM,
     INCLUDE_SUBMISSIONS_PARAM, NEAR_PARAM, FORMAT_PARAM)
+from itertools import groupby
+from collections import defaultdict
 import re
 import ujson as json
 import logging
@@ -164,13 +166,16 @@ class OwnedResourceMixin (object):
         request.allowed_username = kwargs[self.owner_username_kwarg]
         return super(OwnedResourceMixin, self).dispatch(request, *args, **kwargs)
 
-    def get_dataset(self):
+    def get_owner(self):
         owner_username = self.kwargs[self.owner_username_kwarg]
-        dataset_slug = self.kwargs[self.dataset_slug_kwarg]
-
         owner = get_object_or_404(models.User, username=owner_username)
-        dataset = get_object_or_404(models.DataSet, slug=dataset_slug, owner=owner)
+        return owner
 
+    def get_dataset(self):
+        owner = self.get_owner()
+
+        dataset_slug = self.kwargs[self.dataset_slug_kwarg]
+        dataset = get_object_or_404(models.DataSet, slug=dataset_slug, owner=owner)
         return dataset
 
     def is_verified_object(self, obj):
@@ -734,26 +739,56 @@ class DataSetInstanceView (CachedResourceMixin, OwnedResourceMixin, generics.Ret
         return response
 
 
-class DataSetListView (CachedResourceMixin, OwnedResourceMixin, FilteredResourceMixin, generics.ListCreateAPIView):
+class DataSetListView (CachedResourceMixin, OwnedResourceMixin, generics.ListCreateAPIView):
+    """
+    """
+
+    model = models.DataSet
+    serializer_class = serializers.DataSetSerializer
+    pagination_serializer_class = serializers.PaginatedResultsSerializer
+    authentication_classes = (authentication.BasicAuthentication, authentication.SessionAuthentication)
+
+    def get_place_counts(self):
+        include_invisible = INCLUDE_INVISIBLE_PARAM in self.request.GET
+        places = models.Place.objects.filter(dataset__in=self.get_queryset())
+        if not include_invisible:
+            places = places.extra(where=['"sa_api_submittedthing"."visible" = True'])
+        places = places.values('dataset').annotate(length=Count('dataset'))
+        return dict([(place['dataset'], place['length']) for place in places])
+    
+    def get_all_submission_sets(self):
+        include_invisible = INCLUDE_INVISIBLE_PARAM in self.request.GET
+        submissions = models.Submission.objects.filter(dataset__in=self.get_queryset()).select_related('parent')
+        if not include_invisible:
+            submissions = submissions.extra(where=['"sa_api_submittedthing"."visible" = True'])
+        submissions = submissions.values('dataset', 'parent__name').annotate(length=Count('dataset'))
+        
+        sets = defaultdict(list)
+        for summary in submissions:
+            sets[summary['dataset']].append(summary)
+        return sets
     
     def get_serializer_context(self):
         context = super(DataSetListView, self).get_serializer_context()
         include_invisible = INCLUDE_INVISIBLE_PARAM in self.request.GET
 
-        # Get the number of places
-        places = self.object.places
-        if not include_invisible:
-            places = places.extra(where=['"sa_api_submittedthing"."visible" = True'])
-        context['places_map'] = {self.object.pk: places}
+        # The place_count_map_getter returns a dictionary where the keys are 
+        # dataset ids and the values are corresponding place counts.
+        context['place_count_map_getter'] = (
+            lambda: self.get_place_counts()
+        )
         
-        # Get the numbers of submissions
-        submissions = self.object.submissions.select_related('parent')
-        if not include_invisible:
-            subimssions = submissions.extra(where=['"sa_api_submittedthing"."visible" = True'])
-        submissions = submissions.values('dataset', 'parent__name').annotate(length=Count('dataset'))
-        context['submissions_set_summary_map'] = {self.object.pk: places.count()}
+        # The submission_sets_map_getter returns a dictionary where the keys are 
+        # dataset ids and the values are corresponding submission set summaries.
+        context['submission_sets_map_getter'] = (
+            lambda: self.get_all_submission_sets()
+        )
         
         return context
+
+    def pre_save(self, obj):
+        super(DataSetListView, self).pre_save(obj)
+        obj.owner = self.get_owner()
 
 
 #from . import forms

@@ -65,8 +65,16 @@ class ShareaboutsFieldMixin (object):
             instance_kwargs = {'owner_username': obj.username}
         else:
             instance_kwargs = obj.cache.get_cached_instance_params(obj.pk, lambda: obj)
-        url_kwargs = dict([(arg_name, instance_kwargs.get(arg_name, None) or getattr(obj, arg_name))
-                           for arg_name in self.url_arg_names])
+        
+        url_kwargs = {}
+        for arg_name in self.url_arg_names:
+            arg_value = instance_kwargs.get(arg_name, None)
+            if arg_value is None:
+                try:
+                    arg_value = getattr(obj, arg_name)
+                except AttributeError:
+                    raise KeyError('No arg named %r in %r' % (arg_name, instance_kwargs))
+            url_kwargs[arg_name] = arg_value
         return url_kwargs
 
 
@@ -307,7 +315,7 @@ class DataSetPlaceSetSummarySerializer (serializers.HyperlinkedModelSerializer):
 
     def to_native(self, obj):
         place_count_map = self.context['place_count_map_getter']()
-        obj.places_length = place_count_map[obj.pk]
+        obj.places_length = place_count_map.get(obj.pk, 0)
         data = super(DataSetPlaceSetSummarySerializer, self).to_native(obj)
         return data
 
@@ -322,7 +330,7 @@ class DataSetSubmissionSetSummarySerializer (serializers.HyperlinkedModelSeriali
 
     def to_native(self, obj):
         submission_sets_map = self.context['submission_sets_map_getter']()
-        sets = submission_sets_map[obj.id]
+        sets = submission_sets_map.get(obj.id, {})
         summaries = {}
         for submission_set in sets:
             set_name = submission_set['parent__name']
