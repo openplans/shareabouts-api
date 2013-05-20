@@ -703,14 +703,22 @@ class DataSetInstanceView (CachedResourceMixin, OwnedResourceMixin, generics.Ret
         except self.model.DoesNotExist:
             raise Http404
     
+    @utils.memo
     def get_place_count(self):
+        """
+        Get the number of places for this dataset.
+        """
         include_invisible = INCLUDE_INVISIBLE_PARAM in self.request.GET
         places = self.object.places
         if not include_invisible:
             places = places.extra(where=['"sa_api_submittedthing"."visible" = True'])
         return places.count()
     
+    @utils.memo
     def get_submission_sets(self):
+        """
+        Get a list of submission set summary data for this dataset.
+        """
         include_invisible = INCLUDE_INVISIBLE_PARAM in self.request.GET
         submissions = self.object.submissions.select_related('parent')
         if not include_invisible:
@@ -752,6 +760,10 @@ class DataSetInstanceView (CachedResourceMixin, OwnedResourceMixin, generics.Ret
 
 
 class DataSetListMixin (object):
+    """
+    Common aspects for dataset list views.
+    """
+    
     model = models.DataSet
     serializer_class = serializers.DataSetSerializer
     pagination_serializer_class = serializers.PaginatedResultsSerializer
@@ -759,6 +771,10 @@ class DataSetListMixin (object):
 
     @utils.memo
     def get_place_counts(self):
+        """
+        Return a dictionary whose keys are dataset ids and values are the 
+        corresponding count of places in that dataset.
+        """
         include_invisible = INCLUDE_INVISIBLE_PARAM in self.request.GET
         places = models.Place.objects.filter(dataset__in=self.get_queryset())
         if not include_invisible:
@@ -768,6 +784,11 @@ class DataSetListMixin (object):
     
     @utils.memo
     def get_all_submission_sets(self):
+        """
+        Return a dictionary whose keys are dataset ids and values are a 
+        corresponding list of submission set summary information for the 
+        submisisons on that dataset's places.
+        """
         include_invisible = INCLUDE_INVISIBLE_PARAM in self.request.GET
         summaries = models.Submission.objects.filter(dataset__in=self.get_queryset()).select_related('parent')
         if not include_invisible:
@@ -777,7 +798,8 @@ class DataSetListMixin (object):
         sets = defaultdict(list)
         for summary in summaries:
             sets[summary['dataset']].append(summary)
-        return sets
+        
+        return dict(sets.items())
     
     def get_serializer_context(self):
         context = super(DataSetListMixin, self).get_serializer_context()

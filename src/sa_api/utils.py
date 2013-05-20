@@ -31,7 +31,16 @@ def to_geom(string):
 
 def memo(f):
     """
-    A memoization decorator.
+    A memoization decorator. Borrowed and modified from
+    http://code.activestate.com/recipes/576563-cached-property/
+    
+    You can create a memoized property like:
+    
+        @property
+        @memo
+        def attr(self):
+            ...
+    
     """
     @wraps(f)
     def get(self, *args, **kwargs):
@@ -47,28 +56,6 @@ def memo(f):
             return x
 
     return get
-
-
-def cached_property(f):
-    """
-    Returns a cached property that is calculated by function f.  Lifted from
-    http://code.activestate.com/recipes/576563-cached-property/
-
-    f cannot take arguments except 'self' (the object on which to
-    store the cache, permanently).
-    """
-    def get(self):
-        try:
-            return self._property_cache[f]
-        except AttributeError:
-            self._property_cache = {}
-            x = self._property_cache[f] = f(self)
-            return x
-        except KeyError:
-            x = self._property_cache[f] = f(self)
-            return x
-
-    return property(get)
 
 
 def base62_time():
