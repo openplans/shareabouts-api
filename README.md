@@ -37,4 +37,4 @@ Here are some ways *you* can contribute:
 
 Credits
 -------------
-Shareabouts is a project of the [Civic Works](http://openplans.org/initiatives/civic-works/) group at [OpenPlans](http://openplans.org).
+Shareabouts is a project of [OpenPlans](http://openplans.org).
