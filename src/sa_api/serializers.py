@@ -12,7 +12,7 @@ from rest_framework.reverse import reverse
 from . import models
 from . import utils
 from . import cache
-from .params import (INCLUDE_INVISIBLE_PARAM, INCLUDE_PRIVATE_PARAM, 
+from .params import (INCLUDE_INVISIBLE_PARAM, INCLUDE_PRIVATE_PARAM,
     INCLUDE_SUBMISSIONS_PARAM, FORMAT_PARAM)
 
 
@@ -25,12 +25,12 @@ from .params import (INCLUDE_INVISIBLE_PARAM, INCLUDE_PRIVATE_PARAM,
 class GeometryField(serializers.WritableField):
     def __init__(self, format='dict', *args, **kwargs):
         self.format = format
-        
+
         if self.format not in ('json', 'wkt'):
             raise ValueError('Invalid format: %s' % self.format)
-        
+
         super(GeometryField, self).__init__(*args, **kwargs)
-    
+
     def to_native(self, obj):
         if self.format == 'json':
             return obj.json
@@ -65,7 +65,7 @@ class ShareaboutsFieldMixin (object):
             instance_kwargs = {'owner_username': obj.username}
         else:
             instance_kwargs = obj.cache.get_cached_instance_params(obj.pk, lambda: obj)
-        
+
         url_kwargs = {}
         for arg_name in self.url_arg_names:
             arg_value = instance_kwargs.get(arg_name, None)
@@ -134,7 +134,7 @@ class ShareaboutsIdentityField (ShareaboutsFieldMixin, serializers.HyperlinkedId
     def __init__(self, *args, **kwargs):
         view_name = kwargs.pop('view_name', None) or getattr(self, 'view_name', None)
         super(ShareaboutsIdentityField, self).__init__(view_name=view_name, *args, **kwargs)
-    
+
     def field_to_native(self, obj, field_name):
         request = self.context.get('request', None)
         format = self.context.get('format', None)
@@ -258,7 +258,7 @@ class CachedSerializer (object):
         cache = self.opts.model.cache
         cache_params = self.get_cache_params()
         data_getter = lambda: super(CachedSerializer, self).to_native(obj)
-        
+
         data = cache.get_serialized_data(obj, data_getter, **cache_params)
         return data
 
@@ -270,23 +270,23 @@ class CachedSerializer (object):
         """
         request = self.context['request']
         request_params = dict(request.GET.iterlists())
-        
+
         params = {
             'include_submissions': INCLUDE_SUBMISSIONS_PARAM in request_params,
             'include_private': INCLUDE_PRIVATE_PARAM in request_params,
             'include_invisible': INCLUDE_INVISIBLE_PARAM in request_params,
         }
-        
+
         request_params.pop(INCLUDE_SUBMISSIONS_PARAM, None)
         request_params.pop(INCLUDE_PRIVATE_PARAM, None)
         request_params.pop(INCLUDE_INVISIBLE_PARAM, None)
         request_params.pop(FORMAT_PARAM, None)
-        
+
         # If this doesn't have a parent serializer, then use all the rest of the
         # query parameters
         if self.parent is None:
             params.update(request_params)
-        
+
         return params
 
 
@@ -356,7 +356,7 @@ class PlaceSerializer (CachedSerializer, DataBlobProcessor, serializers.Hyperlin
         """
         request = self.context['request']
         include_invisible = INCLUDE_INVISIBLE_PARAM in request.GET
-        
+
         summaries = {}
         for submission_set in obj.submission_sets.all():
             submissions = submission_set.children.all()
@@ -366,11 +366,11 @@ class PlaceSerializer (CachedSerializer, DataBlobProcessor, serializers.Hyperlin
 
             if submission_set.length == 0:
                 continue
-            
+
             serializer = SubmissionSetSummarySerializer(submission_set, context=self.context)
             serializer.parent = self
             summaries[submission_set.name] = serializer.data
-        
+
         return summaries
 
     def get_detailed_submission_sets(self, obj):
@@ -394,7 +394,7 @@ class PlaceSerializer (CachedSerializer, DataBlobProcessor, serializers.Hyperlin
             # dataset, so say so and avoid an extra query for each.
             for submission in submissions:
                 submission.dataset = obj.dataset
-            
+
             serializer = SubmissionSerializer(submissions, context=self.context)
             serializer.parent = self
             details[submission_set.name] = serializer.data
@@ -409,9 +409,9 @@ class PlaceSerializer (CachedSerializer, DataBlobProcessor, serializers.Hyperlin
             submission_sets_getter = self.get_submission_set_summaries
         else:
             submission_sets_getter = self.get_detailed_submission_sets
-        
+
         data['submission_sets'] = submission_sets_getter(obj)
-        
+
         if hasattr(obj, 'distance'):
             data['distance'] = str(obj.distance)
 
@@ -434,13 +434,13 @@ class DataSetSerializer (CachedSerializer, serializers.HyperlinkedModelSerialize
     url = DataSetIdentityField()
     owner = UserRelatedField()
     keys = DataSetKeysRelatedField(source='*')
-    
+
     places = DataSetPlaceSetSummarySerializer(source='*', read_only=True)
     submission_sets = DataSetSubmissionSetSummarySerializer(source='*', read_only=True)
 
     class Meta:
         model = models.DataSet
-    
+
     def to_native(self, obj):
         data = super(DataSetSerializer, self).to_native(obj)
 
