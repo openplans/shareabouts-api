@@ -32,6 +32,8 @@ class GeoJSONRenderer(JSONRenderer):
         elif isinstance(data, dict) and data.get('type') == 'FeatureCollection':
             new_data = data
             new_data['features'] = [(self.get_feature(elem) or elem) for elem in data['features']]
+        elif data is None:
+            new_data = None
         else:
             new_data = self.get_feature(data) or data
 
