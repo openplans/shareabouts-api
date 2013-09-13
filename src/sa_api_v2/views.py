@@ -246,6 +246,7 @@ class CachedResourceMixin (object):
         if (response_data is not None) and (key in keyset):
             cached_response = self.respond_from_cache(response_data)
             handler_name = request.method.lower()
+
             def cached_handler(*args, **kwargs):
                 return cached_response
 
@@ -852,11 +853,11 @@ class DataSetListView (CachedResourceMixin, DataSetListMixin, OwnedResourceMixin
         super(DataSetListView, self).pre_save(obj)
         obj.owner = self.get_owner()
 
-
     def get_queryset(self):
         owner = self.get_owner()
         queryset = super(DataSetListView, self).get_queryset()
         return queryset.filter(owner=owner).order_by('id')
+
 
 class AdminDataSetListView (CachedResourceMixin, DataSetListMixin, generics.ListAPIView):
     """
@@ -878,7 +879,6 @@ class AdminDataSetListView (CachedResourceMixin, DataSetListMixin, generics.List
     """
 
     permission_classes = (IsLoggedInAdmin,)
-
 
 
 #from . import forms
