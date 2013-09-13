@@ -1852,7 +1852,8 @@ class TestDataSetSubmissionListView (TestCase):
         self.assertEqual(response.status_code, 200)
 
         # Check that the private data is in the properties
-        self.assertIn('private-email', data['results'][0])
+        results_with_private_email = [result for result in data['results'] if 'private-email' in result]
+        self.assertNotEqual(len(results_with_private_email), 0)
 
         # --------------------------------------------------
 
@@ -1868,7 +1869,8 @@ class TestDataSetSubmissionListView (TestCase):
         self.assertEqual(response.status_code, 200)
 
         # Check that the private data is in the properties
-        self.assertIn('private-email', data['results'][0])
+        results_with_private_email = [result for result in data['results'] if 'private-email' in result]
+        self.assertNotEqual(len(results_with_private_email), 0)
 
     def test_GET_invalid_url(self):
         # Make sure that we respond with 404 if a slug is supplied, but for
