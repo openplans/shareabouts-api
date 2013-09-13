@@ -178,13 +178,14 @@ class DataSetIdentityField (ShareaboutsIdentityField):
 class AttachmentSerializer (serializers.ModelSerializer):
     class Meta:
         model = models.Attachment
-
+        exclude = ('id', 'thing',)
 
 ###############################################################################
 #
 # Serializer Mixins
 # -----------------
 #
+
 
 class DataBlobProcessor (object):
     """
