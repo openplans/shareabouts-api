@@ -81,7 +81,7 @@ class TestPlaceInstanceView (TestCase):
         SubmissionSet.objects.all().delete()
         Submission.objects.all().delete()
         ApiKey.objects.all().delete()
-        
+
         cache.clear()
 
     def test_GET_response(self):
@@ -104,7 +104,7 @@ class TestPlaceInstanceView (TestCase):
         # properties
         self.assertEqual(data['properties'].get('type'), 'ATM')
         self.assertEqual(data['properties'].get('name'), 'K-Mart')
-        
+
         # Check that the geometry attribute looks right
         self.assertIsInstance(data['geometry'], dict)
         self.assertIn('type', data['geometry'])
@@ -115,9 +115,9 @@ class TestPlaceInstanceView (TestCase):
         self.assertIn('dataset', data['properties'])
         self.assertIn('attachments', data['properties'])
         self.assertIn('submission_sets', data['properties'])
-        
+
         # Check that the URL is right
-        self.assertEqual(data['properties']['url'], 
+        self.assertEqual(data['properties']['url'],
             'http://testserver' + reverse('place-detail', args=[
                 self.owner.username, self.dataset.slug, self.place.id]))
 
@@ -126,7 +126,7 @@ class TestPlaceInstanceView (TestCase):
         self.assertIn('comments', data['properties']['submission_sets'].keys())
         self.assertIn('likes', data['properties']['submission_sets'].keys())
         self.assertNotIn('applause', data['properties']['submission_sets'].keys())
-        
+
         # Check that only the visible comments were counted
         self.assertEqual(data['properties']['submission_sets']['comments']['length'], 2)
 
@@ -366,11 +366,11 @@ class TestPlaceInstanceView (TestCase):
     def test_GET_from_cache(self):
         path = reverse('place-detail', kwargs=self.request_kwargs)
         request = self.factory.get(path)
-        
+
         # Check that we make a finite number of queries
-        # - SELECT * FROM sa_api_place AS p 
+        # - SELECT * FROM sa_api_place AS p
         #     JOIN sa_api_submittedthing AS t ON (p.submittedthing_ptr_id = t.id)
-        #     JOIN sa_api_dataset AS ds ON (t.dataset_id = ds.id) 
+        #     JOIN sa_api_dataset AS ds ON (t.dataset_id = ds.id)
         #    WHERE t.id = <self.place.id>;
         #
         # - SELECT * FROM sa_api_submissionset AS ss
@@ -551,7 +551,7 @@ class TestPlaceListView (TestCase):
         self.assertIn('properties', data['features'][0])
         self.assertIn('geometry', data['features'][0])
         self.assertIn('type', data['features'][0])
-        
+
         self.assertEqual(data['features'][0]['properties']['url'],
             'http://testserver/api/v2/%s/datasets/%s/places/%s' %
             (self.owner.username, self.dataset.slug, self.place.id))
@@ -559,7 +559,7 @@ class TestPlaceListView (TestCase):
     def test_GET_csv_response(self):
         request = self.factory.get(self.path + '?format=csv')
         response = self.view(request, **self.request_kwargs)
-        
+
         rows = list(csv.reader(StringIO(response.rendered_content)))
         headers = rows[0]
 
@@ -579,7 +579,7 @@ class TestPlaceListView (TestCase):
         Place.objects.create(dataset=self.dataset, geometry='POINT(1 0)', data=json.dumps({'foo': 'bar', 'name': 2})),
         Place.objects.create(dataset=self.dataset, geometry='POINT(2 0)', data=json.dumps({'foo': 'baz', 'name': 3})),
         Place.objects.create(dataset=self.dataset, geometry='POINT(3 0)', data=json.dumps({'name': 4})),
-        
+
         request = self.factory.get(self.path + '?foo=bar')
         response = self.view(request, **self.request_kwargs)
         data = json.loads(response.rendered_content)
@@ -596,7 +596,7 @@ class TestPlaceListView (TestCase):
         # Check that the request was successful
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(data['features']), 0)
-    
+
         request = self.factory.get(self.path + '?nonexistent=foo')
         response = self.view(request, **self.request_kwargs)
         data = json.loads(response.rendered_content)
@@ -604,13 +604,13 @@ class TestPlaceListView (TestCase):
         # Check that the request was successful
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(data['features']), 0)
-    
+
     def test_GET_nearby_response(self):
         Place.objects.create(dataset=self.dataset, geometry='POINT(0 0)', data=json.dumps({'new_place': 'yes', 'name': 1})),
         Place.objects.create(dataset=self.dataset, geometry='POINT(10 0)', data=json.dumps({'new_place': 'yes', 'name': 2})),
         Place.objects.create(dataset=self.dataset, geometry='POINT(20 0)', data=json.dumps({'new_place': 'yes', 'name': 3})),
         Place.objects.create(dataset=self.dataset, geometry='POINT(30 0)', data=json.dumps({'new_place': 'yes', 'name': 4})),
-        
+
         request = self.factory.get(self.path + '?near=0,19&new_place=yes')
         response = self.view(request, **self.request_kwargs)
         data = json.loads(response.rendered_content)
@@ -946,9 +946,9 @@ class TestSubmissionInstanceView (TestCase):
         self.assertIn('set', data)
         self.assertIn('submitter_name', data)
         self.assertIn('place', data)
-        
+
         # Check that the URL is right
-        self.assertEqual(data['url'], 
+        self.assertEqual(data['url'],
             'http://testserver' + reverse('submission-detail', args=[
                 self.owner.username, self.dataset.slug, self.place.id,
                 self.submission.set_name, self.submission.id]))
@@ -1057,14 +1057,14 @@ class TestSubmissionInstanceView (TestCase):
     def test_GET_from_cache(self):
         path = reverse('submission-detail', kwargs=self.request_kwargs)
         request = self.factory.get(path)
-        
+
         # Check that we make a finite number of queries
-        # - SELECT * FROM sa_api_submission AS s 
+        # - SELECT * FROM sa_api_submission AS s
         #     JOIN sa_api_submittedthing AS st ON (s.submittedthing_ptr_id = st.id)
-        #     JOIN sa_api_dataset AS ds ON (st.dataset_id = ds.id) 
-        #     JOIN sa_api_submissionset AS ss ON (s.parent_id = ss.id) 
-        #     JOIN sa_api_place AS p ON (ss.place_id = p.submittedthing_ptr_id) 
-        #     JOIN sa_api_submittedthing AS pt ON (p.submittedthing_ptr_id = pt.id) 
+        #     JOIN sa_api_dataset AS ds ON (st.dataset_id = ds.id)
+        #     JOIN sa_api_submissionset AS ss ON (s.parent_id = ss.id)
+        #     JOIN sa_api_place AS p ON (ss.place_id = p.submittedthing_ptr_id)
+        #     JOIN sa_api_submittedthing AS pt ON (p.submittedthing_ptr_id = pt.id)
         #    WHERE st.id = <self.submission.id>;
         #
         # - SELECT * FROM sa_api_attachment AS a
@@ -1150,8 +1150,8 @@ class TestSubmissionListView (TestCase):
 
         self.owner_password = '123'
         self.owner = User.objects.create_user(
-            username='aaron', 
-            password=self.owner_password, 
+            username='aaron',
+            password=self.owner_password,
             email='abc@example.com')
         self.dataset = DataSet.objects.create(slug='ds', owner=self.owner)
         self.place = Place.objects.create(
@@ -1255,7 +1255,7 @@ class TestSubmissionListView (TestCase):
     def test_GET_csv_response(self):
         request = self.factory.get(self.path + '?format=csv')
         response = self.view(request, **self.request_kwargs)
-        
+
         rows = list(csv.reader(StringIO(response.rendered_content)))
         headers = rows[0]
 
@@ -1275,7 +1275,7 @@ class TestSubmissionListView (TestCase):
         Submission.objects.create(dataset=self.dataset, parent=self.comments, data=json.dumps({'baz': 'bar', 'name': 2})),
         Submission.objects.create(dataset=self.dataset, parent=self.comments, data=json.dumps({'baz': 'bam', 'name': 3})),
         Submission.objects.create(dataset=self.dataset, parent=self.comments, data=json.dumps({'name': 4})),
-        
+
         request = self.factory.get(self.path + '?baz=bar')
         response = self.view(request, **self.request_kwargs)
         data = json.loads(response.rendered_content)
@@ -1292,7 +1292,7 @@ class TestSubmissionListView (TestCase):
         # Check that the request was successful
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(data['results']), 0)
-    
+
         request = self.factory.get(self.path + '?nonexistent=foo')
         response = self.view(request, **self.request_kwargs)
         data = json.loads(response.rendered_content)
@@ -1300,7 +1300,7 @@ class TestSubmissionListView (TestCase):
         # Check that the request was successful
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(data['results']), 0)
-    
+
     def test_GET_response_with_private_data(self):
         #
         # View should not return private data normally
@@ -1446,7 +1446,7 @@ class TestSubmissionListView (TestCase):
         # Check that we actually created a submission and set
         final_num_submissions = Submission.objects.all().count()
         self.assertEqual(final_num_submissions, start_num_submissions + 1)
- 
+
     def test_GET_response_with_invisible_data(self):
         #
         # View should not return invisible data normally
@@ -1610,8 +1610,8 @@ class TestDataSetSubmissionListView (TestCase):
 
         self.owner_password = '123'
         self.owner = User.objects.create_user(
-            username='aaron', 
-            password=self.owner_password, 
+            username='aaron',
+            password=self.owner_password,
             email='abc@example.com')
         self.dataset = DataSet.objects.create(slug='ds', owner=self.owner)
         self.place1 = Place.objects.create(
@@ -1730,15 +1730,17 @@ class TestDataSetSubmissionListView (TestCase):
         # Check that we have the right number of results
         self.assertEqual(len(data['results']), 4)
 
-        self.assertEqual(data['results'][0]['url'],
+        urls = [result['url'] for result in data['results']]
+        self.assertIn(
             'http://testserver' + reverse('submission-detail', args=[
                 self.owner.username, self.dataset.slug, self.place1.id,
-                self.submission1.set_name, self.submission1.id]))
+                self.submission1.set_name, self.submission1.id]),
+            urls)
 
     def test_GET_csv_response(self):
         request = self.factory.get(self.path + '?format=csv')
         response = self.view(request, **self.request_kwargs)
-        
+
         rows = list(csv.reader(StringIO(response.rendered_content)))
         headers = rows[0]
 
@@ -1758,7 +1760,7 @@ class TestDataSetSubmissionListView (TestCase):
         Submission.objects.create(dataset=self.dataset, parent=self.comments2, data=json.dumps({'baz': 'bar', 'name': 2})),
         Submission.objects.create(dataset=self.dataset, parent=self.comments1, data=json.dumps({'baz': 'bam', 'name': 3})),
         Submission.objects.create(dataset=self.dataset, parent=self.comments2, data=json.dumps({'name': 4})),
-        
+
         request = self.factory.get(self.path + '?baz=bar')
         response = self.view(request, **self.request_kwargs)
         data = json.loads(response.rendered_content)
@@ -1775,7 +1777,7 @@ class TestDataSetSubmissionListView (TestCase):
         # Check that the request was successful
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(data['results']), 0)
-    
+
         request = self.factory.get(self.path + '?nonexistent=foo')
         response = self.view(request, **self.request_kwargs)
         data = json.loads(response.rendered_content)
@@ -1783,7 +1785,7 @@ class TestDataSetSubmissionListView (TestCase):
         # Check that the request was successful
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(data['results']), 0)
-    
+
     def test_GET_response_with_private_data(self):
         #
         # View should not return private data normally
@@ -1882,7 +1884,7 @@ class TestDataSetSubmissionListView (TestCase):
         response = self.view(request, **request_kwargs)
 
         self.assertEqual(response.status_code, 404)
- 
+
     def test_GET_response_with_invisible_data(self):
         #
         # View should not return invisible data normally
@@ -2045,39 +2047,39 @@ class TestDataSetInstanceView (TestCase):
         self.assertIn('owner', data)
         self.assertIn('places', data)
         self.assertIn('submission_sets', data)
-        
+
         # Check that the URL is right
-        self.assertEqual(data['url'], 
+        self.assertEqual(data['url'],
             'http://testserver' + reverse('dataset-detail', args=[
                 self.owner.username, self.dataset.slug]))
 
     def test_GET_from_cache(self):
         path = reverse('dataset-detail', kwargs=self.request_kwargs)
         request = self.factory.get(path)
-        
+
         # Check that we make a finite number of queries
-        # - SELECT * FROM sa_api_dataset 
-        #       INNER JOIN auth_user ON (owner_id = auth_user.id) 
+        # - SELECT * FROM sa_api_dataset
+        #       INNER JOIN auth_user ON (owner_id = auth_user.id)
         #       WHERE (username = '<owner_username>'  AND slug = '<dataset_slug>' );
         #
-        # - SELECT * FROM sa_api_submittedthing 
+        # - SELECT * FROM sa_api_submittedthing
         #       WHERE dataset_id IN (<dataset_id>);
         #
         # - SELECT * FROM sa_api_place
-        #       INNER JOIN sa_api_submittedthing ON (submittedthing_ptr_id = sa_api_submittedthing.id) 
+        #       INNER JOIN sa_api_submittedthing ON (submittedthing_ptr_id = sa_api_submittedthing.id)
         #       WHERE submittedthing_ptr_id IN (<place_ids>);
         #
-        # - SELECT * FROM "auth_user" 
+        # - SELECT * FROM "auth_user"
         #       WHERE id = <owner_id>;
         #
-        # - SELECT COUNT(*) FROM sa_api_place 
-        #       INNER JOIN sa_api_submittedthing ON (submittedthing_ptr_id = sa_api_submittedthing.id) 
+        # - SELECT COUNT(*) FROM sa_api_place
+        #       INNER JOIN sa_api_submittedthing ON (submittedthing_ptr_id = sa_api_submittedthing.id)
         #       WHERE dataset_id = <dataset_id>  AND visible = True;
         #
-        # - SELECT sa_api_submittedthing.dataset_id, sa_api_submissionset.name, COUNT(*) AS "length" FROM sa_api_submission 
-        #       LEFT OUTER JOIN sa_api_submittedthing ON (submittedthing_ptr_id = sa_api_submittedthing.id) 
-        #       INNER JOIN sa_api_submissionset ON (parent_id = sa_api_submissionset.id) 
-        #       WHERE dataset_id = <dataset_id> 
+        # - SELECT sa_api_submittedthing.dataset_id, sa_api_submissionset.name, COUNT(*) AS "length" FROM sa_api_submission
+        #       LEFT OUTER JOIN sa_api_submittedthing ON (submittedthing_ptr_id = sa_api_submittedthing.id)
+        #       INNER JOIN sa_api_submissionset ON (parent_id = sa_api_submissionset.id)
+        #       WHERE dataset_id = <dataset_id>
         #       GROUP BY dataset_id, sa_api_submissionset.name;
         with self.assertNumQueries(6):
             response = self.view(request, **self.request_kwargs)
@@ -2121,7 +2123,7 @@ class TestDataSetInstanceView (TestCase):
 
         # Check that no data was returned
         self.assertIsNone(response.data)
- 
+
     def test_GET_response_with_invisible_data(self):
         #
         # View should not return invisible data normally
@@ -2245,8 +2247,8 @@ class TestDataSetListView (TestCase):
 
         self.owner_password = '123'
         self.owner = User.objects.create_user(
-            username='aaron', 
-            password=self.owner_password, 
+            username='aaron',
+            password=self.owner_password,
             email='abc@example.com')
         self.dataset = DataSet.objects.create(slug='ds', owner=self.owner)
         self.place = Place.objects.create(
@@ -2296,10 +2298,10 @@ class TestDataSetListView (TestCase):
           Submission.objects.create(parent=comments2, dataset=dataset2, data='{"foo": 3}'),
           Submission.objects.create(parent=comments2, dataset=dataset2, data='{"foo": 3}', visible=False),
         ]
-        
+
         other_owner = User.objects.create_user(
-            username='mjumbe', 
-            password='456', 
+            username='mjumbe',
+            password='456',
             email='def@example.com')
         dataset3 = DataSet.objects.create(owner=other_owner, slug='slug', display_name="Display Name")
 
@@ -2391,16 +2393,16 @@ class TestDataSetListView (TestCase):
         # Check that we actually created a dataset
         final_num_datasets = DataSet.objects.all().count()
         self.assertEqual(final_num_datasets, start_num_datasets + 1)
- 
+
     def test_get_all_submission_sets(self):
         request = self.factory.get(self.path)
         view = DataSetListView()
         view.request = request
         view.kwargs = self.request_kwargs
-        
+
         sets = view.get_all_submission_sets()
         self.assertIn('likes', [s['parent__name'] for s in sets[self.dataset.pk]])
-        
+
     def test_GET_response_with_invisible_data(self):
         #
         # View should not return invisible data normally

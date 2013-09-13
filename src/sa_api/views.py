@@ -96,10 +96,10 @@ class IsLoggedInAdmin(permissions.BasePermission):
     def has_permission(self, request, view):
         if not is_really_logged_in(request.user, request):
             return False
-        
+
         if request.user.is_superuser:
             return True
-        
+
         return False
 
 
@@ -230,6 +230,8 @@ class CachedResourceMixin (object):
         if request.method.upper() not in permissions.SAFE_METHODS:
             return super(CachedResourceMixin, self).dispatch(request, *args, **kwargs)
 
+        self.request = request
+
         # Check whether the response data is in the cache.
         key = self.get_cache_key(request, *args, **kwargs)
         response_data = cache.get(key) or None
@@ -265,7 +267,7 @@ class CachedResourceMixin (object):
     def get_cache_key(self, request, *args, **kwargs):
         querystring = request.META.get('QUERY_STRING', '')
         contenttype = request.META.get('HTTP_ACCEPT', '')
-        
+
         # TODO: Eliminate the jQuery cache busting parameter for now. Get
         # rid of this after the old API has been deprecated.
         cache_buster_pattern = re.compile(r'&?_=\d+')
@@ -292,7 +294,7 @@ class CachedResourceMixin (object):
         keys = cache.get(meta_key) or set()
         keys.add(key)
         cache.set(meta_key, keys, settings.API_CACHE_TIMEOUT)
-        
+
         return response
 
 
@@ -324,19 +326,19 @@ class PlaceInstanceView (CachedResourceMixin, LocatedResourceMixin, OwnedResourc
     **Request Parameters**:
 
       * `include_submissions`
-        
+
         List the submissions in each submission set instead of just a summary of
         the set.
-        
+
       * `include_invisible` *(only direct auth)*
-        
+
         Show the place even if it is set as. You must specify use this flag to
         view an invisible place. The flag will also apply to submissions, if the
         `include_submissions` flag is set. Only the dataset owner is allowed to
         request invisible resoruces.
-        
+
       * `include_private` *(only direct auth)*
-        
+
         Show private data attributes on the place, and on any submissions if the
         `include_submissions` flag is set. Only the dataset owner is allowed to
         request private attributes.
@@ -365,8 +367,8 @@ class PlaceInstanceView (CachedResourceMixin, LocatedResourceMixin, OwnedResourc
             return self.model.objects\
                 .filter(pk=pk)\
                 .select_related('dataset')\
-                .prefetch_related('submission_sets__children', 
-                                  'submission_sets__children__attachments', 
+                .prefetch_related('submission_sets__children',
+                                  'submission_sets__children__attachments',
                                   'attachments')\
                 .get()
         except self.model.DoesNotExist:
@@ -381,7 +383,7 @@ class PlaceInstanceView (CachedResourceMixin, LocatedResourceMixin, OwnedResourc
 
 class PlaceListView (CachedResourceMixin, LocatedResourceMixin, OwnedResourceMixin, FilteredResourceMixin, generics.ListCreateAPIView):
     """
-    
+
     GET
     ---
     Get all the places in a dataset
@@ -391,33 +393,33 @@ class PlaceListView (CachedResourceMixin, LocatedResourceMixin, OwnedResourceMix
     **Request Parameters**:
 
       * `include_submissions`
-        
+
         List the submissions in each submission set instead of just a summary of
         the set.
-        
+
       * `include_invisible` *(only direct auth)*
-        
+
         Show the place even if it is set as. You must specify use this flag to
         view an invisible place. The flag will also apply to submissions, if the
         `include_submissions` flag is set. Only the dataset owner is allowed to
         request invisible resoruces.
-        
+
       * `include_private` *(only direct auth)*
-        
+
         Show private data attributes on the place, and on any submissions if the
         `include_submissions` flag is set. Only the dataset owner is allowed to
         request private attributes.
-      
+
       * `near=<reference_geometry>`
-      
-        Order the place list by distance from some reference geometry. The 
+
+        Order the place list by distance from some reference geometry. The
         reference geometry may be represented as
         [GeoJSON](http://www.geojson.org/geojson-spec.html) or
         [WKT](http://en.wikipedia.org/wiki/Well-known_text), or as a
         comma-separated latitude and longitude, if it is a point.
-      
+
       * `<attr>=<value>`
-      
+
         Filter the place list to only return the places where the attribute is
         equal to the given value.
 
@@ -427,7 +429,7 @@ class PlaceListView (CachedResourceMixin, LocatedResourceMixin, OwnedResourceMix
     Create a place
 
     **Authentication**: Basic, session, or key auth *(required)*
-    
+
     ------------------------------------------------------------
     """
 
@@ -464,13 +466,13 @@ class SubmissionInstanceView (CachedResourceMixin, OwnedResourceMixin, generics.
     **Request Parameters**:
 
       * `include_invisible` *(only direct auth)*
-        
+
         Show the submission even if it is set as invisible. You must specify use
         this flag to view an invisible submission. Only the dataset owner is
         allowed to request invisible resoruces.
-        
+
       * `include_private` *(only direct auth)*
-        
+
         Show private data attributes on the submission. Only the dataset owner
         is allowed to request private attributes.
 
@@ -491,7 +493,7 @@ class SubmissionInstanceView (CachedResourceMixin, OwnedResourceMixin, generics.
 
     model = models.Submission
     serializer_class = serializers.SubmissionSerializer
-    
+
     def get_object_or_404(self, pk):
         try:
             return self.model.objects\
@@ -511,7 +513,7 @@ class SubmissionInstanceView (CachedResourceMixin, OwnedResourceMixin, generics.
 
 class SubmissionListView (CachedResourceMixin, OwnedResourceMixin, FilteredResourceMixin, generics.ListCreateAPIView):
     """
-    
+
     GET
     ---
     Get all the submissions in a place's submission set
@@ -521,20 +523,20 @@ class SubmissionListView (CachedResourceMixin, OwnedResourceMixin, FilteredResou
     **Request Parameters**:
 
       * `include_invisible` *(only direct auth)*
-        
+
         Show the place even if it is set as. You must specify use this flag to
         view an invisible place. The flag will also apply to submissions, if the
         `include_submissions` flag is set. Only the dataset owner is allowed to
         request invisible resoruces.
-        
+
       * `include_private` *(only direct auth)*
-        
+
         Show private data attributes on the place, and on any submissions if the
         `include_submissions` flag is set. Only the dataset owner is allowed to
         request private attributes.
-      
+
       * `<attr>=<value>`
-      
+
         Filter the place list to only return the places where the attribute is
         equal to the given value.
 
@@ -544,14 +546,14 @@ class SubmissionListView (CachedResourceMixin, OwnedResourceMixin, FilteredResou
     Create a submission
 
     **Authentication**: Basic, session, or key auth *(required)*
-    
+
     ------------------------------------------------------------
     """
 
     model = models.Submission
     serializer_class = serializers.SubmissionSerializer
     pagination_serializer_class = serializers.PaginatedResultsSerializer
-    
+
     place_id_kwarg = 'place_id'
     submission_set_name_kwarg = 'submission_set_name'
 
@@ -602,7 +604,7 @@ class SubmissionListView (CachedResourceMixin, OwnedResourceMixin, FilteredResou
 
 class DataSetSubmissionListView (CachedResourceMixin, OwnedResourceMixin, FilteredResourceMixin, generics.ListAPIView):
     """
-    
+
     GET
     ---
     Get all the submissions across a dataset's place's submission sets
@@ -612,30 +614,30 @@ class DataSetSubmissionListView (CachedResourceMixin, OwnedResourceMixin, Filter
     **Request Parameters**:
 
       * `include_invisible` *(only direct auth)*
-        
+
         Show the place even if it is set as. You must specify use this flag to
         view an invisible place. The flag will also apply to submissions, if the
         `include_submissions` flag is set. Only the dataset owner is allowed to
         request invisible resoruces.
-        
+
       * `include_private` *(only direct auth)*
-        
+
         Show private data attributes on the place, and on any submissions if the
         `include_submissions` flag is set. Only the dataset owner is allowed to
         request private attributes.
-      
+
       * `<attr>=<value>`
-      
+
         Filter the place list to only return the places where the attribute is
         equal to the given value.
-    
+
     ------------------------------------------------------------
     """
 
     model = models.Submission
     serializer_class = serializers.SubmissionSerializer
     pagination_serializer_class = serializers.PaginatedResultsSerializer
-    
+
     submission_set_name_kwarg = 'submission_set_name'
 
     def get_submission_sets(self, dataset):
@@ -670,10 +672,10 @@ class DataSetInstanceView (CachedResourceMixin, OwnedResourceMixin, generics.Ret
     **Request Parameters**:
 
       * `include_invisible` *(only direct auth)*
-        
+
         Count visible and invisible places and submissions in the dataset. Only
         the dataset owner is allowed to request invisible resoruces.
-        
+
     PUT
     ---
     Update a submission
@@ -692,7 +694,7 @@ class DataSetInstanceView (CachedResourceMixin, OwnedResourceMixin, generics.Ret
     model = models.DataSet
     serializer_class = serializers.DataSetSerializer
     authentication_classes = (authentication.BasicAuthentication, authentication.SessionAuthentication)
-    
+
     def get_object_or_404(self, owner_username, dataset_slug):
         try:
             return self.model.objects\
@@ -702,7 +704,7 @@ class DataSetInstanceView (CachedResourceMixin, OwnedResourceMixin, generics.Ret
                 .get()
         except self.model.DoesNotExist:
             raise Http404
-    
+
     @utils.memo
     def get_place_count(self):
         """
@@ -713,7 +715,7 @@ class DataSetInstanceView (CachedResourceMixin, OwnedResourceMixin, generics.Ret
         if not include_invisible:
             places = places.extra(where=['"sa_api_submittedthing"."visible" = True'])
         return places.count()
-    
+
     @utils.memo
     def get_submission_sets(self):
         """
@@ -725,32 +727,32 @@ class DataSetInstanceView (CachedResourceMixin, OwnedResourceMixin, generics.Ret
             submissions = submissions.extra(where=['"sa_api_submittedthing"."visible" = True'])
         submissions = submissions.values('dataset', 'parent__name').annotate(length=Count('dataset'))
         return submissions
-    
+
     def get_serializer_context(self):
         context = super(DataSetInstanceView, self).get_serializer_context()
         include_invisible = INCLUDE_INVISIBLE_PARAM in self.request.GET
 
-        # The place_count_map_getter returns a dictionary where the keys are 
+        # The place_count_map_getter returns a dictionary where the keys are
         # dataset ids and the values are corresponding place counts.
         context['place_count_map_getter'] = (
             lambda: {self.object.pk: self.get_place_count()}
         )
-        
-        # The submission_sets_map_getter returns a dictionary where the keys are 
+
+        # The submission_sets_map_getter returns a dictionary where the keys are
         # dataset ids and the values are corresponding submission set summaries.
         context['submission_sets_map_getter'] = (
             lambda: {self.object.pk: self.get_submission_sets()}
         )
-        
+
         return context
-    
+
     def get_object(self, queryset=None):
         dataset_slug = self.kwargs[self.dataset_slug_kwarg]
         owner_username = self.kwargs[self.owner_username_kwarg]
         obj = self.get_object_or_404(owner_username, dataset_slug)
         self.verify_object(obj)
         return obj
-    
+
     def put(self, request, owner_username, dataset_slug):
         response = super(DataSetInstanceView, self).put(request, owner_username=owner_username, dataset_slug=dataset_slug)
         if 'slug' in response.data and response.data['slug'] != dataset_slug:
@@ -763,7 +765,7 @@ class DataSetListMixin (object):
     """
     Common aspects for dataset list views.
     """
-    
+
     model = models.DataSet
     serializer_class = serializers.DataSetSerializer
     pagination_serializer_class = serializers.PaginatedResultsSerializer
@@ -772,7 +774,7 @@ class DataSetListMixin (object):
     @utils.memo
     def get_place_counts(self):
         """
-        Return a dictionary whose keys are dataset ids and values are the 
+        Return a dictionary whose keys are dataset ids and values are the
         corresponding count of places in that dataset.
         """
         include_invisible = INCLUDE_INVISIBLE_PARAM in self.request.GET
@@ -781,12 +783,12 @@ class DataSetListMixin (object):
             places = places.extra(where=['"sa_api_submittedthing"."visible" = True'])
         places = places.values('dataset').annotate(length=Count('dataset'))
         return dict([(place['dataset'], place['length']) for place in places])
-    
+
     @utils.memo
     def get_all_submission_sets(self):
         """
-        Return a dictionary whose keys are dataset ids and values are a 
-        corresponding list of submission set summary information for the 
+        Return a dictionary whose keys are dataset ids and values are a
+        corresponding list of submission set summary information for the
         submisisons on that dataset's places.
         """
         include_invisible = INCLUDE_INVISIBLE_PARAM in self.request.GET
@@ -794,35 +796,35 @@ class DataSetListMixin (object):
         if not include_invisible:
             summaries = summaries.extra(where=['"sa_api_submittedthing"."visible" = True'])
         summaries = summaries.values('dataset', 'parent__name').annotate(length=Count('dataset'))
-        
+
         sets = defaultdict(list)
         for summary in summaries:
             sets[summary['dataset']].append(summary)
-        
+
         return dict(sets.items())
-    
+
     def get_serializer_context(self):
         context = super(DataSetListMixin, self).get_serializer_context()
         include_invisible = INCLUDE_INVISIBLE_PARAM in self.request.GET
 
-        # The place_count_map_getter returns a dictionary where the keys are 
+        # The place_count_map_getter returns a dictionary where the keys are
         # dataset ids and the values are corresponding place counts.
         context['place_count_map_getter'] = (
             lambda: self.get_place_counts()
         )
-        
-        # The submission_sets_map_getter returns a dictionary where the keys are 
+
+        # The submission_sets_map_getter returns a dictionary where the keys are
         # dataset ids and the values are corresponding submission set summaries.
         context['submission_sets_map_getter'] = (
             lambda: self.get_all_submission_sets()
         )
-        
+
         return context
 
 
-class DataSetListView (CachedResourceMixin, OwnedResourceMixin, DataSetListMixin, generics.ListCreateAPIView):
+class DataSetListView (CachedResourceMixin, DataSetListMixin, OwnedResourceMixin, generics.ListCreateAPIView):
     """
-    
+
     GET
     ---
     Get all the datasets for a dataset owner
@@ -832,7 +834,7 @@ class DataSetListView (CachedResourceMixin, OwnedResourceMixin, DataSetListMixin
     **Request Parameters**:
 
       * `include_invisible` *(only direct auth)*
-        
+
         Count visible and invisible places and submissions in the dataset. Only
         the dataset owner is allowed to request invisible resoruces.
 
@@ -842,7 +844,7 @@ class DataSetListView (CachedResourceMixin, OwnedResourceMixin, DataSetListMixin
     Create a dataset
 
     **Authentication**: Basic or session auth *(required)*
-    
+
     ------------------------------------------------------------
     """
 
@@ -858,7 +860,7 @@ class DataSetListView (CachedResourceMixin, OwnedResourceMixin, DataSetListMixin
 
 class AdminDataSetListView (CachedResourceMixin, DataSetListMixin, generics.ListAPIView):
     """
-    
+
     GET
     ---
     Get all the datasets
@@ -868,10 +870,10 @@ class AdminDataSetListView (CachedResourceMixin, DataSetListMixin, generics.List
     **Request Parameters**:
 
       * `include_invisible`
-        
+
         Count visible and invisible places and submissions in the dataset. Only
         the dataset owner is allowed to request invisible resoruces.
-    
+
     ------------------------------------------------------------
     """
 
