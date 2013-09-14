@@ -20,7 +20,7 @@ import os
 import re
 import time
 
-logger = logging.getLogger('sa_api.views')
+logger = logging.getLogger('sa_api_v1.views')
 
 
 def raise_error_if_not_authenticated(view, request):

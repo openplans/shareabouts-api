@@ -896,7 +896,7 @@ class TestAbsUrlMixin (object):
 class TestPlaceCollectionView(TestCase):
 
     def _cleanup(self):
-        from sa_api import models
+        from sa_api_v1 import models
         models.Submission.objects.all().delete()
         models.SubmissionSet.objects.all().delete()
         models.Place.objects.all().delete()

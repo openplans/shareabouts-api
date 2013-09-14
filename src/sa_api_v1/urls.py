@@ -3,7 +3,7 @@ from . import views
 
 places_base_regex = r'^(?P<dataset__owner__username>[^/]+)/datasets/(?P<dataset__slug>[^/]+)/places/'
 
-urlpatterns = patterns('sa_api',
+urlpatterns = patterns('sa_api_v1',
     url(r'^$',
         views.OwnerCollectionView.as_view(),
         name='owner_collection'),
@@ -71,7 +71,7 @@ urlpatterns = patterns('sa_api',
 
 places_base_regex = r'^datasets/(?P<dataset__owner__username>[^/]+)/(?P<dataset__slug>[^/]+)/places/'
 
-urlpatterns += patterns('sa_api',
+urlpatterns += patterns('sa_api_v1',
 
     ###############################################
     # URL patterns with 'datasets/' before user name. Deprecate.

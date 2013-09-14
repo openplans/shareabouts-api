@@ -148,7 +148,7 @@ class TestModelResourceWithDataBlob(object):
 class TestPlaceResource(TestCase):
 
     def _cleanup(self):
-        from sa_api import models
+        from sa_api_v1 import models
         from django.contrib.auth.models import User
         from django.core.cache import cache
         models.Submission.objects.all().delete()

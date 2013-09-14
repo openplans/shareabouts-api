@@ -102,7 +102,7 @@ MIDDLEWARE_CLASSES = (
     # 'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'debug_toolbar.middleware.DebugToolbarMiddleware',
 
-    'sa_api.middleware.RequestTimeLogger',
+    'sa_api_v2.middleware.RequestTimeLogger',
 )
 
 ROOT_URLCONF = 'project.urls'
@@ -150,8 +150,8 @@ INSTALLED_APPS = (
 
     # Project apps
     'beta_signup',
-    'sa_api',
-    'sa_api.apikey',
+    'sa_api_v2',
+    'sa_api_v2.apikey',
     'sa_api_v1',
     'sa_api_v1.apikey_v1',
     'sa_manager',
@@ -163,7 +163,7 @@ INSTALLED_APPS = (
 API_CACHE_TIMEOUT = 604800  # a week
 
 TEST_RUNNER = 'django_nose.NoseTestSuiteRunner'
-SOUTH_TESTS_MIGRATE = False
+SOUTH_TESTS_MIGRATE = True
 
 DEBUG_TOOLBAR_CONFIG = {
     'INTERCEPT_REDIRECTS': True,
@@ -213,7 +213,12 @@ LOGGING = {
             'level': 'ERROR',
             'propagate': True,
         },
-        'sa_api': {
+        'sa_api_v2': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+        'sa_api_v1': {
             'handlers': ['console'],
             'level': 'INFO',
             'propagate': True,
