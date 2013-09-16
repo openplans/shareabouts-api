@@ -2700,6 +2700,183 @@ class TestPlaceAttachmentListView (TestCase):
         self.assertEqual(response.status_code, 400)
 
 
+class TestSubmissionAttachmentListView (TestCase):
+    def setUp(self):
+        cache.clear()
+
+        self.owner = User.objects.create_user(username='aaron', password='123', email='abc@example.com')
+        self.dataset = DataSet.objects.create(slug='ds', owner=self.owner)
+        self.place = Place.objects.create(
+          dataset=self.dataset,
+          geometry='POINT(2 3)',
+          submitter_name='Mjumbe',
+          data=json.dumps({
+            'type': 'ATM',
+            'name': 'K-Mart',
+            'private-secrets': 42
+          }),
+        )
+        self.invisible_place = Place.objects.create(
+          dataset=self.dataset,
+          geometry='POINT(3 4)',
+          submitter_name='Mjumbe',
+          visible=False,
+          data=json.dumps({
+            'type': 'ATM',
+            'name': 'K-Mart',
+          }),
+        )
+
+        self.comments = SubmissionSet.objects.create(place=self.place, name='comments')
+        self.submissions = [
+          Submission.objects.create(parent=self.comments, dataset=self.dataset, data='{"foo": 3}'),
+          Submission.objects.create(parent=self.comments, dataset=self.dataset, data='{"foo": 3}', visible=False),
+        ]
+
+        self.file = StringIO('This is test content in a "file"')
+        self.file.name = 'myfile.txt'
+        self.file.size = 20
+
+        self.apikey = ApiKey.objects.create(user=self.owner, key='abc')
+        self.apikey.datasets.add(self.dataset)
+
+        self.request_kwargs = {
+          'owner_username': self.owner.username,
+          'dataset_slug': self.dataset.slug,
+          'place_id': self.place.id,
+          'submission_set_name': self.comments.name,
+          'thing_id': str(self.submissions[0].id)
+        }
+
+        self.invisible_request_kwargs = {
+          'owner_username': self.owner.username,
+          'dataset_slug': self.dataset.slug,
+          'place_id': self.place.id,
+          'submission_set_name': self.comments.name,
+          'thing_id': str(self.submissions[1].id)
+        }
+
+        self.factory = RequestFactory()
+        self.path = reverse('submission-attachments', kwargs=self.request_kwargs)
+        self.invisible_path = reverse('submission-attachments', kwargs=self.invisible_request_kwargs)
+        self.view = AttachmentListView.as_view()
+
+    def tearDown(self):
+        User.objects.all().delete()
+        DataSet.objects.all().delete()
+        Place.objects.all().delete()
+        SubmissionSet.objects.all().delete()
+        Submission.objects.all().delete()
+        ApiKey.objects.all().delete()
+
+        cache.clear()
+
+    def test_GET_attachments_from_visible_submission(self):
+        Attachment.objects.create(
+            file=File(self.file, 'myfile.txt'), name='my_file_name', thing=self.submissions[0])
+
+        request = self.factory.get(self.path)
+        response = self.view(request, **self.request_kwargs)
+        data = json.loads(response.rendered_content)
+
+        # Check that the request was successful
+        self.assertEqual(response.status_code, 200, response.render())
+
+        # Check that the attachment looks right
+        self.assertEqual(len(data['results']), 1)
+        self.assertIn('file', data['results'][0])
+        self.assertIn('name', data['results'][0])
+        self.assertEqual(data['results'][0]['name'], 'my_file_name')
+
+    def test_GET_attachments_from_invisible_submission(self):
+        #
+        # View should not return invisible data normally
+        #
+        request = self.factory.get(self.invisible_path)
+        response = self.view(request, **self.invisible_request_kwargs)
+        data = json.loads(response.rendered_content)
+
+        # Check that the request was successful
+        self.assertEqual(response.status_code, 400)
+
+        # --------------------------------------------------
+
+        #
+        # View should 401 when not allowed to request private data (not authenticated)
+        #
+        request = self.factory.get(self.invisible_path + '?include_invisible')
+        response = self.view(request, **self.invisible_request_kwargs)
+        data = json.loads(response.rendered_content)
+
+        # Check that the request was restricted
+        self.assertEqual(response.status_code, 401)
+
+        # --------------------------------------------------
+
+        #
+        # View should 403 when not allowed to request private data (api key)
+        #
+        request = self.factory.get(self.invisible_path + '?include_invisible')
+        request.META[KEY_HEADER] = self.apikey.key
+        response = self.view(request, **self.invisible_request_kwargs)
+        data = json.loads(response.rendered_content)
+
+        # Check that the request was restricted
+        self.assertEqual(response.status_code, 403)
+
+        # --------------------------------------------------
+
+        #
+        # View should 403 when not allowed to request private data (not owner)
+        #
+        request = self.factory.get(self.invisible_path + '?include_invisible')
+        request.user = User.objects.create(username='new_user', password='password')
+        response = self.view(request, **self.invisible_request_kwargs)
+        data = json.loads(response.rendered_content)
+
+        # Check that the request was restricted
+        self.assertEqual(response.status_code, 403)
+
+        # --------------------------------------------------
+
+        #
+        # View should return private data when owner is logged in (Session Auth)
+        #
+        request = self.factory.get(self.invisible_path + '?include_invisible')
+        request.user = self.owner
+        response = self.view(request, **self.invisible_request_kwargs)
+        data = json.loads(response.rendered_content)
+
+        # Check that the request was successful
+        self.assertEqual(response.status_code, 200)
+
+        # --------------------------------------------------
+
+        #
+        # View should return private data when owner is logged in (Basic Auth)
+        #
+        request = self.factory.get(self.invisible_path + '?include_invisible')
+        request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(':'.join([self.owner.username, '123']))
+        response = self.view(request, **self.invisible_request_kwargs)
+        data = json.loads(response.rendered_content)
+
+        # Check that the request was successful
+        self.assertEqual(response.status_code, 200)
+
+        # --------------------------------------------------
+
+        #
+        # View should 400 when owner is logged in but doesn't request invisible
+        #
+        request = self.factory.get(self.invisible_path)
+        request.user = self.owner
+        response = self.view(request, **self.invisible_request_kwargs)
+        data = json.loads(response.rendered_content)
+
+        # Check that the request was successful
+        self.assertEqual(response.status_code, 400)
+
+
     # def test_POST_attachment_to_place(self):
     #     #
     #     # View should not return invisible data normally
