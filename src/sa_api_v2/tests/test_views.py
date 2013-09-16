@@ -3059,91 +3059,140 @@ class TestSubmissionAttachmentListView (TestCase):
         # Check that the request was successful
         self.assertEqual(response.status_code, 400)
 
-
-    # def test_POST_attachment_to_place(self):
-    #     #
-    #     # View should not return invisible data normally
-    #     #
-    #     request = self.factory.get(self.path)
-    #     response = self.view(request, **self.request_kwargs)
-    #     data = json.loads(response.rendered_content)
-
-    #     # Check that the request was successful
-    #     self.assertEqual(response.status_code, 200)
-    #     self.assertEqual(len(data['features']), 1)
-
-    #     # --------------------------------------------------
-
-    #     #
-    #     # View should 401 when not allowed to request private data (not authenticated)
-    #     #
-    #     request = self.factory.get(self.path + '?include_invisible')
-    #     response = self.view(request, **self.request_kwargs)
-    #     data = json.loads(response.rendered_content)
-
-    #     # Check that the request was restricted
-    #     self.assertEqual(response.status_code, 401)
-
-    #     # --------------------------------------------------
-
-    #     #
-    #     # View should 403 when not allowed to request private data (api key)
-    #     #
-    #     request = self.factory.get(self.path + '?include_invisible')
-    #     request.META[KEY_HEADER] = self.apikey.key
-    #     response = self.view(request, **self.request_kwargs)
-    #     data = json.loads(response.rendered_content)
-
-    #     # Check that the request was restricted
-    #     self.assertEqual(response.status_code, 403)
-
-    #     # --------------------------------------------------
-
-    #     #
-    #     # View should 403 when not allowed to request private data (not owner)
-    #     #
-    #     request = self.factory.get(self.path + '?include_invisible')
-    #     request.user = User.objects.create(username='new_user', password='password')
-    #     response = self.view(request, **self.request_kwargs)
-    #     data = json.loads(response.rendered_content)
-
-    #     # Check that the request was restricted
-    #     self.assertEqual(response.status_code, 403)
-
-    #     # --------------------------------------------------
-
-    #     #
-    #     # View should return private data when owner is logged in (Session Auth)
-    #     #
-    #     request = self.factory.get(self.path + '?include_invisible')
-    #     request.user = self.owner
-    #     response = self.view(request, **self.request_kwargs)
-    #     data = json.loads(response.rendered_content)
-
-    #     # Check that the request was successful
-    #     self.assertEqual(response.status_code, 200)
-    #     self.assertEqual(len(data['features']), 2)
-
-    #     # --------------------------------------------------
-
-    #     #
-    #     # View should return private data when owner is logged in (Basic Auth)
-    #     #
-    #     request = self.factory.get(self.path + '?include_invisible')
-    #     request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(':'.join([self.owner.username, '123']))
-    #     response = self.view(request, **self.request_kwargs)
-    #     data = json.loads(response.rendered_content)
-
-    #     # Check that the request was successful
-    #     self.assertEqual(response.status_code, 200)
-    #     self.assertEqual(len(data['features']), 2)
-
-
-    def test_POST_attachment_to_invisible_place(self):
-        pass
-
     def test_POST_attachment_to_submission(self):
-        pass
+        #
+        # Can't write if not authenticated
+        #
+        f = StringIO('This is test content in a "file"')
+        f.name = 'myfile.txt'
+        request = self.factory.post(self.path, data={'file': f, 'name': 'my-file'})
+        response = self.view(request, **self.request_kwargs)
+        self.assertEqual(response.status_code, 401, response.render())
+
+        # --------------------------------------------------
+
+        #
+        # Can write with the API key.
+        #
+        f = StringIO('This is test content in a "file"')
+        f.name = 'myfile.txt'
+        request = self.factory.post(self.path, data={'file': f, 'name': 'my-file'})
+        request.META[KEY_HEADER] = self.apikey.key
+        response = self.view(request, **self.request_kwargs)
+
+        # Check that the request was successful
+        self.assertEqual(response.status_code, 201, response.render())
+
+        # Check that the attachment looks right
+        self.assertEqual(self.submissions[0].attachments.all().count(), 1)
+        a = self.submissions[0].attachments.all()[0]
+        self.assertEqual(a.name, 'my-file')
+        self.assertEqual(a.file.read(), 'This is test content in a "file"')
+
+        # --------------------------------------------------
+
+        #
+        # Can not write when logged in as not owner.
+        #
+        f = StringIO('This is test content in a "file"')
+        f.name = 'myfile.txt'
+        request = self.factory.post(self.path, data={'file': f, 'name': 'my-file'})
+        User.objects.create_user(username='new_user', password='password')
+        request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(':'.join(['new_user', 'password']))
+        response = self.view(request, **self.request_kwargs)
+
+        # Check that the request was successful
+        self.assertEqual(response.status_code, 403, response.render())
+
+        # --------------------------------------------------
+
+        #
+        # Can write when logged in as owner.
+        #
+        f = StringIO('This is test content in a "file"')
+        f.name = 'myfile.txt'
+        request = self.factory.post(self.path, data={'file': f, 'name': 'my-file'})
+        request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(':'.join([self.owner.username, '123']))
+        response = self.view(request, **self.request_kwargs)
+
+        # Check that the request was successful
+        self.assertEqual(response.status_code, 201, response.render())
+
+    def test_POST_attachment_to_invisible_submission(self):
+        #
+        # Can't write if not authenticated
+        #
+        f = StringIO('This is test content in a "file"')
+        f.name = 'myfile.txt'
+        request = self.factory.post(self.invisible_path + '?include_invisible', data={'file': f, 'name': 'my-file'})
+        response = self.view(request, **self.invisible_request_kwargs)
+        self.assertEqual(response.status_code, 401, response.render())
+
+        # --------------------------------------------------
+
+        #
+        # Can't write with the API key/include_invisible. (400)
+        #
+        f = StringIO('This is test content in a "file"')
+        f.name = 'myfile.txt'
+        request = self.factory.post(self.invisible_path, data={'file': f, 'name': 'my-file'})
+        request.META[KEY_HEADER] = self.apikey.key
+        response = self.view(request, **self.invisible_request_kwargs)
+        self.assertEqual(response.status_code, 400, response.render())
+
+
+        # --------------------------------------------------
+
+        #
+        # Can't write with the API key (403).
+        #
+        f = StringIO('This is test content in a "file"')
+        f.name = 'myfile.txt'
+        request = self.factory.post(self.invisible_path + '?include_invisible', data={'file': f, 'name': 'my-file'})
+        request.META[KEY_HEADER] = self.apikey.key
+        response = self.view(request, **self.invisible_request_kwargs)
+        self.assertEqual(response.status_code, 403, response.render())
+
+        # --------------------------------------------------
+
+        #
+        # Can not write when logged in as not owner.
+        #
+        f = StringIO('This is test content in a "file"')
+        f.name = 'myfile.txt'
+        request = self.factory.post(self.invisible_path + '?include_invisible', data={'file': f, 'name': 'my-file'})
+        User.objects.create_user(username='new_user', password='password')
+        request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(':'.join(['new_user', 'password']))
+        response = self.view(request, **self.invisible_request_kwargs)
+
+        # Check that the request was successful
+        self.assertEqual(response.status_code, 403, response.render())
+
+        # --------------------------------------------------
+
+        #
+        # Can't write when logged in as owner without include_invisible (400).
+        #
+        f = StringIO('This is test content in a "file"')
+        f.name = 'myfile.txt'
+        request = self.factory.post(self.invisible_path, data={'file': f, 'name': 'my-file'})
+        request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(':'.join([self.owner.username, '123']))
+        response = self.view(request, **self.invisible_request_kwargs)
+        self.assertEqual(response.status_code, 400, response.render())
+
+        # --------------------------------------------------
+
+        #
+        # Can write when logged in as owner.
+        #
+        f = StringIO('This is test content in a "file"')
+        f.name = 'myfile.txt'
+        request = self.factory.post(self.invisible_path + '?include_invisible', data={'file': f, 'name': 'my-file'})
+        request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(':'.join([self.owner.username, '123']))
+        response = self.view(request, **self.invisible_request_kwargs)
+
+        # Check that the request was successful
+        self.assertEqual(response.status_code, 201, response.render())
 
 
 
