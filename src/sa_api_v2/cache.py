@@ -229,7 +229,8 @@ class PlaceCache (ThingWithAttachmentCache, Cache):
         params = self.dataset_cache.get_cached_instance_params(
             place_obj.dataset_id, lambda: place_obj.dataset)
         params.update({
-            'place_id': place_obj.pk
+            'place_id': place_obj.pk,
+            'thing_id': place_obj.pk
         })
         return params
 
@@ -281,7 +282,8 @@ class SubmissionCache (ThingWithAttachmentCache, Cache):
         params = self.submissionset_cache.get_cached_instance_params(
             submission_obj.parent_id, lambda: submission_obj.parent)
         params.update({
-            'submission_id': submission_obj.pk
+            'submission_id': submission_obj.pk,
+            'thing_id': submission_obj.pk
         })
         return params
 

@@ -190,9 +190,10 @@ class OwnedResourceMixin (object):
         dataset = get_object_or_404(models.DataSet, slug=dataset_slug, owner=owner)
         return dataset
 
-    def is_verified_object(self, obj):
+    def is_verified_object(self, obj, ObjType=None):
         # Get the instance parameters from the cache
-        params = self.model.cache.get_cached_instance_params(obj.pk, lambda: obj)
+        ObjType = ObjType or self.model
+        params = ObjType.cache.get_cached_instance_params(obj.pk, lambda: obj)
 
         # Make sure that the instance parameters match what we got in the URL.
         # We do not want to risk assuming a user owns a place, for example, just
@@ -203,13 +204,13 @@ class OwnedResourceMixin (object):
 
         return True
 
-    def verify_object(self, obj):
+    def verify_object(self, obj, ObjType=None):
         # If the object is invisible, check that include_invisible is on
         if not getattr(obj, 'visible', True):
             if INCLUDE_INVISIBLE_PARAM not in self.request.GET:
                 raise QueryError
 
-        if not self.is_verified_object(obj):
+        if not self.is_verified_object(obj, ObjType):
             raise Http404
 
 
@@ -920,6 +921,8 @@ class AttachmentListView (OwnedResourceMixin, FilteredResourceMixin, generics.Li
 
     def get_queryset(self):
         thing = self.get_thing()
+        self.verify_object(thing, models.Place)
+
         queryset = super(AttachmentListView, self).get_queryset()
         return queryset.filter(thing=thing)
 
