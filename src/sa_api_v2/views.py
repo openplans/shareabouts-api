@@ -881,6 +881,55 @@ class AdminDataSetListView (CachedResourceMixin, DataSetListMixin, generics.List
     permission_classes = (IsLoggedInAdmin,)
 
 
+class AttachmentListView (OwnedResourceMixin, FilteredResourceMixin, generics.ListCreateAPIView):
+    """
+
+    GET
+    ---
+    Get all the attachments for a place or submission
+
+    **Authentication**: Basic, session, or key auth *(optional)*
+
+    **Request Parameters**:
+
+      * `<attr>=<value>`
+
+        Filter the place list to only return the places where the attribute is
+        equal to the given value.
+
+    POST
+    ----
+
+    Attach a file to a place or submission
+
+    **Authentication**: Basic, session, or key auth *(required)*
+
+    ------------------------------------------------------------
+    """
+
+    model = models.Attachment
+    serializer_class = serializers.AttachmentSerializer
+
+    thing_id_kwarg = 'thing_id'
+
+    def get_thing(self):
+        thing_id = self.kwargs[self.thing_id_kwarg]
+        dataset = self.get_dataset()
+        thing = get_object_or_404(models.SubmittedThing, dataset=dataset, id=thing_id)
+        return thing
+
+    def get_queryset(self):
+        thing = self.get_thing()
+        queryset = super(AttachmentListView, self).get_queryset()
+        return queryset.filter(thing=thing)
+
+    def pre_save(self, obj):
+        super(AttachmentListView, self).pre_save(obj)
+        thing = self.get_thing()
+
+        obj.thing = thing
+
+
 #from . import forms
 #from . import models
 #from . import parsers

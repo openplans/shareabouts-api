@@ -1,7 +1,15 @@
 from django.conf.urls import patterns, url
 from . import views
 
+
 urlpatterns = patterns('sa_api_v2',
+    url(r'^(?P<owner_username>[^/]+)/datasets/(?P<dataset_slug>[^/]+)/places/(?P<thing_id>\d+)/attachments$',
+        views.AttachmentListView.as_view(),
+        name='place-attachments'),
+    url(r'^(?P<owner_username>[^/]+)/datasets/(?P<dataset_slug>[^/]+)/places/(?P<place_id>\d+)/(?P<submission_set_name>[^/]+)/(?P<thing_id>\d+)/attachments$',
+        views.AttachmentListView.as_view(),
+        name='submission-attachments'),
+
     url(r'^(?P<owner_username>[^/]+)/datasets/(?P<dataset_slug>[^/]+)/places/(?P<place_id>\d+)/(?P<submission_set_name>[^/]+)/(?P<submission_id>\d+)$',
         views.SubmissionInstanceView.as_view(),
         name='submission-detail'),
@@ -42,13 +50,6 @@ urlpatterns = patterns('sa_api_v2',
     url(r'^(?P<owner_username>[^/]+)/datasets/(?P<dataset_slug>[^/]+)/activity$',
         lambda *a, **k: None,
         name='action-list'),
-
-    url(r'^(?P<owner_username>[^/]+)/datasets/(?P<dataset_slug>[^/]+)/places/(?P<place_id>\d+)/attachments$',
-        lambda *a, **k: None,
-        name='place-attachments'),
-    url(r'^(?P<owner_username>[^/]+)/datasets/(?P<dataset_slug>[^/]+)/places/(?P<place_id>\d+)/(?P<submission_set_name>[^/]+)/(?P<submission_id>\d+)/attachments$',
-        lambda *a, **k: None,
-        name='submission-attachments'),
 
     url(r'^(?P<owner_username>[^/]+)/password$',
         lambda *a, **k: None,

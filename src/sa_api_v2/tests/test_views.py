@@ -2,11 +2,12 @@ from django.test import TestCase
 from django.test.client import RequestFactory
 from django.core.urlresolvers import reverse
 from django.core.cache import cache
+from django.core.files import File
 import base64
 import csv
 import json
 from StringIO import StringIO
-from ..models import User, DataSet, Place, SubmissionSet, Submission
+from ..models import User, DataSet, Place, SubmissionSet, Submission, Attachment
 from ..apikey.models import ApiKey
 from ..apikey.auth import KEY_HEADER
 from ..views import (PlaceInstanceView, PlaceListView, SubmissionInstanceView,
@@ -30,6 +31,11 @@ class TestPlaceInstanceView (TestCase):
             'private-secrets': 42
           }),
         )
+        f = StringIO('This is test content in a "file"')
+        f.name = 'myfile.txt'
+        f.size = 20
+        self.attachments = Attachment.objects.create(
+            file=File(f, 'myfile.txt'), name='my_file_name', thing=self.place)
         self.comments = SubmissionSet.objects.create(place=self.place, name='comments')
         self.likes = SubmissionSet.objects.create(place=self.place, name='likes')
         self.applause = SubmissionSet.objects.create(place=self.place, name='applause')
@@ -175,6 +181,21 @@ class TestPlaceInstanceView (TestCase):
         comments_set = data['properties']['submission_sets'].get('comments')
         self.assertEqual(len(comments_set), 3)
         self.assert_(not all([comment['visible'] for comment in comments_set]))
+
+    def test_GET_response_with_attachment(self):
+        request = self.factory.get(self.path)
+        response = self.view(request, **self.request_kwargs)
+        data = json.loads(response.rendered_content)
+
+        # Check that the attachment looks right
+        self.assertIn('file', data['properties']['attachments'][0])
+        self.assertIn('name', data['properties']['attachments'][0])
+
+        self.assertEqual(len(data['properties']['attachments']), 1)
+        self.assertEqual(data['properties']['attachments'][0]['name'], 'my_file_name')
+
+        a = self.place.attachments.all()[0]
+        self.assertEqual(a.file.read(), 'This is test content in a "file"')
 
     def test_GET_response_with_private_data(self):
         #
@@ -897,6 +918,13 @@ class TestSubmissionInstanceView (TestCase):
           Submission.objects.create(parent=self.likes, dataset=self.dataset, data='{"bar": 3}'),
           Submission.objects.create(parent=self.likes, dataset=self.dataset, data='{"bar": 3}', visible=False),
         ]
+
+        f = StringIO('This is test content in a "file"')
+        f.name = 'myfile.txt'
+        f.size = 20
+        self.attachments = Attachment.objects.create(
+            file=File(f, 'myfile.txt'), name='my_file_name', thing=self.submissions[0])
+
         self.submission = self.comments.children.all()[0]
 
         self.apikey = ApiKey.objects.create(user=self.owner, key='abc')
@@ -952,6 +980,21 @@ class TestSubmissionInstanceView (TestCase):
             'http://testserver' + reverse('submission-detail', args=[
                 self.owner.username, self.dataset.slug, self.place.id,
                 self.submission.set_name, self.submission.id]))
+
+    def test_GET_response_with_attachment(self):
+        request = self.factory.get(self.path)
+        response = self.view(request, **self.request_kwargs)
+        data = json.loads(response.rendered_content)
+
+        # Check that the attachment looks right
+        self.assertIn('file', data['attachments'][0])
+        self.assertIn('name', data['attachments'][0])
+
+        self.assertEqual(len(data['attachments']), 1)
+        self.assertEqual(data['attachments'][0]['name'], 'my_file_name')
+
+        a = self.submissions[0].attachments.all()[0]
+        self.assertEqual(a.file.read(), 'This is test content in a "file"')
 
     def test_GET_response_with_private_data(self):
         #

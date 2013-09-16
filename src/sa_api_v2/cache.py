@@ -7,6 +7,7 @@ from . import utils
 import logging
 logger = logging.getLogger('sa_api_v2.cache')
 
+
 class Cache (object):
     """
     The base class for objects responsible for caching Shareabouts data
@@ -64,7 +65,7 @@ class Cache (object):
             obj = inst_key
             inst_key = obj.pk
         return '%s:%s' % (self.__class__.__name__, inst_key)
-    
+
     def clear_instance_params(self, obj):
         """
         Clear the instance parameters. Useful for when we delete a particular
@@ -98,28 +99,28 @@ class Cache (object):
     def get_serialized_data_meta_key(self, inst_key):
         inst_params_key = self.get_instance_params_key(inst_key)
         return inst_params_key + ':_keys'
-    
+
     def get_serialized_data_key(self, inst_key, **params):
         inst_params_key = self.get_instance_params_key(inst_key)
         keyvals = ['='.join(map(str, item)) for item in sorted(params.items())]
         return '%s:%s' % (inst_params_key, ':'.join(keyvals))
-    
+
     def get_serialized_data(self, inst_key, data_getter, **params):
         key = self.get_serialized_data_key(inst_key, **params)
         data = cache.get(key)
-        
+
         if data is None:
             data = data_getter()
             cache.set(key, data)
-            
+
             # Cache the key itself
             meta_key = self.get_serialized_data_meta_key(inst_key)
             keys = cache.get(meta_key) or set()
             keys.add(key)
             cache.set(meta_key, keys, settings.API_CACHE_TIMEOUT)
-        
+
         return data
-    
+
     def get_serialized_data_keys(self, inst_key):
         meta_key = self.get_serialized_data_meta_key(inst_key)
         if meta_key is not None:
@@ -173,7 +174,7 @@ class ThingWithAttachmentCache (Cache):
         params = self.dataset_cache.get_cached_instance_params(
             thing_obj.dataset_id, lambda: thing_obj.dataset)
         params.update({
-            'thing': thing_obj.pk
+            'thing_id': thing_obj.pk
         })
         return params
 
@@ -340,6 +341,9 @@ class AttachmentCache (Cache):
 
     def get_other_keys(self, **params):
         dataset_id = params.get('dataset_id')
+        thing_id = params.get('thing_id')
         thing_attachments_key = self.thing_cache.get_attachments_key(dataset_id)
         thing_serialized_data_keys = self.thing_cache.get_serialized_data_keys(thing_id)
-        return set([thing_attachments_key])
+
+        # Union the two sets
+        return set([thing_attachments_key]) | thing_serialized_data_keys
