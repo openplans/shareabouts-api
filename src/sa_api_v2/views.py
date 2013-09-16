@@ -891,13 +891,6 @@ class AttachmentListView (OwnedResourceMixin, FilteredResourceMixin, generics.Li
 
     **Authentication**: Basic, session, or key auth *(optional)*
 
-    **Request Parameters**:
-
-      * `<attr>=<value>`
-
-        Filter the place list to only return the places where the attribute is
-        equal to the given value.
-
     POST
     ----
 
