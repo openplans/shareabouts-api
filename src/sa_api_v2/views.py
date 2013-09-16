@@ -917,26 +917,25 @@ class AttachmentListView (OwnedResourceMixin, FilteredResourceMixin, generics.Li
         thing_id = self.kwargs[self.thing_id_kwarg]
         dataset = self.get_dataset()
         thing = get_object_or_404(models.SubmittedThing, dataset=dataset, id=thing_id)
-        return thing
 
-    def get_queryset(self):
-        thing = self.get_thing()
         if 'submission_set_name' in self.kwargs:
             obj = thing.submission
             ObjType = models.Submission
         else:
             obj = thing.place
             ObjType = models.Place
-
         self.verify_object(obj, ObjType)
 
+        return thing
+
+    def get_queryset(self):
+        thing = self.get_thing()
         queryset = super(AttachmentListView, self).get_queryset()
         return queryset.filter(thing=thing)
 
     def pre_save(self, obj):
         super(AttachmentListView, self).pre_save(obj)
         thing = self.get_thing()
-
         obj.thing = thing
 
 
