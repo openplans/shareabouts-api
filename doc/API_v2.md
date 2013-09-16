@@ -730,20 +730,28 @@ Attachments are file data that can be attached to a place or a submission.
 Attachment files are stored as resources external to the Shareabouts API, but
 can be uploaded through the API.
 
-### POST /api/v2/*:owner*/datasets/*:slug*/places/*:place_id*/attachments/
+### POST
 
-Create a new attachment for a place
+    /api/v2/*:owner*/datasets/*:slug*/places/*:place_id*/attachments
+    /api/v2/*:owner*/datasets/*:slug*/places/*:place_id*/*:submission_set_name*/*:submission_id*/attachments
 
-**Authentication**: Basic, session, or key auth *(required)*
+Create a new attachment for a place or submission
 
-**Request Data**:
+**Authentication**
+
+Basic, session, or key auth *(required)*
+
+**Request Data**
 
 Multipart form data with two fields:
 
-  * *name*: The attachment's name -- should be unique within the place.
-  * *file*: The attachment's file data.
+  * `name`: The attachment's name -- should be unique within the place.
+  * `file`: The attachment's file data.
 
-**Sample URL**: http://api.shareabouts.org/api/v2/openplans/patiosoftheworld/places/29664/attachments/
+**Sample URL**
+
+    http://api.shareabouts.org/api/v2/openplans/datasets/patiosoftheworld/places/29664/attachments
+    http://api.shareabouts.org/api/v2/openplans/datasets/patiosoftheworld/places/29664/comments/123/attachments
 
 **Sample Usage**
 
@@ -755,7 +763,7 @@ In Javascript (with jQuery), this can be done like:
     data.append('file', fileField.files[0])
 
     jQuery.ajax({
-      url: 'http://api.shareabouts.org/api/v2/openplans/patiosoftheworld/places/29664/attachments/',
+      url: 'http://api.shareabouts.org/api/v2/openplans/patiosoftheworld/places/29664/attachments',
       type: 'POST',
       data: data,
 
@@ -773,12 +781,52 @@ Or, in Python, with requests:
         files={'file': open('filename.jpg')}
     )
 
-**Sample Response**:
+**Sample Response**
 
     200 OK
-
     {
+      "created_datetime": "2013-09-16T14:33:11.043Z",
+      "updated_datetime": "2013-09-16T14:33:11.043Z",
       "name": "patio-photo",
       "url": "http://patiosoftheworld.s3.amazon.com/patiomap-attachments/pDf3r4.jpg"
     }
+
+### GET List
+
+    /api/v2/*:owner*/datasets/*:slug*/places/*:place_id*/attachments
+    /api/v2/*:owner*/datasets/*:slug*/places/*:place_id*/*:submission_set_name*/*:submission_id*/attachments
+
+Get all the attachments for a place or submission
+
+**Authentication**
+
+Basic, session, or key auth *(optional)*
+
+**Response Formats**
+
+JSON (default), CSV, HTML, XML
+
+**Sample URL**
+
+    http://api.shareabouts.org/api/v2/openplans/datasets/patiosoftheworld/places/29664/attachments
+    http://api.shareabouts.org/api/v2/openplans/datasets/patiosoftheworld/places/29664/comments/123/attachments
+
+**Sample Response**
+
+    200 OK
+    {
+        "count": 1,
+        "next": null,
+        "previous": null,
+        "results": [
+            {
+                "created_datetime": "2013-09-16T14:33:11.043Z",
+                "updated_datetime": "2013-09-16T14:33:11.043Z",
+                "file": "http://example.com/attachments/OHc2QOR-milk.jpg",
+                "name": "milk.jpg"
+            }
+        ]
+    }
+
+------------------------------------------------------------
 
