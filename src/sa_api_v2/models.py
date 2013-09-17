@@ -71,10 +71,10 @@ class SubmittedThing (CacheClearingModel, ModelWithDataBlob, TimeStampedModel):
 
         # All submitted things generate an action if not silent.
         if not silent:
-            activity = Activity()
-            activity.action = 'create' if is_new else 'update'
-            activity.data = self
-            activity.save()
+            action = Action()
+            action.action = 'create' if is_new else 'update'
+            action.thing = self
+            action.save()
 
         return ret
 
@@ -170,22 +170,22 @@ class Submission (SubmittedThing):
         db_table = 'sa_api_submission'
 
 
-class Activity (CacheClearingModel, TimeStampedModel):
+class Action (CacheClearingModel, TimeStampedModel):
     """
     Metadata about SubmittedThings:
     what happened when.
     """
     action = models.CharField(max_length=16, default='create')
-    data = models.ForeignKey(SubmittedThing)
+    thing = models.ForeignKey(SubmittedThing, db_column='data_id', related_name='actions')
 
-    cache = cache.ActivityCache()
+    cache = cache.ActionCache()
 
     class Meta:
         db_table = 'sa_api_activity'
 
     @property
     def submitter_name(self):
-        return self.data.submitter_name
+        return self.thing.submitter_name
 
 
 def timestamp_filename(attachment, filename):

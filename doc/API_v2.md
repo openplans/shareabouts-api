@@ -709,9 +709,10 @@ Get the activity for a dataset
         {
             "id": 159985,
             "place_id": 29673,
-            "type": "support"
             "action": "create",
-            "data": {
+
+            "target_type": "support"
+            "target": {
                 "created_datetime": "2013-04-30T19:47:21.101Z",
                 "updated_datetime": "2013-04-30T19:47:21.101Z",
                 "id": 29674,

@@ -38,7 +38,7 @@ class PlaceForm (forms.ModelForm):
         exclude = ['dataset']
 
 
-class ActivityForm (forms.Form):
+class ActionForm (forms.Form):
     before = forms.IntegerField(required=False)
     after = forms.IntegerField(required=False)
     limit = forms.IntegerField(required=False)

@@ -38,7 +38,7 @@ class SubmissionAdmin(SubmittedThingAdmin):
     model = models.Submission
 
 
-class ActivityAdmin(admin.ModelAdmin):
+class ActionAdmin(admin.ModelAdmin):
     date_hierarchy = 'created_datetime'
     list_display = ('id', 'created_datetime', 'action', 'submitter_name')
 
@@ -46,4 +46,4 @@ admin.site.register(models.DataSet, DataSetAdmin)
 admin.site.register(models.Place, PlaceAdmin)
 admin.site.register(models.SubmissionSet, SubmissionSetAdmin)
 admin.site.register(models.Submission, SubmissionAdmin)
-admin.site.register(models.Activity, ActivityAdmin)
+admin.site.register(models.Action, ActionAdmin)

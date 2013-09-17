@@ -47,6 +47,8 @@ class GeoJSONRenderer(JSONRenderer):
 
         if isinstance(geometry, basestring):
             geometry = json.loads(GEOSGeometry(geometry).json)
+        elif isinstance(geometry, GEOSGeometry):
+            geometry = json.loads(geometry.json)
 
         feature = {
           'type': 'Feature',

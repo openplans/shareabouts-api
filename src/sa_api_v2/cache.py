@@ -240,8 +240,8 @@ class PlaceCache (ThingWithAttachmentCache, Cache):
 
         instance_path = reverse('place-detail', args=[owner, dataset, place])
         collection_path = reverse('place-list', args=[owner, dataset])
-        activity_path = reverse('action-list', args=[owner, dataset])
-        prefixes.update([instance_path, collection_path, activity_path])
+        action_collection_path = reverse('action-list', args=[owner, dataset])
+        prefixes.update([instance_path, collection_path, action_collection_path])
 
         return prefixes
 
@@ -266,9 +266,9 @@ class SubmissionSetCache (Cache):
         instance_path = reverse('place-detail', args=[owner, dataset, place])
         collection_path = reverse('place-list', args=[owner, dataset])
         dataset_path = reverse('dataset-detail', args=[owner, dataset])
-        activity_path = reverse('action-list', args=[owner, dataset])
+        action_collection_path = reverse('action-list', args=[owner, dataset])
 
-        prefixes.update([instance_path, collection_path, dataset_path, activity_path])
+        prefixes.update([instance_path, collection_path, dataset_path, action_collection_path])
 
         return prefixes
 
@@ -307,22 +307,22 @@ class SubmissionCache (ThingWithAttachmentCache, Cache):
         place_collection_path = reverse('place-list', args=[owner, dataset])
         dataset_instance_path = reverse('dataset-detail', args=[owner, dataset])
         dataset_collection_path = reverse('dataset-list', args=[owner])
-        activity_path = reverse('action-list', args=[owner, dataset])
+        action_collection_path = reverse('action-list', args=[owner, dataset])
 
         prefixes.update([specific_instance_path, general_instance_path,
                          specific_collection_path, general_collection_path,
                          specific_all_path, general_all_path,
                          place_instance_path, place_collection_path,
                          dataset_instance_path, dataset_collection_path,
-                         activity_path])
+                         action_collection_path])
 
         return prefixes
 
 
-class ActivityCache (Cache):
+class ActionCache (Cache):
     def clear_instance(self, obj):
-        keys = cache.get('activity_keys') or set()
-        keys.add('activity_keys')
+        keys = cache.get('action_keys') or set()
+        keys.add('action_keys')
         cache.delete_many(keys)
 
 

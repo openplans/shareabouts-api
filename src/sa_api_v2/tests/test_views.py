@@ -3,16 +3,17 @@ from django.test.client import RequestFactory
 from django.core.urlresolvers import reverse
 from django.core.cache import cache
 from django.core.files import File
+from django.contrib.gis import geos
 import base64
 import csv
 import json
 from StringIO import StringIO
-from ..models import User, DataSet, Place, SubmissionSet, Submission, Attachment
+from ..models import User, DataSet, Place, SubmissionSet, Submission, Attachment, Action
 from ..apikey.models import ApiKey
 from ..apikey.auth import KEY_HEADER
 from ..views import (PlaceInstanceView, PlaceListView, SubmissionInstanceView,
     SubmissionListView, DataSetSubmissionListView, DataSetInstanceView,
-    DataSetListView, AttachmentListView)
+    DataSetListView, AttachmentListView, ActionListView)
 
 
 class TestPlaceInstanceView (TestCase):
@@ -3194,6 +3195,163 @@ class TestSubmissionAttachmentListView (TestCase):
         # Check that the request was successful
         self.assertEqual(response.status_code, 201, response.render())
 
+
+class TestActivityView(TestCase):
+
+    def setUp(self):
+        User.objects.all().delete()
+        DataSet.objects.all().delete()
+        Place.objects.all().delete()
+        Submission.objects.all().delete()
+        Action.objects.all().delete()
+
+        self.owner = User.objects.create_user(username='myuser', password='123')
+        self.dataset = DataSet.objects.create(slug='data',
+                                              owner_id=self.owner.id)
+
+        self.visible_place = Place.objects.create(dataset=self.dataset, geometry='POINT (0 0)', visible=True)
+        self.invisible_place = Place.objects.create(dataset=self.dataset, geometry='POINT (0 0)', visible=False)
+
+        self.visible_set = SubmissionSet.objects.create(place=self.visible_place, name='vis')
+        self.invisible_set = SubmissionSet.objects.create(place=self.invisible_place, name='invis')
+
+        self.visible_submission = Submission.objects.create(dataset=self.dataset, parent=self.visible_set)
+        self.invisible_submission = Submission.objects.create(dataset=self.dataset, parent=self.invisible_set)
+        self.invisible_submission2 = Submission.objects.create(dataset=self.dataset, parent=self.visible_set, visible=False)
+
+        self.actions = [
+            # Get existing activity for visible things that have been created
+            Action.objects.get(thing=self.visible_place),
+            Action.objects.get(thing=self.visible_submission),
+
+            # Create some more activities for visible things
+            Action.objects.create(thing=self.visible_place.submittedthing_ptr, action='update'),
+            Action.objects.create(thing=self.visible_place.submittedthing_ptr, action='delete'),
+        ]
+
+        self.apikey = ApiKey.objects.create(user=self.owner, key='abc')
+        self.apikey.datasets.add(self.dataset)
+
+        self.kwargs = {
+            'owner_username': self.owner.username, 
+            'dataset_slug': 'data'
+        }
+        self.url = reverse('action-list', kwargs=self.kwargs)
+        self.view = ActionListView.as_view()
+        self.factory = RequestFactory()
+
+        # This was here first and marked as deprecated, but above doesn't
+        # work either.
+        # self.url = reverse('activity_collection')
+
+    def test_GET_with_no_params_returns_only_visible_things(self):
+        request = self.factory.get(self.url)
+        response = self.view(request, **self.kwargs)
+        data = json.loads(response.rendered_content)
+
+        self.assertIn('results', data)
+        self.assertEqual(len(data['results']), len(self.actions))
+
+    def test_GET_returns_all_things_with_include_invisible(self):
+        #
+        # View should 401 when not allowed to request private data (not authenticated)
+        #
+        request = self.factory.get(self.url + '?include_invisible')
+        response = self.view(request, **self.kwargs)
+
+        # Check that the request was restricted
+        self.assertEqual(response.status_code, 401)
+
+        # --------------------------------------------------
+
+        #
+        # View should 403 when not allowed to request private data (api key)
+        #
+        request = self.factory.get(self.url + '?include_invisible')
+        request.META[KEY_HEADER] = self.apikey.key
+        response = self.view(request, **self.kwargs)
+
+        # Check that the request was restricted
+        self.assertEqual(response.status_code, 403)
+
+        # --------------------------------------------------
+
+        #
+        # View should 403 when not allowed to request private data (not owner)
+        #
+        request = self.factory.get(self.url + '?include_invisible')
+        request.user = User.objects.create(username='new_user', password='password')
+        response = self.view(request, **self.kwargs)
+
+        # Check that the request was restricted
+        self.assertEqual(response.status_code, 403)
+
+        # --------------------------------------------------
+
+        #
+        # View should return private data when owner is logged in (Session Auth)
+        #
+        request = self.factory.get(self.url + '?include_invisible')
+        request.user = self.owner
+        response = self.view(request, **self.kwargs)
+
+        # Check that the request was successful
+        self.assertEqual(response.status_code, 200)
+
+        # --------------------------------------------------
+
+        #
+        # View should return private data when owner is logged in (Basic Auth)
+        #
+        request = self.factory.get(self.url + '?include_invisible')
+        request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(':'.join([self.owner.username, '123']))
+        response = self.view(request, **self.kwargs)
+
+        # Check that the request was successful
+        self.assertEqual(response.status_code, 200)
+
+    def test_returns_from_cache_based_on_params(self):
+        no_params = self.factory.get(self.url)
+        vis_param = self.factory.get(self.url + '?include_invisible')
+
+        no_params.user = self.owner
+        vis_param.user = self.owner
+
+        no_params.META['HTTP_ACCEPT'] = 'application/json'
+        vis_param.META['HTTP_ACCEPT'] = 'application/json'
+
+        self.view(no_params, **self.kwargs)
+        self.view(vis_param, **self.kwargs)
+
+        # Both requests should be made without hitting the database...
+        with self.assertNumQueries(0):
+            no_params_response = self.view(no_params, **self.kwargs)
+            vis_param_response = self.view(vis_param, **self.kwargs)
+
+        # But they should each correspond to different cached values.
+        self.assertNotEqual(no_params_response.rendered_content,
+                            vis_param_response.rendered_content)
+
+    def test_returns_from_db_when_object_changes(self):
+        request = self.factory.get(self.url + '?include_invisible')
+        request.user = self.owner
+        request.META['HTTP_ACCEPT'] = 'application/json'
+
+        self.view(request, **self.kwargs)
+
+        # Next requests should be made without hitting the database...
+        with self.assertNumQueries(0):
+            response1 = self.view(request, **self.kwargs)
+
+        # But cache should be invalidated after changing a place.
+        self.visible_place.geometry = geos.Point(1, 1)
+        self.visible_place.save()
+        response2 = self.view(request, **self.kwargs)
+
+        self.assertNotEqual(response1.rendered_content, response2.rendered_content)
+
+
+# ----------------------------------------------------------------------
 
 
 # from django.test import TestCase

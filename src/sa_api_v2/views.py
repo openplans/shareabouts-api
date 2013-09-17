@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.contrib.gis.geos import GEOSGeometry, Point
 from django.core.cache import cache
-from django.db.models import Count
+from django.db.models import Count, Q
 from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404
 from rest_framework import (views, permissions, mixins, authentication,
@@ -930,6 +930,25 @@ class AttachmentListView (OwnedResourceMixin, FilteredResourceMixin, generics.Li
         super(AttachmentListView, self).pre_save(obj)
         thing = self.get_thing()
         obj.thing = thing
+
+
+class ActionListView (CachedResourceMixin, OwnedResourceMixin, generics.ListAPIView):
+    model = models.Action
+    serializer_class = serializers.ActionSerializer
+    pagination_serializer_class = serializers.PaginatedResultsSerializer
+
+    def get_queryset(self):
+        dataset = self.get_dataset()
+        queryset = super(ActionListView, self).get_queryset()\
+            .filter(thing__dataset=dataset)\
+            .select_related('thing', 'thing__place', 'thing__submission')
+
+        if INCLUDE_INVISIBLE_PARAM not in self.request.GET:
+            queryset = queryset.filter(thing__visible=True)\
+                .filter(Q(thing__place__isnull=False) | 
+                        Q(thing__submission__parent__place__visible=True))
+
+        return queryset
 
 
 #from . import forms

@@ -26,7 +26,7 @@ class GeometryField(serializers.WritableField):
     def __init__(self, format='dict', *args, **kwargs):
         self.format = format
 
-        if self.format not in ('json', 'wkt'):
+        if self.format not in ('json', 'wkt', 'dict'):
             raise ValueError('Invalid format: %s' % self.format)
 
         super(GeometryField, self).__init__(*args, **kwargs)
@@ -36,6 +36,8 @@ class GeometryField(serializers.WritableField):
             return obj.json
         elif self.format == 'wkt':
             return obj.wkt
+        elif self.format == 'dict':
+            return json.loads(obj.json)
         else:
             raise ValueError('Cannot output as %s' % self.format)
 
@@ -449,6 +451,36 @@ class DataSetSerializer (CachedSerializer, serializers.HyperlinkedModelSerialize
             data['distance'] = str(obj.distance)
 
         return data
+
+
+class ActionSerializer (CachedSerializer, serializers.ModelSerializer):
+    target_type = serializers.SerializerMethodField('get_target_type')
+    target = serializers.SerializerMethodField('get_target')
+
+    class Meta:
+        model = models.Action
+        exclude = ('thing',)
+
+    def get_target_type(self, obj):
+        try:
+            if obj.thing.place is not None:
+                return u'place'
+        except models.Place.DoesNotExist:
+            pass
+
+        return obj.thing.submission.parent.name
+
+    def get_target(self, obj):
+        try:
+            if obj.thing.place is not None:
+                serializer = PlaceSerializer(obj.thing.place)
+            else:
+                serializer = SubmissionSerializer(obj.thing.submission)
+        except models.Place.DoesNotExist:
+            serializer = SubmissionSerializer(obj.thing.submission)
+
+        serializer.context = self.context
+        return serializer.data
 
 
 ###############################################################################
