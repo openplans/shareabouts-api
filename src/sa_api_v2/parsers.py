@@ -17,15 +17,15 @@ class GeoJSONParser (JSONParser):
 
     def process_object(self, data):
         try:
-            obj_type = data['type'].lower()
+            obj_type = data['type']
         except KeyError:
             raise ParseError('GeoJSON parse error - No "type" found in %s' % (data,))
 
-        valid_types = ('point', 'linestring', 'polygon', 'multipoint', 'multilinestring', 'multipolygon', 'geometrycollection', 'feature', 'feature_collection')
+        valid_types = ('Point', 'LineString', 'Polygon', 'MultiPoint', 'MultiLineString', 'MultiPolygon', 'GeometryCollection', 'Feature', 'FeatureCollection')
         if obj_type not in valid_types:
             raise ParseError('GeoJSON parse error - %r is not a valid object type: only %s' % (obj_type, ', '.join(valid_types)))
 
-        if obj_type == 'feature':
+        if obj_type == 'Feature':
             data = self.process_feature(data)
 
         return data
