@@ -345,6 +345,7 @@ class DataSetSubmissionSetSummarySerializer (serializers.HyperlinkedModelSeriali
 
 class PlaceSerializer (CachedSerializer, DataBlobProcessor, serializers.HyperlinkedModelSerializer):
     url = PlaceIdentityField()
+    id = serializers.PrimaryKeyRelatedField(read_only=True)
     geometry = GeometryField(format='wkt')
     dataset = DataSetRelatedField()
     attachments = AttachmentSerializer(read_only=True)
@@ -423,6 +424,7 @@ class PlaceSerializer (CachedSerializer, DataBlobProcessor, serializers.Hyperlin
 
 class SubmissionSerializer (CachedSerializer, DataBlobProcessor, serializers.HyperlinkedModelSerializer):
     url = SubmissionIdentityField()
+    id = serializers.PrimaryKeyRelatedField(read_only=True)
     dataset = DataSetRelatedField()
     set = SubmissionSetRelatedField(source='parent')
     place = PlaceRelatedField(source='parent.place')
@@ -435,6 +437,7 @@ class SubmissionSerializer (CachedSerializer, DataBlobProcessor, serializers.Hyp
 
 class DataSetSerializer (CachedSerializer, serializers.HyperlinkedModelSerializer):
     url = DataSetIdentityField()
+    id = serializers.PrimaryKeyRelatedField(read_only=True)
     owner = UserRelatedField()
     keys = DataSetKeysRelatedField(source='*')
 
