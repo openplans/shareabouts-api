@@ -443,8 +443,11 @@ class TestPlaceInstanceView (TestCase):
 
     def test_PUT_response(self):
         place_data = json.dumps({
-          'type': 'Park Bench',
-          'private-secrets': 'The mayor loves this bench',
+          'type': 'Feature',
+          'properties': {
+            'type': 'Park Bench',
+            'private-secrets': 'The mayor loves this bench'
+          },
           'geometry': {"type": "Point", "coordinates": [-73.99, 40.75]}
         })
 
@@ -484,9 +487,12 @@ class TestPlaceInstanceView (TestCase):
 
     def test_PUT_to_invisible_place(self):
         place_data = json.dumps({
-          'type': 'Park Bench',
-          'private-secrets': 'The mayor loves this bench',
-          'geometry': {"type": "Point", "coordinates": [-73.99, 40.75]}
+            'type': 'Feature',
+            'properties': {
+                'type': 'Park Bench',
+                'private-secrets': 'The mayor loves this bench',
+            },
+            'geometry': {"type": "Point", "coordinates": [-73.99, 40.75]}
         })
 
         #
@@ -792,10 +798,13 @@ class TestPlaceListView (TestCase):
 
     def test_POST_response(self):
         place_data = json.dumps({
-          'submitter_name': 'Andy',
-          'type': 'Park Bench',
-          'private-secrets': 'The mayor loves this bench',
-          'geometry': {"type": "Point", "coordinates": [-73.99, 40.75]}
+            'properties': {
+                'submitter_name': 'Andy',
+                'type': 'Park Bench',
+                'private-secrets': 'The mayor loves this bench',
+            },
+            'type': 'Feature',
+            'geometry': {"type": "Point", "coordinates": [-73.99, 40.75]}
         })
         start_num_places = Place.objects.all().count()
 
@@ -920,11 +929,14 @@ class TestPlaceListView (TestCase):
 
     def test_POST_invisible_response(self):
         place_data = json.dumps({
-          'submitter_name': 'Andy',
-          'type': 'Park Bench',
-          'private-secrets': 'The mayor loves this bench',
-          'geometry': {"type": "Point", "coordinates": [-73.99, 40.75]},
-          'visible': False
+            'properties': {
+                'submitter_name': 'Andy',
+                'type': 'Park Bench',
+                'private-secrets': 'The mayor loves this bench',
+                'visible': False
+            },
+            'type': 'Feature',
+            'geometry': {"type": "Point", "coordinates": [-73.99, 40.75]},
         })
 
         request = self.factory.post(self.path, data=place_data, content_type='application/json')

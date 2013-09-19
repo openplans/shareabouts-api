@@ -1,43 +1,41 @@
-from .utils import unpack_data_blob
-from djangorestframework import parsers
+from rest_framework.parsers import JSONParser, ParseError
+from .renderers import GeoJSONRenderer
 
 
-PlainTextParser = parsers.PlainTextParser
+class GeoJSONParser (JSONParser):
+    renderer_class = GeoJSONRenderer
 
+    def parse(self, stream, media_type, parser_context):
+        data = super(GeoJSONParser, self).parse(stream, media_type, parser_context)
 
-class FormDataWithDataBlobMixin (object):
-    """
-    After initial decoding, look for an item named 'data', decode it as JSON,
-    and merge the decoded JSON with the other results;
-    see unpack_data_blob().
+        if isinstance(data, dict):
+            data = self.process_object(data)
+        elif isinstance(data, list):
+            data = [self.process_object(obj) for obj in data]
 
-    Used as a mixin with other parsers which do the initial decoding from
-    some content-type (eg. FormParser for form data).
-    """
-    def parse(self, stream):
-        (data, files) = super(FormDataWithDataBlobMixin, self).parse(stream)
+        return data
 
-        unpack_data_blob(data)
-        return (data, files)
+    def process_object(self, data):
+        try:
+            obj_type = data['type'].lower()
+        except KeyError:
+            raise ParseError('GeoJSON parse error - No "type" found in %s' % (data,))
 
+        valid_types = ('point', 'linestring', 'polygon', 'multipoint', 'multilinestring', 'multipolygon', 'geometrycollection', 'feature', 'feature_collection')
+        if obj_type not in valid_types:
+            raise ParseError('GeoJSON parse error - %r is not a valid object type: only %s' % (obj_type, ', '.join(valid_types)))
 
-class FormParser (FormDataWithDataBlobMixin, parsers.FormParser):
-    """
-    Handle 'application/x-www-form-urlencoded' data and then
-    do the DataBlob JSON decoding.
-    """
-    pass
+        if obj_type == 'feature':
+            data = self.process_feature(data)
 
+        return data
 
-class MultiPartParser (FormDataWithDataBlobMixin, parsers.MultiPartParser):
-    """
-    Handle 'form/mulitpart' data and then do the DataBlob JSON decoding.
-    """
-    pass
+    def process_feature(self, data):
+        del data['type']
+        properties = data.pop('properties', None)
 
-
-# Use the same default parsers (in the same order) as DRF, but replace the form
-# parsers with the ones above.
-DEFAULT_DATA_BLOB_PARSERS = list(parsers.DEFAULT_PARSERS)
-DEFAULT_DATA_BLOB_PARSERS[1:3] = [FormParser, MultiPartParser]
-DEFAULT_DATA_BLOB_PARSERS = tuple(DEFAULT_DATA_BLOB_PARSERS)
+        if not isinstance(properties, dict):
+            raise ParseError('GeoJSON parse error - Feature "properties" must be an object (dict) not %s - %s' % (type(data), data))
+        
+        data.update(properties)
+        return data
