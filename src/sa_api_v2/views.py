@@ -933,6 +933,17 @@ class AttachmentListView (OwnedResourceMixin, FilteredResourceMixin, generics.Li
 
 
 class ActionListView (CachedResourceMixin, OwnedResourceMixin, generics.ListAPIView):
+    """
+
+    GET
+    ---
+
+    Get the activity for a dataset
+    
+    **Authentication**: Basic, session, or key auth *(optional)*
+
+    ------------------------------------------------------------
+    """
     model = models.Action
     serializer_class = serializers.ActionSerializer
     pagination_serializer_class = serializers.PaginatedResultsSerializer
