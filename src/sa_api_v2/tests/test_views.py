@@ -577,7 +577,7 @@ class TestPlaceListView (TestCase):
         dataset2 = DataSet.objects.create(slug='ds2', owner=self.owner)
         place2 = Place.objects.create(
           dataset=dataset2,
-          geometry='point(3 4)',
+          geometry='POINT(3 4)',
         )
 
         self.apikey = ApiKey.objects.create(user=self.owner, key='abc')
@@ -1297,7 +1297,7 @@ class TestSubmissionListView (TestCase):
         dataset2 = DataSet.objects.create(slug='ds2', owner=self.owner)
         place2 = Place.objects.create(
           dataset=dataset2,
-          geometry='point(3 4)',
+          geometry='POINT(3 4)',
         )
         comments2 = SubmissionSet.objects.create(place=place2, name='comments')
         submissions2 = [
@@ -1781,7 +1781,7 @@ class TestDataSetSubmissionListView (TestCase):
         dataset2 = DataSet.objects.create(slug='ds2', owner=self.owner)
         place3 = Place.objects.create(
           dataset=dataset2,
-          geometry='point(3 4)',
+          geometry='POINT(3 4)',
         )
         comments3 = SubmissionSet.objects.create(place=place3, name='comments')
         submissions3 = [
@@ -2396,7 +2396,7 @@ class TestDataSetListView (TestCase):
         dataset2 = DataSet.objects.create(slug='ds2', owner=self.owner)
         place2 = Place.objects.create(
           dataset=dataset2,
-          geometry='point(3 4)',
+          geometry='POINT(3 4)',
         )
         comments2 = SubmissionSet.objects.create(place=place2, name='comments')
         submissions2 = [
