@@ -8,7 +8,7 @@ python:
 notifications:
   irc:
     channels:
-      - "irc.freenode.org#civicworks"
+      - "irc.freenode.org#shareabouts"
     on_success: change
     on_failure: always
   email: false
