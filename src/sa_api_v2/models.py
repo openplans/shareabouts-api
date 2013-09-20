@@ -97,13 +97,13 @@ class DataSet (CacheClearingModel, models.Model):
         db_table = 'sa_api_dataset'
         unique_together = (('owner', 'slug'),
                            )
-    
+
     @property
     def places(self):
         if not hasattr(self, '_places'):
             self._places = Place.objects.filter(dataset=self)
         return self._places
-    
+
     @property
     def submissions(self):
         if not hasattr(self, '_submissions'):
@@ -151,15 +151,15 @@ class Submission (SubmittedThing):
     Used for representing eg. comments, votes, ...
     """
     parent = models.ForeignKey(SubmissionSet, related_name='children')
-    
+
     @property
     def place(self):
         return self.parent.place
-    
+
     @property
     def place_id(self):
         return self.parent.place_id
-    
+
     @property
     def set_name(self):
         return self.parent.name
@@ -182,6 +182,7 @@ class Action (CacheClearingModel, TimeStampedModel):
 
     class Meta:
         db_table = 'sa_api_activity'
+        ordering = ['-created_datetime']
 
     @property
     def submitter_name(self):
