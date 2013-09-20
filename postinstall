@@ -46,8 +46,7 @@ STATIC_ROOT = '/home/dotcloud/current/static/'
 # Debug is False by default, true if set in the environment.
 DEBUG = (env.get('DEBUG', 'False') in ['true', 'True'])
 TEMPLATE_DEBUG = DEBUG
-
-ALLOWED_HOSTS = ['*']
+SHOW_DEBUG_TOOLBAR = DEBUG
 
 ATTACHMENT_STORAGE = 'storages.backends.s3boto.S3BotoStorage'
 AWS_ACCESS_KEY_ID = env['SHAREABOUTS_AWS_KEY']
