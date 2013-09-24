@@ -11,17 +11,11 @@ notifications:
       - "irc.freenode.org#shareabouts"
     on_success: change
     on_failure: always
-  email: false
-# Turned off because the default policy is to spam ALL members of
-# the repositories' owner organization.
-# If we decide we want email notifications, feel free to uncomment this and
-# add yourself to the recipient list:
-# email:
-#    recipients:
-#     - foo@bar.com
-#     - foo2@bar.com
-#    on_success: change
-#    on_failure: change
+  email:
+    recipients:
+     - dev@openplans.org
+    on_success: change
+    on_failure: always
 
 # branches:
 #   only:
