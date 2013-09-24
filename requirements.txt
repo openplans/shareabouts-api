@@ -30,7 +30,8 @@ django-storages
 # User Accounts and Social Media
 # ==============================
 
-django-social-auth
+python-social-auth
+python-oauth2
 
 
 

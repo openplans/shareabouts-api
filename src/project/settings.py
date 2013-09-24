@@ -101,7 +101,7 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
-    'social_auth.middleware.SocialAuthExceptionMiddleware',
+    'social.apps.django_app.middleware.SocialAuthExceptionMiddleware',
     # Uncomment the next line for simple clickjacking protection:
     # 'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'debug_toolbar.middleware.DebugToolbarMiddleware',
@@ -134,7 +134,7 @@ INSTALLED_APPS = (
     'django_nose',
     'debug_toolbar',
     'storages',
-    'social_auth',
+    'social.apps.django_app.default',
 
     # Project apps
     'beta_signup',
@@ -153,10 +153,13 @@ INSTALLED_APPS = (
 AUTHENTICATION_BACKENDS = (
     # See http://django-social-auth.readthedocs.org/en/latest/configuration.html
     # for list of available backends.
-    'social_auth.backends.twitter.TwitterBackend',
-    'social_auth.backends.facebook.FacebookBackend',
+    'social.backends.twitter.TwitterOAuth',
+    'social.backends.facebook.FacebookOAuth2',
     'django.contrib.auth.backends.ModelBackend',
 )
+
+SOCIAL_AUTH_USER_MODEL = 'auth.User'
+SOCIAL_AUTH_PROTECTED_USER_FIELDS = ['email',]
 
 ################################################################################
 #

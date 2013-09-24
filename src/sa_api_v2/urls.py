@@ -1,4 +1,4 @@
-from django.conf.urls import patterns, url
+from django.conf.urls import patterns, url, include
 from . import views
 
 
@@ -54,6 +54,8 @@ urlpatterns = patterns('sa_api_v2',
     url(r'^(?P<owner_username>[^/]+)/password$',
         lambda *a, **k: None,
         name='user-password'),
+
+    url(r'^', include('social.apps.django_app.urls', namespace='social')),
 
 )
 
