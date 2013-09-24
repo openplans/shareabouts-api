@@ -55,7 +55,22 @@ urlpatterns = patterns('sa_api_v2',
         lambda *a, **k: None,
         name='user-password'),
 
-    url(r'^', include('social.apps.django_app.urls', namespace='social')),
+
+    # authentication / association
+
+    # url(r'^users/social/login/(?P<backend>[^/]+)/$', views.auth,
+    #     name='begin'),
+    # url(r'^users/social/complete/(?P<backend>[^/]+)/$', views.complete,
+    #     name='complete'),
+
+    # disconnection
+
+    # url(r'^disconnect/(?P<backend>[^/]+)/$', 'disconnect',
+    #     name='disconnect'),
+    # url(r'^disconnect/(?P<backend>[^/]+)/(?P<association_id>\d+)/$',
+    #     'disconnect', name='disconnect_individual'),
+
+    url(r'^users/social/', include('social.apps.django_app.urls', namespace='social')),
 
 )
 
