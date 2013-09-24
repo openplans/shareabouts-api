@@ -8,7 +8,7 @@ import base64
 import csv
 import json
 from StringIO import StringIO
-from ..models import User, DataSet, Place, SubmissionSet, Submission, Attachment, Action
+from ..models import User, DataSet, Place, SubmissionSet, Submission, Attachment, Action, Client
 from ..apikey.models import ApiKey
 from ..apikey.auth import KEY_HEADER
 from ..views import (PlaceInstanceView, PlaceListView, SubmissionInstanceView,
@@ -61,7 +61,8 @@ class TestPlaceInstanceView (TestCase):
           }),
         )
 
-        self.apikey = ApiKey.objects.create(user=self.owner, key='abc')
+        self.clientapp = Client.objects.create(owner=self.owner)
+        self.apikey = ApiKey.objects.create(client=self.clientapp, key='abc')
         self.apikey.datasets.add(self.dataset)
 
         self.request_kwargs = {
@@ -87,6 +88,7 @@ class TestPlaceInstanceView (TestCase):
         Place.objects.all().delete()
         SubmissionSet.objects.all().delete()
         Submission.objects.all().delete()
+        Client.objects.all().delete()
         ApiKey.objects.all().delete()
 
         cache.clear()
@@ -580,7 +582,8 @@ class TestPlaceListView (TestCase):
           geometry='POINT(3 4)',
         )
 
-        self.apikey = ApiKey.objects.create(user=self.owner, key='abc')
+        self.clientapp = Client.objects.create(owner=self.owner)
+        self.apikey = ApiKey.objects.create(client=self.clientapp, key='abc')
         self.apikey.datasets.add(self.dataset)
 
         self.request_kwargs = {
@@ -598,6 +601,7 @@ class TestPlaceListView (TestCase):
         Place.objects.all().delete()
         SubmissionSet.objects.all().delete()
         Submission.objects.all().delete()
+        Client.objects.all().delete()
         ApiKey.objects.all().delete()
 
         cache.clear()
@@ -988,7 +992,8 @@ class TestSubmissionInstanceView (TestCase):
 
         self.submission = self.comments.children.all()[0]
 
-        self.apikey = ApiKey.objects.create(user=self.owner, key='abc')
+        self.clientapp = Client.objects.create(owner=self.owner)
+        self.apikey = ApiKey.objects.create(client=self.clientapp, key='abc')
         self.apikey.datasets.add(self.dataset)
 
         self.request_kwargs = {
@@ -1009,6 +1014,7 @@ class TestSubmissionInstanceView (TestCase):
         Place.objects.all().delete()
         SubmissionSet.objects.all().delete()
         Submission.objects.all().delete()
+        Client.objects.all().delete()
         ApiKey.objects.all().delete()
 
         cache.clear()
@@ -1306,7 +1312,8 @@ class TestSubmissionListView (TestCase):
           Submission.objects.create(parent=comments2, dataset=dataset2, data='{"foo": 3}', visible=False),
         ]
 
-        self.apikey = ApiKey.objects.create(user=self.owner, key='abc')
+        self.clientapp = Client.objects.create(owner=self.owner)
+        self.apikey = ApiKey.objects.create(client=self.clientapp, key='abc')
         self.apikey.datasets.add(self.dataset)
 
         self.request_kwargs = {
@@ -1326,6 +1333,7 @@ class TestSubmissionListView (TestCase):
         Place.objects.all().delete()
         SubmissionSet.objects.all().delete()
         Submission.objects.all().delete()
+        Client.objects.all().delete()
         ApiKey.objects.all().delete()
 
         cache.clear()
@@ -1790,7 +1798,8 @@ class TestDataSetSubmissionListView (TestCase):
           Submission.objects.create(parent=comments3, dataset=dataset2, data='{"foo": 3}', visible=False),
         ]
 
-        self.apikey = ApiKey.objects.create(user=self.owner, key='abc')
+        self.clientapp = Client.objects.create(owner=self.owner)
+        self.apikey = ApiKey.objects.create(client=self.clientapp, key='abc')
         self.apikey.datasets.add(self.dataset)
 
         self.request_kwargs = {
@@ -1809,6 +1818,7 @@ class TestDataSetSubmissionListView (TestCase):
         Place.objects.all().delete()
         SubmissionSet.objects.all().delete()
         Submission.objects.all().delete()
+        Client.objects.all().delete()
         ApiKey.objects.all().delete()
 
         cache.clear()
@@ -2112,7 +2122,8 @@ class TestDataSetInstanceView (TestCase):
           }),
         )
 
-        self.apikey = ApiKey.objects.create(user=self.owner, key='abc')
+        self.clientapp = Client.objects.create(owner=self.owner)
+        self.apikey = ApiKey.objects.create(client=self.clientapp, key='abc')
         self.apikey.datasets.add(self.dataset)
 
         self.request_kwargs = {
@@ -2130,6 +2141,7 @@ class TestDataSetInstanceView (TestCase):
         Place.objects.all().delete()
         SubmissionSet.objects.all().delete()
         Submission.objects.all().delete()
+        Client.objects.all().delete()
         ApiKey.objects.all().delete()
 
         cache.clear()
@@ -2411,7 +2423,8 @@ class TestDataSetListView (TestCase):
             email='def@example.com')
         dataset3 = DataSet.objects.create(owner=other_owner, slug='slug', display_name="Display Name")
 
-        self.apikey = ApiKey.objects.create(user=self.owner, key='abc')
+        self.clientapp = Client.objects.create(owner=self.owner)
+        self.apikey = ApiKey.objects.create(client=self.clientapp, key='abc')
         self.apikey.datasets.add(self.dataset)
 
         self.request_kwargs = {
@@ -2428,6 +2441,7 @@ class TestDataSetListView (TestCase):
         Place.objects.all().delete()
         SubmissionSet.objects.all().delete()
         Submission.objects.all().delete()
+        Client.objects.all().delete()
         ApiKey.objects.all().delete()
 
         cache.clear()
@@ -2625,7 +2639,8 @@ class TestPlaceAttachmentListView (TestCase):
         # self.attachments = Attachment.objects.create(
         #     file=File(f, 'myfile.txt'), name='my_file_name', thing=self.place)
 
-        self.apikey = ApiKey.objects.create(user=self.owner, key='abc')
+        self.clientapp = Client.objects.create(owner=self.owner)
+        self.apikey = ApiKey.objects.create(client=self.clientapp, key='abc')
         self.apikey.datasets.add(self.dataset)
 
         self.request_kwargs = {
@@ -2651,6 +2666,7 @@ class TestPlaceAttachmentListView (TestCase):
         Place.objects.all().delete()
         SubmissionSet.objects.all().delete()
         Submission.objects.all().delete()
+        Client.objects.all().delete()
         ApiKey.objects.all().delete()
 
         cache.clear()
@@ -2933,7 +2949,8 @@ class TestSubmissionAttachmentListView (TestCase):
         self.file.name = 'myfile.txt'
         self.file.size = 20
 
-        self.apikey = ApiKey.objects.create(user=self.owner, key='abc')
+        self.clientapp = Client.objects.create(owner=self.owner)
+        self.apikey = ApiKey.objects.create(client=self.clientapp, key='abc')
         self.apikey.datasets.add(self.dataset)
 
         self.request_kwargs = {
@@ -2963,6 +2980,7 @@ class TestSubmissionAttachmentListView (TestCase):
         Place.objects.all().delete()
         SubmissionSet.objects.all().delete()
         Submission.objects.all().delete()
+        Client.objects.all().delete()
         ApiKey.objects.all().delete()
 
         cache.clear()
@@ -3241,7 +3259,8 @@ class TestActivityView(TestCase):
             Action.objects.create(thing=self.visible_place.submittedthing_ptr, action='delete'),
         ]
 
-        self.apikey = ApiKey.objects.create(user=self.owner, key='abc')
+        self.clientapp = Client.objects.create(owner=self.owner)
+        self.apikey = ApiKey.objects.create(client=self.clientapp, key='abc')
         self.apikey.datasets.add(self.dataset)
 
         self.kwargs = {

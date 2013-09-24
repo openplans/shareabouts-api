@@ -210,4 +210,14 @@ class Attachment (CacheClearingModel, TimeStampedModel):
     class Meta:
         db_table = 'sa_api_attachment'
 
+
+class Client (ModelWithDataBlob, TimeStampedModel):
+    """
+    A client account that can connect to the API on behalf of a user (owner)
+    """
+    owner = models.ForeignKey(User, related_name='clients')
+
+    class Meta:
+        db_table = 'sa_api_client'
+
 #

@@ -12,7 +12,7 @@ license unknown.
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils.timezone import now
-from ..models import DataSet
+from ..models import DataSet, Client
 
 # Changing this would require a migration, ugh.
 KEY_SIZE = 32
@@ -20,6 +20,7 @@ KEY_SIZE = 32
 
 class ApiKey(models.Model):
     user = models.ForeignKey(User, related_name='api_keys')
+    client = models.ForeignKey(Client, related_name='keys', null=True)
     key = models.CharField(max_length=KEY_SIZE, unique=True)
     logged_ip = models.IPAddressField(blank=True, null=True)
     last_used = models.DateTimeField(blank=True, default=now)
@@ -43,6 +44,11 @@ class ApiKey(models.Model):
 
     def __unicode__(self):
         return self.key
+
+    def save(self, *args, **kwargs):
+        if self.client_id is not None and self.user_id is None:
+            self.user = self.client.owner
+        super(ApiKey, self).save(*args, **kwargs)
 
 
 def generate_unique_api_key():

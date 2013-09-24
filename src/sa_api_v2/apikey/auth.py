@@ -23,33 +23,34 @@ class APIKeyBackend(object):
 
     def authenticate(self, key=None, ip_address=None):
         if not key:
+            client, key_instance = None, None
             return None
 
-        user, key_instance = self._get_user_and_key(key)
-        if None in (user, key_instance):
+        client, key_instance = self._get_client_and_key(key)
+        if None in (client, key_instance):
             return None
-        key_instance.login(ip_address)
+        # key_instance.login(ip_address)
         self.key_instance = key_instance
-        return user
+        return client
 
-    def get_user(self, user_id):
-        """user_id is actually an API key.
+    def get_client(self, client_id):
+        """client_id is actually an API key.
         """
-        return self._get_user_and_key(user_id)[1]
+        return self._get_client_and_key(client_id)[1]
 
-    def _get_user_and_key(self, key):
+    def _get_client_and_key(self, key):
         try:
-            key_instance = self.model.objects.select_related('user').get(key=key)
+            key_instance = self.model.objects.select_related('client').get(key=key)
         except self.model.DoesNotExist:
             return (None, None)
-        return key_instance.user, key_instance
+        return key_instance.client, key_instance
 
 
 def check_api_authorization(request):
     """
     Check API access based on the current request.
 
-    Currently requires that either the user is logged in (eg. via
+    Currently requires that either the client is logged in (eg. via
     basic auth or cookie), or there is a valid API key in the '%s' request
     header.  If either fails, raises ``PermissionDenied``.
 
@@ -59,15 +60,15 @@ def check_api_authorization(request):
     key = request.META.get(KEY_HEADER)
     
     auth_backend = APIKeyBackend()
-    user = auth_backend.authenticate(key=key, ip_address=ip_address)
-    auth = auth_backend.key_instance if (user is not None) else None
+    client = auth_backend.authenticate(key=key, ip_address=ip_address)
+    auth = auth_backend.key_instance if (client is not None) else None
     
-    if user is None:
+    if client is None:
         raise PermissionDenied("invalid key?")
         
-    if user.is_active:
-        user.backend = APIKeyBackend.backend_name
-        return (user, auth)
+    if client.owner and client.owner.is_active:
+        client.owner.backend = APIKeyBackend.backend_name
+        return (client, auth)
     else:
         raise PermissionDenied("Your account is disabled.")
 
@@ -76,16 +77,16 @@ class ApiKeyAuthentication(authentication.BaseAuthentication):
 
     def authenticate(self, request):
         """
-        Return a User, or something usable as such, or None;
+        Return a Client, or something usable as such, or None;
         as per http://django-rest-framework.org/library/authentication.html
 
         This wraps check_api_authorization() in something usable
         by djangorestframework.
         """
         try:
-            user, auth = check_api_authorization(request)
+            client, auth = check_api_authorization(request)
         except PermissionDenied:
             # Does djrf allow you to provide a message with auth failures?
             return None
 
-        return (user, auth)
+        return (client, auth)

@@ -9,6 +9,7 @@ from rest_framework import (views, permissions, mixins, authentication,
 from rest_framework.parsers import JSONParser, FormParser, MultiPartParser
 from rest_framework.response import Response
 from rest_framework.renderers import JSONRenderer, BrowsableAPIRenderer
+from rest_framework.request import Request
 from rest_framework.exceptions import APIException
 from mock import patch
 from . import models
@@ -66,7 +67,10 @@ class IsOwnerOrReadOnly(permissions.BasePermission):
         (If the view has no such attribute, assumes not allowed)
         """
         if (request.method in permissions.SAFE_METHODS or
-            is_owner(request.user, request) or request.user.is_superuser):
+            is_owner(request.user, request) or request.user.is_superuser
+            or (hasattr(request, 'client') and
+                hasattr(request.client, 'owner') and
+                is_owner(request.client.owner, request))):
             return True
         return False
 
@@ -110,6 +114,127 @@ class IsLoggedInAdmin(permissions.BasePermission):
 # View Mixins
 # -----------
 #
+
+class ShareaboutsAPIRequest (Request):
+    """
+    A subclass of the DRF Request that allows dual authentication as a user
+    and an application (client) at the same time.
+    """
+
+    def __init__(self, request, parsers=None, authenticators=None,
+                 client_authenticators=None, negotiator=None, 
+                 parser_context=None):
+        super(ShareaboutsAPIRequest, self).__init__(request,
+            parsers=parsers, authenticators=authenticators,
+            negotiator=negotiator, parser_context=parser_context)
+        self.client_authenticators = client_authenticators
+
+    @property
+    def client(self):
+        """
+        Returns the client associated with the current request, as authenticated
+        by the authentication classes provided to the request.
+        """
+        if not hasattr(self, '_client'):
+            self._authenticate_client()
+        return self._client
+
+    @client.setter
+    def client(self, value):
+        """
+        Sets the client on the current request.
+        """
+        self._client = value
+
+    @property
+    def client_auth(self):
+        """
+        Returns any non-client authentication information associated with the
+        request, such as an authentication token.
+        """
+        if not hasattr(self, '_client_auth'):
+            self._authenticate_client()
+        return self._auth
+
+    @client_auth.setter
+    def client_auth(self, value):
+        """
+        Sets any non-client authentication information associated with the
+        request, such as an authentication token.
+        """
+        self._client_auth = value
+
+    @property
+    def successful_authenticator(self):
+        """
+        Return the instance of the authentication instance class that was used
+        to authenticate the request, or `None`.
+        """
+        authenticator = super(ShareaboutsAPIRequest, self).successful_authenticator
+
+        if not authenticator:
+            if not hasattr(self, '_client_authenticator'):
+                self._authenticate_client()
+            authenticator = self._client_authenticator
+
+        return authenticator
+
+    def _authenticate_client(self):
+        """
+        Attempt to authenticate the request using each authentication instance
+        in turn.
+        Returns a three-tuple of (authenticator, client, client_authtoken).
+        """
+        for authenticator in self.client_authenticators:
+            try:
+                client_auth_tuple = authenticator.authenticate(self)
+            except exceptions.APIException:
+                self._client_not_authenticated()
+                raise
+
+            if client_auth_tuple is not None:
+                self._client_authenticator = authenticator
+                self._client, self._client_auth = client_auth_tuple
+                return
+
+        self._client_not_authenticated()
+
+    def _client_not_authenticated(self):
+        """
+        Generate a three-tuple of (authenticator, client, authtoken), representing
+        an unauthenticated request.
+        """
+        self._client_authenticator = None
+        self._client = None
+        self._client_auth = None
+
+
+class ClientAuthenticationMixin (object):
+    """
+    A view mixin that uses a ShareaboutsAPIRequest instead of a conventional
+    DRF Request object.
+    """
+
+    def get_client_authenticators(self):
+        """
+        Instantiates and returns the list of client authenticators that this view can use.
+        """
+        return [auth() for auth in self.client_authentication_classes]
+
+    def initialize_request(self, request, *args, **kwargs):
+        """
+        Override the initialize_request method in the base APIView so that we
+        can use a custom request object.
+        """
+        parser_context = self.get_parser_context(request)
+
+        return ShareaboutsAPIRequest(request,
+            parsers=self.get_parsers(),
+            authenticators=self.get_authenticators(),
+            client_authenticators=self.get_client_authenticators(),
+            negotiator=self.get_content_negotiator(),
+            parser_context=parser_context)
+
 
 class FilteredResourceMixin (object):
     """
@@ -157,7 +282,7 @@ class LocatedResourceMixin (object):
         return queryset
 
 
-class OwnedResourceMixin (object):
+class OwnedResourceMixin (ClientAuthenticationMixin):
     """
     A view mixin that retrieves the username of the resource owner, as provided
     in the URL, and stores it on the request object.
@@ -172,7 +297,8 @@ class OwnedResourceMixin (object):
     renderer_classes = (JSONRenderer, BrowsableAPIRenderer, renderers.PaginatedCSVRenderer)
     parser_classes = (JSONParser, FormParser, MultiPartParser)
     permission_classes = (IsOwnerOrReadOnly, IsLoggedInOwnerOrPublicDataOnly)
-    authentication_classes = (authentication.BasicAuthentication, authentication.SessionAuthentication, apikey.auth.ApiKeyAuthentication)
+    authentication_classes = (authentication.BasicAuthentication, authentication.SessionAuthentication)
+    client_authentication_classes = (apikey.auth.ApiKeyAuthentication,)
 
     owner_username_kwarg = 'owner_username'
     dataset_slug_kwarg = 'dataset_slug'
@@ -701,6 +827,7 @@ class DataSetInstanceView (CachedResourceMixin, OwnedResourceMixin, generics.Ret
     model = models.DataSet
     serializer_class = serializers.DataSetSerializer
     authentication_classes = (authentication.BasicAuthentication, authentication.SessionAuthentication)
+    client_authentication_classes = ()
 
     def get_object_or_404(self, owner_username, dataset_slug):
         try:
@@ -777,6 +904,7 @@ class DataSetListMixin (object):
     serializer_class = serializers.DataSetSerializer
     pagination_serializer_class = serializers.PaginatedResultsSerializer
     authentication_classes = (authentication.BasicAuthentication, authentication.SessionAuthentication)
+    client_authentication_classes = ()
 
     @utils.memo
     def get_place_counts(self):
