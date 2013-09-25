@@ -161,6 +161,13 @@ AUTHENTICATION_BACKENDS = (
 SOCIAL_AUTH_USER_MODEL = 'auth.User'
 SOCIAL_AUTH_PROTECTED_USER_FIELDS = ['email',]
 
+SOCIAL_AUTH_FACEBOOK_EXTRA_DATA = ['name', 'picture', 'bio']
+SOCIAL_AUTH_TWITTER_EXTRA_DATA = ['name', 'description', 'profile_image_url']
+
+# Explicitly request the following extra things from facebook
+SOCIAL_AUTH_FACEBOOK_PROFILE_EXTRA_PARAMS = {'fields': 'id,name,picture.width(96).height(96),first_name,last_name,bio'}
+
+
 ################################################################################
 #
 # Testing and administration

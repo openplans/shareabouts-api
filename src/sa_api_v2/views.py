@@ -1101,6 +1101,27 @@ class ActionListView (CachedResourceMixin, OwnedResourceMixin, generics.ListAPIV
         return queryset
 
 
+class UserInstanceView (OwnedResourceMixin, generics.RetrieveAPIView):
+    model = models.User
+    serializer_class = serializers.UserSerializer
+
+    def get_queryset(self):
+        return models.User.objects.all()\
+            .select_related('social_auth')
+
+    def get_object(self, queryset=None):
+        owner_username = self.kwargs[self.owner_username_kwarg]
+        owner = get_object_or_404(self.get_queryset(), username=owner_username)
+        return owner
+
+
+class CurrentUserInstanceView (views.APIView):
+    def get(self, request):
+        if request.user.is_authenticated():
+            user_url = reverse('user-detail', args=[request.user.username])
+            return HttpResponseRedirect(user_url)
+        else:
+            raise Http404('User is not logged in')
 
 
 ###############################################################################

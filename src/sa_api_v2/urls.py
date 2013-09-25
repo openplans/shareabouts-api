@@ -48,13 +48,16 @@ urlpatterns = patterns('sa_api_v2',
         name='dataset-list'),
 
     url(r'^(?P<owner_username>[^/]+)$',
-        lambda *a, **k: None,
+        views.UserInstanceView.as_view(),
         name='user-detail'),
 
     url(r'^(?P<owner_username>[^/]+)/password$',
         lambda *a, **k: None,
         name='user-password'),
 
+    url(r'^users/current$',
+        views.CurrentUserInstanceView.as_view(),
+        name='current-user-detail'),
 
     # authentication / association
 
