@@ -1,9 +1,11 @@
 from django.conf import settings
 from django.contrib.gis.geos import GEOSGeometry, Point
 from django.core.cache import cache
+from django.core.urlresolvers import reverse
 from django.db.models import Count, Q
-from django.http import Http404, HttpResponse
+from django.http import Http404, HttpResponse, HttpResponseBadRequest, HttpResponseRedirect
 from django.shortcuts import get_object_or_404
+from django.test.utils import override_settings
 from rest_framework import (views, permissions, mixins, authentication,
                             generics, exceptions, status)
 from rest_framework.parsers import JSONParser, FormParser, MultiPartParser
@@ -11,6 +13,7 @@ from rest_framework.response import Response
 from rest_framework.renderers import JSONRenderer, BrowsableAPIRenderer
 from rest_framework.request import Request
 from rest_framework.exceptions import APIException
+from social.apps.django_app import views as social_views
 from mock import patch
 from . import models
 from . import serializers
@@ -21,8 +24,11 @@ from . import apikey
 from . import utils
 from .params import (INCLUDE_INVISIBLE_PARAM, INCLUDE_PRIVATE_PARAM,
     INCLUDE_SUBMISSIONS_PARAM, NEAR_PARAM, FORMAT_PARAM)
+from functools import wraps
 from itertools import groupby
 from collections import defaultdict
+from urlparse import urlparse, urljoin
+from urllib import urlencode
 import re
 import ujson as json
 import logging
@@ -1094,6 +1100,130 @@ class ActionListView (CachedResourceMixin, OwnedResourceMixin, generics.ListAPIV
 
         return queryset
 
+
+
+
+###############################################################################
+#
+# Social Authentication Views
+# ---------------------------
+#
+
+def get_client_authentication(request):
+    authenticators = [apikey.auth.ApiKeyAuthentication()]
+
+    for authenticator in authenticators:
+        client_auth_tuple = authenticator.authenticate(request)
+
+        if client_auth_tuple is not None:
+            return client_auth_tuple
+
+    return None, None
+
+def use_social_auth_headers(social_func):
+    @wraps(social_func)
+    def wrapper(request, backend, *args, **kwargs):
+        client, client_auth = get_client_authentication(request)
+
+        if client:
+            client_data_str = client.data
+            client_data = json.loads(client_data_str)
+        else:
+            client_data = {}
+
+        # Store the original social auth settings
+        key_name = 'SOCIAL_AUTH_' + backend.upper() + '_KEY'
+        secret_name = 'SOCIAL_AUTH_' + backend.upper() + '_SECRET'
+
+        original_social = {}
+        if hasattr(settings, key_name):
+            original_social[key_name] = getattr(settings, key_name)
+        if hasattr(settings, secret_name):
+            original_social[secret_name] = getattr(settings, secret_name)
+
+        try:
+            # Replace the social auth settings found in the client data blob
+            if key_name in client_data:
+                setattr(settings, key_name, client_data.get(key_name))
+            if secret_name in client_data:
+                setattr(settings, secret_name, client_data.get(secret_name))
+
+            # Call the wrapped view
+            response = social_func(request, backend, *args, **kwargs)
+
+        finally:
+            # Restore social auth settings, no matter what
+            if key_name in original_social:
+                setattr(settings, key_name, original_social[key_name])
+            elif hasattr(settings, key_name):
+                delattr(settings, key_name)
+
+            if secret_name in original_social:
+                setattr(settings, secret_name, original_social[secret_name])
+            elif hasattr(settings, secret_name):
+                delattr(settings, secret_name)
+
+        return response
+
+    return wrapper
+
+def build_relative_url(original_url, relative_path):
+    """
+    Given a source URL, create a full URL for the relative path. For example:
+
+    ('http://ex.co/pictures/silly/abc.png', '/home') --> 'http://ex.co/home'
+    ('http://ex.co/p/index.html', 'about.html') --> 'http://ex.co/p/about.html'
+    """
+    parsed_url = urlparse(original_url)
+
+    if relative_path.startswith('/'):
+        path_prefix = ''
+    elif parsed_url.path.endswith('/') or relative_path == '':
+        path_prefix = parsed_url.path
+    else:
+        path_prefix = parsed_url.path.rsplit('/', 1)[:-1] + '/'
+
+    if path_prefix:
+        full_path = path_prefix + relative_path
+    else:
+        full_path = relative_path
+
+    return urljoin(parsed_url.scheme + '://' + parsed_url.netloc, full_path)
+
+def social_auth_capture_referer(request, *args, **kwargs):
+    """
+    A wrapper for the python-social-auth auth view that redirects to any
+    arbitrary URL. Normally, Django (and social-auth) internals only allow
+    redirecting to paths on the current host.
+    """
+    client_next = request.GET.get('next', '')
+    referer = request.META.get('HTTP_REFERER')
+
+    if referer:
+        client_next = build_relative_url(referer, client_next)
+    else:
+        return HttpResponseBadRequest('Referer header must be set.')
+
+    request.GET = request.GET.copy()
+    request.GET['next'] = reverse('redirector') + '?' + urlencode({'target': client_next})
+
+    return social_views.auth(request, *args, **kwargs)
+
+auth = social_auth_capture_referer
+
+# auth = use_social_auth_headers(social_views.auth)
+# complete = use_social_auth_headers(social_views.complete)
+
+def redirector(request):
+    """
+    Simple view to redirect to external URL.
+    """
+    try:
+        target = request.GET['target']
+    except KeyError:
+        return HttpResponseBadRequest('No target specified to redirect to.')
+
+    return HttpResponseRedirect(target)
 
 #from . import forms
 #from . import models
