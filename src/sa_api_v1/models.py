@@ -5,6 +5,7 @@ from django.core.files.storage import get_storage_class
 from django.core.urlresolvers import reverse
 from . import cache
 from . import utils
+import ujson as json
 
 
 class TimeStampedModel (models.Model):
@@ -57,7 +58,7 @@ class SubmittedThing (CacheClearingModel, ModelWithDataBlob, TimeStampedModel):
 
     """
 #    submitter = models.ForeignKey('Submitter', related_name='things')
-    submitter_name = models.CharField(max_length=256, null=True, blank=True)
+    # submitter_name = models.CharField(max_length=256, null=True, blank=True)
     dataset = models.ForeignKey('DataSet', related_name='submitted_thing_set',
                                 blank=True)
     visible = models.BooleanField(default=True, blank=True)
@@ -65,6 +66,11 @@ class SubmittedThing (CacheClearingModel, ModelWithDataBlob, TimeStampedModel):
     class Meta:
         db_table = 'sa_api_submittedthing'
         managed = False
+
+    @property
+    def submitter_name(self):
+        data = json.loads(self.data)
+        return data.get('submitter_name')
 
     def save(self, silent=False, *args, **kwargs):
         is_new = (self.id == None)

@@ -13,6 +13,9 @@ class SubmittedThingAdmin(admin.ModelAdmin):
     model = models.SubmittedThing
     list_display = ('id', 'created_datetime', 'updated_datetime', 'submitter_name',)
 
+    def submitter_name(self, obj):
+        return obj.submitter.username if obj.submitter else None
+
 
 class InlineApiKeyAdmin(admin.StackedInline):
     model = ApiKey.datasets.through
@@ -41,6 +44,9 @@ class SubmissionAdmin(SubmittedThingAdmin):
 class ActionAdmin(admin.ModelAdmin):
     date_hierarchy = 'created_datetime'
     list_display = ('id', 'created_datetime', 'action', 'submitter_name')
+
+    def submitter_name(self, obj):
+        return obj.submitter.username if obj.submitter else None
 
 admin.site.register(models.DataSet, DataSetAdmin)
 admin.site.register(models.Place, PlaceAdmin)

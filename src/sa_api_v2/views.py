@@ -314,6 +314,10 @@ class OwnedResourceMixin (ClientAuthenticationMixin):
         request.allowed_username = kwargs[self.owner_username_kwarg]
         return super(OwnedResourceMixin, self).dispatch(request, *args, **kwargs)
 
+    def get_submitter(self):
+        user = self.request.user
+        return user if user.is_authenticated() else None
+
     def get_owner(self):
         owner_username = self.kwargs[self.owner_username_kwarg]
         owner = get_object_or_404(models.User, username=owner_username)
@@ -505,8 +509,9 @@ class PlaceInstanceView (CachedResourceMixin, LocatedResourceMixin, OwnedResourc
         try:
             return self.model.objects\
                 .filter(pk=pk)\
-                .select_related('dataset')\
-                .prefetch_related('submission_sets__children',
+                .select_related('dataset', 'submitter')\
+                .prefetch_related('submitter__social_auth',
+                                  'submission_sets__children',
                                   'submission_sets__children__attachments',
                                   'attachments')\
                 .get()
@@ -591,8 +596,8 @@ class PlaceListView (CachedResourceMixin, LocatedResourceMixin, OwnedResourceMix
         if INCLUDE_INVISIBLE_PARAM not in self.request.GET:
             queryset = queryset.filter(visible=True)
 
-        return queryset.filter(dataset=dataset).select_related('dataset')\
-            .prefetch_related('submission_sets', 'submission_sets__children', 'submission_sets__children__attachments', 'attachments')
+        return queryset.filter(dataset=dataset).select_related('dataset', 'submitter')\
+            .prefetch_related('submitter__social_auth', 'submission_sets', 'submission_sets__children', 'submission_sets__children__attachments', 'attachments')
 
 
 class SubmissionInstanceView (CachedResourceMixin, OwnedResourceMixin, generics.RetrieveUpdateDestroyAPIView):
@@ -638,8 +643,8 @@ class SubmissionInstanceView (CachedResourceMixin, OwnedResourceMixin, generics.
         try:
             return self.model.objects\
                 .filter(pk=pk)\
-                .select_related('dataset', 'parent', 'parent__place')\
-                .prefetch_related('attachments')\
+                .select_related('dataset', 'parent', 'parent__place', 'submitter')\
+                .prefetch_related('attachments', 'submitter__social_auth')\
                 .get()
         except self.model.DoesNotExist:
             raise Http404
@@ -738,8 +743,8 @@ class SubmissionListView (CachedResourceMixin, OwnedResourceMixin, FilteredResou
             queryset = queryset.filter(visible=True)
 
         return queryset.filter(parent=submission_set)\
-            .select_related('dataset', 'parent', 'parent__place')\
-            .prefetch_related('attachments')
+            .select_related('dataset', 'parent', 'parent__place', 'submitter')\
+            .prefetch_related('attachments', 'submitter__social_auth')
 
 
 class DataSetSubmissionListView (CachedResourceMixin, OwnedResourceMixin, FilteredResourceMixin, generics.ListAPIView):
@@ -797,8 +802,8 @@ class DataSetSubmissionListView (CachedResourceMixin, OwnedResourceMixin, Filter
             queryset = queryset.filter(visible=True)
 
         return queryset.filter(parent__in=submission_sets)\
-            .select_related('dataset', 'parent', 'parent__place')\
-            .prefetch_related('attachments')
+            .select_related('dataset', 'parent', 'parent__place', 'submitter')\
+            .prefetch_related('attachments', 'submitter__social_auth')
 
 
 class DataSetInstanceView (CachedResourceMixin, OwnedResourceMixin, generics.RetrieveUpdateDestroyAPIView):
@@ -1092,7 +1097,8 @@ class ActionListView (CachedResourceMixin, OwnedResourceMixin, generics.ListAPIV
         dataset = self.get_dataset()
         queryset = super(ActionListView, self).get_queryset()\
             .filter(thing__dataset=dataset)\
-            .select_related('thing', 'thing__place', 'thing__submission')
+            .select_related('thing', 'thing__place', 'thing__submission', 'thing__submitter')\
+            .prefetch_related('thing__submitter__social_auth')
 
         if INCLUDE_INVISIBLE_PARAM not in self.request.GET:
             queryset = queryset.filter(thing__visible=True)\
@@ -1108,7 +1114,7 @@ class UserInstanceView (OwnedResourceMixin, generics.RetrieveAPIView):
 
     def get_queryset(self):
         return models.User.objects.all()\
-            .select_related('social_auth')
+            .prefetch_related('social_auth')
 
     def get_object(self, queryset=None):
         owner_username = self.kwargs[self.owner_username_kwarg]

@@ -21,11 +21,12 @@ class TestPlaceInstanceView (TestCase):
         cache.clear()
 
         self.owner = User.objects.create_user(username='aaron', password='123', email='abc@example.com')
+        self.submitter = User.objects.create_user(username='mjumbe', password='456', email='123@example.com')
         self.dataset = DataSet.objects.create(slug='ds', owner=self.owner)
         self.place = Place.objects.create(
           dataset=self.dataset,
           geometry='POINT(2 3)',
-          submitter_name='Mjumbe',
+          submitter=self.submitter,
           data=json.dumps({
             'type': 'ATM',
             'name': 'K-Mart',
@@ -53,7 +54,7 @@ class TestPlaceInstanceView (TestCase):
         self.invisible_place = Place.objects.create(
           dataset=self.dataset,
           geometry='POINT(3 4)',
-          submitter_name='Mjumbe',
+          submitter=self.submitter,
           visible=False,
           data=json.dumps({
             'type': 'ATM',
@@ -124,6 +125,7 @@ class TestPlaceInstanceView (TestCase):
         self.assertIn('dataset', data['properties'])
         self.assertIn('attachments', data['properties'])
         self.assertIn('submission_sets', data['properties'])
+        self.assertIn('submitter', data['properties'])
 
         # Check that the URL is right
         self.assertEqual(data['properties']['url'],
@@ -135,6 +137,12 @@ class TestPlaceInstanceView (TestCase):
         self.assertIn('comments', data['properties']['submission_sets'].keys())
         self.assertIn('likes', data['properties']['submission_sets'].keys())
         self.assertNotIn('applause', data['properties']['submission_sets'].keys())
+
+        # Check that the submitter looks right
+        self.assertIsNotNone(data['properties']['submitter'])
+        self.assertIn('id', data['properties']['submitter'])
+        self.assertIn('name', data['properties']['submitter'])
+        self.assertIn('avatar_url', data['properties']['submitter'])
 
         # Check that only the visible comments were counted
         self.assertEqual(data['properties']['submission_sets']['comments']['length'], 2)
@@ -410,7 +418,7 @@ class TestPlaceInstanceView (TestCase):
         # - SELECT * FROM sa_api_attachment AS a
         #    WHERE a.thing_id IN (<self.place.id>);
         #
-        with self.assertNumQueries(5):
+        with self.assertNumQueries(6):
             response = self.view(request, **self.request_kwargs)
             self.assertEqual(response.status_code, 200)
 
@@ -443,14 +451,14 @@ class TestPlaceInstanceView (TestCase):
         # Check that no data was returned
         self.assertIsNone(response.data)
 
-    def test_PUT_response(self):
+    def test_PUT_response_as_owner(self):
         place_data = json.dumps({
           'type': 'Feature',
           'properties': {
             'type': 'Park Bench',
             'private-secrets': 'The mayor loves this bench'
           },
-          'geometry': {"type": "Point", "coordinates": [-73.99, 40.75]}
+          'geometry': {"type": "Point", "coordinates": [-73.99, 40.75]},
         })
 
         #
@@ -460,13 +468,33 @@ class TestPlaceInstanceView (TestCase):
         response = self.view(request, **self.request_kwargs)
         self.assertEqual(response.status_code, 401)
 
+        ## TODO: Use the SubmittedThingSerializer to implement the commented
+        ##       out permission structure instead.
+        ##
+
         #
         # View should update the place when owner is authenticated
         #
         request = self.factory.put(self.path, data=place_data, content_type='application/json')
         request.META[KEY_HEADER] = self.apikey.key
-
         response = self.view(request, **self.request_kwargs)
+        self.assertEqual(response.status_code, 200)
+
+        # #
+        # # View should 401 when authenticated as client
+        # #
+        # request = self.factory.put(self.path, data=place_data, content_type='application/json')
+        # request.META[KEY_HEADER] = self.apikey.key
+        # response = self.view(request, **self.request_kwargs)
+        # self.assertEqual(response.status_code, 401)
+
+        # #
+        # # View should update the place when owner is authenticated
+        # #
+        # request = self.factory.put(self.path, data=place_data, content_type='application/json')
+        # request.user = self.owner
+
+        # response = self.view(request, **self.request_kwargs)
 
         data = json.loads(response.rendered_content)
 
@@ -477,8 +505,8 @@ class TestPlaceInstanceView (TestCase):
         # properties
         self.assertEqual(data['properties'].get('type'), 'Park Bench')
 
-        # submitter_name is special, and so should be present and None
-        self.assertIsNone(data['properties']['submitter_name'])
+        # submitter is special, and so should be present and None
+        self.assertIsNone(data['properties']['submitter'])
 
         # name is not special (lives in the data blob), so should just be unset
         self.assertNotIn('name', data['properties'])
@@ -486,6 +514,81 @@ class TestPlaceInstanceView (TestCase):
         # private-secrets is not special, but is private, so should not come
         # back down
         self.assertNotIn('private-secrets', data['properties'])
+
+
+    def test_PUT_response_as_submitter(self):
+        pass
+        ## TODO: Use the SubmittedThingSerializer to implement the following
+        ##       permission structure.
+        ##
+
+        # place_data = json.dumps({
+        #   'type': 'Feature',
+        #   'properties': {
+        #     'type': 'Park Bench',
+        #     'private-secrets': 'The mayor loves this bench'
+        #   },
+        #   'geometry': {"type": "Point", "coordinates": [-73.99, 40.75]},
+        #   'submitter': {'id': self.submitter.id}
+        # })
+        # other_user_place_data = json.dumps({
+        #   'type': 'Feature',
+        #   'properties': {
+        #     'type': 'Park Bench',
+        #     'private-secrets': 'The mayor loves this bench'
+        #   },
+        #   'geometry': {"type": "Point", "coordinates": [-73.99, 40.75]},
+        #   'submitter': {'id': self.other_user.id}
+        # })
+
+        # #
+        # # View should 403 when client not provided
+        # #
+        # request = self.factory.put(self.path, data=place_data, content_type='application/json')
+        # request.user = self.submitter
+        # response = self.view(request, **self.request_kwargs)
+        # self.assertEqual(response.status_code, 403)
+
+        # #
+        # # View should 403 when authenticated as different user
+        # #
+        # request = self.factory.put(self.path, data=other_user_place_data, content_type='application/json')
+        # request.META[KEY_HEADER] = self.apikey.key
+        # request.user = self.other_user
+        # response = self.view(request, **self.request_kwargs)
+        # self.assertEqual(response.status_code, 403)
+
+        # #
+        # # View should 400 when setting a different submitter
+        # #
+        # request = self.factory.put(self.path, data=other_user_place_data, content_type='application/json')
+        # request.META[KEY_HEADER] = self.apikey.key
+        # request.user = self.submitter
+        # response = self.view(request, **self.request_kwargs)
+        # self.assertEqual(response.status_code, 400)
+
+        # #
+        # # View should update the place when submitter is authenticated and
+        # # owner is authenticated through client
+        # #
+        # request = self.factory.put(self.path, data=place_data, content_type='application/json')
+        # request.META[KEY_HEADER] = self.apikey.key
+        # request.user = self.submitter
+
+        # response = self.view(request, **self.request_kwargs)
+
+        # data = json.loads(response.rendered_content)
+
+        # # Check that the request was successful
+        # self.assertEqual(response.status_code, 200)
+
+        # # Check that the data attributes have been incorporated into the
+        # # properties
+        # self.assertEqual(data['properties'].get('type'), 'Park Bench')
+
+        # # private-secrets is not special, but is private, so should not come
+        # # back down
+        # self.assertNotIn('private-secrets', data['properties'])
 
     def test_PUT_to_invisible_place(self):
         place_data = json.dumps({
@@ -528,8 +631,8 @@ class TestPlaceInstanceView (TestCase):
         # properties
         self.assertEqual(data['properties'].get('type'), 'Park Bench')
 
-        # submitter_name is special, and so should be present and None
-        self.assertIsNone(data['properties']['submitter_name'])
+        # submitter is special, and so should be present and None
+        self.assertIsNone(data['properties']['submitter'])
 
         # name is not special (lives in the data blob), so should just be unset
         self.assertNotIn('name', data['properties'])
@@ -544,11 +647,12 @@ class TestPlaceListView (TestCase):
         cache.clear()
 
         self.owner = User.objects.create_user(username='aaron', password='123', email='abc@example.com')
+        self.submitter = User.objects.create_user(username='mjumbe', password='456', email='123@example.com')
         self.dataset = DataSet.objects.create(slug='ds', owner=self.owner)
         self.place = Place.objects.create(
           dataset=self.dataset,
           geometry='POINT(2 3)',
-          submitter_name='Mjumbe',
+          submitter=self.submitter,
           data=json.dumps({
             'type': 'ATM',
             'name': 'K-Mart',
@@ -558,7 +662,7 @@ class TestPlaceListView (TestCase):
         self.invisible_place = Place.objects.create(
           dataset=self.dataset,
           geometry='POINT(3 4)',
-          submitter_name='Mjumbe',
+          submitter=self.submitter,
           visible=False,
           data=json.dumps({
             'type': 'ATM',
@@ -835,9 +939,10 @@ class TestPlaceListView (TestCase):
         # Check that the data attributes have been incorporated into the
         # properties
         self.assertEqual(data['properties'].get('type'), 'Park Bench')
-
-        # submitter_name is special, and so should be present and None
         self.assertEqual(data['properties'].get('submitter_name'), 'Andy')
+
+        self.assertIn('submitter', data['properties'])
+        self.assertIsNone(data['properties']['submitter'])
 
         # visible should be true by default
         self.assert_(data['properties'].get('visible'))
@@ -960,11 +1065,12 @@ class TestSubmissionInstanceView (TestCase):
         cache.clear()
 
         self.owner = User.objects.create_user(username='aaron', password='123', email='abc@example.com')
+        self.submitter = User.objects.create_user(username='mjumbe', password='456', email='123@example.com')
         self.dataset = DataSet.objects.create(slug='ds', owner=self.owner)
         self.place = Place.objects.create(
           dataset=self.dataset,
           geometry='POINT(2 3)',
-          submitter_name='Mjumbe',
+          submitter=self.submitter,
           data=json.dumps({
             'type': 'ATM',
             'name': 'K-Mart',
@@ -1039,7 +1145,7 @@ class TestSubmissionInstanceView (TestCase):
         self.assertIn('dataset', data)
         self.assertIn('attachments', data)
         self.assertIn('set', data)
-        self.assertIn('submitter_name', data)
+        self.assertIn('submitter', data)
         self.assertIn('place', data)
 
         # Check that the URL is right
@@ -1243,8 +1349,8 @@ class TestSubmissionInstanceView (TestCase):
         # properties
         self.assertEqual(data.get('comment'), 'Revised opinion')
 
-        # submitter_name is special, and so should be present and None
-        self.assertIsNone(data['submitter_name'])
+        # submitter is special, and so should be present and None
+        self.assertIsNone(data['submitter'])
 
         # foo is not special (lives in the data blob), so should just be unset
         self.assertNotIn('foo', data)
@@ -1263,11 +1369,15 @@ class TestSubmissionListView (TestCase):
             username='aaron',
             password=self.owner_password,
             email='abc@example.com')
+        self.submitter = User.objects.create_user(
+            username='mjumbe',
+            password='456',
+            email='123@example.com')
         self.dataset = DataSet.objects.create(slug='ds', owner=self.owner)
         self.place = Place.objects.create(
           dataset=self.dataset,
           geometry='POINT(2 3)',
-          submitter_name='Mjumbe',
+          submitter=self.submitter,
           data=json.dumps({
             'type': 'ATM',
             'name': 'K-Mart',
@@ -1277,7 +1387,7 @@ class TestSubmissionListView (TestCase):
         self.invisible_place = Place.objects.create(
           dataset=self.dataset,
           geometry='POINT(3 4)',
-          submitter_name='Mjumbe',
+          submitter=self.submitter,
           visible=False,
           data=json.dumps({
             'type': 'ATM',
@@ -1544,8 +1654,6 @@ class TestSubmissionListView (TestCase):
         # Check that the data attributes have been incorporated into the
         # properties
         self.assertEqual(data.get('foo'), 'bar')
-
-        # submitter_name is special, and so should be present and None
         self.assertEqual(data.get('submitter_name'), 'Andy')
 
         # visible should be true by default
@@ -1698,8 +1806,6 @@ class TestSubmissionListView (TestCase):
         # Check that the data attributes have been incorporated into the
         # properties
         self.assertEqual(data.get('foo'), 'bar')
-
-        # submitter_name is special, and so should be present and None
         self.assertEqual(data.get('submitter_name'), 'Andy')
 
         # visible should be true by default
@@ -1725,11 +1831,15 @@ class TestDataSetSubmissionListView (TestCase):
             username='aaron',
             password=self.owner_password,
             email='abc@example.com')
+        self.submitter = User.objects.create_user(
+            username='mjumbe',
+            password='456',
+            email='123@example.com')
         self.dataset = DataSet.objects.create(slug='ds', owner=self.owner)
         self.place1 = Place.objects.create(
           dataset=self.dataset,
           geometry='POINT(2 3)',
-          submitter_name='Mjumbe',
+          submitter=self.submitter,
           data=json.dumps({
             'type': 'ATM',
             'name': 'K-Mart',
@@ -1739,7 +1849,7 @@ class TestDataSetSubmissionListView (TestCase):
         self.invisible_place = Place.objects.create(
           dataset=self.dataset,
           geometry='POINT(3 4)',
-          submitter_name='Mjumbe',
+          submitter=self.submitter,
           visible=False,
           data=json.dumps({
             'type': 'ATM',
@@ -1763,7 +1873,7 @@ class TestDataSetSubmissionListView (TestCase):
         self.place2 = Place.objects.create(
           dataset=self.dataset,
           geometry='POINT(2 3)',
-          submitter_name='Mjumbe',
+          submitter=self.submitter,
           data=json.dumps({
             'type': 'ATM',
             'name': 'K-Mart',
@@ -2085,11 +2195,12 @@ class TestDataSetInstanceView (TestCase):
         cache.clear()
 
         self.owner = User.objects.create_user(username='aaron', password='123', email='abc@example.com')
+        self.submitter = User.objects.create_user(username='mjumbe', password='456', email='123@example.com')
         self.dataset = DataSet.objects.create(slug='ds', owner=self.owner)
         self.place = Place.objects.create(
           dataset=self.dataset,
           geometry='POINT(2 3)',
-          submitter_name='Mjumbe',
+          submitter=self.submitter,
           data=json.dumps({
             'type': 'ATM',
             'name': 'K-Mart',
@@ -2114,7 +2225,7 @@ class TestDataSetInstanceView (TestCase):
         self.invisible_place = Place.objects.create(
           dataset=self.dataset,
           geometry='POINT(3 4)',
-          submitter_name='Mjumbe',
+          submitter=self.submitter,
           visible=False,
           data=json.dumps({
             'type': 'ATM',
@@ -2368,11 +2479,15 @@ class TestDataSetListView (TestCase):
             username='aaron',
             password=self.owner_password,
             email='abc@example.com')
+        self.submitter = User.objects.create_user(
+            username='mjumbe',
+            password='456',
+            email='123@example.com')
         self.dataset = DataSet.objects.create(slug='ds', owner=self.owner)
         self.place = Place.objects.create(
           dataset=self.dataset,
           geometry='POINT(2 3)',
-          submitter_name='Mjumbe',
+          submitter=self.submitter,
           data=json.dumps({
             'type': 'ATM',
             'name': 'K-Mart',
@@ -2382,7 +2497,7 @@ class TestDataSetListView (TestCase):
         self.invisible_place = Place.objects.create(
           dataset=self.dataset,
           geometry='POINT(3 4)',
-          submitter_name='Mjumbe',
+          submitter=self.submitter,
           visible=False,
           data=json.dumps({
             'type': 'ATM',
@@ -2418,8 +2533,8 @@ class TestDataSetListView (TestCase):
         ]
 
         other_owner = User.objects.create_user(
-            username='mjumbe',
-            password='456',
+            username='frank',
+            password='789',
             email='def@example.com')
         dataset3 = DataSet.objects.create(owner=other_owner, slug='slug', display_name="Display Name")
 
@@ -2611,11 +2726,12 @@ class TestPlaceAttachmentListView (TestCase):
         cache.clear()
 
         self.owner = User.objects.create_user(username='aaron', password='123', email='abc@example.com')
+        self.submitter = User.objects.create_user(username='mjumbe', password='456', email='123@example.com')
         self.dataset = DataSet.objects.create(slug='ds', owner=self.owner)
         self.place = Place.objects.create(
           dataset=self.dataset,
           geometry='POINT(2 3)',
-          submitter_name='Mjumbe',
+          submitter=self.submitter,
           data=json.dumps({
             'type': 'ATM',
             'name': 'K-Mart',
@@ -2625,7 +2741,7 @@ class TestPlaceAttachmentListView (TestCase):
         self.invisible_place = Place.objects.create(
           dataset=self.dataset,
           geometry='POINT(3 4)',
-          submitter_name='Mjumbe',
+          submitter=self.submitter,
           visible=False,
           data=json.dumps({
             'type': 'ATM',
@@ -2917,11 +3033,12 @@ class TestSubmissionAttachmentListView (TestCase):
         cache.clear()
 
         self.owner = User.objects.create_user(username='aaron', password='123', email='abc@example.com')
+        self.submitter = User.objects.create_user(username='mjumbe', password='456', email='123@example.com')
         self.dataset = DataSet.objects.create(slug='ds', owner=self.owner)
         self.place = Place.objects.create(
           dataset=self.dataset,
           geometry='POINT(2 3)',
-          submitter_name='Mjumbe',
+          submitter=self.submitter,
           data=json.dumps({
             'type': 'ATM',
             'name': 'K-Mart',
@@ -2931,7 +3048,7 @@ class TestSubmissionAttachmentListView (TestCase):
         self.invisible_place = Place.objects.create(
           dataset=self.dataset,
           geometry='POINT(3 4)',
-          submitter_name='Mjumbe',
+          submitter=self.submitter,
           visible=False,
           data=json.dumps({
             'type': 'ATM',

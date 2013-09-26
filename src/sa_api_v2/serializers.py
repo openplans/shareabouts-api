@@ -297,9 +297,89 @@ class CachedSerializer (object):
 
 ###############################################################################
 #
+# User Data Strategies
+# --------------------
+# Shims for reading user data from various social authentication provider
+# objects.
+#
+
+class DefaultUserDataStrategy (object):
+    def extract_avatar_url(self, user_info):
+        return ''
+
+    def extract_full_name(self, user_info):
+        return ''
+
+    def extract_bio(self, user_info):
+        return ''
+
+
+class TwitterUserDataStrategy (object):
+    def extract_avatar_url(self, user_info):
+        url = user_info['profile_image_url']
+
+        url_pattern = '^(?P<path>.*?)(?:_normal|_mini|_bigger|)(?P<ext>\.[^\.]*)$'
+        match = re.match(url_pattern, url)
+        if match:
+            return match.group('path') + '_bigger' + match.group('ext')
+        else:
+            return url
+
+    def extract_full_name(self, user_info):
+        return user_info['name']
+
+    def extract_bio(self, user_info):
+        return user_info['description']
+
+
+class FacebookUserDataStrategy (object):
+    def extract_avatar_url(self, user_info):
+        url = user_info['picture']['data']['url']
+        return url
+
+    def extract_full_name(self, user_info):
+        return user_info['name']
+
+    def extract_bio(self, user_info):
+        return user_info['bio']
+
+
+###############################################################################
+#
 # Serializers
 # -----------
 #
+
+class UserSerializer (serializers.ModelSerializer):
+    name = serializers.SerializerMethodField('get_name')
+    avatar_url = serializers.SerializerMethodField('get_avatar_url')
+
+    strategies = {
+        'twitter': TwitterUserDataStrategy(),
+        'facebook': FacebookUserDataStrategy()
+    }
+    default_strategy = DefaultUserDataStrategy()
+
+    class Meta:
+        model = models.User
+        exclude = ('first_name', 'last_name', 'email', 'password', 'is_staff', 'is_active', 'is_superuser', 'last_login', 'date_joined', 'groups', 'user_permissions')
+
+    def get_strategy(self, obj):
+        for social_auth in obj.social_auth.all():
+            provider = social_auth.provider
+            if provider in self.strategies:
+                return social_auth.extra_data, self.strategies[provider]
+
+        return None, self.default_strategy
+
+    def get_name(self, obj):
+        user_data, strategy = self.get_strategy(obj)
+        return strategy.extract_full_name(user_data)
+
+    def get_avatar_url(self, obj):
+        user_data, strategy = self.get_strategy(obj)
+        return strategy.extract_avatar_url(user_data)
+
 
 class SubmissionSetSummarySerializer (CachedSerializer, serializers.HyperlinkedModelSerializer):
     length = serializers.IntegerField()
@@ -345,12 +425,17 @@ class DataSetSubmissionSetSummarySerializer (serializers.HyperlinkedModelSeriali
         return summaries
 
 
-class PlaceSerializer (CachedSerializer, DataBlobProcessor, serializers.HyperlinkedModelSerializer):
+class SubmittedThingSerializer (CachedSerializer, DataBlobProcessor):
+    pass
+
+
+class PlaceSerializer (SubmittedThingSerializer, serializers.HyperlinkedModelSerializer):
     url = PlaceIdentityField()
     id = serializers.PrimaryKeyRelatedField(read_only=True)
     geometry = GeometryField(format='wkt')
     dataset = DataSetRelatedField()
     attachments = AttachmentSerializer(read_only=True)
+    submitter = UserSerializer(read_only=False)
 
     class Meta:
         model = models.Place
@@ -424,13 +509,14 @@ class PlaceSerializer (CachedSerializer, DataBlobProcessor, serializers.Hyperlin
         return data
 
 
-class SubmissionSerializer (CachedSerializer, DataBlobProcessor, serializers.HyperlinkedModelSerializer):
+class SubmissionSerializer (SubmittedThingSerializer, serializers.HyperlinkedModelSerializer):
     url = SubmissionIdentityField()
     id = serializers.PrimaryKeyRelatedField(read_only=True)
     dataset = DataSetRelatedField()
     set = SubmissionSetRelatedField(source='parent')
     place = PlaceRelatedField(source='parent.place')
     attachments = AttachmentSerializer(read_only=True)
+    submitter = UserSerializer()
 
     class Meta:
         model = models.Submission
@@ -486,86 +572,6 @@ class ActionSerializer (CachedSerializer, serializers.ModelSerializer):
 
         serializer.context = self.context
         return serializer.data
-
-
-###############################################################################
-#
-# User Data Strategies
-# --------------------
-# Shims for reading user data from various social authentication provider
-# objects.
-#
-
-class DefaultUserDataStrategy (object):
-    def extract_avatar_url(self, user_info):
-        return ''
-
-    def extract_full_name(self, user_info):
-        return ''
-
-    def extract_bio(self, user_info):
-        return ''
-
-
-class TwitterUserDataStrategy (object):
-    def extract_avatar_url(self, user_info):
-        url = user_info['profile_image_url']
-
-        url_pattern = '^(?P<path>.*?)(?:_normal|_mini|_bigger|)(?P<ext>\.[^\.]*)$'
-        match = re.match(url_pattern, url)
-        if match:
-            return match.group('path') + '_bigger' + match.group('ext')
-        else:
-            return url
-
-    def extract_full_name(self, user_info):
-        return user_info['name']
-
-    def extract_bio(self, user_info):
-        return user_info['description']
-
-
-class FacebookUserDataStrategy (object):
-    def extract_avatar_url(self, user_info):
-        url = user_info['picture']['data']['url']
-        return url
-
-    def extract_full_name(self, user_info):
-        return user_info['name']
-
-    def extract_bio(self, user_info):
-        return user_info['bio']
-
-
-class UserSerializer (serializers.ModelSerializer):
-    name = serializers.SerializerMethodField('get_name')
-    avatar_url = serializers.SerializerMethodField('get_avatar_url')
-
-    strategies = {
-        'twitter': TwitterUserDataStrategy(),
-        'facebook': FacebookUserDataStrategy()
-    }
-    default_strategy = DefaultUserDataStrategy()
-
-    class Meta:
-        model = models.User
-        exclude = ('first_name', 'last_name', 'email', 'password', 'is_staff', 'is_active', 'is_superuser', 'last_login', 'date_joined', 'groups', 'user_permissions')
-
-    def get_strategy(self, obj):
-        for social_auth in obj.social_auth.all():
-            provider = social_auth.provider
-            if provider in self.strategies:
-                return social_auth.extra_data, self.strategies[provider]
-
-        return None, self.default_strategy
-
-    def get_name(self, obj):
-        user_data, strategy = self.get_strategy(obj)
-        return strategy.extract_full_name(user_data)
-
-    def get_avatar_url(self, obj):
-        user_data, strategy = self.get_strategy(obj)
-        return strategy.extract_avatar_url(user_data)
 
 
 ###############################################################################

@@ -55,10 +55,8 @@ class SubmittedThing (CacheClearingModel, ModelWithDataBlob, TimeStampedModel):
     comment, a vote, etc.
 
     """
-#    submitter = models.ForeignKey('Submitter', related_name='things')
-    submitter_name = models.CharField(max_length=256, null=True, blank=True)
-    dataset = models.ForeignKey('DataSet', related_name='things',
-                                blank=True)
+    submitter = models.ForeignKey(User, related_name='things', null=True, blank=True)
+    dataset = models.ForeignKey('DataSet', related_name='things', blank=True)
     visible = models.BooleanField(default=True, blank=True)
 
     class Meta:
@@ -185,8 +183,8 @@ class Action (CacheClearingModel, TimeStampedModel):
         ordering = ['-created_datetime']
 
     @property
-    def submitter_name(self):
-        return self.thing.submitter_name
+    def submitter(self):
+        return self.thing.submitter
 
 
 def timestamp_filename(attachment, filename):
