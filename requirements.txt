@@ -1,33 +1,67 @@
-# The server
-django>=1.4
-# gevent
-gunicorn
+# ==============================
+# Web server
+# ==============================
 
-# Persistance
+Django>=1.4
+# gevent
+# gunicorn
+
+
+
+# ==============================
+# Database and Persistance
+# ==============================
+
+# DB Settings and Management
 psycopg2
-dj-database-url
 south
+dj-database-url
+
+# Caching
 django-redis
+
+# File Storate
 boto
 django-storages
 
+
+
+# ==============================
+# User Accounts and Social Media
+# ==============================
+
+python-social-auth
+
+
+
+# ==============================
 # REST API
+# ==============================
+
 djangorestframework>=2.2
-markdown
+djangorestframework-csv>=1.1
+markdown  # For browsable API docs
 python-dateutil
 ujson
 
 # The manager interface
 requests>=1.2.0
 
+
+
+# ==============================
 # Testing, validating, and debugging
+# ==============================
+
 nose
 django-nose
 mock
 mock_django
 django-debug-toolbar
 
-# =====================================
+
+
+# - - - - - - - - - - - - - - - -
 
 # For DRF 0.4 (deprecated)
 URLObject>=0.6.0

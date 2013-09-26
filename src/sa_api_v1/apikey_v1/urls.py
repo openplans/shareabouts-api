@@ -6,10 +6,10 @@ BSD license.
 http://pypi.python.org/pypi/django-apikey
 """
 
-from django.conf.urls.defaults import *
+from django.conf.urls import *
 
 
-# urlpatterns = patterns('sa_api.apikey.views',
+# urlpatterns = patterns('sa_api_v1.apikey.views',
 #                        url(r'^create_key/$', 'generate_key', 
 #                            name='api_create_key' ),
 #                        url(r'^keys/$', 'list_keys',

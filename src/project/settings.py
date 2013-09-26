@@ -1,9 +1,8 @@
 from os import environ
 
-# Django settings for project project.
-
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
+SHOW_DEBUG_TOOLBAR = DEBUG
 
 ADMINS = (
     # ('Your Name', 'your_email@example.com'),
@@ -22,99 +21,60 @@ DATABASES = {
     }
 }
 
-# Local time zone for this installation. Choices can be found here:
-# http://en.wikipedia.org/wiki/List_of_tz_zones_by_name
-# although not all choices may be available on all operating systems.
-# On Unix systems, a value of None will cause Django to use the same
-# timezone as the operating system.
-# If running in a Windows environment this must be set to the same as your
-# system time zone.
-TIME_ZONE = 'Universal'
+###############################################################################
+#
+# Server Configuration
+#
 
-# Language code for this installation. All choices can be found here:
-# http://www.i18nguy.com/unicode/language-identifiers.html
-LANGUAGE_CODE = 'en-us'
-
+# Hosts/domain names that are valid for this site; required if DEBUG is False
+# See https://docs.djangoproject.com/en/1.5/ref/settings/#allowed-hosts
+ALLOWED_HOSTS = ['*']
+SECRET_KEY = 'pbv(g=%7$$4rzvl88e24etn57-%n0uw-@y*=7ak422_3!zrc9+'
 SITE_ID = 1
 
-# If you set this to False, Django will make some optimizations so as not
-# to load the internationalization machinery.
-USE_I18N = True
+# How long to keep api cache values. Since the api will invalidate the cache
+# automatically when appropriate, this can (and should) be set to something
+# large.
+API_CACHE_TIMEOUT = 604800  # a week
 
-# If you set this to False, Django will not format dates, numbers and
-# calendars according to the current locale.
-USE_L10N = True
+###############################################################################
+#
+# Time Zones
+#
 
-# If you set this to False, Django will not use timezone-aware datetimes.
+TIME_ZONE = 'Universal'
 USE_TZ = True
 
-# Absolute filesystem path to the directory that will hold user-uploaded files.
-# Example: "/home/media/media.lawrence.com/media/"
-MEDIA_ROOT = ''
+###############################################################################
+#
+# Internationalization and Localization
+#
 
-# URL that handles the media served from MEDIA_ROOT. Make sure to use a
-# trailing slash.
-# Examples: "http://media.lawrence.com/media/", "http://example.com/media/"
+LANGUAGE_CODE = 'en-us'
+USE_I18N = True
+USE_L10N = True
+
+###############################################################################
+#
+# Templates and Static Assets
+#
+
+MEDIA_ROOT = ''
 MEDIA_URL = ''
 
-# Absolute path to the directory static files should be collected to.
-# Don't put anything in this directory yourself; store your static files
-# in apps' "static/" subdirectories and in STATICFILES_DIRS.
-# Example: "/home/media/media.lawrence.com/static/"
 STATIC_ROOT = ''
-
-# URL prefix for static files.
-# Example: "http://media.lawrence.com/static/"
 STATIC_URL = '/static/'
-
-# Additional locations of static files
-STATICFILES_DIRS = (
-    # Put strings here, like "/home/html/static" or "C:/www/django/static".
-    # Always use forward slashes, even on Windows.
-    # Don't forget to use absolute paths, not relative paths.
-)
-
-# List of finder classes that know how to find static files in
-# various locations.
 STATICFILES_FINDERS = (
     'django.contrib.staticfiles.finders.FileSystemFinder',
     'django.contrib.staticfiles.finders.AppDirectoriesFinder',
-#    'django.contrib.staticfiles.finders.DefaultStorageFinder',
 )
+STATICFILES_DIRS = ()
 
-# Make this unique, and don't share it with anybody.
-SECRET_KEY = 'pbv(g=%7$$4rzvl88e24etn57-%n0uw-@y*=7ak422_3!zrc9+'
-
-# List of callables that know how to import templates from various sources.
 TEMPLATE_LOADERS = (
     'django.template.loaders.filesystem.Loader',
     'django.template.loaders.app_directories.Loader',
-#     'django.template.loaders.eggs.Loader',
 )
-
-MIDDLEWARE_CLASSES = (
-    'django.middleware.common.CommonMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    # Uncomment the next line for simple clickjacking protection:
-    # 'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'debug_toolbar.middleware.DebugToolbarMiddleware',
-
-    'sa_api.middleware.RequestTimeLogger',
-)
-
-ROOT_URLCONF = 'project.urls'
-
-# Python dotted path to the WSGI application used by Django's runserver.
-WSGI_APPLICATION = 'project.wsgi.application'
-
-TEMPLATE_DIRS = (
-    # Put strings here, like "/home/html/django_templates" or "C:/www/django/templates".
-    # Always use forward slashes, even on Windows.
-    # Don't forget to use absolute paths, not relative paths.
-)
+TEMPLATE_DIRS = ()
 
 TEMPLATE_CONTEXT_PROCESSORS = (
     "django.contrib.auth.context_processors.auth",
@@ -126,6 +86,42 @@ TEMPLATE_CONTEXT_PROCESSORS = (
     "django.contrib.messages.context_processors.messages",
     'django.core.context_processors.request',
 )
+
+###############################################################################
+#
+# Django Rest Framework
+#
+REST_FRAMEWORK = {
+    'PAGINATE_BY': 50,
+    'PAGINATE_BY_PARAM': 'page_size'
+}
+
+###############################################################################
+#
+# Request/Response processing
+#
+
+WSGI_APPLICATION = 'project.wsgi.application'
+ROOT_URLCONF = 'project.urls'
+
+MIDDLEWARE_CLASSES = (
+    'django.middleware.common.CommonMiddleware',
+    'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware',
+    'social.apps.django_app.middleware.SocialAuthExceptionMiddleware',
+    # Uncomment the next line for simple clickjacking protection:
+    # 'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'debug_toolbar.middleware.DebugToolbarMiddleware',
+
+    'sa_api_v2.middleware.RequestTimeLogger',
+)
+
+###############################################################################
+#
+# Pluggable Applications
+#
 
 INSTALLED_APPS = (
     'django.contrib.auth',
@@ -142,39 +138,68 @@ INSTALLED_APPS = (
 
     # 3rd-party reusaple apps
     'djangorestframework',
+    'rest_framework',
     'south',
     'django_nose',
     'debug_toolbar',
     'storages',
+    'social.apps.django_app.default',
 
     # Project apps
     'beta_signup',
-    'sa_api',
-    'sa_api.apikey',
+    'sa_api_v2',
+    'sa_api_v2.apikey',
     'sa_api_v1',
     'sa_api_v1.apikey_v1',
     'sa_manager',
 )
 
-# How long to keep api cache values. Since the api will invalidate the cache
-# automatically when appropriate, this can (and should) be set to something
-# large.
-API_CACHE_TIMEOUT = 604800  # a week
+###############################################################################
+#
+# Authentication
+#
 
+AUTHENTICATION_BACKENDS = (
+    # See http://django-social-auth.readthedocs.org/en/latest/configuration.html
+    # for list of available backends.
+    'social.backends.twitter.TwitterOAuth',
+    'social.backends.facebook.FacebookOAuth2',
+    'django.contrib.auth.backends.ModelBackend',
+)
+
+SOCIAL_AUTH_USER_MODEL = 'auth.User'
+SOCIAL_AUTH_PROTECTED_USER_FIELDS = ['email',]
+
+SOCIAL_AUTH_FACEBOOK_EXTRA_DATA = ['name', 'picture', 'bio']
+SOCIAL_AUTH_TWITTER_EXTRA_DATA = ['name', 'description', 'profile_image_url']
+
+# Explicitly request the following extra things from facebook
+SOCIAL_AUTH_FACEBOOK_PROFILE_EXTRA_PARAMS = {'fields': 'id,name,picture.width(96).height(96),first_name,last_name,bio'}
+
+
+################################################################################
+#
+# Testing and administration
+#
+
+# Tests (nose)
 TEST_RUNNER = 'django_nose.NoseTestSuiteRunner'
-SOUTH_TESTS_MIGRATE = False
+SOUTH_TESTS_MIGRATE = True
 
+# Debug toolbar
+def custom_show_toolbar(request):
+    return SHOW_DEBUG_TOOLBAR
 DEBUG_TOOLBAR_CONFIG = {
-    'INTERCEPT_REDIRECTS': True,
-    'SHOW_TOOLBAR_CONFIG': (lambda: DEBUG)
+    'SHOW_TOOLBAR_CALLBACK': custom_show_toolbar,
+    'INTERCEPT_REDIRECTS': False
 }
 INTERNAL_IPS = ('127.0.0.1',)
 
-# A sample logging configuration. The only tangible logging
-# performed by this configuration is to send an email to
-# the site admins on every HTTP 500 error when DEBUG=False.
-# See http://docs.djangoproject.com/en/dev/topics/logging for
-# more details on how to customize your logging configuration.
+################################################################################
+#
+# Logging Configuration
+#
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -212,7 +237,12 @@ LOGGING = {
             'level': 'ERROR',
             'propagate': True,
         },
-        'sa_api': {
+        'sa_api_v2': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+        'sa_api_v1': {
             'handlers': ['console'],
             'level': 'INFO',
             'propagate': True,

@@ -29,7 +29,7 @@ class OwnerResource (resources.ModelResource):
 
     def datasets(self, inst):
         datasets = {
-            'url': reverse('dataset_collection_by_user', args=[inst.username]),
+            'url': reverse('v1:dataset_collection_by_user', args=[inst.username]),
             'length': inst.dataset_count
         }
         return datasets
@@ -58,6 +58,8 @@ class ModelResourceWithDataBlob (resources.ModelResource):
         if isinstance(obj, self.model):
             data = json.loads(obj.data)
             serialization.pop('data', None)
+
+            serialization['submitter_name'] = data.pop('submitter_name', None)
 
             if not self.should_show_private_data():
                 for key in data.keys():
@@ -130,7 +132,7 @@ class SubmissionSetResource (resources.Resource):
             submission_sets[place].append({
                 'type': set_name,
                 'length': length,
-                'url': reverse('submission_collection_by_dataset', kwargs={
+                'url': reverse('v1:submission_collection_by_dataset', kwargs={
                     'dataset__owner__username': owner,
                     'dataset__slug': dataset,
                     'place_id': place,
@@ -192,13 +194,13 @@ class PlaceResource (ModelResourceWithDataBlob):
     def dataset(self, place):
         owner, dataset = map(self.instance_params(place).get, ['owner', 'dataset'])
         dataset = {
-          'url': reverse('dataset_instance_by_user', args=(owner, dataset))
+          'url': reverse('v1:dataset_instance_by_user', args=(owner, dataset))
         }
         return dataset
 
     def url(self, place):
         owner, dataset = map(self.instance_params(place).get, ['owner', 'dataset'])
-        url = reverse('place_instance_by_dataset', args=(owner, dataset, place.pk))
+        url = reverse('v1:place_instance_by_dataset', args=(owner, dataset, place.pk))
         return url
 
     def submissions(self, place):
@@ -294,7 +296,7 @@ class DataSetResource (resources.ModelResource):
             # we can compare values.
             submission_sets[ds_id].add((
                 ('type', ss_type),
-                ('url', reverse('all_submissions_by_dataset', kwargs={
+                ('url', reverse('v1:all_submissions_by_dataset', kwargs={
                     'dataset__owner__username': submission_set.place.dataset.owner.username,
                     'dataset__slug': submission_set.place.dataset.slug,
                     'submission_type': ss_type
@@ -318,7 +320,7 @@ class DataSetResource (resources.ModelResource):
 
     # TODO: construct with the cache's instance_params.
     def places(self, dataset):
-        url = reverse('place_collection_by_dataset',
+        url = reverse('v1:place_collection_by_dataset',
                       kwargs={
                          'dataset__owner__username': dataset.owner.username,
                          'dataset__slug': dataset.slug})
@@ -329,13 +331,13 @@ class DataSetResource (resources.ModelResource):
 
     # TODO: construct with the cache's instance_params.
     def url(self, instance):
-        return reverse('dataset_instance_by_user',
+        return reverse('v1:dataset_instance_by_user',
                        kwargs={'owner__username': instance.owner.username,
                                'slug': instance.slug})
 
     # TODO: construct with the cache's instance_params.
     def keys(self, instance):
-        url = reverse('api_key_collection_by_dataset',
+        url = reverse('v1:api_key_collection_by_dataset',
                       kwargs={'datasets__owner__username': instance.owner.username,
                               'datasets__slug': instance.slug,
                               })
@@ -362,12 +364,12 @@ class SubmissionResource (ModelResourceWithDataBlob):
 
     def place(self, submission):
         owner, dataset, place = map(self.instance_params(submission).get, ['owner', 'dataset', 'place'])
-        url = reverse('place_instance_by_dataset', args=[owner, dataset, place])
+        url = reverse('v1:place_instance_by_dataset', args=[owner, dataset, place])
         return {'url': url, 'id': place}
 
     def dataset(self, submission):
         owner, dataset = map(self.instance_params(submission).get, ['owner', 'dataset'])
-        url = reverse('dataset_instance_by_user', args=(owner, dataset))
+        url = reverse('v1:dataset_instance_by_user', args=(owner, dataset))
         return {'url': url}
 
     def attachments(self, submission):
@@ -377,7 +379,7 @@ class SubmissionResource (ModelResourceWithDataBlob):
     def url(self, submission):
         owner, dataset, place, set_name, pk = map(
             self.instance_params(submission).get, ['owner', 'dataset', 'place', 'set_name', 'submission'])
-        return reverse('submission_instance_by_dataset', args=(owner, dataset, place, set_name, pk))
+        return reverse('v1:submission_instance_by_dataset', args=(owner, dataset, place, set_name, pk))
 
 
 class GeneralSubmittedThingResource (ModelResourceWithDataBlob):

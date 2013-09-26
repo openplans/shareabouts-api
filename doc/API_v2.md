@@ -41,7 +41,7 @@ Get a user's datasets
 **Sample Response**:
 
     200 OK
-    
+
     {
       "metadata": {
         "length": 30,
@@ -98,19 +98,19 @@ Create a dataset
 **Sample Response**:
 
     201 CREATED
-    
-    {
-      "slug": "mctesty", 
-      "url": "http://api.shareabouts.org/api/v2/openplans/datasets/mctesty/"
-      "display_name": "Testy McTest", 
 
-      "keys": { "url": "http://api.shareabouts.org/api/v2/openplans/datasets/mctesty/keys/" }, 
-      "owner": { "username": "openplans", "url": "http://api.shareabouts.org/api/v2/openplans/" }, 
+    {
+      "slug": "mctesty",
+      "url": "http://api.shareabouts.org/api/v2/openplans/datasets/mctesty/"
+      "display_name": "Testy McTest",
+
+      "keys": { "url": "http://api.shareabouts.org/api/v2/openplans/datasets/mctesty/keys/" },
+      "owner": { "username": "openplans", "url": "http://api.shareabouts.org/api/v2/openplans/" },
       "places": {
-        "length": 0, 
+        "length": 0,
         "url": "http://api.shareabouts.org/api/v2/openplans/datasets/mctesty/places/"
-      }, 
-      "submission_sets": {}, 
+      },
+      "submission_sets": {},
     }
 
 ------------------------------------------------------------
@@ -134,7 +134,7 @@ Get a specific dataset
 **Sample Response**:
 
     200 OK
-    
+
     {
       "slug": "chicagobikes",
       "url": "http://.../api/v2/openplans/datasets/chicagobikes/",
@@ -180,19 +180,19 @@ Update a dataset
 **Sample Response**:
 
     200 OK
-    
-    {
-      "slug": "mctesty", 
-      "url": "http://api.shareabouts.org/api/v2/openplans/datasets/mctesty/"
-      "display_name": "Testy McTest", 
 
-      "keys": { "url": "http://api.shareabouts.org/api/v2/openplans/datasets/mctesty/keys/" }, 
-      "owner": { "username": "openplans", "url": "http://api.shareabouts.org/api/v2/openplans/" }, 
+    {
+      "slug": "mctesty",
+      "url": "http://api.shareabouts.org/api/v2/openplans/datasets/mctesty/"
+      "display_name": "Testy McTest",
+
+      "keys": { "url": "http://api.shareabouts.org/api/v2/openplans/datasets/mctesty/keys/" },
+      "owner": { "username": "openplans", "url": "http://api.shareabouts.org/api/v2/openplans/" },
       "places": {
-        "length": 0, 
+        "length": 0,
         "url": "http://api.shareabouts.org/api/v2/openplans/datasets/mctesty/places/"
-      }, 
-      "submission_sets": {}, 
+      },
+      "submission_sets": {},
     }
 
 ------------------------------------------------------------
@@ -252,7 +252,7 @@ Get all the places in a dataset
 **Sample Response**:
 
     200 OK
-    
+
     {
       "metadata": {
         "length": 30,
@@ -265,30 +265,30 @@ Get all the places in a dataset
         {
           "type": "Feature",
           "geometry": { "type": "Point", "coordinates: [-73.994711637500004, 40.752499397299999] },
-          
-          "properties": {
-            "id": 25503, 
-            "url": "http://api.shareabouts.org/api/v2/openplans/datasets/atm_surcharge/places/25503/", 
-            "created_datetime": "2013-02-14T01:08:44.893Z", 
-            "updated_datetime": "2013-02-14T01:08:44.893Z", 
-            "visible": true,
-            
-            "type": "ATM", 
-            "name": "K-mart", 
-            "surcharge": "0", 
-            "submitter_name": "Mjumbe", 
 
-            "dataset": { "url": "http://api.shareabouts.org/api/v2/openplans/datasets/atm_surcharge/" }, 
-            "attachments": [], 
+          "properties": {
+            "id": 25503,
+            "url": "http://api.shareabouts.org/api/v2/openplans/datasets/atm_surcharge/places/25503/",
+            "created_datetime": "2013-02-14T01:08:44.893Z",
+            "updated_datetime": "2013-02-14T01:08:44.893Z",
+            "visible": true,
+
+            "type": "ATM",
+            "name": "K-mart",
+            "surcharge": "0",
+            "submitter_name": "Mjumbe",
+
+            "dataset": { "url": "http://api.shareabouts.org/api/v2/openplans/datasets/atm_surcharge/" },
+            "attachments": [],
             "submission_sets": {
               "comments": {
-                "length": 1, 
+                "length": 1,
                 "url": "http://api.shareabouts.org/api/v2/openplans/datasets/atm_surcharge/places/25503/comments/"
               }
             }
           }
         },
-        ... 
+        ...
       ]
     }
 
@@ -307,10 +307,10 @@ Create a place
 **Sample Request Data**:
 
     {
-      "type": "ATM", 
-      "name": "K-mart", 
-      "surcharge": "0", 
-      "submitter_name": "Mjumbe", 
+      "type": "ATM",
+      "name": "K-mart",
+      "surcharge": "0",
+      "submitter_name": "Mjumbe",
       "geometry": { "type": "Point", "coordinates: [-73.994711637500004, 40.752499397299999] },
       "visible": true
     }
@@ -318,25 +318,25 @@ Create a place
 **Sample Response**:
 
     201 CREATED
-    
+
     {
       "type": "Feature",
       "geometry": { "type": "Point", "coordinates: [-73.994711637500004, 40.752499397299999] },
-      
-      "properties": {
-        "id": 25503, 
-        "url": "http://api.shareabouts.org/api/v2/openplans/datasets/atm_surcharge/places/25503/", 
-        "created_datetime": "2013-02-14T01:08:44.893Z", 
-        "updated_datetime": "2013-02-14T01:08:44.893Z", 
-        "visible": true,
-        
-        "type": "ATM", 
-        "name": "K-mart", 
-        "surcharge": "0", 
-        "submitter_name": "Mjumbe", 
 
-        "dataset": { "url": "http://api.shareabouts.org/api/v2/openplans/datasets/atm_surcharge/" }, 
-        "attachments": [], 
+      "properties": {
+        "id": 25503,
+        "url": "http://api.shareabouts.org/api/v2/openplans/datasets/atm_surcharge/places/25503/",
+        "created_datetime": "2013-02-14T01:08:44.893Z",
+        "updated_datetime": "2013-02-14T01:08:44.893Z",
+        "visible": true,
+
+        "type": "ATM",
+        "name": "K-mart",
+        "surcharge": "0",
+        "submitter_name": "Mjumbe",
+
+        "dataset": { "url": "http://api.shareabouts.org/api/v2/openplans/datasets/atm_surcharge/" },
+        "attachments": [],
         "submission_sets": {}
       }
     }
@@ -362,28 +362,28 @@ Get a specific place
 **Sample Response**:
 
     200 OK
-    
+
     {
       "type": "Feature",
       "geometry": { "type": "Point", "coordinates: [-73.994711637500004, 40.752499397299999] },
-      
-      "properties": {
-        "id": 25503, 
-        "url": "http://api.shareabouts.org/api/v2/openplans/datasets/atm_surcharge/places/25503/", 
-        "created_datetime": "2013-02-14T01:08:44.893Z", 
-        "updated_datetime": "2013-02-14T01:08:44.893Z", 
-        "visible": true,
-        
-        "type": "ATM", 
-        "name": "K-mart", 
-        "surcharge": "0", 
-        "submitter_name": "Mjumbe", 
 
-        "dataset": { "url": "http://api.shareabouts.org/api/v2/openplans/datasets/atm_surcharge/" }, 
-        "attachments": [], 
+      "properties": {
+        "id": 25503,
+        "url": "http://api.shareabouts.org/api/v2/openplans/datasets/atm_surcharge/places/25503/",
+        "created_datetime": "2013-02-14T01:08:44.893Z",
+        "updated_datetime": "2013-02-14T01:08:44.893Z",
+        "visible": true,
+
+        "type": "ATM",
+        "name": "K-mart",
+        "surcharge": "0",
+        "submitter_name": "Mjumbe",
+
+        "dataset": { "url": "http://api.shareabouts.org/api/v2/openplans/datasets/atm_surcharge/" },
+        "attachments": [],
         "submission_sets": {
           "comments": {
-            "length": 1, 
+            "length": 1,
             "url": "http://api.shareabouts.org/api/v2/openplans/datasets/atm_surcharge/places/25503/comments/"
           }
         }
@@ -405,10 +405,10 @@ Update a place
 **Sample Request Data**:
 
     {
-      "type": "ATM", 
-      "name": "K-mart", 
-      "surcharge": "0.50", 
-      "submitter_name": "Mjumbe", 
+      "type": "ATM",
+      "name": "K-mart",
+      "surcharge": "0.50",
+      "submitter_name": "Mjumbe",
       "geometry": { "type": "Point", "coordinates: [-73.994711637500004, 40.752499397299999] },
       "visible": true
     }
@@ -416,28 +416,28 @@ Update a place
 **Sample Response**:
 
     200 OK
-    
+
     {
       "type": "Feature",
       "geometry": { "type": "Point", "coordinates: [-73.994711637500004, 40.752499397299999] },
-      
-      "properties": {
-        "id": 25503, 
-        "url": "http://api.shareabouts.org/api/v2/openplans/datasets/atm_surcharge/places/25503/", 
-        "created_datetime": "2013-02-14T01:08:44.893Z", 
-        "updated_datetime": "2013-02-14T01:08:44.893Z", 
-        "visible": true,
-        
-        "type": "ATM", 
-        "name": "K-mart", 
-        "surcharge": "0.50", 
-        "submitter_name": "Mjumbe", 
 
-        "dataset": { "url": "http://api.shareabouts.org/api/v2/openplans/datasets/atm_surcharge/" }, 
-        "attachments": [], 
+      "properties": {
+        "id": 25503,
+        "url": "http://api.shareabouts.org/api/v2/openplans/datasets/atm_surcharge/places/25503/",
+        "created_datetime": "2013-02-14T01:08:44.893Z",
+        "updated_datetime": "2013-02-14T01:08:44.893Z",
+        "visible": true,
+
+        "type": "ATM",
+        "name": "K-mart",
+        "surcharge": "0.50",
+        "submitter_name": "Mjumbe",
+
+        "dataset": { "url": "http://api.shareabouts.org/api/v2/openplans/datasets/atm_surcharge/" },
+        "attachments": [],
         "submission_sets": {
           "comments": {
-            "length": 1, 
+            "length": 1,
             "url": "http://api.shareabouts.org/api/v2/openplans/datasets/atm_surcharge/places/25503/comments/"
           }
         }
@@ -467,7 +467,7 @@ Submissions
 
 Submissions are stand-alone objects (key-value pairs) that can be attached to
 a place. These could be comments, surveys responses, support/likes, etc. You
-can attach multiple submission sets to a place. Submissions are grouped into 
+can attach multiple submission sets to a place. Submissions are grouped into
 sets based on the type of submission.
 
 **Fields**:
@@ -709,9 +709,10 @@ Get the activity for a dataset
         {
             "id": 159985,
             "place_id": 29673,
-            "type": "support"
             "action": "create",
-            "data": {
+
+            "target_type": "support"
+            "target": {
                 "created_datetime": "2013-04-30T19:47:21.101Z",
                 "updated_datetime": "2013-04-30T19:47:21.101Z",
                 "id": 29674,
@@ -726,24 +727,32 @@ Get the activity for a dataset
 Attachments
 -----------
 
-Attachments are file data that can be attached to a place or a submission. 
+Attachments are file data that can be attached to a place or a submission.
 Attachment files are stored as resources external to the Shareabouts API, but
 can be uploaded through the API.
 
-### POST /api/v2/*:owner*/datasets/*:slug*/places/*:place_id*/attachments/
+### POST
 
-Create a new attachment for a place
+    /api/v2/*:owner*/datasets/*:slug*/places/*:place_id*/attachments
+    /api/v2/*:owner*/datasets/*:slug*/places/*:place_id*/*:submission_set_name*/*:submission_id*/attachments
 
-**Authentication**: Basic, session, or key auth *(required)*
+Create a new attachment for a place or submission
 
-**Request Data**:
+**Authentication**
+
+Basic, session, or key auth *(required)*
+
+**Request Data**
 
 Multipart form data with two fields:
 
-  * *name*: The attachment's name -- should be unique within the place.
-  * *file*: The attachment's file data.
+  * `name`: The attachment's name -- should be unique within the place.
+  * `file`: The attachment's file data.
 
-**Sample URL**: http://api.shareabouts.org/api/v2/openplans/patiosoftheworld/places/29664/attachments/
+**Sample URL**
+
+    http://api.shareabouts.org/api/v2/openplans/datasets/patiosoftheworld/places/29664/attachments
+    http://api.shareabouts.org/api/v2/openplans/datasets/patiosoftheworld/places/29664/comments/123/attachments
 
 **Sample Usage**
 
@@ -755,7 +764,7 @@ In Javascript (with jQuery), this can be done like:
     data.append('file', fileField.files[0])
 
     jQuery.ajax({
-      url: 'http://api.shareabouts.org/api/v2/openplans/patiosoftheworld/places/29664/attachments/',
+      url: 'http://api.shareabouts.org/api/v2/openplans/patiosoftheworld/places/29664/attachments',
       type: 'POST',
       data: data,
 
@@ -773,12 +782,52 @@ Or, in Python, with requests:
         files={'file': open('filename.jpg')}
     )
 
-**Sample Response**:
-  
+**Sample Response**
+
     200 OK
-    
     {
+      "created_datetime": "2013-09-16T14:33:11.043Z",
+      "updated_datetime": "2013-09-16T14:33:11.043Z",
       "name": "patio-photo",
       "url": "http://patiosoftheworld.s3.amazon.com/patiomap-attachments/pDf3r4.jpg"
     }
+
+### GET List
+
+    /api/v2/*:owner*/datasets/*:slug*/places/*:place_id*/attachments
+    /api/v2/*:owner*/datasets/*:slug*/places/*:place_id*/*:submission_set_name*/*:submission_id*/attachments
+
+Get all the attachments for a place or submission
+
+**Authentication**
+
+Basic, session, or key auth *(optional)*
+
+**Response Formats**
+
+JSON (default), CSV, HTML, XML
+
+**Sample URL**
+
+    http://api.shareabouts.org/api/v2/openplans/datasets/patiosoftheworld/places/29664/attachments
+    http://api.shareabouts.org/api/v2/openplans/datasets/patiosoftheworld/places/29664/comments/123/attachments
+
+**Sample Response**
+
+    200 OK
+    {
+        "count": 1,
+        "next": null,
+        "previous": null,
+        "results": [
+            {
+                "created_datetime": "2013-09-16T14:33:11.043Z",
+                "updated_datetime": "2013-09-16T14:33:11.043Z",
+                "file": "http://example.com/attachments/OHc2QOR-milk.jpg",
+                "name": "milk.jpg"
+            }
+        ]
+    }
+
+------------------------------------------------------------
 

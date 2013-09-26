@@ -28,7 +28,8 @@ urlpatterns = patterns('',
         name='manager_logout'),
 
     # For now, the API and the management console are hosted together.
-    url(r'^api/v1/', include('sa_api.urls')),
+    url(r'^api/v2/', include('sa_api_v2.urls')),
+    url(r'^api/v1/', include('sa_api_v1.urls', namespace='v1')),
     url(r'^manage/', include('sa_manager.urls')),
 
 )

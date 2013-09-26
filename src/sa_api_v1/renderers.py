@@ -128,4 +128,8 @@ class CSVRendererWithUnderscores (CSVRenderer):
     level_sep = '_'
     
     
-renderers.DEFAULT_RENDERERS += (CSVRendererWithUnderscores,)
+renderers.DEFAULT_RENDERERS = (
+    renderers.JSONRenderer,
+    renderers.JSONPRenderer,
+    CSVRendererWithUnderscores,
+)

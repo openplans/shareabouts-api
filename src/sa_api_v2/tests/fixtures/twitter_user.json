@@ -1,0 +1,175 @@
+{
+  "id": 35782202,
+  "id_str": "35782202",
+  "name": "Mjumbe Poe",
+  "screen_name": "mjumbewu",
+  "location": "Philadelphia, PA",
+  "description": "Software engineer, now at: @OpenPlans; working on projects like http://t.co/jcISlbHvaS and http://t.co/Ku93lnFhvA",
+  "url": "http://t.co/kzT9SPcHNB",
+  "entities":  {
+    "url":  {
+      "urls":  [
+         {
+          "url": "http://t.co/kzT9SPcHNB",
+          "expanded_url": "http://flavors.me/mjumbewu/",
+          "display_url": "flavors.me/mjumbewu/",
+          "indices":  [
+            0,
+            22
+          ]
+        }
+      ]
+    },
+    "description":  {
+      "urls":  [
+         {
+          "url": "http://t.co/jcISlbHvaS",
+          "expanded_url": "http://shareabouts.org/",
+          "display_url": "shareabouts.org",
+          "indices":  [
+            64,
+            86
+          ]
+        },
+         {
+          "url": "http://t.co/Ku93lnFhvA",
+          "expanded_url": "http://philly.councilmatic.org/",
+          "display_url": "philly.councilmatic.org",
+          "indices":  [
+            91,
+            113
+          ]
+        }
+      ]
+    }
+  },
+  "protected": false,
+  "followers_count": 911,
+  "friends_count": 556,
+  "listed_count": 61,
+  "created_at": "Mon Apr 27 16:17:21 +0000 2009",
+  "favourites_count": 621,
+  "utc_offset": -14400,
+  "time_zone": "Eastern Time (US & Canada)",
+  "geo_enabled": true,
+  "verified": false,
+  "statuses_count": 1250,
+  "lang": "en",
+  "status":  {
+    "created_at": "Mon Sep 23 02:10:19 +0000 2013",
+    "id": 381963708827578400,
+    "id_str": "381963708827578369",
+    "text": "RT @alex_gaynor: Every time someone asks you how to do something with your library, if there isn’t a section for it in your docs, you shoul…",
+    "source": "web",
+    "truncated": false,
+    "in_reply_to_status_id": null,
+    "in_reply_to_status_id_str": null,
+    "in_reply_to_user_id": null,
+    "in_reply_to_user_id_str": null,
+    "in_reply_to_screen_name": null,
+    "geo": null,
+    "coordinates": null,
+    "place": null,
+    "contributors": null,
+    "retweeted_status":  {
+      "created_at": "Mon Sep 23 01:06:35 +0000 2013",
+      "id": 381947669737779200,
+      "id_str": "381947669737779200",
+      "text": "Every time someone asks you how to do something with your library, if there isn’t a section for it in your docs, you should write one",
+      "source": "<a href=\"http://tapbots.com/software/tweetbot/mac\" rel=\"nofollow\">Tweetbot for Mac</a>",
+      "truncated": false,
+      "in_reply_to_status_id": null,
+      "in_reply_to_status_id_str": null,
+      "in_reply_to_user_id": null,
+      "in_reply_to_user_id_str": null,
+      "in_reply_to_screen_name": null,
+      "geo": null,
+      "coordinates": null,
+      "place":  {
+        "id": "b78c00a079d3ccc4",
+        "url": "https://api.twitter.com/1.1/geo/id/b78c00a079d3ccc4.json",
+        "place_type": "neighborhood",
+        "name": "Western Addition",
+        "full_name": "Western Addition, San Francisco",
+        "country_code": "US",
+        "country": "United States",
+        "bounding_box":  {
+          "type": "Polygon",
+          "coordinates":  [
+             [
+               [
+                -122.43938003999999,
+                37.77862896
+              ],
+               [
+                -122.42363615999999,
+                37.77862896
+              ],
+               [
+                -122.42363615999999,
+                37.78524099
+              ],
+               [
+                -122.43938003999999,
+                37.78524099
+              ]
+            ]
+          ]
+        },
+        "attributes":  {}
+      },
+      "contributors": null,
+      "retweet_count": 16,
+      "favorite_count": 10,
+      "entities":  {
+        "hashtags":  [],
+        "symbols":  [],
+        "urls":  [],
+        "user_mentions":  []
+      },
+      "favorited": false,
+      "retweeted": true,
+      "lang": "en"
+    },
+    "retweet_count": 16,
+    "favorite_count": 0,
+    "entities":  {
+      "hashtags":  [],
+      "symbols":  [],
+      "urls":  [],
+      "user_mentions":  [
+         {
+          "screen_name": "alex_gaynor",
+          "name": "Alex Gaynor",
+          "id": 14635493,
+          "id_str": "14635493",
+          "indices":  [
+            3,
+            15
+          ]
+        }
+      ]
+    },
+    "favorited": false,
+    "retweeted": true,
+    "lang": "en"
+  },
+  "contributors_enabled": false,
+  "is_translator": false,
+  "profile_background_color": "8B542B",
+  "profile_background_image_url": "http://abs.twimg.com/images/themes/theme8/bg.gif",
+  "profile_background_image_url_https": "https://abs.twimg.com/images/themes/theme8/bg.gif",
+  "profile_background_tile": false,
+  "profile_image_url": "http://a0.twimg.com/profile_images/1101892515/dreadlocked_browntwitterbird-248x270_normal.png",
+  "profile_image_url_https": "https://si0.twimg.com/profile_images/1101892515/dreadlocked_browntwitterbird-248x270_normal.png",
+  "profile_link_color": "9D582E",
+  "profile_sidebar_border_color": "D9B17E",
+  "profile_sidebar_fill_color": "EADEAA",
+  "profile_text_color": "333333",
+  "profile_use_background_image": true,
+  "default_profile": false,
+  "default_profile_image": false,
+  "following": false,
+  "follow_request_sent": false,
+  "notifications": false
+}

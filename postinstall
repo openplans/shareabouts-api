@@ -46,8 +46,8 @@ STATIC_ROOT = '/home/dotcloud/current/static/'
 # Debug is False by default, true if set in the environment.
 DEBUG = (env.get('DEBUG', 'False') in ['true', 'True'])
 TEMPLATE_DEBUG = DEBUG
-
-ALLOWED_HOSTS = ['*']
+SHOW_DEBUG_TOOLBAR = DEBUG
+SOCIAL_AUTH_RAISE_EXCEPTIONS = DEBUG
 
 ATTACHMENT_STORAGE = 'storages.backends.s3boto.S3BotoStorage'
 AWS_ACCESS_KEY_ID = env['SHAREABOUTS_AWS_KEY']
@@ -59,6 +59,11 @@ AWS_QUERYSTRING_AUTH = False
 DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
 STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
 STATIC_URL = '/static/'
+
+SOCIAL_AUTH_TWITTER_KEY = env['SHAREABOUTS_TWITTER_KEY']
+SOCIAL_AUTH_TWITTER_SECRET = env['SHAREABOUTS_TWITTER_SECRET']
+SOCIAL_AUTH_FACEBOOK_KEY = env['SHAREABOUTS_FACEBOOK_KEY']
+SOCIAL_AUTH_FACEBOOK_SECRET = env['SHAREABOUTS_FACEBOOK_SECRET']
 
 LAUNCHROCK_KEY = env.get('SHAREABOUTS_LAUNCHROCK_KEY')
 

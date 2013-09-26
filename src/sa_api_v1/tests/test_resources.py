@@ -140,15 +140,15 @@ class TestModelResourceWithDataBlob(object):
         # JSON blog.
         assert_equal(
             result,
-            {'submitter_name': u'ralphie', 'dataset': submitted_thing.dataset,
-             'data': u'{"x":"xylophone"}', 'visible': True}
+            {'dataset': submitted_thing.dataset,
+             'data': u'{"x":"xylophone","submitter_name":"ralphie"}', 'visible': True}
         )
 
 
 class TestPlaceResource(TestCase):
 
     def _cleanup(self):
-        from sa_api import models
+        from sa_api_v1 import models
         from django.contrib.auth.models import User
         from django.core.cache import cache
         models.Submission.objects.all().delete()

@@ -9,6 +9,11 @@ DATABASES = {
     }
 }
 
+REST_FRAMEWORK = {
+    'PAGINATE_BY': 500,
+    'PAGINATE_BY_PARAM': 'page_size'
+}
+
 # Set the attachment storage class to the file storage class that should
 # manage storing and retriving of place and submission attachments.
 #

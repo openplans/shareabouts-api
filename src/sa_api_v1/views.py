@@ -20,7 +20,7 @@ import os
 import re
 import time
 
-logger = logging.getLogger('sa_api.views')
+logger = logging.getLogger('sa_api_v1.views')
 
 
 def raise_error_if_not_authenticated(view, request):
@@ -197,8 +197,8 @@ class CachedMixin (object):
         return response
 
     def get_cache_key(self, request, *args, **kwargs):
-        querystring = request.META['QUERY_STRING']
-        contenttype = request.META['HTTP_ACCEPT']
+        querystring = request.META.get('QUERY_STRING', '')
+        contenttype = request.META.get('HTTP_ACCEPT', '*/*')
 
         # TODO: Eliminate the jQuery cache busting parameter for now. Get
         # rid of this after the old API has been deprecated.

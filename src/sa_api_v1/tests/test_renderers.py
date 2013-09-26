@@ -2,7 +2,7 @@
 
 from django.test import TestCase
 from nose.tools import istest
-from sa_api.renderers import CSVRenderer
+from sa_api_v1.renderers import CSVRenderer
 
 class TestCSVRenderer (TestCase):
 

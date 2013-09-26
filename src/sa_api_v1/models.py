@@ -5,6 +5,7 @@ from django.core.files.storage import get_storage_class
 from django.core.urlresolvers import reverse
 from . import cache
 from . import utils
+import ujson as json
 
 
 class TimeStampedModel (models.Model):
@@ -57,7 +58,7 @@ class SubmittedThing (CacheClearingModel, ModelWithDataBlob, TimeStampedModel):
 
     """
 #    submitter = models.ForeignKey('Submitter', related_name='things')
-    submitter_name = models.CharField(max_length=256, null=True, blank=True)
+    # submitter_name = models.CharField(max_length=256, null=True, blank=True)
     dataset = models.ForeignKey('DataSet', related_name='submitted_thing_set',
                                 blank=True)
     visible = models.BooleanField(default=True, blank=True)
@@ -65,6 +66,18 @@ class SubmittedThing (CacheClearingModel, ModelWithDataBlob, TimeStampedModel):
     class Meta:
         db_table = 'sa_api_submittedthing'
         managed = False
+
+    @property
+    def submitter_name(self):
+        data = json.loads(self.data or '{}')
+        return data.get('submitter_name')
+
+    @submitter_name.setter
+    def submitter_name(self, value):
+        data = json.loads(self.data or '{}')
+        data['submitter_name'] = value
+        self.data = json.dumps(data)
+        return value
 
     def save(self, silent=False, *args, **kwargs):
         is_new = (self.id == None)
@@ -108,7 +121,7 @@ class Place (SubmittedThing):
     other submissions such as comments or surveys can be attached.
 
     """
-    location = models.PointField()
+    location = models.PointField(db_column='geometry')
 
     objects = models.GeoManager()
     cache = cache.PlaceCache()
@@ -126,7 +139,7 @@ class SubmissionSet (CacheClearingModel, models.Model):
 
     """
     place = models.ForeignKey(Place, related_name='submission_sets')
-    submission_type = models.CharField(max_length=128)
+    submission_type = models.CharField(max_length=128, db_column='name')
 
     cache = cache.SubmissionSetCache()
 

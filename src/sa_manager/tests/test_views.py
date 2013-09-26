@@ -232,7 +232,7 @@ class TestDatasetDetailPostRequest (TestCase):
     def setUp(self):
         # We need a user.
         from django.contrib.auth.models import User
-        from sa_api.models import DataSet
+        from sa_api_v2.models import DataSet
         self.user = User.objects.create_user('riley', password='pass')
         self.dataset = DataSet.objects.create(owner=self.user, slug='dataset1')
 
