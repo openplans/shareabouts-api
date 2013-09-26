@@ -426,7 +426,18 @@ class DataSetSubmissionSetSummarySerializer (serializers.HyperlinkedModelSeriali
 
 
 class SubmittedThingSerializer (CachedSerializer, DataBlobProcessor):
-    pass
+    def restore_fields(self, data, files):
+        """
+        Converts a dictionary of data into a dictionary of deserialized fields.
+        """
+        result = super(SubmittedThingSerializer, self).restore_fields(data, files)
+
+        if 'submitter' not in data:
+            request = self.context.get('request')
+            if request and request.user.is_authenticated():
+                result['submitter'] = request.user
+
+        return result
 
 
 class PlaceSerializer (SubmittedThingSerializer, serializers.HyperlinkedModelSerializer):

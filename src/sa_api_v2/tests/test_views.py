@@ -16,7 +16,14 @@ from ..views import (PlaceInstanceView, PlaceListView, SubmissionInstanceView,
     DataSetListView, AttachmentListView, ActionListView)
 
 
-class TestPlaceInstanceView (TestCase):
+class APITestMixin (object):
+    def assertStatusCode(self, response, *expected):
+        self.assertIn(response.status_code, expected,
+            'Status code not in %s response: (%s) %s' % 
+            (expected, response.status_code, response.rendered_content))
+
+
+class TestPlaceInstanceView (APITestMixin, TestCase):
     def setUp(self):
         cache.clear()
 
@@ -100,7 +107,7 @@ class TestPlaceInstanceView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was successful
-        self.assertEqual(response.status_code, 200, response.render())
+        self.assertStatusCode(response, 200)
 
         # Check that it's a feature
         self.assertIn('type', data)
@@ -177,7 +184,7 @@ class TestPlaceInstanceView (TestCase):
         response = self.view(request, **self.request_kwargs)
         data = json.loads(response.rendered_content)
 
-        self.assertEqual(response.status_code, 401)
+        self.assertStatusCode(response, 401)
 
         # - - - - - Authenticated as owner - - - - - - - - -
         request = self.factory.get(self.path + '?include_submissions&include_invisible')
@@ -217,7 +224,7 @@ class TestPlaceInstanceView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was successful
-        self.assertEqual(response.status_code, 200)
+        self.assertStatusCode(response, 200)
 
         # Check that the private data is not in the properties
         self.assertNotIn('private-secrets', data['properties'])
@@ -232,7 +239,7 @@ class TestPlaceInstanceView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was restricted
-        self.assertEqual(response.status_code, 401)
+        self.assertStatusCode(response, 401)
 
         # --------------------------------------------------
 
@@ -245,7 +252,7 @@ class TestPlaceInstanceView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was restricted
-        self.assertEqual(response.status_code, 403)
+        self.assertStatusCode(response, 403)
 
         # --------------------------------------------------
 
@@ -258,7 +265,7 @@ class TestPlaceInstanceView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was restricted
-        self.assertEqual(response.status_code, 403)
+        self.assertStatusCode(response, 403)
 
         # --------------------------------------------------
 
@@ -271,7 +278,7 @@ class TestPlaceInstanceView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was successful
-        self.assertEqual(response.status_code, 200)
+        self.assertStatusCode(response, 200)
 
         # Check that the private data is in the properties
         self.assertIn('private-secrets', data['properties'])
@@ -287,7 +294,7 @@ class TestPlaceInstanceView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was successful
-        self.assertEqual(response.status_code, 200)
+        self.assertStatusCode(response, 200)
 
         # Check that the private data is in the properties
         self.assertIn('private-secrets', data['properties'])
@@ -301,7 +308,7 @@ class TestPlaceInstanceView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was successful
-        self.assertEqual(response.status_code, 400)
+        self.assertStatusCode(response, 400)
 
         # --------------------------------------------------
 
@@ -313,7 +320,7 @@ class TestPlaceInstanceView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was restricted
-        self.assertEqual(response.status_code, 401)
+        self.assertStatusCode(response, 401)
 
         # --------------------------------------------------
 
@@ -326,7 +333,7 @@ class TestPlaceInstanceView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was restricted
-        self.assertEqual(response.status_code, 403)
+        self.assertStatusCode(response, 403)
 
         # --------------------------------------------------
 
@@ -339,7 +346,7 @@ class TestPlaceInstanceView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was restricted
-        self.assertEqual(response.status_code, 403)
+        self.assertStatusCode(response, 403)
 
         # --------------------------------------------------
 
@@ -352,7 +359,7 @@ class TestPlaceInstanceView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was successful
-        self.assertEqual(response.status_code, 200)
+        self.assertStatusCode(response, 200)
 
         # --------------------------------------------------
 
@@ -365,7 +372,7 @@ class TestPlaceInstanceView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was successful
-        self.assertEqual(response.status_code, 200)
+        self.assertStatusCode(response, 200)
 
         # --------------------------------------------------
 
@@ -378,7 +385,7 @@ class TestPlaceInstanceView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was successful
-        self.assertEqual(response.status_code, 400)
+        self.assertStatusCode(response, 400)
 
     def test_GET_invalid_url(self):
         # Make sure that we respond with 404 if a place_id is supplied, but for
@@ -393,7 +400,7 @@ class TestPlaceInstanceView (TestCase):
         request = self.factory.get(path)
         response = self.view(request, **request_kwargs)
 
-        self.assertEqual(response.status_code, 404)
+        self.assertStatusCode(response, 404)
 
     def test_GET_from_cache(self):
         path = reverse('place-detail', kwargs=self.request_kwargs)
@@ -420,7 +427,7 @@ class TestPlaceInstanceView (TestCase):
         #
         with self.assertNumQueries(6):
             response = self.view(request, **self.request_kwargs)
-            self.assertEqual(response.status_code, 200)
+            self.assertStatusCode(response, 200)
 
         path = reverse('place-detail', kwargs=self.request_kwargs)
         request = self.factory.get(path)
@@ -428,7 +435,7 @@ class TestPlaceInstanceView (TestCase):
         # Check that this performs no more queries, since it's all cached
         with self.assertNumQueries(0):
             response = self.view(request, **self.request_kwargs)
-            self.assertEqual(response.status_code, 200)
+            self.assertStatusCode(response, 200)
 
     def test_DELETE_response(self):
         #
@@ -436,7 +443,7 @@ class TestPlaceInstanceView (TestCase):
         #
         request = self.factory.delete(self.path)
         response = self.view(request, **self.request_kwargs)
-        self.assertEqual(response.status_code, 401)
+        self.assertStatusCode(response, 401)
 
         #
         # View should delete the place when owner is authenticated
@@ -446,7 +453,7 @@ class TestPlaceInstanceView (TestCase):
         response = self.view(request, **self.request_kwargs)
 
         # Check that the request was successful
-        self.assertEqual(response.status_code, 204)
+        self.assertStatusCode(response, 204)
 
         # Check that no data was returned
         self.assertIsNone(response.data)
@@ -466,7 +473,7 @@ class TestPlaceInstanceView (TestCase):
         #
         request = self.factory.put(self.path, data=place_data, content_type='application/json')
         response = self.view(request, **self.request_kwargs)
-        self.assertEqual(response.status_code, 401)
+        self.assertStatusCode(response, 401)
 
         ## TODO: Use the SubmittedThingSerializer to implement the commented
         ##       out permission structure instead.
@@ -478,7 +485,7 @@ class TestPlaceInstanceView (TestCase):
         request = self.factory.put(self.path, data=place_data, content_type='application/json')
         request.META[KEY_HEADER] = self.apikey.key
         response = self.view(request, **self.request_kwargs)
-        self.assertEqual(response.status_code, 200)
+        self.assertStatusCode(response, 200)
 
         # #
         # # View should 401 when authenticated as client
@@ -486,20 +493,17 @@ class TestPlaceInstanceView (TestCase):
         # request = self.factory.put(self.path, data=place_data, content_type='application/json')
         # request.META[KEY_HEADER] = self.apikey.key
         # response = self.view(request, **self.request_kwargs)
-        # self.assertEqual(response.status_code, 401)
+        # self.assertStatusCode(response, 401)
 
         # #
         # # View should update the place when owner is authenticated
         # #
         # request = self.factory.put(self.path, data=place_data, content_type='application/json')
         # request.user = self.owner
-
         # response = self.view(request, **self.request_kwargs)
+        # self.assertStatusCode(response, 200)
 
         data = json.loads(response.rendered_content)
-
-        # Check that the request was successful
-        self.assertEqual(response.status_code, 200)
 
         # Check that the data attributes have been incorporated into the
         # properties
@@ -547,7 +551,7 @@ class TestPlaceInstanceView (TestCase):
         # request = self.factory.put(self.path, data=place_data, content_type='application/json')
         # request.user = self.submitter
         # response = self.view(request, **self.request_kwargs)
-        # self.assertEqual(response.status_code, 403)
+        # self.assertStatusCode(response, 403)
 
         # #
         # # View should 403 when authenticated as different user
@@ -556,7 +560,7 @@ class TestPlaceInstanceView (TestCase):
         # request.META[KEY_HEADER] = self.apikey.key
         # request.user = self.other_user
         # response = self.view(request, **self.request_kwargs)
-        # self.assertEqual(response.status_code, 403)
+        # self.assertStatusCode(response, 403)
 
         # #
         # # View should 400 when setting a different submitter
@@ -565,7 +569,7 @@ class TestPlaceInstanceView (TestCase):
         # request.META[KEY_HEADER] = self.apikey.key
         # request.user = self.submitter
         # response = self.view(request, **self.request_kwargs)
-        # self.assertEqual(response.status_code, 400)
+        # self.assertStatusCode(response, 400)
 
         # #
         # # View should update the place when submitter is authenticated and
@@ -580,7 +584,7 @@ class TestPlaceInstanceView (TestCase):
         # data = json.loads(response.rendered_content)
 
         # # Check that the request was successful
-        # self.assertEqual(response.status_code, 200)
+        # self.assertStatusCode(response, 200)
 
         # # Check that the data attributes have been incorporated into the
         # # properties
@@ -596,6 +600,7 @@ class TestPlaceInstanceView (TestCase):
             'properties': {
                 'type': 'Park Bench',
                 'private-secrets': 'The mayor loves this bench',
+                'submitter': None
             },
             'geometry': {"type": "Point", "coordinates": [-73.99, 40.75]}
         })
@@ -605,7 +610,7 @@ class TestPlaceInstanceView (TestCase):
         #
         request = self.factory.put(self.invisible_path + '?include_invisible', data=place_data, content_type='application/json')
         response = self.view(request, **self.invisible_request_kwargs)
-        self.assertEqual(response.status_code, 401)
+        self.assertStatusCode(response, 401)
 
         #
         # View should 403 when owner is authenticated through api key
@@ -613,7 +618,7 @@ class TestPlaceInstanceView (TestCase):
         request = self.factory.put(self.invisible_path + '?include_invisible', data=place_data, content_type='application/json')
         request.META[KEY_HEADER] = self.apikey.key
         response = self.view(request, **self.invisible_request_kwargs)
-        self.assertEqual(response.status_code, 403)
+        self.assertStatusCode(response, 403)
 
         #
         # View should update the place when owner is directly authenticated
@@ -625,7 +630,7 @@ class TestPlaceInstanceView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was successful
-        self.assertEqual(response.status_code, 200)
+        self.assertStatusCode(response, 200)
 
         # Check that the data attributes have been incorporated into the
         # properties
@@ -642,7 +647,7 @@ class TestPlaceInstanceView (TestCase):
         self.assertNotIn('private-secrets', data['properties'])
 
 
-class TestPlaceListView (TestCase):
+class TestPlaceListView (APITestMixin, TestCase):
     def setUp(self):
         cache.clear()
 
@@ -716,7 +721,7 @@ class TestPlaceListView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was successful
-        self.assertEqual(response.status_code, 200, response.render())
+        self.assertStatusCode(response, 200)
 
         # Check that it's a feature collection
         self.assertIn('type', data)
@@ -748,7 +753,7 @@ class TestPlaceListView (TestCase):
         headers = rows[0]
 
         # Check that the request was successful
-        self.assertEqual(response.status_code, 200, response.render())
+        self.assertStatusCode(response, 200)
 
         # Check that it's got good headers
         self.assertIn('dataset', headers)
@@ -769,7 +774,7 @@ class TestPlaceListView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that there are ATM features
-        self.assertEqual(response.status_code, 200)
+        self.assertStatusCode(response, 200)
         self.assert_(all([feature['properties'].get('foo') == 'bar' for feature in data['features']]))
         self.assertEqual(len(data['features']), 2)
 
@@ -778,7 +783,7 @@ class TestPlaceListView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was successful
-        self.assertEqual(response.status_code, 200)
+        self.assertStatusCode(response, 200)
         self.assertEqual(len(data['features']), 0)
 
         request = self.factory.get(self.path + '?nonexistent=foo')
@@ -786,7 +791,7 @@ class TestPlaceListView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was successful
-        self.assertEqual(response.status_code, 200)
+        self.assertStatusCode(response, 200)
         self.assertEqual(len(data['features']), 0)
 
     def test_GET_nearby_response(self):
@@ -800,7 +805,7 @@ class TestPlaceListView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that we have all the places, sorted by distance
-        self.assertEqual(response.status_code, 200)
+        self.assertStatusCode(response, 200)
         self.assertEqual(len(data['features']), 4)
         self.assertEqual([feature['properties']['name'] for feature in data['features']],
                          [3,2,4,1])
@@ -815,7 +820,7 @@ class TestPlaceListView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was successful
-        self.assertEqual(response.status_code, 200)
+        self.assertStatusCode(response, 200)
 
         # Check that the private data is not in the properties
         self.assertNotIn('private-secrets', data['features'][0]['properties'])
@@ -830,7 +835,7 @@ class TestPlaceListView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was restricted
-        self.assertEqual(response.status_code, 401)
+        self.assertStatusCode(response, 401)
 
         # --------------------------------------------------
 
@@ -843,7 +848,7 @@ class TestPlaceListView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was restricted
-        self.assertEqual(response.status_code, 403)
+        self.assertStatusCode(response, 403)
 
         # --------------------------------------------------
 
@@ -856,7 +861,7 @@ class TestPlaceListView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was restricted
-        self.assertEqual(response.status_code, 403)
+        self.assertStatusCode(response, 403)
 
         # --------------------------------------------------
 
@@ -869,7 +874,7 @@ class TestPlaceListView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was successful
-        self.assertEqual(response.status_code, 200)
+        self.assertStatusCode(response, 200)
 
         # Check that the private data is in the properties
         self.assertIn('private-secrets', data['features'][0]['properties'])
@@ -885,7 +890,7 @@ class TestPlaceListView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was successful
-        self.assertEqual(response.status_code, 200)
+        self.assertStatusCode(response, 200)
 
         # Check that the private data is in the properties
         self.assertIn('private-secrets', data['features'][0]['properties'])
@@ -902,7 +907,7 @@ class TestPlaceListView (TestCase):
         request = self.factory.get(path)
         response = self.view(request, **request_kwargs)
 
-        self.assertEqual(response.status_code, 404)
+        self.assertStatusCode(response, 404)
 
     def test_POST_response(self):
         place_data = json.dumps({
@@ -921,7 +926,7 @@ class TestPlaceListView (TestCase):
         #
         request = self.factory.post(self.path, data=place_data, content_type='application/json')
         response = self.view(request, **self.request_kwargs)
-        self.assertEqual(response.status_code, 401)
+        self.assertStatusCode(response, 401)
 
         #
         # View should create the place when owner is authenticated
@@ -934,7 +939,7 @@ class TestPlaceListView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was successful
-        self.assertEqual(response.status_code, 201)
+        self.assertStatusCode(response, 201)
 
         # Check that the data attributes have been incorporated into the
         # properties
@@ -943,6 +948,54 @@ class TestPlaceListView (TestCase):
 
         self.assertIn('submitter', data['properties'])
         self.assertIsNone(data['properties']['submitter'])
+
+        # visible should be true by default
+        self.assert_(data['properties'].get('visible'))
+
+        # Check that geometry exists
+        self.assertIn('geometry', data)
+
+        # private-secrets is not special, but is private, so should not come
+        # back down
+        self.assertNotIn('private-secrets', data['properties'])
+
+        # Check that we actually created a place
+        final_num_places = Place.objects.all().count()
+        self.assertEqual(final_num_places, start_num_places + 1)
+
+    def test_POST_response_with_submitter(self):
+        place_data = json.dumps({
+            'properties': {
+                'type': 'Park Bench',
+                'private-secrets': 'The mayor loves this bench',
+            },
+            'type': 'Feature',
+            'geometry': {"type": "Point", "coordinates": [-73.99, 40.75]}
+        })
+        start_num_places = Place.objects.all().count()
+
+        #
+        # View should create the place when owner is authenticated
+        #
+        request = self.factory.post(self.path, data=place_data, content_type='application/json')
+        request.META[KEY_HEADER] = self.apikey.key
+        request.user = self.submitter
+        request.csrf_processing_done = True
+
+        response = self.view(request, **self.request_kwargs)
+
+        data = json.loads(response.rendered_content)
+
+        # Check that the request was successful
+        self.assertStatusCode(response, 201)
+
+        # Check that the data attributes have been incorporated into the
+        # properties
+        self.assertEqual(data['properties'].get('type'), 'Park Bench')
+
+        self.assertIn('submitter', data['properties'])
+        self.assertIsNotNone(data['properties']['submitter'])
+        self.assertEqual(data['properties']['submitter']['id'], self.submitter.id)
 
         # visible should be true by default
         self.assert_(data['properties'].get('visible'))
@@ -967,7 +1020,7 @@ class TestPlaceListView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was successful
-        self.assertEqual(response.status_code, 200)
+        self.assertStatusCode(response, 200)
         self.assertEqual(len(data['features']), 1)
 
         # --------------------------------------------------
@@ -980,7 +1033,7 @@ class TestPlaceListView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was restricted
-        self.assertEqual(response.status_code, 401)
+        self.assertStatusCode(response, 401)
 
         # --------------------------------------------------
 
@@ -993,7 +1046,7 @@ class TestPlaceListView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was restricted
-        self.assertEqual(response.status_code, 403)
+        self.assertStatusCode(response, 403)
 
         # --------------------------------------------------
 
@@ -1006,7 +1059,7 @@ class TestPlaceListView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was restricted
-        self.assertEqual(response.status_code, 403)
+        self.assertStatusCode(response, 403)
 
         # --------------------------------------------------
 
@@ -1019,7 +1072,7 @@ class TestPlaceListView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was successful
-        self.assertEqual(response.status_code, 200)
+        self.assertStatusCode(response, 200)
         self.assertEqual(len(data['features']), 2)
 
         # --------------------------------------------------
@@ -1033,7 +1086,7 @@ class TestPlaceListView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was successful
-        self.assertEqual(response.status_code, 200)
+        self.assertStatusCode(response, 200)
         self.assertEqual(len(data['features']), 2)
 
     def test_POST_invisible_response(self):
@@ -1054,13 +1107,13 @@ class TestPlaceListView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was successful
-        self.assertEqual(response.status_code, 201)
+        self.assertStatusCode(response, 201)
 
         # Check that visible is false
         self.assertEqual(data.get('properties').get('visible'), False)
 
 
-class TestSubmissionInstanceView (TestCase):
+class TestSubmissionInstanceView (APITestMixin, TestCase):
     def setUp(self):
         cache.clear()
 
@@ -1131,7 +1184,7 @@ class TestSubmissionInstanceView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was successful
-        self.assertEqual(response.status_code, 200, response.render())
+        self.assertStatusCode(response, 200)
 
         # Check that data attribute is not present
         self.assertNotIn('data', data)
@@ -1178,7 +1231,7 @@ class TestSubmissionInstanceView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was successful
-        self.assertEqual(response.status_code, 200)
+        self.assertStatusCode(response, 200)
 
         # Check that the private data is not in the properties
         self.assertNotIn('private-email', data)
@@ -1193,7 +1246,7 @@ class TestSubmissionInstanceView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was restricted
-        self.assertEqual(response.status_code, 401)
+        self.assertStatusCode(response, 401)
 
         # --------------------------------------------------
 
@@ -1206,7 +1259,7 @@ class TestSubmissionInstanceView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was restricted
-        self.assertEqual(response.status_code, 403)
+        self.assertStatusCode(response, 403)
 
         # --------------------------------------------------
 
@@ -1219,7 +1272,7 @@ class TestSubmissionInstanceView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was restricted
-        self.assertEqual(response.status_code, 403)
+        self.assertStatusCode(response, 403)
 
         # --------------------------------------------------
 
@@ -1232,7 +1285,7 @@ class TestSubmissionInstanceView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was successful
-        self.assertEqual(response.status_code, 200)
+        self.assertStatusCode(response, 200)
 
         # Check that the private data is in the properties
         self.assertIn('private-email', data)
@@ -1248,7 +1301,7 @@ class TestSubmissionInstanceView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was successful
-        self.assertEqual(response.status_code, 200)
+        self.assertStatusCode(response, 200)
 
         # Check that the private data is in the properties
         self.assertIn('private-email', data)
@@ -1268,7 +1321,7 @@ class TestSubmissionInstanceView (TestCase):
         request = self.factory.get(path)
         response = self.view(request, **request_kwargs)
 
-        self.assertEqual(response.status_code, 404)
+        self.assertStatusCode(response, 404)
 
     def test_GET_from_cache(self):
         path = reverse('submission-detail', kwargs=self.request_kwargs)
@@ -1288,7 +1341,7 @@ class TestSubmissionInstanceView (TestCase):
         #
         with self.assertNumQueries(2):
             response = self.view(request, **self.request_kwargs)
-            self.assertEqual(response.status_code, 200)
+            self.assertStatusCode(response, 200)
 
         path = reverse('submission-detail', kwargs=self.request_kwargs)
         request = self.factory.get(path)
@@ -1296,7 +1349,7 @@ class TestSubmissionInstanceView (TestCase):
         # Check that this performs no more queries, since it's all cached
         with self.assertNumQueries(0):
             response = self.view(request, **self.request_kwargs)
-            self.assertEqual(response.status_code, 200)
+            self.assertStatusCode(response, 200)
 
     def test_DELETE_response(self):
         #
@@ -1304,7 +1357,7 @@ class TestSubmissionInstanceView (TestCase):
         #
         request = self.factory.delete(self.path)
         response = self.view(request, **self.request_kwargs)
-        self.assertEqual(response.status_code, 401)
+        self.assertStatusCode(response, 401)
 
         #
         # View should delete the place when owner is authenticated
@@ -1314,7 +1367,7 @@ class TestSubmissionInstanceView (TestCase):
         response = self.view(request, **self.request_kwargs)
 
         # Check that the request was successful
-        self.assertEqual(response.status_code, 204)
+        self.assertStatusCode(response, 204)
 
         # Check that no data was returned
         self.assertIsNone(response.data)
@@ -1330,7 +1383,7 @@ class TestSubmissionInstanceView (TestCase):
         #
         request = self.factory.put(self.path, data=submission_data, content_type='application/json')
         response = self.view(request, **self.request_kwargs)
-        self.assertEqual(response.status_code, 401)
+        self.assertStatusCode(response, 401)
 
         #
         # View should update the place when owner is authenticated
@@ -1343,7 +1396,7 @@ class TestSubmissionInstanceView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was successful
-        self.assertEqual(response.status_code, 200)
+        self.assertStatusCode(response, 200)
 
         # Check that the data attributes have been incorporated into the
         # properties
@@ -1360,7 +1413,7 @@ class TestSubmissionInstanceView (TestCase):
         self.assertNotIn('private-email', data)
 
 
-class TestSubmissionListView (TestCase):
+class TestSubmissionListView (APITestMixin, TestCase):
     def setUp(self):
         cache.clear()
 
@@ -1454,7 +1507,7 @@ class TestSubmissionListView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was successful
-        self.assertEqual(response.status_code, 200, response.render())
+        self.assertStatusCode(response, 200)
 
         # Check that it's a results collection
         self.assertIn('results', data)
@@ -1482,7 +1535,7 @@ class TestSubmissionListView (TestCase):
         headers = rows[0]
 
         # Check that the request was successful
-        self.assertEqual(response.status_code, 200, response.render())
+        self.assertStatusCode(response, 200)
 
         # Check that it's got good headers
         self.assertIn('dataset', headers)
@@ -1503,7 +1556,7 @@ class TestSubmissionListView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that there are ATM features
-        self.assertEqual(response.status_code, 200)
+        self.assertStatusCode(response, 200)
         self.assert_(all([result.get('baz') == 'bar' for result in data['results']]))
         self.assertEqual(len(data['results']), 2)
 
@@ -1512,7 +1565,7 @@ class TestSubmissionListView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was successful
-        self.assertEqual(response.status_code, 200)
+        self.assertStatusCode(response, 200)
         self.assertEqual(len(data['results']), 0)
 
         request = self.factory.get(self.path + '?nonexistent=foo')
@@ -1520,7 +1573,7 @@ class TestSubmissionListView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was successful
-        self.assertEqual(response.status_code, 200)
+        self.assertStatusCode(response, 200)
         self.assertEqual(len(data['results']), 0)
 
     def test_GET_response_with_private_data(self):
@@ -1532,7 +1585,7 @@ class TestSubmissionListView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was successful
-        self.assertEqual(response.status_code, 200)
+        self.assertStatusCode(response, 200)
 
         # Check that the private data is not in the properties
         self.assertNotIn('private-email', data['results'][0])
@@ -1547,7 +1600,7 @@ class TestSubmissionListView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was restricted
-        self.assertEqual(response.status_code, 401)
+        self.assertStatusCode(response, 401)
 
         # --------------------------------------------------
 
@@ -1560,7 +1613,7 @@ class TestSubmissionListView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was restricted
-        self.assertEqual(response.status_code, 403)
+        self.assertStatusCode(response, 403)
 
         # --------------------------------------------------
 
@@ -1573,7 +1626,7 @@ class TestSubmissionListView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was restricted
-        self.assertEqual(response.status_code, 403)
+        self.assertStatusCode(response, 403)
 
         # --------------------------------------------------
 
@@ -1586,7 +1639,7 @@ class TestSubmissionListView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was successful
-        self.assertEqual(response.status_code, 200)
+        self.assertStatusCode(response, 200)
 
         # Check that the private data is in the properties
         self.assertIn('private-email', data['results'][0])
@@ -1602,7 +1655,7 @@ class TestSubmissionListView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was successful
-        self.assertEqual(response.status_code, 200)
+        self.assertStatusCode(response, 200)
 
         # Check that the private data is in the properties
         self.assertIn('private-email', data['results'][0])
@@ -1621,7 +1674,7 @@ class TestSubmissionListView (TestCase):
         request = self.factory.get(path)
         response = self.view(request, **request_kwargs)
 
-        self.assertEqual(response.status_code, 404)
+        self.assertStatusCode(response, 404)
 
     def test_POST_response(self):
         submission_data = json.dumps({
@@ -1636,7 +1689,7 @@ class TestSubmissionListView (TestCase):
         #
         request = self.factory.post(self.path, data=submission_data, content_type='application/json')
         response = self.view(request, **self.request_kwargs)
-        self.assertEqual(response.status_code, 401)
+        self.assertStatusCode(response, 401)
 
         #
         # View should create the submission and set when owner is authenticated
@@ -1649,7 +1702,7 @@ class TestSubmissionListView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was successful
-        self.assertEqual(response.status_code, 201)
+        self.assertStatusCode(response, 201)
 
         # Check that the data attributes have been incorporated into the
         # properties
@@ -1676,7 +1729,7 @@ class TestSubmissionListView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was successful
-        self.assertEqual(response.status_code, 200)
+        self.assertStatusCode(response, 200)
         self.assertEqual(len(data['results']), 2)
 
         # --------------------------------------------------
@@ -1689,7 +1742,7 @@ class TestSubmissionListView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was restricted
-        self.assertEqual(response.status_code, 401)
+        self.assertStatusCode(response, 401)
 
         # --------------------------------------------------
 
@@ -1702,7 +1755,7 @@ class TestSubmissionListView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was restricted
-        self.assertEqual(response.status_code, 403)
+        self.assertStatusCode(response, 403)
 
         # --------------------------------------------------
 
@@ -1715,7 +1768,7 @@ class TestSubmissionListView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was restricted
-        self.assertEqual(response.status_code, 403)
+        self.assertStatusCode(response, 403)
 
         # --------------------------------------------------
 
@@ -1728,7 +1781,7 @@ class TestSubmissionListView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was successful
-        self.assertEqual(response.status_code, 200)
+        self.assertStatusCode(response, 200)
         self.assertEqual(len(data['results']), 3)
 
         # --------------------------------------------------
@@ -1742,7 +1795,7 @@ class TestSubmissionListView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was successful
-        self.assertEqual(response.status_code, 200)
+        self.assertStatusCode(response, 200)
         self.assertEqual(len(data['results']), 3)
 
     def test_POST_invisible_response(self):
@@ -1760,7 +1813,7 @@ class TestSubmissionListView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was successful
-        self.assertEqual(response.status_code, 201)
+        self.assertStatusCode(response, 201)
 
         # Check that visible is false
         self.assertEqual(data.get('visible'), False)
@@ -1788,7 +1841,7 @@ class TestSubmissionListView (TestCase):
         #
         request = self.factory.post(path, data=submission_data, content_type='application/json')
         response = self.view(request, **request_kwargs)
-        self.assertEqual(response.status_code, 401)
+        self.assertStatusCode(response, 401)
 
         #
         # View should create the submission and set when owner is authenticated
@@ -1801,7 +1854,7 @@ class TestSubmissionListView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was successful
-        self.assertEqual(response.status_code, 201)
+        self.assertStatusCode(response, 201)
 
         # Check that the data attributes have been incorporated into the
         # properties
@@ -1822,7 +1875,7 @@ class TestSubmissionListView (TestCase):
         self.assertEqual(final_num_sets, start_num_sets + 1)
 
 
-class TestDataSetSubmissionListView (TestCase):
+class TestDataSetSubmissionListView (APITestMixin, TestCase):
     def setUp(self):
         cache.clear()
 
@@ -1939,7 +1992,7 @@ class TestDataSetSubmissionListView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was successful
-        self.assertEqual(response.status_code, 200, response.render())
+        self.assertStatusCode(response, 200)
 
         # Check that it's a results collection
         self.assertIn('results', data)
@@ -1969,7 +2022,7 @@ class TestDataSetSubmissionListView (TestCase):
         headers = rows[0]
 
         # Check that the request was successful
-        self.assertEqual(response.status_code, 200, response.render())
+        self.assertStatusCode(response, 200)
 
         # Check that it's got good headers
         self.assertIn('dataset', headers)
@@ -1990,7 +2043,7 @@ class TestDataSetSubmissionListView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that there are ATM features
-        self.assertEqual(response.status_code, 200)
+        self.assertStatusCode(response, 200)
         self.assert_(all([result.get('baz') == 'bar' for result in data['results']]))
         self.assertEqual(len(data['results']), 2)
 
@@ -1999,7 +2052,7 @@ class TestDataSetSubmissionListView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was successful
-        self.assertEqual(response.status_code, 200)
+        self.assertStatusCode(response, 200)
         self.assertEqual(len(data['results']), 0)
 
         request = self.factory.get(self.path + '?nonexistent=foo')
@@ -2007,7 +2060,7 @@ class TestDataSetSubmissionListView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was successful
-        self.assertEqual(response.status_code, 200)
+        self.assertStatusCode(response, 200)
         self.assertEqual(len(data['results']), 0)
 
     def test_GET_response_with_private_data(self):
@@ -2019,7 +2072,7 @@ class TestDataSetSubmissionListView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was successful
-        self.assertEqual(response.status_code, 200)
+        self.assertStatusCode(response, 200)
 
         # Check that the private data is not in the properties
         self.assertNotIn('private-email', data['results'][0])
@@ -2034,7 +2087,7 @@ class TestDataSetSubmissionListView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was restricted
-        self.assertEqual(response.status_code, 401)
+        self.assertStatusCode(response, 401)
 
         # --------------------------------------------------
 
@@ -2047,7 +2100,7 @@ class TestDataSetSubmissionListView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was restricted
-        self.assertEqual(response.status_code, 403)
+        self.assertStatusCode(response, 403)
 
         # --------------------------------------------------
 
@@ -2060,7 +2113,7 @@ class TestDataSetSubmissionListView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was restricted
-        self.assertEqual(response.status_code, 403)
+        self.assertStatusCode(response, 403)
 
         # --------------------------------------------------
 
@@ -2073,7 +2126,7 @@ class TestDataSetSubmissionListView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was successful
-        self.assertEqual(response.status_code, 200)
+        self.assertStatusCode(response, 200)
 
         # Check that the private data is in the properties
         results_with_private_email = [result for result in data['results'] if 'private-email' in result]
@@ -2090,7 +2143,7 @@ class TestDataSetSubmissionListView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was successful
-        self.assertEqual(response.status_code, 200)
+        self.assertStatusCode(response, 200)
 
         # Check that the private data is in the properties
         results_with_private_email = [result for result in data['results'] if 'private-email' in result]
@@ -2109,7 +2162,7 @@ class TestDataSetSubmissionListView (TestCase):
         request = self.factory.get(path)
         response = self.view(request, **request_kwargs)
 
-        self.assertEqual(response.status_code, 404)
+        self.assertStatusCode(response, 404)
 
     def test_GET_response_with_invisible_data(self):
         #
@@ -2120,7 +2173,7 @@ class TestDataSetSubmissionListView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was successful
-        self.assertEqual(response.status_code, 200)
+        self.assertStatusCode(response, 200)
         self.assertEqual(len(data['results']), 4)
 
         # --------------------------------------------------
@@ -2133,7 +2186,7 @@ class TestDataSetSubmissionListView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was restricted
-        self.assertEqual(response.status_code, 401)
+        self.assertStatusCode(response, 401)
 
         # --------------------------------------------------
 
@@ -2146,7 +2199,7 @@ class TestDataSetSubmissionListView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was restricted
-        self.assertEqual(response.status_code, 403)
+        self.assertStatusCode(response, 403)
 
         # --------------------------------------------------
 
@@ -2159,7 +2212,7 @@ class TestDataSetSubmissionListView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was restricted
-        self.assertEqual(response.status_code, 403)
+        self.assertStatusCode(response, 403)
 
         # --------------------------------------------------
 
@@ -2172,7 +2225,7 @@ class TestDataSetSubmissionListView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was successful
-        self.assertEqual(response.status_code, 200)
+        self.assertStatusCode(response, 200)
         self.assertEqual(len(data['results']), 6)
 
         # --------------------------------------------------
@@ -2186,11 +2239,11 @@ class TestDataSetSubmissionListView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was successful
-        self.assertEqual(response.status_code, 200)
+        self.assertStatusCode(response, 200)
         self.assertEqual(len(data['results']), 6)
 
 
-class TestDataSetInstanceView (TestCase):
+class TestDataSetInstanceView (APITestMixin, TestCase):
     def setUp(self):
         cache.clear()
 
@@ -2263,7 +2316,7 @@ class TestDataSetInstanceView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was successful
-        self.assertEqual(response.status_code, 200, response.render())
+        self.assertStatusCode(response, 200)
 
         # Check that data attribute is not present
         self.assertNotIn('data', data)
@@ -2312,7 +2365,7 @@ class TestDataSetInstanceView (TestCase):
         #       GROUP BY dataset_id, sa_api_submissionset.name;
         with self.assertNumQueries(6):
             response = self.view(request, **self.request_kwargs)
-            self.assertEqual(response.status_code, 200)
+            self.assertStatusCode(response, 200)
 
         path = reverse('dataset-detail', kwargs=self.request_kwargs)
         request = self.factory.get(path)
@@ -2320,7 +2373,7 @@ class TestDataSetInstanceView (TestCase):
         # Check that this performs no more queries, since it's all cached
         with self.assertNumQueries(0):
             response = self.view(request, **self.request_kwargs)
-            self.assertEqual(response.status_code, 200)
+            self.assertStatusCode(response, 200)
 
     def test_DELETE_response(self):
         #
@@ -2328,7 +2381,7 @@ class TestDataSetInstanceView (TestCase):
         #
         request = self.factory.delete(self.path)
         response = self.view(request, **self.request_kwargs)
-        self.assertEqual(response.status_code, 401)
+        self.assertStatusCode(response, 401)
 
         #
         # View should 401 or 403 when authenticated with an API key
@@ -2348,7 +2401,7 @@ class TestDataSetInstanceView (TestCase):
         response = self.view(request, **self.request_kwargs)
 
         # Check that the request was successful
-        self.assertEqual(response.status_code, 204)
+        self.assertStatusCode(response, 204)
 
         # Check that no data was returned
         self.assertIsNone(response.data)
@@ -2362,7 +2415,7 @@ class TestDataSetInstanceView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was successful
-        self.assertEqual(response.status_code, 200)
+        self.assertStatusCode(response, 200)
         self.assertEqual(data['submission_sets']['likes']['length'], 3)
 
         # --------------------------------------------------
@@ -2375,7 +2428,7 @@ class TestDataSetInstanceView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was restricted
-        self.assertEqual(response.status_code, 401)
+        self.assertStatusCode(response, 401)
 
         # --------------------------------------------------
 
@@ -2401,7 +2454,7 @@ class TestDataSetInstanceView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was restricted
-        self.assertEqual(response.status_code, 403)
+        self.assertStatusCode(response, 403)
 
         # --------------------------------------------------
 
@@ -2414,7 +2467,7 @@ class TestDataSetInstanceView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was successful
-        self.assertEqual(response.status_code, 200)
+        self.assertStatusCode(response, 200)
         self.assertEqual(data['submission_sets']['likes']['length'], 4)
 
         # --------------------------------------------------
@@ -2428,7 +2481,7 @@ class TestDataSetInstanceView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was successful
-        self.assertEqual(response.status_code, 200)
+        self.assertStatusCode(response, 200)
         self.assertEqual(data['submission_sets']['likes']['length'], 4)
 
     def test_PUT_response(self):
@@ -2442,7 +2495,7 @@ class TestDataSetInstanceView (TestCase):
         #
         request = self.factory.put(self.path, data=dataset_data, content_type='application/json')
         response = self.view(request, **self.request_kwargs)
-        self.assertEqual(response.status_code, 401)
+        self.assertStatusCode(response, 401)
 
         #
         # View should 401 or 403 when authenticated with API key
@@ -2463,14 +2516,14 @@ class TestDataSetInstanceView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was successful
-        self.assertEqual(response.status_code, 301)
+        self.assertStatusCode(response, 301)
 
         # Check that the summaries have been incorporated into the data
         self.assertEqual(data.get('places').get('length'), 1)
         self.assertEqual(data.get('submission_sets').get('likes').get('length'), 3)
 
 
-class TestDataSetListView (TestCase):
+class TestDataSetListView (APITestMixin, TestCase):
     def setUp(self):
         cache.clear()
 
@@ -2567,7 +2620,7 @@ class TestDataSetListView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was successful
-        self.assertEqual(response.status_code, 200, response.render())
+        self.assertStatusCode(response, 200)
 
         # Check that it's a results collection
         self.assertIn('results', data)
@@ -2598,7 +2651,7 @@ class TestDataSetListView (TestCase):
         #
         request = self.factory.post(self.path, data=dataset_data, content_type='application/json')
         response = self.view(request, **self.request_kwargs)
-        self.assertEqual(response.status_code, 401)
+        self.assertStatusCode(response, 401)
 
         #
         # View should 401 or 403 when trying to create with API key
@@ -2619,7 +2672,7 @@ class TestDataSetListView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was successful
-        self.assertEqual(response.status_code, 201)
+        self.assertStatusCode(response, 201)
 
         # Check that the dataset is empty
         self.assertEqual(data['places']['length'], 0)
@@ -2647,7 +2700,7 @@ class TestDataSetListView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was successful
-        self.assertEqual(response.status_code, 200)
+        self.assertStatusCode(response, 200)
         self.assertEqual(data['results'][0]['places']['length'], 1)
         self.assertEqual(data['results'][0]['submission_sets']['likes']['length'], 3)
 
@@ -2661,7 +2714,7 @@ class TestDataSetListView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was restricted
-        self.assertEqual(response.status_code, 401)
+        self.assertStatusCode(response, 401)
 
         # --------------------------------------------------
 
@@ -2687,7 +2740,7 @@ class TestDataSetListView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was restricted
-        self.assertEqual(response.status_code, 403)
+        self.assertStatusCode(response, 403)
 
         # --------------------------------------------------
 
@@ -2700,7 +2753,7 @@ class TestDataSetListView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was successful
-        self.assertEqual(response.status_code, 200)
+        self.assertStatusCode(response, 200)
         self.assertEqual(data['results'][0]['places']['length'], 2)
         self.assertIn('likes', data['results'][0]['submission_sets'])
         self.assertEqual(data['results'][0]['submission_sets']['likes']['length'], 4)
@@ -2716,12 +2769,12 @@ class TestDataSetListView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was successful
-        self.assertEqual(response.status_code, 200)
+        self.assertStatusCode(response, 200)
         self.assertEqual(data['results'][0]['places']['length'], 2)
         self.assertEqual(data['results'][0]['submission_sets']['likes']['length'], 4)
 
 
-class TestPlaceAttachmentListView (TestCase):
+class TestPlaceAttachmentListView (APITestMixin, TestCase):
     def setUp(self):
         cache.clear()
 
@@ -2796,7 +2849,7 @@ class TestPlaceAttachmentListView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was successful
-        self.assertEqual(response.status_code, 200, response.render())
+        self.assertStatusCode(response, 200)
 
         # Check that the attachment looks right
         self.assertEqual(len(data['results']), 1)
@@ -2812,7 +2865,7 @@ class TestPlaceAttachmentListView (TestCase):
         f.name = 'myfile.txt'
         request = self.factory.post(self.path, data={'file': f, 'name': 'my-file'})
         response = self.view(request, **self.request_kwargs)
-        self.assertEqual(response.status_code, 401, response.render())
+        self.assertStatusCode(response, 401, response.render())
 
         # --------------------------------------------------
 
@@ -2826,7 +2879,7 @@ class TestPlaceAttachmentListView (TestCase):
         response = self.view(request, **self.request_kwargs)
 
         # Check that the request was successful
-        self.assertEqual(response.status_code, 201, response.render())
+        self.assertStatusCode(response, 201, response.render())
 
         # Check that the attachment looks right
         self.assertEqual(self.place.attachments.all().count(), 1)
@@ -2847,7 +2900,7 @@ class TestPlaceAttachmentListView (TestCase):
         response = self.view(request, **self.request_kwargs)
 
         # Check that the request was successful
-        self.assertEqual(response.status_code, 403, response.render())
+        self.assertStatusCode(response, 403, response.render())
 
         # --------------------------------------------------
 
@@ -2861,7 +2914,7 @@ class TestPlaceAttachmentListView (TestCase):
         response = self.view(request, **self.request_kwargs)
 
         # Check that the request was successful
-        self.assertEqual(response.status_code, 201, response.render())
+        self.assertStatusCode(response, 201, response.render())
 
     def test_POST_attachment_to_invisible_place(self):
         #
@@ -2871,7 +2924,7 @@ class TestPlaceAttachmentListView (TestCase):
         f.name = 'myfile.txt'
         request = self.factory.post(self.invisible_path + '?include_invisible', data={'file': f, 'name': 'my-file'})
         response = self.view(request, **self.invisible_request_kwargs)
-        self.assertEqual(response.status_code, 401, response.render())
+        self.assertStatusCode(response, 401, response.render())
 
         # --------------------------------------------------
 
@@ -2883,7 +2936,7 @@ class TestPlaceAttachmentListView (TestCase):
         request = self.factory.post(self.invisible_path, data={'file': f, 'name': 'my-file'})
         request.META[KEY_HEADER] = self.apikey.key
         response = self.view(request, **self.invisible_request_kwargs)
-        self.assertEqual(response.status_code, 400, response.render())
+        self.assertStatusCode(response, 400, response.render())
 
 
         # --------------------------------------------------
@@ -2896,7 +2949,7 @@ class TestPlaceAttachmentListView (TestCase):
         request = self.factory.post(self.invisible_path + '?include_invisible', data={'file': f, 'name': 'my-file'})
         request.META[KEY_HEADER] = self.apikey.key
         response = self.view(request, **self.invisible_request_kwargs)
-        self.assertEqual(response.status_code, 403, response.render())
+        self.assertStatusCode(response, 403, response.render())
 
         # --------------------------------------------------
 
@@ -2911,7 +2964,7 @@ class TestPlaceAttachmentListView (TestCase):
         response = self.view(request, **self.invisible_request_kwargs)
 
         # Check that the request was successful
-        self.assertEqual(response.status_code, 403, response.render())
+        self.assertStatusCode(response, 403, response.render())
 
         # --------------------------------------------------
 
@@ -2923,7 +2976,7 @@ class TestPlaceAttachmentListView (TestCase):
         request = self.factory.post(self.invisible_path, data={'file': f, 'name': 'my-file'})
         request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(':'.join([self.owner.username, '123']))
         response = self.view(request, **self.invisible_request_kwargs)
-        self.assertEqual(response.status_code, 400, response.render())
+        self.assertStatusCode(response, 400, response.render())
 
         # --------------------------------------------------
 
@@ -2937,7 +2990,7 @@ class TestPlaceAttachmentListView (TestCase):
         response = self.view(request, **self.invisible_request_kwargs)
 
         # Check that the request was successful
-        self.assertEqual(response.status_code, 201, response.render())
+        self.assertStatusCode(response, 201, response.render())
 
     def test_GET_attachments_from_invisible_place(self):
         #
@@ -2948,7 +3001,7 @@ class TestPlaceAttachmentListView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was successful
-        self.assertEqual(response.status_code, 400)
+        self.assertStatusCode(response, 400)
 
         # --------------------------------------------------
 
@@ -2960,7 +3013,7 @@ class TestPlaceAttachmentListView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was restricted
-        self.assertEqual(response.status_code, 401)
+        self.assertStatusCode(response, 401)
 
         # --------------------------------------------------
 
@@ -2973,7 +3026,7 @@ class TestPlaceAttachmentListView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was restricted
-        self.assertEqual(response.status_code, 403)
+        self.assertStatusCode(response, 403)
 
         # --------------------------------------------------
 
@@ -2986,7 +3039,7 @@ class TestPlaceAttachmentListView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was restricted
-        self.assertEqual(response.status_code, 403)
+        self.assertStatusCode(response, 403)
 
         # --------------------------------------------------
 
@@ -2999,7 +3052,7 @@ class TestPlaceAttachmentListView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was successful
-        self.assertEqual(response.status_code, 200)
+        self.assertStatusCode(response, 200)
 
         # --------------------------------------------------
 
@@ -3012,7 +3065,7 @@ class TestPlaceAttachmentListView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was successful
-        self.assertEqual(response.status_code, 200)
+        self.assertStatusCode(response, 200)
 
         # --------------------------------------------------
 
@@ -3025,10 +3078,10 @@ class TestPlaceAttachmentListView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was successful
-        self.assertEqual(response.status_code, 400)
+        self.assertStatusCode(response, 400)
 
 
-class TestSubmissionAttachmentListView (TestCase):
+class TestSubmissionAttachmentListView (APITestMixin, TestCase):
     def setUp(self):
         cache.clear()
 
@@ -3111,7 +3164,7 @@ class TestSubmissionAttachmentListView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was successful
-        self.assertEqual(response.status_code, 200, response.render())
+        self.assertStatusCode(response, 200)
 
         # Check that the attachment looks right
         self.assertEqual(len(data['results']), 1)
@@ -3128,7 +3181,7 @@ class TestSubmissionAttachmentListView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was successful
-        self.assertEqual(response.status_code, 400)
+        self.assertStatusCode(response, 400)
 
         # --------------------------------------------------
 
@@ -3140,7 +3193,7 @@ class TestSubmissionAttachmentListView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was restricted
-        self.assertEqual(response.status_code, 401)
+        self.assertStatusCode(response, 401)
 
         # --------------------------------------------------
 
@@ -3153,7 +3206,7 @@ class TestSubmissionAttachmentListView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was restricted
-        self.assertEqual(response.status_code, 403)
+        self.assertStatusCode(response, 403)
 
         # --------------------------------------------------
 
@@ -3166,7 +3219,7 @@ class TestSubmissionAttachmentListView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was restricted
-        self.assertEqual(response.status_code, 403)
+        self.assertStatusCode(response, 403)
 
         # --------------------------------------------------
 
@@ -3179,7 +3232,7 @@ class TestSubmissionAttachmentListView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was successful
-        self.assertEqual(response.status_code, 200)
+        self.assertStatusCode(response, 200)
 
         # --------------------------------------------------
 
@@ -3192,7 +3245,7 @@ class TestSubmissionAttachmentListView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was successful
-        self.assertEqual(response.status_code, 200)
+        self.assertStatusCode(response, 200)
 
         # --------------------------------------------------
 
@@ -3205,7 +3258,7 @@ class TestSubmissionAttachmentListView (TestCase):
         data = json.loads(response.rendered_content)
 
         # Check that the request was successful
-        self.assertEqual(response.status_code, 400)
+        self.assertStatusCode(response, 400)
 
     def test_POST_attachment_to_submission(self):
         #
@@ -3215,7 +3268,7 @@ class TestSubmissionAttachmentListView (TestCase):
         f.name = 'myfile.txt'
         request = self.factory.post(self.path, data={'file': f, 'name': 'my-file'})
         response = self.view(request, **self.request_kwargs)
-        self.assertEqual(response.status_code, 401, response.render())
+        self.assertStatusCode(response, 401, response.render())
 
         # --------------------------------------------------
 
@@ -3229,7 +3282,7 @@ class TestSubmissionAttachmentListView (TestCase):
         response = self.view(request, **self.request_kwargs)
 
         # Check that the request was successful
-        self.assertEqual(response.status_code, 201, response.render())
+        self.assertStatusCode(response, 201, response.render())
 
         # Check that the attachment looks right
         self.assertEqual(self.submissions[0].attachments.all().count(), 1)
@@ -3250,7 +3303,7 @@ class TestSubmissionAttachmentListView (TestCase):
         response = self.view(request, **self.request_kwargs)
 
         # Check that the request was successful
-        self.assertEqual(response.status_code, 403, response.render())
+        self.assertStatusCode(response, 403, response.render())
 
         # --------------------------------------------------
 
@@ -3264,7 +3317,7 @@ class TestSubmissionAttachmentListView (TestCase):
         response = self.view(request, **self.request_kwargs)
 
         # Check that the request was successful
-        self.assertEqual(response.status_code, 201, response.render())
+        self.assertStatusCode(response, 201, response.render())
 
     def test_POST_attachment_to_invisible_submission(self):
         #
@@ -3274,7 +3327,7 @@ class TestSubmissionAttachmentListView (TestCase):
         f.name = 'myfile.txt'
         request = self.factory.post(self.invisible_path + '?include_invisible', data={'file': f, 'name': 'my-file'})
         response = self.view(request, **self.invisible_request_kwargs)
-        self.assertEqual(response.status_code, 401, response.render())
+        self.assertStatusCode(response, 401, response.render())
 
         # --------------------------------------------------
 
@@ -3286,7 +3339,7 @@ class TestSubmissionAttachmentListView (TestCase):
         request = self.factory.post(self.invisible_path, data={'file': f, 'name': 'my-file'})
         request.META[KEY_HEADER] = self.apikey.key
         response = self.view(request, **self.invisible_request_kwargs)
-        self.assertEqual(response.status_code, 400, response.render())
+        self.assertStatusCode(response, 400, response.render())
 
 
         # --------------------------------------------------
@@ -3299,7 +3352,7 @@ class TestSubmissionAttachmentListView (TestCase):
         request = self.factory.post(self.invisible_path + '?include_invisible', data={'file': f, 'name': 'my-file'})
         request.META[KEY_HEADER] = self.apikey.key
         response = self.view(request, **self.invisible_request_kwargs)
-        self.assertEqual(response.status_code, 403, response.render())
+        self.assertStatusCode(response, 403, response.render())
 
         # --------------------------------------------------
 
@@ -3314,7 +3367,7 @@ class TestSubmissionAttachmentListView (TestCase):
         response = self.view(request, **self.invisible_request_kwargs)
 
         # Check that the request was successful
-        self.assertEqual(response.status_code, 403, response.render())
+        self.assertStatusCode(response, 403, response.render())
 
         # --------------------------------------------------
 
@@ -3326,7 +3379,7 @@ class TestSubmissionAttachmentListView (TestCase):
         request = self.factory.post(self.invisible_path, data={'file': f, 'name': 'my-file'})
         request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(':'.join([self.owner.username, '123']))
         response = self.view(request, **self.invisible_request_kwargs)
-        self.assertEqual(response.status_code, 400, response.render())
+        self.assertStatusCode(response, 400, response.render())
 
         # --------------------------------------------------
 
@@ -3340,10 +3393,10 @@ class TestSubmissionAttachmentListView (TestCase):
         response = self.view(request, **self.invisible_request_kwargs)
 
         # Check that the request was successful
-        self.assertEqual(response.status_code, 201, response.render())
+        self.assertStatusCode(response, 201, response.render())
 
 
-class TestActivityView(TestCase):
+class TestActivityView(APITestMixin, TestCase):
 
     def setUp(self):
         User.objects.all().delete()
@@ -3408,7 +3461,7 @@ class TestActivityView(TestCase):
         response = self.view(request, **self.kwargs)
 
         # Check that the request was restricted
-        self.assertEqual(response.status_code, 401)
+        self.assertStatusCode(response, 401)
 
         # --------------------------------------------------
 
@@ -3420,7 +3473,7 @@ class TestActivityView(TestCase):
         response = self.view(request, **self.kwargs)
 
         # Check that the request was restricted
-        self.assertEqual(response.status_code, 403)
+        self.assertStatusCode(response, 403)
 
         # --------------------------------------------------
 
@@ -3432,7 +3485,7 @@ class TestActivityView(TestCase):
         response = self.view(request, **self.kwargs)
 
         # Check that the request was restricted
-        self.assertEqual(response.status_code, 403)
+        self.assertStatusCode(response, 403)
 
         # --------------------------------------------------
 
@@ -3444,7 +3497,7 @@ class TestActivityView(TestCase):
         response = self.view(request, **self.kwargs)
 
         # Check that the request was successful
-        self.assertEqual(response.status_code, 200)
+        self.assertStatusCode(response, 200)
 
         # --------------------------------------------------
 
@@ -3456,7 +3509,7 @@ class TestActivityView(TestCase):
         response = self.view(request, **self.kwargs)
 
         # Check that the request was successful
-        self.assertEqual(response.status_code, 200)
+        self.assertStatusCode(response, 200)
 
     def test_returns_from_cache_based_on_params(self):
         no_params = self.factory.get(self.url)
