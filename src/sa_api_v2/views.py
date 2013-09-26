@@ -11,7 +11,7 @@ from rest_framework import (views, permissions, mixins, authentication,
                             generics, exceptions, status)
 from rest_framework.parsers import JSONParser, FormParser, MultiPartParser
 from rest_framework.response import Response
-from rest_framework.renderers import JSONRenderer, BrowsableAPIRenderer
+from rest_framework.renderers import JSONRenderer, JSONPRenderer, BrowsableAPIRenderer
 from rest_framework.request import Request
 from rest_framework.exceptions import APIException
 from social.apps.django_app import views as social_views
@@ -301,7 +301,7 @@ class OwnedResourceMixin (ClientAuthenticationMixin):
     logged in directly is allowed to read invisible resources or private data
     attributes on visible resources.
     """
-    renderer_classes = (JSONRenderer, BrowsableAPIRenderer, renderers.PaginatedCSVRenderer)
+    renderer_classes = (JSONRenderer, JSONPRenderer, BrowsableAPIRenderer, renderers.PaginatedCSVRenderer)
     parser_classes = (JSONParser, FormParser, MultiPartParser)
     permission_classes = (IsOwnerOrReadOnly, IsLoggedInOwnerOrPublicDataOnly)
     authentication_classes = (authentication.BasicAuthentication, authentication.SessionAuthentication)
@@ -1123,10 +1123,12 @@ class UserInstanceView (OwnedResourceMixin, generics.RetrieveAPIView):
 
 
 class CurrentUserInstanceView (views.APIView):
+    renderer_classes = (JSONRenderer, JSONPRenderer, BrowsableAPIRenderer, renderers.PaginatedCSVRenderer)
+
     def get(self, request):
         if request.user.is_authenticated():
             user_url = reverse('user-detail', args=[request.user.username])
-            return HttpResponseRedirect(user_url)
+            return HttpResponseRedirect(user_url + '?' + request.GET.urlencode())
         else:
             raise Http404('User is not logged in')
 
