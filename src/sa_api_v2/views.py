@@ -1131,64 +1131,6 @@ class CurrentUserInstanceView (views.APIView):
 # ---------------------------
 #
 
-def get_client_authentication(request):
-    authenticators = [apikey.auth.ApiKeyAuthentication()]
-
-    for authenticator in authenticators:
-        client_auth_tuple = authenticator.authenticate(request)
-
-        if client_auth_tuple is not None:
-            return client_auth_tuple
-
-    return None, None
-
-def use_social_auth_headers(social_func):
-    @wraps(social_func)
-    def wrapper(request, backend, *args, **kwargs):
-        client, client_auth = get_client_authentication(request)
-
-        if client:
-            client_data_str = client.data
-            client_data = json.loads(client_data_str)
-        else:
-            client_data = {}
-
-        # Store the original social auth settings
-        key_name = 'SOCIAL_AUTH_' + backend.upper() + '_KEY'
-        secret_name = 'SOCIAL_AUTH_' + backend.upper() + '_SECRET'
-
-        original_social = {}
-        if hasattr(settings, key_name):
-            original_social[key_name] = getattr(settings, key_name)
-        if hasattr(settings, secret_name):
-            original_social[secret_name] = getattr(settings, secret_name)
-
-        try:
-            # Replace the social auth settings found in the client data blob
-            if key_name in client_data:
-                setattr(settings, key_name, client_data.get(key_name))
-            if secret_name in client_data:
-                setattr(settings, secret_name, client_data.get(secret_name))
-
-            # Call the wrapped view
-            response = social_func(request, backend, *args, **kwargs)
-
-        finally:
-            # Restore social auth settings, no matter what
-            if key_name in original_social:
-                setattr(settings, key_name, original_social[key_name])
-            elif hasattr(settings, key_name):
-                delattr(settings, key_name)
-
-            if secret_name in original_social:
-                setattr(settings, secret_name, original_social[secret_name])
-            elif hasattr(settings, secret_name):
-                delattr(settings, secret_name)
-
-        return response
-
-    return wrapper
-
 def build_relative_url(original_url, relative_path):
     """
     Given a source URL, create a full URL for the relative path. For example:
@@ -1214,7 +1156,7 @@ def build_relative_url(original_url, relative_path):
 
 def capture_referer(view_func):
     """
-    A wrapper for the python-social-auth auth view that redirects to any
+    A wrapper for views that redirect with a 'next' parameter to any
     arbitrary URL. Normally, Django (and social-auth) internals only allow
     redirecting to paths on the current host.
     """
