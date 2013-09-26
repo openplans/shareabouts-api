@@ -89,6 +89,15 @@ TEMPLATE_CONTEXT_PROCESSORS = (
 
 ###############################################################################
 #
+# Django Rest Framework
+#
+REST_FRAMEWORK = {
+    'PAGINATE_BY': 50,
+    'PAGINATE_BY_PARAM': 'page_size'
+}
+
+###############################################################################
+#
 # Request/Response processing
 #
 
