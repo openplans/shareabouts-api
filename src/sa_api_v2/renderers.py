@@ -30,7 +30,7 @@ class GeoJSONRenderer(JSONRenderer):
               'features': [(self.get_feature(elem) or elem) for elem in data]
             }
         elif isinstance(data, dict) and data.get('type') == 'FeatureCollection':
-            new_data = data
+            new_data = data.copy()
             new_data['features'] = [(self.get_feature(elem) or elem) for elem in data['features']]
         elif data is None:
             new_data = None
@@ -43,7 +43,8 @@ class GeoJSONRenderer(JSONRenderer):
         if 'geometry' not in data:
             return None
 
-        geometry = data.pop(self.geometry_field)
+        feature_props = data.copy()
+        geometry = feature_props.pop(self.geometry_field)
 
         if isinstance(geometry, basestring):
             geometry = json.loads(GEOSGeometry(geometry).json)
@@ -53,7 +54,7 @@ class GeoJSONRenderer(JSONRenderer):
         feature = {
           'type': 'Feature',
           'geometry': geometry,
-          'properties': data,
+          'properties': feature_props,
         }
 
         return feature
