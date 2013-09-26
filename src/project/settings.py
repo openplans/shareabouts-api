@@ -151,6 +151,8 @@ INSTALLED_APPS = (
     'beta_signup',
     'sa_api',
     'sa_api.apikey',
+    'sa_api_v1',
+    'sa_api_v1.apikey_v1',
     'sa_manager',
 )
 

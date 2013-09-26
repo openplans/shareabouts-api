@@ -61,7 +61,7 @@ class TestSaManager(TestCase):
         self.mock_api._place_instance = collections.defaultdict(
             id=123, submissions=[])
         self.mock_api._dataset_instance = collections.defaultdict(
-            slug='dataset1')
+            slug='dataset1', owner={'username': 'riley'})
         self.mock_api._submission_instance = collections.defaultdict(
             id=456)
         # All collection URIs are empty by default.
@@ -97,7 +97,7 @@ class TestSaManager(TestCase):
         client = Client()
         client.login(username='riley', password='pass')
         url = reverse('manager_dataset_list',
-                      args=[])
+                      kwargs={'owner_name': 'riley'})
         response = client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context['datasets'], [])
@@ -106,7 +106,7 @@ class TestSaManager(TestCase):
         client = Client()
         client.login(username='riley', password='pass')
         url = reverse('manager_dataset_create',
-                      args=[])
+                      kwargs={'owner_name': 'riley'})
         response = client.get(url)
         self.assertEqual(response.status_code, 200)
 
@@ -114,7 +114,8 @@ class TestSaManager(TestCase):
         client = Client()
         client.login(username='riley', password='pass')
         url = reverse('manager_dataset_detail',
-                      kwargs={'dataset_slug': 'dataset1'})
+                      kwargs={'dataset_slug': 'dataset1',
+                              'owner_name': 'riley'})
         response = client.get(url)
         self.assertEqual(response.status_code, 200)
 
@@ -122,7 +123,8 @@ class TestSaManager(TestCase):
         client = Client()
         client.login(username='riley', password='pass')
         url = reverse('manager_keys_list',
-                      kwargs={'dataset_slug': 'dataset1'})
+                      kwargs={'dataset_slug': 'dataset1',
+                              'owner_name': 'riley'})
         response = client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context['keys'], [])
@@ -131,7 +133,8 @@ class TestSaManager(TestCase):
         client = Client()
         client.login(username='riley', password='pass')
         url = reverse('manager_place_list',
-                      kwargs={'dataset_slug': 'dataset1'})
+                      kwargs={'dataset_slug': 'dataset1',
+                              'owner_name': 'riley'})
         response = client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context['places'], [])
@@ -140,14 +143,15 @@ class TestSaManager(TestCase):
         client = Client()
         client.login(username='riley', password='pass')
         url = reverse('manager_place_create',
-                      kwargs={'dataset_slug': 'dataset1'})
+                      kwargs={'dataset_slug': 'dataset1',
+                              'owner_name': 'riley'})
         response = client.get(url)
         self.assertEqual(response.status_code, 200)
 
     def test_manager_place_detail(self):
         client = Client()
         client.login(username='riley', password='pass')
-        kwargs = {'pk': 123, 'dataset_slug': 'dataset1'}
+        kwargs = {'pk': 123, 'dataset_slug': 'dataset1', 'owner_name': 'riley'}
         url = reverse('manager_place_detail', kwargs=kwargs)
 
         response = client.get(url)
@@ -159,7 +163,8 @@ class TestSaManager(TestCase):
         url = reverse('manager_place_submission_list',
                       kwargs={'place_id': 123,
                               'submission_type': 'comments',
-                              'dataset_slug': 'dataset1'})
+                              'dataset_slug': 'dataset1',
+                              'owner_name': 'riley'})
         response = client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context['place']['submissions'], [])
@@ -170,7 +175,8 @@ class TestSaManager(TestCase):
         url = reverse('manager_place_submission_create',
                       kwargs={'place_id': 123,
                               'submission_type': 'comments',
-                              'dataset_slug': 'dataset1'})
+                              'dataset_slug': 'dataset1',
+                              'owner_name': 'riley'})
         response = client.get(url)
         self.assertEqual(response.status_code, 200)
 
@@ -181,7 +187,8 @@ class TestSaManager(TestCase):
                       kwargs={'pk': 456,
                               'place_id': 123,
                               'submission_type': 'comments',
-                              'dataset_slug': 'dataset1'})
+                              'dataset_slug': 'dataset1',
+                              'owner_name': 'riley'})
         response = client.get(url)
         self.assertEqual(response.status_code, 200)
 
@@ -189,7 +196,8 @@ class TestSaManager(TestCase):
         client = Client()
         client.login(username='riley', password='pass')
         url = reverse('manager_download_place_data',
-                      kwargs={'dataset_slug': 'dataset1'})
+                      kwargs={'dataset_slug': 'dataset1',
+                              'owner_name': 'riley'})
         response = client.get(url)
         self.assertEqual(response.status_code, 200)
 
@@ -198,7 +206,8 @@ class TestSaManager(TestCase):
         client.login(username='riley', password='pass')
         url = reverse('manager_download_submission_data',
                       kwargs={'submission_type': 'comments',
-                              'dataset_slug': 'dataset1'})
+                              'dataset_slug': 'dataset1',
+                              'owner_name': 'riley'})
         response = client.get(url)
         self.assertEqual(response.status_code, 200)
 
@@ -231,7 +240,7 @@ class TestDatasetDetailPostRequest (TestCase):
         from requests.models import Response
         response = Response()
         response.status_code = 200
-        response.raw = json.dumps({'slug': 'abc', 'url': 'http://www.example.com/riley/datasets/'})
+        response.raw = json.dumps({'slug': 'abc', 'url': 'http://www.example.com/riley/datasets/', 'owner': {'username': 'riley'}})
         response._content = response.raw
 
         self.patcher = mock.patch('requests.request', return_value=response)
@@ -245,7 +254,8 @@ class TestDatasetDetailPostRequest (TestCase):
         client = Client()
         client.login(username='riley', password='pass')
         url = reverse('manager_dataset_detail',
-                      kwargs={'dataset_slug': 'dataset1'})
+                      kwargs={'dataset_slug': 'dataset1',
+                              'owner_name': 'riley'})
         response = client.post(url, data={'display_name': 'abc', 'action': 'save'})
 
         self.assertEqual(response.status_code, 302)

@@ -23,6 +23,34 @@ For more about the parts of Shareabouts,
 see [the architecture documentation](ARCHITECTURE.md).
 
 
+Database
+--------
+
+The Shareabouts REST API requires GeoDjango.  To install GeoDjango on your
+platform, see https://docs.djangoproject.com/en/dev/ref/contrib/gis/install/#platform-specific-instructions.
+
+Create a development database for the Shareabouts data store.
+Typically for PostGIS 1.5 this is done like:
+
+    createdb -T template_postgis shareabouts_v2
+    
+For PostGIS 2.0:
+    
+    createdb shareabouts_v2
+    psql -U postgres -d shareabouts_v2 
+    CREATE EXTENSION postgis;    
+    \q
+
+Copy the file
+`src/project/local_settings.py.template` to `src/project/local_settings.py` and fill in the
+credentials for connecting to your development database.  This file will not be
+checked in to the repository.
+
+Then bootstrap the development database using the usual Django command:
+
+    src/manage.py syncdb --migrate
+
+
 Local setup
 ------------
 
@@ -64,25 +92,6 @@ to activate your virtual environment every time you start a new terminal session
 
     source env/bin/activate
 
-Database
---------
-
-The Shareabouts REST API requires GeoDjango.  To install GeoDjango on your
-platform, see https://docs.djangoproject.com/en/dev/ref/contrib/gis/install/#platform-specific-instructions.
-
-Create a development database for the Shareabouts data store.
-Typically this is done like:
-
-    createdb -T template_postgis shareabouts_v2
-
-Copy the file
-`src/project/local_settings.py.template` to `local_settings.py` and fill in the
-credentials for connecting to your development database.  This file will not be
-checked in to the repository.
-
-Then bootstrap the development database using the usual Django command:
-
-    src/manage.py syncdb --migrate
 
 
 Running the Shareabouts Web Application
