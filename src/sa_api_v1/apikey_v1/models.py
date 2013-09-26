@@ -41,9 +41,9 @@ class ApiKey(models.Model):
         self.logged_ip = None
         self.save()
 
-    def save(self):
+    def save(self, *args, **kwargs):
         is_new = (self.pk is None)
-        super(ApiKey, self).save()
+        super(ApiKey, self).save(*args, **kwargs)
 
         if is_new:
             # We need to create a v2 Client for each new API key.
