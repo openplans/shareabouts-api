@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.contrib.auth import views as auth_views
 from django.contrib.gis.geos import GEOSGeometry, Point
 from django.core.cache import cache
 from django.core.urlresolvers import reverse
@@ -1211,29 +1212,34 @@ def build_relative_url(original_url, relative_path):
 
     return urljoin(parsed_url.scheme + '://' + parsed_url.netloc, full_path)
 
-def social_auth_capture_referer(request, *args, **kwargs):
+def capture_referer(view_func):
     """
     A wrapper for the python-social-auth auth view that redirects to any
     arbitrary URL. Normally, Django (and social-auth) internals only allow
     redirecting to paths on the current host.
     """
-    client_next = request.GET.get('next', '')
-    referer = request.META.get('HTTP_REFERER')
+    @wraps(view_func)
+    def wrapper(request, *args, **kwargs):
+        client_next = request.GET.get('next', '')
+        referer = request.META.get('HTTP_REFERER')
 
-    if referer:
-        client_next = build_relative_url(referer, client_next)
-    else:
-        return HttpResponseBadRequest('Referer header must be set.')
+        if referer:
+            client_next = build_relative_url(referer, client_next)
+        else:
+            return HttpResponseBadRequest('Referer header must be set.')
 
-    request.GET = request.GET.copy()
-    request.GET['next'] = reverse('redirector') + '?' + urlencode({'target': client_next})
+        request.GET = request.GET.copy()
+        request.GET['next'] = reverse('redirector') + '?' + urlencode({'target': client_next})
 
-    return social_views.auth(request, *args, **kwargs)
+        return view_func(request, *args, **kwargs)
 
-auth = social_auth_capture_referer
+    return wrapper
 
-# auth = use_social_auth_headers(social_views.auth)
-# complete = use_social_auth_headers(social_views.complete)
+remote_social_login = capture_referer(social_views.auth)
+remote_logout = capture_referer(auth_views.logout)
+
+# social_auth_login = use_social_auth_headers(social_views.auth)
+# social_auth_complete = use_social_auth_headers(social_views.complete)
 
 def redirector(request):
     """

@@ -61,17 +61,8 @@ urlpatterns = patterns('sa_api_v2',
 
     # authentication / association
 
-    url(r'^users/login/(?P<backend>[^/]+)/$', views.auth,
-        name='begin'),
-    # url(r'^users/complete/(?P<backend>[^/]+)/$', views.complete,
-    #     name='complete'),
-
-    # disconnection
-
-    # url(r'^disconnect/(?P<backend>[^/]+)/$', 'disconnect',
-    #     name='disconnect'),
-    # url(r'^disconnect/(?P<backend>[^/]+)/(?P<association_id>\d+)/$',
-    #     'disconnect', name='disconnect_individual'),
+    url(r'^users/login/(?P<backend>[^/]+)/$', views.remote_social_login, name='remote-social-login'),
+    url(r'^users/logout/$', views.remote_logout, name='remote-logout'),
 
     url(r'^users/', include('social.apps.django_app.urls', namespace='social')),
 
