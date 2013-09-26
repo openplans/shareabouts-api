@@ -59,6 +59,8 @@ class ModelResourceWithDataBlob (resources.ModelResource):
             data = json.loads(obj.data)
             serialization.pop('data', None)
 
+            serialization['submitter_name'] = data.pop('submitter_name', None)
+
             if not self.should_show_private_data():
                 for key in data.keys():
                     if key.startswith('private-'):

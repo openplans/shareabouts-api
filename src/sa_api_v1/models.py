@@ -69,8 +69,15 @@ class SubmittedThing (CacheClearingModel, ModelWithDataBlob, TimeStampedModel):
 
     @property
     def submitter_name(self):
-        data = json.loads(self.data)
+        data = json.loads(self.data or '{}')
         return data.get('submitter_name')
+
+    @submitter_name.setter
+    def submitter_name(self, value):
+        data = json.loads(self.data or '{}')
+        data['submitter_name'] = value
+        self.data = json.dumps(data)
+        return value
 
     def save(self, silent=False, *args, **kwargs):
         is_new = (self.id == None)

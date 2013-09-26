@@ -140,8 +140,8 @@ class TestModelResourceWithDataBlob(object):
         # JSON blog.
         assert_equal(
             result,
-            {'submitter_name': u'ralphie', 'dataset': submitted_thing.dataset,
-             'data': u'{"x":"xylophone"}', 'visible': True}
+            {'dataset': submitted_thing.dataset,
+             'data': u'{"x":"xylophone","submitter_name":"ralphie"}', 'visible': True}
         )
 
 
