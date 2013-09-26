@@ -18,7 +18,7 @@ class APIKeyBackend(object):
     supports_inactive_user = False
 
     # This needs to be importable.
-    backend_name = 'sa_api_v1.apikey.auth.APIKeyBackend'
+    backend_name = 'sa_api_v1.apikey_v1.auth.APIKeyBackend'
     model = ApiKey
 
     def authenticate(self, key=None, ip_address=None):
