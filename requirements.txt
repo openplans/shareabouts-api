@@ -31,7 +31,6 @@ django-storages
 # ==============================
 
 python-social-auth
-python-oauth2
 
 
 
