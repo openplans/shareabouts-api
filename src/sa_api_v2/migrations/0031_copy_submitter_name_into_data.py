@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import datetime
-import json
+import ujson as json
 from south.db import db
 from south.v2 import DataMigration
 from django.db import models
@@ -11,6 +11,11 @@ class Migration(DataMigration):
         "Write your forwards methods here."
         for thing in orm.SubmittedThing.objects.all():
             data = json.loads(thing.data or '{}')
+
+            if 'submitter_name' in data and data['submitter_name'] == thing.submitter_name:
+                # Don't bother if they're already the same.
+                continue
+
             data['submitter_name'] = thing.submitter_name
             thing.data = json.dumps(data)
             thing.save()
