@@ -1133,6 +1133,13 @@ class CurrentUserInstanceView (views.APIView):
             raise Http404('User is not logged in')
 
 
+class SessionKeyView (views.APIView):
+    renderer_classes = (JSONRenderer, JSONPRenderer, BrowsableAPIRenderer)
+
+    def get(self, request):
+        return Response(request.session.session_key)
+
+
 ###############################################################################
 #
 # Social Authentication Views

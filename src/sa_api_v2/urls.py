@@ -68,7 +68,8 @@ urlpatterns = patterns('sa_api_v2',
 
     # Utility routes
 
-    url(r'^utils/send-away', views.redirector, name='redirector')
+    url(r'^utils/send-away', views.redirector, name='redirector'),
+    url(r'^utils/session-key', views.SessionKeyView.as_view(), name='session-key'),
 
 )
 
