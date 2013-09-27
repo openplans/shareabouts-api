@@ -1720,6 +1720,54 @@ class TestSubmissionListView (APITestMixin, TestCase):
         final_num_submissions = Submission.objects.all().count()
         self.assertEqual(final_num_submissions, start_num_submissions + 1)
 
+    def test_POST_response_with_submitter(self):
+        submission_data = json.dumps({
+          'private-email': 'abc@example.com',
+          'foo': 'bar'
+        })
+        start_num_submissions = Submission.objects.all().count()
+
+        #
+        # View should 401 when trying to create when not authenticated
+        #
+        request = self.factory.post(self.path, data=submission_data, content_type='application/json')
+        response = self.view(request, **self.request_kwargs)
+        self.assertStatusCode(response, 401)
+
+        #
+        # View should create the submission and set when owner is authenticated
+        #
+        request = self.factory.post(self.path, data=submission_data, content_type='application/json')
+        request.META[KEY_HEADER] = self.apikey.key
+        request.user = self.submitter
+        request.csrf_processing_done = True
+
+        response = self.view(request, **self.request_kwargs)
+
+        data = json.loads(response.rendered_content)
+
+        # Check that the request was successful
+        self.assertStatusCode(response, 201)
+
+        # Check that the data attributes have been incorporated into the
+        # properties
+        self.assertEqual(data.get('foo'), 'bar')
+
+        self.assertIn('submitter', data)
+        self.assertIsNotNone(data['submitter'])
+        self.assertEqual(data['submitter']['id'], self.submitter.id)
+
+        # visible should be true by default
+        self.assert_(data.get('visible'))
+
+        # private-secrets is not special, but is private, so should not come
+        # back down
+        self.assertNotIn('private-email', data)
+
+        # Check that we actually created a submission and set
+        final_num_submissions = Submission.objects.all().count()
+        self.assertEqual(final_num_submissions, start_num_submissions + 1)
+
     def test_GET_response_with_invisible_data(self):
         #
         # View should not return invisible data normally
