@@ -5,6 +5,7 @@ from django.core.cache import cache
 from django.core.urlresolvers import reverse
 from django.db.models import Count, Q
 from django.http import Http404, HttpResponse, HttpResponseBadRequest, HttpResponseRedirect
+from django.middleware import csrf
 from django.shortcuts import get_object_or_404
 from django.test.utils import override_settings
 from rest_framework import (views, permissions, mixins, authentication,
@@ -1137,7 +1138,10 @@ class SessionKeyView (views.APIView):
     renderer_classes = (JSONRenderer, JSONPRenderer, BrowsableAPIRenderer)
 
     def get(self, request):
-        return Response(request.session.session_key)
+        return Response({
+            settings.SESSION_COOKIE_NAME: request.session.session_key,
+            'csrftoken': csrf.get_token(request)
+        })
 
 
 ###############################################################################
