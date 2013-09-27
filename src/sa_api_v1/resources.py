@@ -421,13 +421,13 @@ class ActivityResource (resources.ModelResource):
         return things
 
     def type(self, obj):
-        return self.things[obj.data_id]['type']
+        return self.things.get(obj.data_id, {}).get('type')
 
     def place_id(self, obj):
-        return self.things[obj.data_id]['place_id']
+        return self.things.get(obj.data_id, {}).get('place_id')
 
     def data(self, obj):
-        return self.things[obj.data_id]['data']
+        return self.things.get(obj.data_id, {}).get('data')
 
 
 class ApiKeyResource(resources.ModelResource):
