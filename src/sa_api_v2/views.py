@@ -1130,7 +1130,7 @@ class CurrentUserInstanceView (views.APIView):
             user_url = reverse('user-detail', args=[request.user.username])
             return HttpResponseRedirect(user_url + '?' + request.GET.urlencode())
         else:
-            raise Http404('User is not logged in')
+            return HttpResponse(status=204)
 
 
 class SessionKeyView (views.APIView):
