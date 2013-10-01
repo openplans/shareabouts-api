@@ -1,4 +1,4 @@
-import json
+import ujson as json
 from rest_framework.renderers import JSONRenderer
 from rest_framework_csv.renderers import CSVRenderer
 from django.contrib.gis.geos import GEOSGeometry
