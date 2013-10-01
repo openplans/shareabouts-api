@@ -794,6 +794,31 @@ class TestPlaceListView (APITestMixin, TestCase):
         self.assertStatusCode(response, 200)
         self.assertEqual(len(data['features']), 0)
 
+    def test_GET_paginated_response(self):
+        for _ in range(30):
+            Place.objects.create(dataset=self.dataset, geometry='POINT(0 0)', data=json.dumps({'foo': 'bar', 'name': 1})),
+            Place.objects.create(dataset=self.dataset, geometry='POINT(1 0)', data=json.dumps({'foo': 'bar', 'name': 2})),
+            Place.objects.create(dataset=self.dataset, geometry='POINT(2 0)', data=json.dumps({'foo': 'baz', 'name': 3})),
+            Place.objects.create(dataset=self.dataset, geometry='POINT(3 0)', data=json.dumps({'name': 4})),
+
+        # Check that we have items on the 2nd page
+        request = self.factory.get(self.path + '?page=2')
+        response = self.view(request, **self.request_kwargs)
+        data = json.loads(response.rendered_content)
+
+        self.assertStatusCode(response, 200)
+        self.assertIn('features', data)
+        self.assertEqual(len(data['features']), 50)  # default, in settings.py
+
+        # Check that we can override the page size
+        request = self.factory.get(self.path + '?page_size=3')
+        response = self.view(request, **self.request_kwargs)
+        data = json.loads(response.rendered_content)
+
+        self.assertStatusCode(response, 200)
+        self.assertIn('features', data)
+        self.assertEqual(len(data['features']), 3)
+
     def test_GET_nearby_response(self):
         Place.objects.create(dataset=self.dataset, geometry='POINT(0 0)', data=json.dumps({'new_place': 'yes', 'name': 1})),
         Place.objects.create(dataset=self.dataset, geometry='POINT(10 0)', data=json.dumps({'new_place': 'yes', 'name': 2})),

@@ -24,7 +24,8 @@ from . import parsers
 from . import apikey
 from . import utils
 from .params import (INCLUDE_INVISIBLE_PARAM, INCLUDE_PRIVATE_PARAM,
-    INCLUDE_SUBMISSIONS_PARAM, NEAR_PARAM, FORMAT_PARAM)
+    INCLUDE_SUBMISSIONS_PARAM, NEAR_PARAM, FORMAT_PARAM, PAGE_PARAM,
+    PAGE_SIZE_PARAM)
 from functools import wraps
 from itertools import groupby
 from collections import defaultdict
@@ -252,8 +253,9 @@ class FilteredResourceMixin (object):
         queryset = super(FilteredResourceMixin, self).get_queryset()
 
         # These filters will have been applied when constructing the queryset
-        special_filters = set([INCLUDE_SUBMISSIONS_PARAM, INCLUDE_PRIVATE_PARAM,
-            INCLUDE_INVISIBLE_PARAM, NEAR_PARAM, FORMAT_PARAM])
+        special_filters = set([FORMAT_PARAM, PAGE_PARAM, PAGE_SIZE_PARAM(),
+            INCLUDE_SUBMISSIONS_PARAM, INCLUDE_PRIVATE_PARAM,
+            INCLUDE_INVISIBLE_PARAM, NEAR_PARAM])
 
         for key, values in self.request.GET.iterlists():
             if key not in special_filters:
