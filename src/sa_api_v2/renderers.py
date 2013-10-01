@@ -19,6 +19,7 @@ class GeoJSONRenderer(JSONRenderer):
     media_type = 'application/json'
     format = 'json'
     geometry_field = 'geometry'
+    id_field = 'id'
 
     def render(self, data, media_type=None, renderer_context=None):
         """
@@ -45,6 +46,7 @@ class GeoJSONRenderer(JSONRenderer):
 
         feature_props = data.copy()
         geometry = feature_props.pop(self.geometry_field)
+        feature_id = feature_props.get(self.id_field)  # Should this be popped?
 
         if isinstance(geometry, basestring):
             geometry = json.loads(GEOSGeometry(geometry).json)
@@ -56,5 +58,8 @@ class GeoJSONRenderer(JSONRenderer):
           'geometry': geometry,
           'properties': feature_props,
         }
+
+        if feature_id is not None:
+            feature['id'] = feature_id
 
         return feature

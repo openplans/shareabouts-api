@@ -113,6 +113,7 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
         self.assertIn('type', data)
         self.assertIn('geometry', data)
         self.assertIn('properties', data)
+        self.assertIn('id', data)
 
         # Check that data attribute is not present
         self.assertNotIn('data', data['properties'])
