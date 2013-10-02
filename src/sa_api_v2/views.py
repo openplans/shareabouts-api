@@ -504,7 +504,7 @@ class PlaceInstanceView (CachedResourceMixin, LocatedResourceMixin, OwnedResourc
 
     model = models.Place
     serializer_class = serializers.PlaceSerializer
-    renderer_classes = (renderers.GeoJSONRenderer,) + OwnedResourceMixin.renderer_classes[1:]
+    renderer_classes = (renderers.GeoJSONRenderer, renderers.GeoJSONPRenderer) + OwnedResourceMixin.renderer_classes[2:]
     parser_classes = (parsers.GeoJSONParser,) + OwnedResourceMixin.parser_classes[1:]
 
     def get_object_or_404(self, pk):
@@ -582,7 +582,7 @@ class PlaceListView (CachedResourceMixin, LocatedResourceMixin, OwnedResourceMix
     model = models.Place
     serializer_class = serializers.PlaceSerializer
     pagination_serializer_class = serializers.FeatureCollectionSerializer
-    renderer_classes = (renderers.GeoJSONRenderer,) + OwnedResourceMixin.renderer_classes[1:]
+    renderer_classes = (renderers.GeoJSONRenderer, renderers.GeoJSONPRenderer) + OwnedResourceMixin.renderer_classes[2:]
     parser_classes = (parsers.GeoJSONParser,) + OwnedResourceMixin.parser_classes[1:]
 
     def pre_save(self, obj):
