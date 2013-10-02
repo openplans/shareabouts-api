@@ -9,3 +9,9 @@ FORMAT_PARAM = 'format'
 
 PAGE_PARAM = 'page'
 PAGE_SIZE_PARAM = lambda: getattr(settings, 'REST_FRAMEWORK', {}).get('PAGINATE_BY_PARAM')
+CALLBACK_PARAM = lambda view: (
+    'callback'
+    if view.get_content_negotiator().select_renderer(
+        view.request, view.get_renderers(), view.format_kwarg)[0].format == 'jsonp'
+    else None
+)
