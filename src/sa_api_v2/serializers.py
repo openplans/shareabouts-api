@@ -191,6 +191,14 @@ class AttachmentSerializer (serializers.ModelSerializer):
 #
 
 
+class ActivityGenerator (object):
+    def save(self, **kwargs):
+        request = self.context['request']
+        silent_header = request.META.get('HTTP_X_SHAREABOUTS_SILENT', 'False')
+        is_silent = silent_header.lower() in ('true', 't', 'yes', 'y')
+        return super(ActivityGenerator, self).save(silent=is_silent, **kwargs)
+
+
 class DataBlobProcessor (object):
     """
     Like ModelSerializer, but automatically serializes/deserializes a
@@ -425,7 +433,7 @@ class DataSetSubmissionSetSummarySerializer (serializers.HyperlinkedModelSeriali
         return summaries
 
 
-class SubmittedThingSerializer (CachedSerializer, DataBlobProcessor):
+class SubmittedThingSerializer (CachedSerializer, ActivityGenerator, DataBlobProcessor):
     def restore_fields(self, data, files):
         """
         Converts a dictionary of data into a dictionary of deserialized fields.
