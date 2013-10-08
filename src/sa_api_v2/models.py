@@ -218,4 +218,7 @@ class Client (ModelWithDataBlob, TimeStampedModel):
     class Meta:
         db_table = 'sa_api_client'
 
+    def __unicode__(self):
+        return 'Client %s:%s' % (self.owner.username, self.pk)
+
 #
