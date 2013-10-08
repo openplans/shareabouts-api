@@ -21,12 +21,12 @@ class APIKeyBackend(object):
     backend_name = 'sa_api_v2.apikey.auth.APIKeyBackend'
     model = ApiKey
 
-    def authenticate(self, key=None, ip_address=None):
+    def authenticate(self, request, key=None, ip_address=None):
         if not key:
             client, key_instance = None, None
             return None
 
-        client, key_instance = self._get_client_and_key(key)
+        client, key_instance = self._get_client_and_key(request, key)
         if None in (client, key_instance):
             return None
         # key_instance.login(ip_address)
@@ -38,12 +38,13 @@ class APIKeyBackend(object):
         """
         return self._get_client_and_key(client_id)[1]
 
-    def _get_client_and_key(self, key):
-        try:
-            key_instance = self.model.objects.select_related('client').get(key=key)
-        except self.model.DoesNotExist:
-            return (None, None)
-        return key_instance.client, key_instance
+    def _get_client_and_key(self, request, key_string):
+        dataset = request.get_dataset()
+        for key in self.model.objects.filter(key=key_string).prefetch_related('datasets'):
+            if dataset.id in [ds.id for ds in key.datasets.all()]:
+                client = key
+                return client, key
+        return (None, None)
 
 
 def check_api_authorization(request):
@@ -60,17 +61,16 @@ def check_api_authorization(request):
     key = request.META.get(KEY_HEADER)
     
     auth_backend = APIKeyBackend()
-    client = auth_backend.authenticate(key=key, ip_address=ip_address)
+    client = auth_backend.authenticate(request, key=key, ip_address=ip_address)
     auth = auth_backend.key_instance if (client is not None) else None
     
     if client is None:
         raise PermissionDenied("invalid key?")
-        
-    if client.owner and client.owner.is_active:
-        client.owner.backend = APIKeyBackend.backend_name
-        return (client, auth)
-    else:
-        raise PermissionDenied("Your account is disabled.")
+    
+    # TODO: Add an is_active flag for apikey, and check it here. If not active
+    #       raise PermissionDenied.
+    client.backend = APIKeyBackend.backend_name
+    return (client, auth)
 
 
 class ApiKeyAuthentication(authentication.BaseAuthentication):

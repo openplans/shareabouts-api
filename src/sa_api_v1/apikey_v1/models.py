@@ -41,18 +41,6 @@ class ApiKey(models.Model):
         self.logged_ip = None
         self.save()
 
-    def save(self, *args, **kwargs):
-        is_new = (self.pk is None)
-        super(ApiKey, self).save(*args, **kwargs)
-
-        if is_new:
-            # We need to create a v2 Client for each new API key.
-            from sa_api_v2.models import Client
-            from sa_api_v2.apikey.models import ApiKey as v2ApiKey
-            client = Client.objects.create(owner=self.user)
-            key = v2ApiKey.objects.get(pk=self.pk)
-            client.keys.add(key)
-
     def __unicode__(self):
         return self.key
 

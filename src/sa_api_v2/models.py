@@ -213,12 +213,17 @@ class Client (ModelWithDataBlob, TimeStampedModel):
     """
     A client account that can connect to the API on behalf of a user (owner)
     """
+    dataset = models.ForeignKey(DataSet, related_name='clients', null=True)
     owner = models.ForeignKey(User, related_name='clients')
 
     class Meta:
         db_table = 'sa_api_client'
 
+    # @property
+    # def owner(self):
+    #     return self.dataset.owner
+
     def __unicode__(self):
-        return 'Client %s:%s' % (self.owner.username, self.pk)
+        return 'Client %s:%s:%s' % (self.owner.username, self.dataset.slug, self.pk)
 
 #

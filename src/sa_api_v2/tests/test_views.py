@@ -8,7 +8,7 @@ import base64
 import csv
 import json
 from StringIO import StringIO
-from ..models import User, DataSet, Place, SubmissionSet, Submission, Attachment, Action, Client
+from ..models import User, DataSet, Place, SubmissionSet, Submission, Attachment, Action
 from ..apikey.models import ApiKey
 from ..apikey.auth import KEY_HEADER
 from ..views import (PlaceInstanceView, PlaceListView, SubmissionInstanceView,
@@ -69,8 +69,7 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
           }),
         )
 
-        self.clientapp = Client.objects.create(owner=self.owner)
-        self.apikey = ApiKey.objects.create(client=self.clientapp, key='abc')
+        self.apikey = ApiKey.objects.create(key='abc')
         self.apikey.datasets.add(self.dataset)
 
         self.request_kwargs = {
@@ -96,7 +95,6 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
         Place.objects.all().delete()
         SubmissionSet.objects.all().delete()
         Submission.objects.all().delete()
-        Client.objects.all().delete()
         ApiKey.objects.all().delete()
 
         cache.clear()
@@ -692,8 +690,7 @@ class TestPlaceListView (APITestMixin, TestCase):
           geometry='POINT(3 4)',
         )
 
-        self.clientapp = Client.objects.create(owner=self.owner)
-        self.apikey = ApiKey.objects.create(client=self.clientapp, key='abc')
+        self.apikey = ApiKey.objects.create(key='abc')
         self.apikey.datasets.add(self.dataset)
 
         self.request_kwargs = {
@@ -711,7 +708,6 @@ class TestPlaceListView (APITestMixin, TestCase):
         Place.objects.all().delete()
         SubmissionSet.objects.all().delete()
         Submission.objects.all().delete()
-        Client.objects.all().delete()
         ApiKey.objects.all().delete()
 
         cache.clear()
@@ -1177,8 +1173,7 @@ class TestSubmissionInstanceView (APITestMixin, TestCase):
 
         self.submission = self.comments.children.all()[0]
 
-        self.clientapp = Client.objects.create(owner=self.owner)
-        self.apikey = ApiKey.objects.create(client=self.clientapp, key='abc')
+        self.apikey = ApiKey.objects.create(key='abc')
         self.apikey.datasets.add(self.dataset)
 
         self.request_kwargs = {
@@ -1199,7 +1194,6 @@ class TestSubmissionInstanceView (APITestMixin, TestCase):
         Place.objects.all().delete()
         SubmissionSet.objects.all().delete()
         Submission.objects.all().delete()
-        Client.objects.all().delete()
         ApiKey.objects.all().delete()
 
         cache.clear()
@@ -1501,8 +1495,7 @@ class TestSubmissionListView (APITestMixin, TestCase):
           Submission.objects.create(parent=comments2, dataset=dataset2, data='{"foo": 3}', visible=False),
         ]
 
-        self.clientapp = Client.objects.create(owner=self.owner)
-        self.apikey = ApiKey.objects.create(client=self.clientapp, key='abc')
+        self.apikey = ApiKey.objects.create(key='abc')
         self.apikey.datasets.add(self.dataset)
 
         self.request_kwargs = {
@@ -1522,7 +1515,6 @@ class TestSubmissionListView (APITestMixin, TestCase):
         Place.objects.all().delete()
         SubmissionSet.objects.all().delete()
         Submission.objects.all().delete()
-        Client.objects.all().delete()
         ApiKey.objects.all().delete()
 
         cache.clear()
@@ -2035,8 +2027,7 @@ class TestDataSetSubmissionListView (APITestMixin, TestCase):
           Submission.objects.create(parent=comments3, dataset=dataset2, data='{"foo": 3}', visible=False),
         ]
 
-        self.clientapp = Client.objects.create(owner=self.owner)
-        self.apikey = ApiKey.objects.create(client=self.clientapp, key='abc')
+        self.apikey = ApiKey.objects.create(key='abc')
         self.apikey.datasets.add(self.dataset)
 
         self.request_kwargs = {
@@ -2055,7 +2046,6 @@ class TestDataSetSubmissionListView (APITestMixin, TestCase):
         Place.objects.all().delete()
         SubmissionSet.objects.all().delete()
         Submission.objects.all().delete()
-        Client.objects.all().delete()
         ApiKey.objects.all().delete()
 
         cache.clear()
@@ -2360,8 +2350,7 @@ class TestDataSetInstanceView (APITestMixin, TestCase):
           }),
         )
 
-        self.clientapp = Client.objects.create(owner=self.owner)
-        self.apikey = ApiKey.objects.create(client=self.clientapp, key='abc')
+        self.apikey = ApiKey.objects.create(key='abc')
         self.apikey.datasets.add(self.dataset)
 
         self.request_kwargs = {
@@ -2379,7 +2368,6 @@ class TestDataSetInstanceView (APITestMixin, TestCase):
         Place.objects.all().delete()
         SubmissionSet.objects.all().delete()
         Submission.objects.all().delete()
-        Client.objects.all().delete()
         ApiKey.objects.all().delete()
 
         cache.clear()
@@ -2665,8 +2653,7 @@ class TestDataSetListView (APITestMixin, TestCase):
             email='def@example.com')
         dataset3 = DataSet.objects.create(owner=other_owner, slug='slug', display_name="Display Name")
 
-        self.clientapp = Client.objects.create(owner=self.owner)
-        self.apikey = ApiKey.objects.create(client=self.clientapp, key='abc')
+        self.apikey = ApiKey.objects.create(key='abc')
         self.apikey.datasets.add(self.dataset)
 
         self.request_kwargs = {
@@ -2683,7 +2670,6 @@ class TestDataSetListView (APITestMixin, TestCase):
         Place.objects.all().delete()
         SubmissionSet.objects.all().delete()
         Submission.objects.all().delete()
-        Client.objects.all().delete()
         ApiKey.objects.all().delete()
 
         cache.clear()
@@ -2882,8 +2868,7 @@ class TestPlaceAttachmentListView (APITestMixin, TestCase):
         # self.attachments = Attachment.objects.create(
         #     file=File(f, 'myfile.txt'), name='my_file_name', thing=self.place)
 
-        self.clientapp = Client.objects.create(owner=self.owner)
-        self.apikey = ApiKey.objects.create(client=self.clientapp, key='abc')
+        self.apikey = ApiKey.objects.create(key='abc')
         self.apikey.datasets.add(self.dataset)
 
         self.request_kwargs = {
@@ -2909,7 +2894,6 @@ class TestPlaceAttachmentListView (APITestMixin, TestCase):
         Place.objects.all().delete()
         SubmissionSet.objects.all().delete()
         Submission.objects.all().delete()
-        Client.objects.all().delete()
         ApiKey.objects.all().delete()
 
         cache.clear()
@@ -3009,6 +2993,7 @@ class TestPlaceAttachmentListView (APITestMixin, TestCase):
         f.name = 'myfile.txt'
         request = self.factory.post(self.invisible_path, data={'file': f, 'name': 'my-file'})
         request.META[KEY_HEADER] = self.apikey.key
+        import pdb; pdb.set_trace()
         response = self.view(request, **self.invisible_request_kwargs)
         self.assertStatusCode(response, 400, response.render())
 
@@ -3193,8 +3178,7 @@ class TestSubmissionAttachmentListView (APITestMixin, TestCase):
         self.file.name = 'myfile.txt'
         self.file.size = 20
 
-        self.clientapp = Client.objects.create(owner=self.owner)
-        self.apikey = ApiKey.objects.create(client=self.clientapp, key='abc')
+        self.apikey = ApiKey.objects.create(key='abc')
         self.apikey.datasets.add(self.dataset)
 
         self.request_kwargs = {
@@ -3224,7 +3208,6 @@ class TestSubmissionAttachmentListView (APITestMixin, TestCase):
         Place.objects.all().delete()
         SubmissionSet.objects.all().delete()
         Submission.objects.all().delete()
-        Client.objects.all().delete()
         ApiKey.objects.all().delete()
 
         cache.clear()
@@ -3503,8 +3486,7 @@ class TestActivityView(APITestMixin, TestCase):
             Action.objects.create(thing=self.visible_place.submittedthing_ptr, action='delete'),
         ]
 
-        self.clientapp = Client.objects.create(owner=self.owner)
-        self.apikey = ApiKey.objects.create(client=self.clientapp, key='abc')
+        self.apikey = ApiKey.objects.create(key='abc')
         self.apikey.datasets.add(self.dataset)
 
         self.kwargs = {
