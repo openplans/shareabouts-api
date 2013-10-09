@@ -38,7 +38,7 @@ python-social-auth
 # REST API
 # ==============================
 
-djangorestframework>=2.2
+djangorestframework>=2.2,<=2.3.6
 djangorestframework-csv>=1.3.0
 six>=1.4.1
 markdown  # For browsable API docs
