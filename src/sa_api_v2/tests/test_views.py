@@ -1,5 +1,6 @@
 from django.test import TestCase
 from django.test.client import RequestFactory
+from django.test.utils import override_settings
 from django.core.urlresolvers import reverse
 from django.core.cache import cache
 from django.core.files import File
@@ -791,6 +792,10 @@ class TestPlaceListView (APITestMixin, TestCase):
         self.assertStatusCode(response, 200)
         self.assertEqual(len(data['features']), 0)
 
+    @override_settings(REST_FRAMEWORK={
+        'PAGINATE_BY': 50,
+        'PAGINATE_BY_PARAM': 'page_size'
+    })
     def test_GET_paginated_response(self):
         for _ in range(30):
             Place.objects.create(dataset=self.dataset, geometry='POINT(0 0)', data=json.dumps({'foo': 'bar', 'name': 1})),
