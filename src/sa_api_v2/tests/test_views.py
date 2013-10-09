@@ -2993,7 +2993,6 @@ class TestPlaceAttachmentListView (APITestMixin, TestCase):
         f.name = 'myfile.txt'
         request = self.factory.post(self.invisible_path, data={'file': f, 'name': 'my-file'})
         request.META[KEY_HEADER] = self.apikey.key
-        import pdb; pdb.set_trace()
         response = self.view(request, **self.invisible_request_kwargs)
         self.assertStatusCode(response, 400, response.render())
 

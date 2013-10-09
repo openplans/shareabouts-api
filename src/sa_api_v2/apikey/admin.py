@@ -6,6 +6,6 @@ from .forms import ApiKeyForm
 
 class ApiKeyAdmin(ModelAdmin):
     form = ApiKeyForm
-    list_display = ('key', 'user', 'logged_ip', 'last_used')
+    list_display = ('key', 'dataset', 'logged_ip', 'last_used')
 
 admin.site.register(ApiKey, ApiKeyAdmin)

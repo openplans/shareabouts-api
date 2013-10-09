@@ -10,9 +10,8 @@ license unknown.
 """
 
 from django.db import models
-from django.contrib.auth.models import User
 from django.utils.timezone import now
-from ..models import DataSet, Client
+from ..models import DataSet
 
 # Changing this would require a migration, ugh.
 KEY_SIZE = 32
@@ -39,6 +38,20 @@ class ApiKey(models.Model):
         # YAGNI?
         self.logged_ip = None
         self.save()
+
+    @property
+    def dataset(self):
+        try:
+            return self.datasets.all()[0]
+        except IndexError:
+            return None
+
+    @property
+    def owner(self):
+        try:
+            return self.dataset.owner
+        except AttributeError:
+            return None
 
     def __unicode__(self):
         return self.key

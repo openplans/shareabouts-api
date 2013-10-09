@@ -8,15 +8,20 @@ from django.db import models
 class Migration(SchemaMigration):
 
     def forwards(self, orm):
-        # Adding field 'Client.dataset'
-        db.add_column('sa_api_client', 'dataset',
-                      self.gf('django.db.models.fields.related.ForeignKey')(related_name='clients', null=True, to=orm['sa_api_v2.DataSet']),
-                      keep_default=False)
+        # Deleting model 'Client'
+        db.delete_table('sa_api_client')
 
 
     def backwards(self, orm):
-        # Deleting field 'Client.dataset'
-        db.delete_column('sa_api_client', 'dataset_id')
+        # Adding model 'Client'
+        db.create_table('sa_api_client', (
+            ('updated_datetime', self.gf('django.db.models.fields.DateTimeField')(auto_now=True, blank=True)),
+            ('created_datetime', self.gf('django.db.models.fields.DateTimeField')(auto_now_add=True, blank=True)),
+            ('owner', self.gf('django.db.models.fields.related.ForeignKey')(related_name='clients', to=orm['auth.User'])),
+            ('data', self.gf('django.db.models.fields.TextField')(default='{}')),
+            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+        ))
+        db.send_create_signal('sa_api_v2', ['Client'])
 
 
     models = {
@@ -71,15 +76,6 @@ class Migration(SchemaMigration):
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'name': ('django.db.models.fields.CharField', [], {'max_length': '128', 'null': 'True', 'blank': 'True'}),
             'thing': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'attachments'", 'to': "orm['sa_api_v2.SubmittedThing']"}),
-            'updated_datetime': ('django.db.models.fields.DateTimeField', [], {'auto_now': 'True', 'blank': 'True'})
-        },
-        'sa_api_v2.client': {
-            'Meta': {'object_name': 'Client', 'db_table': "'sa_api_client'"},
-            'created_datetime': ('django.db.models.fields.DateTimeField', [], {'auto_now_add': 'True', 'blank': 'True'}),
-            'data': ('django.db.models.fields.TextField', [], {'default': "'{}'"}),
-            'dataset': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'clients'", 'null': 'True', 'to': "orm['sa_api_v2.DataSet']"}),
-            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'owner': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'clients'", 'to': "orm['auth.User']"}),
             'updated_datetime': ('django.db.models.fields.DateTimeField', [], {'auto_now': 'True', 'blank': 'True'})
         },
         'sa_api_v2.dataset': {
