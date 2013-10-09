@@ -19,7 +19,7 @@ KEY_SIZE = 32
 
 
 class ApiKey(models.Model):
-    user = models.ForeignKey(User, related_name='api_keys')
+    user = models.ForeignKey(User, related_name='keys')
     client = models.ForeignKey(Client, related_name='keys', null=True)
     key = models.CharField(max_length=KEY_SIZE, unique=True)
     logged_ip = models.IPAddressField(blank=True, null=True)
@@ -28,7 +28,7 @@ class ApiKey(models.Model):
     # I think we are going to only have one key per dataset,
     # but that could change on either end.
     datasets = models.ManyToManyField(DataSet, blank=True,
-                                      related_name='api_keys')
+                                      related_name='keys')
 
     class Meta:
         db_table = 'apikey_apikey'
