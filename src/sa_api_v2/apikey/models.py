@@ -10,17 +10,14 @@ license unknown.
 """
 
 from django.db import models
-from django.contrib.auth.models import User
 from django.utils.timezone import now
-from ..models import DataSet, Client
+from ..models import DataSet
 
 # Changing this would require a migration, ugh.
 KEY_SIZE = 32
 
 
 class ApiKey(models.Model):
-    user = models.ForeignKey(User, related_name='api_keys')
-    client = models.ForeignKey(Client, related_name='keys', null=True)
     key = models.CharField(max_length=KEY_SIZE, unique=True)
     logged_ip = models.IPAddressField(blank=True, null=True)
     last_used = models.DateTimeField(blank=True, default=now)
@@ -28,7 +25,7 @@ class ApiKey(models.Model):
     # I think we are going to only have one key per dataset,
     # but that could change on either end.
     datasets = models.ManyToManyField(DataSet, blank=True,
-                                      related_name='api_keys')
+                                      related_name='keys')
 
     class Meta:
         db_table = 'apikey_apikey'
@@ -42,13 +39,22 @@ class ApiKey(models.Model):
         self.logged_ip = None
         self.save()
 
+    @property
+    def dataset(self):
+        try:
+            return self.datasets.all()[0]
+        except IndexError:
+            return None
+
+    @property
+    def owner(self):
+        try:
+            return self.dataset.owner
+        except AttributeError:
+            return None
+
     def __unicode__(self):
         return self.key
-
-    def save(self, *args, **kwargs):
-        if self.client_id is not None and self.user_id is None:
-            self.user = self.client.owner
-        super(ApiKey, self).save(*args, **kwargs)
 
 
 def generate_unique_api_key():

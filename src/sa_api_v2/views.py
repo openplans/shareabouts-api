@@ -314,6 +314,11 @@ class OwnedResourceMixin (ClientAuthenticationMixin):
 
     def dispatch(self, request, *args, **kwargs):
         request.allowed_username = kwargs[self.owner_username_kwarg]
+
+        # Make sure the request has access to the dataset, since client
+        # authentication must check against it.
+        request.get_dataset = self.get_dataset
+
         return super(OwnedResourceMixin, self).dispatch(request, *args, **kwargs)
 
     def get_submitter(self):
