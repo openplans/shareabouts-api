@@ -3,6 +3,7 @@ from django.contrib.gis.db import models
 from django.conf import settings
 from django.core.files.storage import get_storage_class
 from django.core.urlresolvers import reverse
+from django.utils.importlib import import_module
 from . import cache
 from . import utils
 import ujson as json
@@ -17,18 +18,46 @@ class TimeStampedModel (models.Model):
 
 
 class CacheClearingModel (object):
-    def save(self, *args, **kwargs):
-        result = super(CacheClearingModel, self).save(*args, **kwargs)
+    @classmethod
+    def resolve_attr(cls, attr):
+        if hasattr(cls, attr):
+            value = getattr(cls, attr)
+            if isinstance(value, str):
+                module_name, class_name = value.rsplit('.', 1)
+                value = getattr(import_module(module_name), class_name)
+            return value
+        else:
+            return None
 
+    def get_previous_version(self):
+        model = self.resolve_attr('previous_version')
+        if model:
+            return model.objects.get(pk=self.pk)
+
+    def get_next_version(self):
+        model = self.resolve_attr('next_version')
+        if model:
+            return model.objects.get(pk=self.pk)
+
+    def clear_instance_cache(self):
         if hasattr(self, 'cache'):
             self.cache.clear_instance(self)
 
+        previous_version = self.get_previous_version()
+        if previous_version:
+            previous_version.cache.clear_instance(previous_version)
+
+        next_version = self.get_next_version()
+        if next_version:
+            next_version.cache.clear_instance(next_version)
+
+    def save(self, *args, **kwargs):
+        result = super(CacheClearingModel, self).save(*args, **kwargs)
+        self.clear_instance_cache()
         return result
 
     def delete(self, *args, **kwargs):
-        if hasattr(self, 'cache'):
-            self.cache.clear_instance(self)
-
+        self.clear_instance_cache()
         return super(CacheClearingModel, self).delete(*args, **kwargs)
 
 
@@ -104,6 +133,7 @@ class DataSet (CacheClearingModel, models.Model):
     slug = models.SlugField(max_length=128, default=u'')
 
     cache = cache.DataSetCache()
+    next_version = 'sa_api_v2.models.DataSet'
 
     def __unicode__(self):
         return self.slug
@@ -125,6 +155,7 @@ class Place (SubmittedThing):
 
     objects = models.GeoManager()
     cache = cache.PlaceCache()
+    next_version = 'sa_api_v2.models.Place'
 
     class Meta:
         db_table = 'sa_api_place'
@@ -142,6 +173,7 @@ class SubmissionSet (CacheClearingModel, models.Model):
     submission_type = models.CharField(max_length=128, db_column='name')
 
     cache = cache.SubmissionSetCache()
+    next_version = 'sa_api_v2.models.SubmissionSet'
 
     class Meta(object):
         db_table = 'sa_api_submissionset'
@@ -159,6 +191,7 @@ class Submission (SubmittedThing):
     parent = models.ForeignKey(SubmissionSet, related_name='children')
 
     cache = cache.SubmissionCache()
+    next_version = 'sa_api_v2.models.Submission'
 
     class Meta:
         db_table = 'sa_api_submission'
@@ -174,6 +207,7 @@ class Activity (CacheClearingModel, TimeStampedModel):
     data = models.ForeignKey(SubmittedThing)
 
     cache = cache.ActivityCache()
+    next_version = 'sa_api_v2.models.Action'
 
     @property
     def submitter_name(self):
@@ -201,6 +235,7 @@ class Attachment (CacheClearingModel, TimeStampedModel):
     thing = models.ForeignKey('SubmittedThing', related_name='attachments')
 
     cache = cache.AttachmentCache()
+    next_version = 'sa_api_v2.models.Attachment'
 
     class Meta:
         managed = False
