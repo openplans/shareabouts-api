@@ -22,6 +22,7 @@ from . import utils
 from . import renderers
 from . import parsers
 from . import apikey
+from . import cors
 from . import utils
 from .params import (INCLUDE_INVISIBLE_PARAM, INCLUDE_PRIVATE_PARAM,
     INCLUDE_SUBMISSIONS_PARAM, NEAR_PARAM, FORMAT_PARAM, PAGE_PARAM,
@@ -244,6 +245,20 @@ class ClientAuthenticationMixin (object):
             parser_context=parser_context)
 
 
+class CorsEnabledMixin (object):
+    """
+    A view that puts Access-Control headers on the response.
+    """
+
+    def finalize_response(self, request, response, *args, **kwargs):
+        response = super(CorsEnabledMixin, self).finalize_response(request, response, *args, **kwargs)
+
+        # Allow AJAX requests from anywhere, knowing that we're protected
+        # by origin-based client authentication.
+        response['Access-Control-Allow-Origin'] = '*'
+        return response
+
+
 class FilteredResourceMixin (object):
     """
     A view mixin that filters queryset of ModelWithDataBlob results based on
@@ -291,7 +306,7 @@ class LocatedResourceMixin (object):
         return queryset
 
 
-class OwnedResourceMixin (ClientAuthenticationMixin):
+class OwnedResourceMixin (ClientAuthenticationMixin, CorsEnabledMixin):
     """
     A view mixin that retrieves the username of the resource owner, as provided
     in the URL, and stores it on the request object.
@@ -307,7 +322,7 @@ class OwnedResourceMixin (ClientAuthenticationMixin):
     parser_classes = (JSONParser, FormParser, MultiPartParser)
     permission_classes = (IsOwnerOrReadOnly, IsLoggedInOwnerOrPublicDataOnly)
     authentication_classes = (authentication.BasicAuthentication, authentication.SessionAuthentication)
-    client_authentication_classes = (apikey.auth.ApiKeyAuthentication,)
+    client_authentication_classes = (apikey.auth.ApiKeyAuthentication, cors.auth.OriginAuthentication)
 
     owner_username_kwarg = 'owner_username'
     dataset_slug_kwarg = 'dataset_slug'
@@ -1132,7 +1147,7 @@ class UserInstanceView (OwnedResourceMixin, generics.RetrieveAPIView):
         return owner
 
 
-class CurrentUserInstanceView (views.APIView):
+class CurrentUserInstanceView (CorsEnabledMixin, views.APIView):
     renderer_classes = (JSONRenderer, JSONPRenderer, BrowsableAPIRenderer, renderers.PaginatedCSVRenderer)
 
     def get(self, request):
@@ -1143,7 +1158,7 @@ class CurrentUserInstanceView (views.APIView):
             return HttpResponse(status=204)
 
 
-class SessionKeyView (views.APIView):
+class SessionKeyView (CorsEnabledMixin, views.APIView):
     renderer_classes = (JSONRenderer, JSONPRenderer, BrowsableAPIRenderer)
 
     def get(self, request):

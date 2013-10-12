@@ -11,6 +11,7 @@ from StringIO import StringIO
 from ..models import User, DataSet, Place, SubmissionSet, Submission, Attachment, Action
 from ..apikey.models import ApiKey
 from ..apikey.auth import KEY_HEADER
+from ..cors.models import OriginPermission
 from ..views import (PlaceInstanceView, PlaceListView, SubmissionInstanceView,
     SubmissionListView, DataSetSubmissionListView, DataSetInstanceView,
     DataSetListView, AttachmentListView, ActionListView)
@@ -71,6 +72,9 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
 
         self.apikey = ApiKey.objects.create(key='abc')
         self.apikey.datasets.add(self.dataset)
+
+        self.origin_perm = OriginPermission.objects.create(pattern='openplans.github.com')
+        self.origin_perm.datasets.add(self.dataset)
 
         self.request_kwargs = {
           'owner_username': self.owner.username,
@@ -256,6 +260,19 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
         # --------------------------------------------------
 
         #
+        # View should 403 when not allowed to request private data (origin)
+        #
+        request = self.factory.get(self.path + '?include_private')
+        request.META['HTTP_ORIGIN'] = self.origin_perm.pattern
+        response = self.view(request, **self.request_kwargs)
+        data = json.loads(response.rendered_content)
+
+        # Check that the request was restricted
+        self.assertStatusCode(response, 403)
+
+        # --------------------------------------------------
+
+        #
         # View should 403 when not allowed to request private data (not owner)
         #
         request = self.factory.get(self.path + '?include_private')
@@ -328,6 +345,19 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
         #
         request = self.factory.get(self.invisible_path + '?include_invisible')
         request.META[KEY_HEADER] = self.apikey.key
+        response = self.view(request, **self.invisible_request_kwargs)
+        data = json.loads(response.rendered_content)
+
+        # Check that the request was restricted
+        self.assertStatusCode(response, 403)
+
+        # --------------------------------------------------
+
+        #
+        # View should 403 when not allowed to request private data (api key)
+        #
+        request = self.factory.get(self.invisible_path + '?include_invisible')
+        request.META['HTTP_ORIGIN'] = self.origin_perm.pattern
         response = self.view(request, **self.invisible_request_kwargs)
         data = json.loads(response.rendered_content)
 
@@ -444,11 +474,26 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
         response = self.view(request, **self.request_kwargs)
         self.assertStatusCode(response, 401)
 
+    def test_DELETE_response_with_apikey(self):
         #
         # View should delete the place when owner is authenticated
         #
         request = self.factory.delete(self.path)
         request.META[KEY_HEADER] = self.apikey.key
+        response = self.view(request, **self.request_kwargs)
+
+        # Check that the request was successful
+        self.assertStatusCode(response, 204)
+
+        # Check that no data was returned
+        self.assertIsNone(response.data)
+
+    def test_DELETE_response_with_origin(self):
+        #
+        # View should delete the place when owner is authenticated
+        #
+        request = self.factory.delete(self.path)
+        request.META['HTTP_ORIGIN'] = self.origin_perm.pattern
         response = self.view(request, **self.request_kwargs)
 
         # Check that the request was successful
@@ -479,10 +524,18 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
         ##
 
         #
-        # View should update the place when owner is authenticated
+        # View should update the place when client is authenticated (apikey)
         #
         request = self.factory.put(self.path, data=place_data, content_type='application/json')
         request.META[KEY_HEADER] = self.apikey.key
+        response = self.view(request, **self.request_kwargs)
+        self.assertStatusCode(response, 200)
+
+        #
+        # View should update the place when client is authenticated (origin)
+        #
+        request = self.factory.put(self.path, data=place_data, content_type='application/json')
+        request.META['HTTP_ORIGIN'] = self.origin_perm.pattern
         response = self.view(request, **self.request_kwargs)
         self.assertStatusCode(response, 200)
 
