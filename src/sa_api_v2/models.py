@@ -154,6 +154,7 @@ class Place (SubmittedThing):
 
     class Meta:
         db_table = 'sa_api_place'
+        ordering = ['-updated_datetime']
 
 
 class SubmissionSet (CacheClearingModel, models.Model):
@@ -200,6 +201,7 @@ class Submission (SubmittedThing):
 
     class Meta:
         db_table = 'sa_api_submission'
+        ordering = ['-updated_datetime']
 
 
 class Action (CacheClearingModel, TimeStampedModel):
