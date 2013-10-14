@@ -516,7 +516,7 @@ class PlaceInstanceView (CachedResourceMixin, LocatedResourceMixin, OwnedResourc
         try:
             return self.model.objects\
                 .filter(pk=pk)\
-                .select_related('dataset', 'submitter')\
+                .select_related('dataset', 'dataset__owner', 'submitter')\
                 .prefetch_related('submitter__social_auth',
                                   'submission_sets__children',
                                   'submission_sets__children__attachments',
@@ -603,7 +603,7 @@ class PlaceListView (CachedResourceMixin, LocatedResourceMixin, OwnedResourceMix
         if INCLUDE_INVISIBLE_PARAM not in self.request.GET:
             queryset = queryset.filter(visible=True)
 
-        return queryset.filter(dataset=dataset).select_related('dataset', 'submitter')\
+        return queryset.filter(dataset=dataset).select_related('dataset', 'dataset__owner', 'submitter')\
             .prefetch_related('submitter__social_auth', 'submission_sets', 'submission_sets__children', 'submission_sets__children__attachments', 'attachments')
 
 
@@ -650,7 +650,7 @@ class SubmissionInstanceView (CachedResourceMixin, OwnedResourceMixin, generics.
         try:
             return self.model.objects\
                 .filter(pk=pk)\
-                .select_related('dataset', 'parent', 'parent__place', 'submitter')\
+                .select_related('dataset', 'dataset_owner', 'parent', 'parent__place', 'submitter')\
                 .prefetch_related('attachments', 'submitter__social_auth')\
                 .get()
         except self.model.DoesNotExist:
@@ -750,7 +750,7 @@ class SubmissionListView (CachedResourceMixin, OwnedResourceMixin, FilteredResou
             queryset = queryset.filter(visible=True)
 
         return queryset.filter(parent=submission_set)\
-            .select_related('dataset', 'parent', 'parent__place', 'submitter')\
+            .select_related('dataset', 'dataset__owner', 'parent', 'parent__place', 'submitter')\
             .prefetch_related('attachments', 'submitter__social_auth')
 
 
