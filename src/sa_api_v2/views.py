@@ -285,7 +285,7 @@ class LocatedResourceMixin (object):
             try:
                 reference = utils.to_geom(self.request.GET[NEAR_PARAM])
             except ValueError:
-                raise QueryError
+                raise QueryError(detail='Invalid parameter for "%s": %r' % (NEAR_PARAM, self.request.GET[NEAR_PARAM]))
             queryset = queryset.distance(reference).order_by('distance')
 
         return queryset
@@ -355,7 +355,7 @@ class OwnedResourceMixin (ClientAuthenticationMixin):
         # If the object is invisible, check that include_invisible is on
         if not getattr(obj, 'visible', True):
             if INCLUDE_INVISIBLE_PARAM not in self.request.GET:
-                raise QueryError
+                raise QueryError(detail='You must explicitly request invisible resources with the "include_invisible" parameter.')
 
         if not self.is_verified_object(obj, ObjType):
             raise Http404
@@ -455,7 +455,10 @@ class CachedResourceMixin (object):
 
 class QueryError(exceptions.APIException):
     status_code = status.HTTP_400_BAD_REQUEST
-    detail = 'Malformed or missing query parameters.'
+    default_detail = 'Malformed or missing query parameters.'
+
+    def __init__(self, detail=None):
+        self.detail = detail or self.default_detail
 
 
 ###############################################################################
