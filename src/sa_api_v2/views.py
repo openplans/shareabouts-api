@@ -884,7 +884,7 @@ class DataSetInstanceView (CachedResourceMixin, OwnedResourceMixin, generics.Ret
         include_invisible = INCLUDE_INVISIBLE_PARAM in self.request.GET
         places = self.object.places
         if not include_invisible:
-            places = places.extra(where=['"sa_api_submittedthing"."visible" = True'])
+            places = places.filter(visible=True)
         return places.count()
 
     @utils.memo
@@ -895,7 +895,7 @@ class DataSetInstanceView (CachedResourceMixin, OwnedResourceMixin, generics.Ret
         include_invisible = INCLUDE_INVISIBLE_PARAM in self.request.GET
         submissions = self.object.submissions.select_related('parent')
         if not include_invisible:
-            submissions = submissions.extra(where=['"sa_api_submittedthing"."visible" = True'])
+            submissions = submissions.filter(visible=True)
 
         # Unset any default ordering
         submissions = submissions.order_by()
@@ -956,7 +956,7 @@ class DataSetListMixin (object):
         include_invisible = INCLUDE_INVISIBLE_PARAM in self.request.GET
         places = models.Place.objects.filter(dataset__in=self.get_queryset())
         if not include_invisible:
-            places = places.extra(where=['"sa_api_submittedthing"."visible" = True'])
+            places = places.filter(visible=True)
         places = places.values('dataset').annotate(length=Count('dataset'))
         return dict([(place['dataset'], place['length']) for place in places])
 
@@ -970,7 +970,7 @@ class DataSetListMixin (object):
         include_invisible = INCLUDE_INVISIBLE_PARAM in self.request.GET
         summaries = models.Submission.objects.filter(dataset__in=self.get_queryset()).select_related('parent')
         if not include_invisible:
-            summaries = summaries.extra(where=['"sa_api_submittedthing"."visible" = True'])
+            summaries = summaries.filter(visible=True)
         summaries = summaries.values('dataset', 'parent__name').annotate(length=Count('dataset'))
 
         sets = defaultdict(list)
