@@ -957,6 +957,10 @@ class DataSetListMixin (object):
         places = models.Place.objects.filter(dataset__in=self.get_queryset())
         if not include_invisible:
             places = places.filter(visible=True)
+
+        # Unset any default ordering
+        places = places.order_by()
+
         places = places.values('dataset').annotate(length=Count('dataset'))
         return dict([(place['dataset'], place['length']) for place in places])
 
@@ -971,6 +975,10 @@ class DataSetListMixin (object):
         summaries = models.Submission.objects.filter(dataset__in=self.get_queryset()).select_related('parent')
         if not include_invisible:
             summaries = summaries.filter(visible=True)
+
+        # Unset any default ordering
+        summaries = summaries.order_by()
+
         summaries = summaries.values('dataset', 'parent__name').annotate(length=Count('dataset'))
 
         sets = defaultdict(list)
