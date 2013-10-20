@@ -1230,7 +1230,7 @@ class TestSubmissionInstanceView (APITestMixin, TestCase):
         self.attachments = Attachment.objects.create(
             file=File(f, 'myfile.txt'), name='my_file_name', thing=self.submissions[0])
 
-        self.submission = self.comments.children.all()[0]
+        self.submission = self.submissions[0]
 
         self.apikey = ApiKey.objects.create(key='abc')
         self.apikey.datasets.add(self.dataset)
@@ -1393,7 +1393,7 @@ class TestSubmissionInstanceView (APITestMixin, TestCase):
           'dataset_slug': self.dataset.slug,
           'place_id': self.place.id,
           'submission_set_name': self.comments.name,
-          'submission_id': self.comments.children.values()[0]['id']
+          'submission_id': self.submission.id
         }
 
         path = reverse('submission-detail', kwargs=request_kwargs)
@@ -1599,7 +1599,7 @@ class TestSubmissionListView (APITestMixin, TestCase):
         # Check that we have the right number of results
         self.assertEqual(len(data['results']), 2)
 
-        self.assertEqual(data['results'][0]['url'],
+        self.assertEqual(data['results'][-1]['url'],
             'http://testserver' + reverse('submission-detail', args=[
                 self.owner.username, self.dataset.slug, self.place.id,
                 self.submission.set_name, self.submission.id]))
@@ -1719,7 +1719,7 @@ class TestSubmissionListView (APITestMixin, TestCase):
         self.assertStatusCode(response, 200)
 
         # Check that the private data is in the properties
-        self.assertIn('private-email', data['results'][0])
+        self.assertIn('private-email', data['results'][-1])
 
         # --------------------------------------------------
 
@@ -1735,7 +1735,7 @@ class TestSubmissionListView (APITestMixin, TestCase):
         self.assertStatusCode(response, 200)
 
         # Check that the private data is in the properties
-        self.assertIn('private-email', data['results'][0])
+        self.assertIn('private-email', data['results'][-1])
 
     def test_GET_invalid_url(self):
         # Make sure that we respond with 404 if a slug is supplied, but for
@@ -2395,7 +2395,7 @@ class TestDataSetInstanceView (APITestMixin, TestCase):
           Submission.objects.create(parent=self.likes, dataset=self.dataset, data='{"bar": 3}'),
           Submission.objects.create(parent=self.likes, dataset=self.dataset, data='{"bar": 3}', visible=False),
         ]
-        self.submission = self.comments.children.all()[0]
+        self.submission = self.submissions[0]
 
 
         self.invisible_place = Place.objects.create(
