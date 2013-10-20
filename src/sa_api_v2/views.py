@@ -896,6 +896,10 @@ class DataSetInstanceView (CachedResourceMixin, OwnedResourceMixin, generics.Ret
         submissions = self.object.submissions.select_related('parent')
         if not include_invisible:
             submissions = submissions.extra(where=['"sa_api_submittedthing"."visible" = True'])
+
+        # Unset any default ordering
+        submissions = submissions.order_by()
+
         submissions = submissions.values('dataset', 'parent__name').annotate(length=Count('dataset'))
         return submissions
 
