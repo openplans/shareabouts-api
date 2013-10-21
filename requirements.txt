@@ -58,7 +58,10 @@ nose
 django-nose
 mock
 mock_django
-django-debug-toolbar
+
+# Using trunk of debugtoolbar which includes things like cache paels and a
+# working profiling panel.
+git+https://github.com/django-debug-toolbar/django-debug-toolbar.git#egg=django-debug-toolbar
 
 
 
