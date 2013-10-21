@@ -11,7 +11,7 @@ license unknown.
 
 from django.db import models
 from django.contrib.auth.models import User
-from datetime import datetime
+from django.utils.timezone import now
 
 # Changing this would require a migration, ugh.
 KEY_SIZE = 32
@@ -21,7 +21,7 @@ class ApiKey(models.Model):
     user = models.ForeignKey(User, related_name='api_keys_v1')
     key = models.CharField(max_length=KEY_SIZE, unique=True)
     logged_ip = models.IPAddressField(blank=True, null=True)
-    last_used = models.DateTimeField(blank=True, default=datetime.utcnow)
+    last_used = models.DateTimeField(blank=True, default=now)
 
     # I think we are going to only have one key per dataset,
     # but that could change on either end.

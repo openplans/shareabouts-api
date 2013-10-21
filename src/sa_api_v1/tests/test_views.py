@@ -952,7 +952,7 @@ class TestPlaceCollectionView(TestCase):
 
         self.assertEqual(models.Place.objects.count(), 0)
         res = view(post_request, **uri_args)
-        print res.content
+        # print res.content
         self.assertEqual(models.Place.objects.count(), 1)
 
         with self.assertNumQueries(1):

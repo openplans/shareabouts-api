@@ -3,6 +3,7 @@ import datetime
 from south.db import db
 from south.v2 import SchemaMigration
 from django.db import models
+from django.utils.timezone import utc
 
 
 class Migration(SchemaMigration):
@@ -10,12 +11,12 @@ class Migration(SchemaMigration):
     def forwards(self, orm):
         # Adding field 'Place.created_datetime'
         db.add_column('sa_api_place', 'created_datetime',
-                      self.gf('django.db.models.fields.DateTimeField')(auto_now_add=True, default=datetime.datetime(2012, 7, 24, 0, 0), blank=True),
+                      self.gf('django.db.models.fields.DateTimeField')(auto_now_add=True, default=datetime.datetime(2012, 7, 24, 0, 0, tzinfo=utc), blank=True),
                       keep_default=False)
 
         # Adding field 'Place.updated_datetime'
         db.add_column('sa_api_place', 'updated_datetime',
-                      self.gf('django.db.models.fields.DateTimeField')(auto_now=True, default=datetime.datetime(2012, 7, 24, 0, 0), blank=True),
+                      self.gf('django.db.models.fields.DateTimeField')(auto_now=True, default=datetime.datetime(2012, 7, 24, 0, 0, tzinfo=utc), blank=True),
                       keep_default=False)
 
 
