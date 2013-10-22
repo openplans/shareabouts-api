@@ -1,6 +1,6 @@
 from collections import defaultdict
 from django.conf import settings
-from django.core.cache import cache
+from django.core import cache as django_cache
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.urlresolvers import reverse
 from . import utils
@@ -42,7 +42,7 @@ class Cache (object):
         keys = set()
         for prefix in prefixes:
             meta_key = self.get_meta_key(prefix)
-            keys |= cache.get(meta_key) or set()
+            keys |= django_cache.cache.get(meta_key) or set()
             keys.add(meta_key)
         logger.debug('Keys with prefixes "%s": "%s"' % ('", "'.join(prefixes), '", "'.join(keys)))
         return keys
@@ -52,7 +52,7 @@ class Cache (object):
         Delete all of the data from the cache identified by the given keys.
         """
         logger.debug('Deleting: "%s"' % '", "'.join(keys))
-        cache.delete_many(keys)
+        django_cache.cache.delete_many(keys)
 
     def get_instance_params_key(self, inst_key):
         """
@@ -75,7 +75,7 @@ class Cache (object):
         """
         instance_params_key = self.get_instance_params_key(obj)
         logger.debug('Deleting: "%s"' % instance_params_key)
-        cache.delete(instance_params_key)
+        django_cache.cache.delete(instance_params_key)
 
     def get_cached_instance_params(self, inst_key, obj_getter):
         """
@@ -86,13 +86,13 @@ class Cache (object):
         evaluating it may involve additional queries.
         """
         instance_params_key = self.get_instance_params_key(inst_key)
-        params = cache.get(instance_params_key)
+        params = django_cache.cache.get(instance_params_key)
 
         if params is None:
             obj = obj_getter()
             params = self.get_instance_params(obj)
             logger.debug('Setting instance parameters for "%s": %r' % (instance_params_key, params))
-            cache.set(instance_params_key, params, settings.API_CACHE_TIMEOUT)
+            django_cache.cache.set(instance_params_key, params, settings.API_CACHE_TIMEOUT)
         else:
             logger.debug('Found instance parameters for "%s": %r' % (instance_params_key, params))
         return params
@@ -108,24 +108,24 @@ class Cache (object):
 
     def get_serialized_data(self, inst_key, data_getter, **params):
         key = self.get_serialized_data_key(inst_key, **params)
-        data = cache.get(key)
+        data = django_cache.cache.get(key)
 
         if data is None:
             data = data_getter()
-            cache.set(key, data)
+            django_cache.cache.set(key, data)
 
             # Cache the key itself
             meta_key = self.get_serialized_data_meta_key(inst_key)
-            keys = cache.get(meta_key) or set()
+            keys = django_cache.cache.get(meta_key) or set()
             keys.add(key)
-            cache.set(meta_key, keys, settings.API_CACHE_TIMEOUT)
+            django_cache.cache.set(meta_key, keys, settings.API_CACHE_TIMEOUT)
 
         return data
 
     def get_serialized_data_keys(self, inst_key):
         meta_key = self.get_serialized_data_meta_key(inst_key)
         if meta_key is not None:
-            keys = cache.get(meta_key)
+            keys = django_cache.cache.get(meta_key)
             return (keys or set()) | set([meta_key])
         else:
             return set()
@@ -272,9 +272,9 @@ class SubmissionCache (Cache):
 
 class ActionCache (Cache):
     def clear_instance(self, obj):
-        keys = cache.get('action_keys') or set()
+        keys = django_cache.cache.get('action_keys') or set()
         keys.add('action_keys')
-        cache.delete_many(keys)
+        django_cache.cache.delete_many(keys)
 
 
 class ThingWithAttachmentCache (Cache):
