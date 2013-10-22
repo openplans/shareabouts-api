@@ -795,6 +795,49 @@ class TestPlaceListView (APITestMixin, TestCase):
             'http://testserver/api/v2/%s/datasets/%s/places/%s' %
             (self.owner.username, self.dataset.slug, self.place.id))
 
+    def test_GET_response_for_multiple_specific_objects(self):
+        places = []
+        for _ in range(10):
+            places.append(Place.objects.create(
+              dataset=self.dataset,
+              geometry='POINT(2 3)',
+              submitter=self.submitter,
+              data=json.dumps({
+                'type': 'ATM',
+                'name': 'K-Mart',
+                'private-secrets': 42
+              }),
+            ))
+
+        request_kwargs = {
+          'owner_username': self.owner.username,
+          'dataset_slug': self.dataset.slug,
+          'pk_list': ','.join([str(p.pk) for p in places[::2]])
+        }
+
+        factory = RequestFactory()
+        path = reverse('place-list', kwargs=request_kwargs)
+        view = PlaceListView.as_view()
+
+        request = factory.get(path)
+        response = view(request, **request_kwargs)
+        data = json.loads(response.rendered_content)
+
+        # Check that the request was successful
+        self.assertStatusCode(response, 200)
+
+        # Check that it's a feature collection
+        self.assertIn('features', data)
+
+        # Check that we have the right number of features
+        self.assertEqual(len(data['features']), 5)
+
+        # Check that the pks are correct
+        self.assertEqual(
+            set([f['id'] for f in data['features']]),
+            set([p.pk for p in places[::2]])
+        )
+
     def test_GET_csv_response(self):
         request = self.factory.get(self.path + '?format=csv')
         response = self.view(request, **self.request_kwargs)
@@ -1603,6 +1646,43 @@ class TestSubmissionListView (APITestMixin, TestCase):
             'http://testserver' + reverse('submission-detail', args=[
                 self.owner.username, self.dataset.slug, self.place.id,
                 self.submission.set_name, self.submission.id]))
+
+    def test_GET_response_for_multiple_specific_objects(self):
+        submissions = []
+        for _ in range(10):
+            submissions.append(Submission.objects.create(parent=self.comments, dataset=self.dataset, data='{"comment": "Wow!", "private-email": "abc@example.com", "foo": 3}'))
+
+        request_kwargs = {
+          'owner_username': self.owner.username,
+          'dataset_slug': self.dataset.slug,
+          'place_id': self.place.id,
+          'submission_set_name': self.submission.set_name,
+          'pk_list': ','.join([str(s.pk) for s in submissions[::2]])
+        }
+
+        factory = RequestFactory()
+        path = reverse('submission-list', kwargs=request_kwargs)
+        view = SubmissionListView.as_view()
+
+        request = factory.get(path)
+        response = view(request, **request_kwargs)
+        data = json.loads(response.rendered_content)
+
+        # Check that the request was successful
+        self.assertStatusCode(response, 200)
+
+        # Check that it's a results collection
+        self.assertIn('results', data)
+
+        # Check that we have the right number of results
+        self.assertEqual(len(data['results']), 5)
+
+        # Check that the pks are correct
+        self.assertEqual(
+            set([r['id'] for r in data['results']]),
+            set([s.pk for s in submissions[::2]])
+        )
+
 
     def test_GET_csv_response(self):
         request = self.factory.get(self.path + '?format=csv')

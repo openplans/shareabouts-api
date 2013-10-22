@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.contrib.auth import views as auth_views
 from django.contrib.gis.geos import GEOSGeometry, Point
-from django.core.cache import cache
+from django.core import cache as django_cache
 from django.core.urlresolvers import reverse
 from django.db.models import Count, Q
 from django.http import Http404, HttpResponse, HttpResponseBadRequest, HttpResponseRedirect
@@ -267,6 +267,12 @@ class FilteredResourceMixin (object):
     def get_queryset(self):
         queryset = super(FilteredResourceMixin, self).get_queryset()
 
+        # Filter by any provided primary keys
+        pk_list = self.kwargs.get('pk_list', None)
+        if pk_list is not None:
+            pk_list = pk_list.split(',')
+            queryset = queryset.filter(pk__in=pk_list)
+
         # These filters will have been applied when constructing the queryset
         special_filters = set([FORMAT_PARAM, PAGE_PARAM, PAGE_SIZE_PARAM(),
             INCLUDE_SUBMISSIONS_PARAM, INCLUDE_PRIVATE_PARAM,
@@ -397,14 +403,14 @@ class CachedResourceMixin (object):
 
         # Check whether the response data is in the cache.
         key = self.get_cache_key(request, *args, **kwargs)
-        response_data = cache.get(key) or None
+        response_data = django_cache.cache.get(key) or None
 
         # Also check whether the request cache key is managed in the cache.
         # This is important, because if it's not managed, then we'll never
         # know when to invalidate it. If it's not managed we should just
         # assume that it's invalid.
         metakey = self.get_cache_metakey()
-        keyset = cache.get(metakey) or set()
+        keyset = django_cache.cache.get(metakey) or set()
 
         if (response_data is not None) and (key in keyset):
             cached_response = self.respond_from_cache(response_data)
@@ -451,13 +457,13 @@ class CachedResourceMixin (object):
         headers = response.items()
 
         # Cache enough info to recreate the response.
-        cache.set(key, (data, status, headers), settings.API_CACHE_TIMEOUT)
+        django_cache.cache.set(key, (data, status, headers), settings.API_CACHE_TIMEOUT)
 
         # Also, add the key to the set of pages cached from this view.
         meta_key = self.cache_prefix + '_keys'
-        keys = cache.get(meta_key) or set()
+        keys = django_cache.cache.get(meta_key) or set()
         keys.add(key)
-        cache.set(meta_key, keys, settings.API_CACHE_TIMEOUT)
+        django_cache.cache.set(meta_key, keys, settings.API_CACHE_TIMEOUT)
 
         return response
 
