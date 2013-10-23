@@ -145,6 +145,26 @@ class DataSet (CacheClearingModel, models.Model):
                            )
 
 
+class GeoPointManager (models.GeoManager):
+    """
+    A special GeoManager that only selects points.
+    """
+    def get_queryset(self, *args, **kwargs):
+        # Compatibility with Django pre-1.5
+        super_obj = super(GeoPointManager, self)
+        if hasattr(super_obj, 'get_queryset'):
+            super_func = super_obj.get_queryset
+        else:
+            super_func = super_obj.get_query_set
+
+        qs = super_func(*args, **kwargs)
+        qs = qs.extra(where=["ST_GeometryType(geometry) = 'ST_Point'"])
+        return qs
+
+    # Compatibility with Django pre-1.5
+    get_query_set = get_queryset
+
+
 class Place (SubmittedThing):
     """
     A Place is a submitted thing with some geographic information, to which
@@ -153,7 +173,7 @@ class Place (SubmittedThing):
     """
     location = models.PointField(db_column='geometry')
 
-    objects = models.GeoManager()
+    objects = GeoPointManager()
     cache = cache.PlaceCache()
     next_version = 'sa_api_v2.models.Place'
 
