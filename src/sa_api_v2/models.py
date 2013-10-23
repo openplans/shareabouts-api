@@ -31,12 +31,18 @@ class CacheClearingModel (object):
     def get_previous_version(self):
         model = self.resolve_attr('previous_version')
         if model:
-            return model.objects.get(pk=self.pk)
+            try:
+                return model.objects.get(pk=self.pk)
+            except model.DoesNotExist:
+                return None
 
     def get_next_version(self):
         model = self.resolve_attr('next_version')
         if model:
-            return model.objects.get(pk=self.pk)
+            try:
+                return model.objects.get(pk=self.pk)
+            except model.DoesNotExist:
+                return None
 
     def clear_instance_cache(self):
         if hasattr(self, 'cache'):
