@@ -167,61 +167,7 @@ class DataSetCache (Cache):
         return prefixes
 
 
-class ThingWithAttachmentCache (Cache):
-    dataset_cache = DataSetCache()
-
-    def get_instance_params(self, thing_obj):
-        from django.db.models import Model
-        try:
-            return PlaceCache().get_instance_params(thing_obj.place)
-        except Model.DoesNotExist:
-            return SubmissionCache().get_instance_params(thing_obj.submission)
-
-    def get_attachments_key(self, dataset_id):
-        return 'dataset:%s:%s' % (dataset_id, 'attachments-by-thing_id')
-
-    def calculate_attachments(self, dataset_id):
-        """
-        Cache all the attachments for all the places in the given dataset. Helps
-        to cut down on database hits when doing operations on several places.
-        """
-        # Import Attachment here to avoid circular dependencies.
-        from .models import Attachment
-
-        attachments = defaultdict(list)
-
-        qs = Attachment.objects.filter(thing__dataset_id=dataset_id)
-#        qs = qs.values('file', 'name', 'thing_id')
-        # NOTE: To build the back-reference URL, I'd need information about
-        # the thing's dataset (like thing__dataset__owner__username and such),
-        # but I'd also need to know whether the thing is a place or a
-        # submission.  I'd rather avoid that right now.
-
-        for attachment in qs:
-            attachments[attachment.thing_id].append({
-                'name': attachment.name,
-                'url': attachment.file.url,
-                'created_datetime': attachment.created_datetime,
-                'updated_datetime': attachment.updated_datetime,
-            })
-
-        return attachments
-
-    def get_attachments(self, dataset_id):
-        """
-        A mapping from Place id to attachments. This is so that when we request
-        all the places in a dataset, we don't end up doing a query for the
-        attachments on each place; we can just do it once.
-        """
-        attachments_key = self.get_attachments_key(dataset_id)
-        attachments = cache.get(attachments_key)
-        if attachments is None:
-            attachments = self.calculate_attachments(dataset_id)
-            cache.set(attachments_key, attachments, settings.API_CACHE_TIMEOUT)
-        return attachments
-
-
-class PlaceCache (ThingWithAttachmentCache, Cache):
+class PlaceCache (Cache):
     dataset_cache = DataSetCache()
 
     def get_instance_params(self, place_obj):
@@ -230,7 +176,7 @@ class PlaceCache (ThingWithAttachmentCache, Cache):
         params.update({
             'place_id': place_obj.pk,
             'thing_id': place_obj.pk,
-            'thing_type': place_obj.__class__
+            'thing_type': 'place'
         })
         return params
 
@@ -276,7 +222,7 @@ class SubmissionSetCache (Cache):
         return prefixes
 
 
-class SubmissionCache (ThingWithAttachmentCache, Cache):
+class SubmissionCache (Cache):
     dataset_cache = DataSetCache()
     place_cache = PlaceCache()
     submissionset_cache = SubmissionSetCache()
@@ -287,7 +233,7 @@ class SubmissionCache (ThingWithAttachmentCache, Cache):
         params.update({
             'submission_id': submission_obj.pk,
             'thing_id': submission_obj.pk,
-            'thing_type': submission_obj.__class__
+            'thing_type': 'submission'
         })
         return params
 
@@ -330,8 +276,30 @@ class ActionCache (Cache):
         cache.delete_many(keys)
 
 
+class ThingWithAttachmentCache (Cache):
+    place_cache = PlaceCache()
+    submission_cache = SubmissionCache()
+
+    def get_instance_params(self, thing_obj):
+        from django.db.models import Model
+        try:
+            return self.place_cache.get_instance_params(thing_obj.place)
+        except Model.DoesNotExist:
+            return self.submission_cache.get_instance_params(thing_obj.submission)
+
+    def get_serialized_data_keys(self, thing_obj):
+        from django.db.models import Model
+        try:
+            return self.place_cache.get_instance_params(thing_obj.place)
+        except Model.DoesNotExist:
+            return self.submission_cache.get_instance_params(thing_obj.submission)
+
+    def get_attachments_key(self, dataset_id):
+        return 'dataset:%s:%s' % (dataset_id, 'attachments-by-thing_id')
+
+
 class AttachmentCache (Cache):
-    thing_cache = ThingWithAttachmentCache()
+    thing_cache = ThingWithAttachmentCache()    
     place_cache = PlaceCache()
     submission_cache = SubmissionCache()
 
@@ -346,7 +314,7 @@ class AttachmentCache (Cache):
 
     def get_request_prefixes(self, **params):
         prefixes = super(AttachmentCache, self).get_request_prefixes(**params)
-        if 'submission_id' in params:
+        if params['thing_type'] == 'submission':
             return prefixes | self.get_submission_attachment_request_prefixes(**params)
         else:
             return prefixes | self.get_place_attachment_request_prefixes(**params)
@@ -385,7 +353,11 @@ class AttachmentCache (Cache):
         dataset_id = params.get('dataset_id')
         thing_id = params.get('thing_id')
         thing_attachments_key = self.thing_cache.get_attachments_key(dataset_id)
-        thing_serialized_data_keys = self.thing_cache.get_serialized_data_keys(thing_id)
+
+        if params['thing_type'] == 'submission':
+            thing_serialized_data_keys = self.submission_cache.get_serialized_data_keys(thing_id)
+        else:
+            thing_serialized_data_keys = self.place_cache.get_serialized_data_keys(thing_id)
 
         # Union the two sets
         return set([thing_attachments_key]) | thing_serialized_data_keys
