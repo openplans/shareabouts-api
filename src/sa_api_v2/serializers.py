@@ -179,7 +179,14 @@ class DataSetIdentityField (ShareaboutsIdentityField):
     url_arg_names = ('owner_username', 'dataset_slug')
 
 
+class AttachmentFileField (serializers.FileField):
+    def to_native(self, obj):
+        return obj.storage.url(obj.file.name)
+
+
 class AttachmentSerializer (serializers.ModelSerializer):
+    file = AttachmentFileField()
+
     class Meta:
         model = models.Attachment
         exclude = ('id', 'thing',)

@@ -171,12 +171,11 @@ class ThingWithAttachmentCache (Cache):
     dataset_cache = DataSetCache()
 
     def get_instance_params(self, thing_obj):
-        params = self.dataset_cache.get_cached_instance_params(
-            thing_obj.dataset_id, lambda: thing_obj.dataset)
-        params.update({
-            'thing_id': thing_obj.pk
-        })
-        return params
+        from django.db.models import Model
+        try:
+            return PlaceCache().get_instance_params(thing_obj.place)
+        except Model.DoesNotExist:
+            return SubmissionCache().get_instance_params(thing_obj.submission)
 
     def get_attachments_key(self, dataset_id):
         return 'dataset:%s:%s' % (dataset_id, 'attachments-by-thing_id')
@@ -230,7 +229,8 @@ class PlaceCache (ThingWithAttachmentCache, Cache):
             place_obj.dataset_id, lambda: place_obj.dataset)
         params.update({
             'place_id': place_obj.pk,
-            'thing_id': place_obj.pk
+            'thing_id': place_obj.pk,
+            'thing_type': place_obj.__class__
         })
         return params
 
@@ -286,7 +286,8 @@ class SubmissionCache (ThingWithAttachmentCache, Cache):
             submission_obj.parent_id, lambda: submission_obj.parent)
         params.update({
             'submission_id': submission_obj.pk,
-            'thing_id': submission_obj.pk
+            'thing_id': submission_obj.pk,
+            'thing_type': submission_obj.__class__
         })
         return params
 
@@ -331,6 +332,8 @@ class ActionCache (Cache):
 
 class AttachmentCache (Cache):
     thing_cache = ThingWithAttachmentCache()
+    place_cache = PlaceCache()
+    submission_cache = SubmissionCache()
 
     def get_instance_params(self, attachment_obj):
         params = self.thing_cache.get_cached_instance_params(
@@ -342,7 +345,41 @@ class AttachmentCache (Cache):
         return params
 
     def get_request_prefixes(self, **params):
-        return set()
+        prefixes = super(AttachmentCache, self).get_request_prefixes(**params)
+        if 'submission_id' in params:
+            return prefixes | self.get_submission_attachment_request_prefixes(**params)
+        else:
+            return prefixes | self.get_place_attachment_request_prefixes(**params)
+
+    def get_submission_attachment_request_prefixes(self, **params):
+        owner, dataset, place, submission_set_name, submission = map(params.get, ['owner_username', 'dataset_slug', 'place_id', 'submission_set_name', 'submission_id'])
+        prefixes = set()
+
+        specific_instance_path = reverse('submission-detail', args=[owner, dataset, place, submission_set_name, submission])
+        general_instance_path = reverse('submission-detail', args=[owner, dataset, place, 'submissions', submission])
+        specific_collection_path = reverse('submission-list', args=[owner, dataset, place, submission_set_name])
+        general_collection_path = reverse('submission-list', args=[owner, dataset, place, 'submissions'])
+        specific_all_path = reverse('dataset-submission-list', args=[owner, dataset, submission_set_name])
+        general_all_path = reverse('dataset-submission-list', args=[owner, dataset, 'submissions'])
+        action_collection_path = reverse('action-list', args=[owner, dataset])
+
+        prefixes.update([specific_instance_path, general_instance_path,
+                         specific_collection_path, general_collection_path,
+                         specific_all_path, general_all_path,
+                         action_collection_path])
+
+        return prefixes
+
+    def get_place_attachment_request_prefixes(self, **params):
+        owner, dataset, place = map(params.get, ('owner_username', 'dataset_slug', 'place_id'))
+        prefixes = set()
+
+        instance_path = reverse('place-detail', args=[owner, dataset, place])
+        collection_path = reverse('place-list', args=[owner, dataset])
+        action_collection_path = reverse('action-list', args=[owner, dataset])
+        prefixes.update([instance_path, collection_path, action_collection_path])
+
+        return prefixes
 
     def get_other_keys(self, **params):
         dataset_id = params.get('dataset_id')
