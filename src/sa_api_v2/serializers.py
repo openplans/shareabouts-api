@@ -5,15 +5,17 @@ import ujson as json
 import re
 from itertools import groupby
 from django.contrib.gis.geos import GEOSGeometry
+from django.core.paginator import Page
 from django.db.models import Count
 from rest_framework import pagination
 from rest_framework import serializers
 from rest_framework.reverse import reverse
 from social.apps.django_app.default.models import UserSocialAuth
+import warnings
 
 from . import models
 from . import utils
-from . import cache
+from .cache import cache_buffer
 from .params import (INCLUDE_INVISIBLE_PARAM, INCLUDE_PRIVATE_PARAM,
     INCLUDE_SUBMISSIONS_PARAM, FORMAT_PARAM)
 
@@ -274,6 +276,47 @@ class DataBlobProcessor (object):
 
 
 class CachedSerializer (object):
+    def is_many(self, obj=None):
+        if self.many is not None:
+            many = self.many
+        else:
+            many = hasattr(obj, '__iter__') and not isinstance(obj, dict)
+            if many:
+                warnings.warn('Implict list/queryset serialization is deprecated. '
+                              'Use the `many=True` flag when instantiating the serializer.',
+                              DeprecationWarning, stacklevel=2)
+        return many
+
+    def preload_serialized_data_keys(self, items):
+        if self.is_many(items):
+            # Preload the serialized_data_keys from the cache
+            cache = self.opts.model.cache
+            cache_params = self.get_cache_params()
+            
+            data_keys = [
+                cache.get_serialized_data_key(item.pk, **cache_params)
+                for item in items]
+
+            data_meta_keys = [
+                cache.get_serialized_data_meta_key(item.pk)
+                for item in items]
+
+            param_keys = [
+                cache.get_instance_params_key(item.pk)
+                for item in items]
+
+            cache_buffer.get_many(param_keys + data_keys + data_meta_keys)
+
+    @property
+    def data(self):
+        if self._data is None:
+            self.preload_serialized_data_keys(self.object)
+        return super(CachedSerializer, self).data
+
+    def field_to_native(self, obj, field_name):
+        self.preload_serialized_data_keys(obj)
+        return super(CachedSerializer, self).field_to_native(obj, field_name)
+
     def to_native(self, obj):
         cache = self.opts.model.cache
         cache_params = self.get_cache_params()

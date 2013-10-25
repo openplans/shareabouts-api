@@ -19,11 +19,9 @@ class CacheBuffer (object):
 
         for key in keys:
             try:
-                value = self.queue[key]
+                results[key] = self.queue[key]
             except KeyError:
                 unseen_keys.append(key)
-            else:
-                results[key] = value
 
         if unseen_keys:
             new_results = django_cache.cache.get_many(unseen_keys)
@@ -31,6 +29,7 @@ class CacheBuffer (object):
                 results.update(new_results)
                 self.queue.update(new_results)
 
+        self.queue.update({key: None for key in set(keys) - set(results.keys())})
         return results
 
     def get(self, key):
@@ -38,8 +37,7 @@ class CacheBuffer (object):
             return self.queue[key]
         except KeyError:
             value = django_cache.cache.get(key)
-            if value is not None:
-                self.queue[key] = value
+            self.queue[key] = value
             return value
 
     def set(self, key, value):
