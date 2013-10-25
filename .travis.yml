@@ -3,7 +3,6 @@
 install: "ci/install.sh"
 script: "src/manage.py test --with-coverage --cover-package=sa_api_v1 --cover-package=sa_api_v2 --cover-package=sa_manager"
 python:
-  - "2.6"
   - "2.7"
 notifications:
   irc:
