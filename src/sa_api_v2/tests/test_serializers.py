@@ -2,6 +2,7 @@
 
 from django.test import TestCase
 from django.test.client import RequestFactory
+from django.core.files.base import ContentFile
 from nose.tools import istest
 from sa_api_v2.models import Attachment, Action, User, DataSet, Place, SubmissionSet, Submission
 from sa_api_v2.serializers import AttachmentSerializer, ActionSerializer, UserSerializer
@@ -13,7 +14,9 @@ from os import path
 class TestAttachmentSerializer (TestCase):
 
     def setUp(self):
-        self.attachment_model = Attachment(name='my_file')
+        f = ContentFile('this is a test')
+        f.name = 'my_file.txt'
+        self.attachment_model = Attachment(name='my_file', file=f)
 
     def test_attributes(self):
         serializer = AttachmentSerializer(self.attachment_model)

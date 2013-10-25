@@ -1,6 +1,7 @@
 from collections import defaultdict
 from django.conf import settings
 from django.core.cache import cache
+from django.core.exceptions import ObjectDoesNotExist
 from django.core.urlresolvers import reverse
 from . import utils
 
@@ -281,17 +282,15 @@ class ThingWithAttachmentCache (Cache):
     submission_cache = SubmissionCache()
 
     def get_instance_params(self, thing_obj):
-        from django.db.models import Model
         try:
             return self.place_cache.get_instance_params(thing_obj.place)
-        except Model.DoesNotExist:
+        except ObjectDoesNotExist:
             return self.submission_cache.get_instance_params(thing_obj.submission)
 
     def get_serialized_data_keys(self, thing_obj):
-        from django.db.models import Model
         try:
             return self.place_cache.get_instance_params(thing_obj.place)
-        except Model.DoesNotExist:
+        except ObjectDoesNotExist:
             return self.submission_cache.get_instance_params(thing_obj.submission)
 
     def get_attachments_key(self, dataset_id):

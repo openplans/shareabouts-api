@@ -512,7 +512,7 @@ class PlaceSerializer (SubmittedThingSerializer, serializers.HyperlinkedModelSer
             for submission in submissions:
                 submission.dataset = obj.dataset
 
-            serializer = SubmissionSerializer(submissions, context=self.context)
+            serializer = SubmissionSerializer(submissions, context=self.context, many=True)
             serializer.parent = self
             details[submission_set.name] = serializer.data
 
