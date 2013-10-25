@@ -8,7 +8,7 @@ from django.core.cache import cache
 # from mock import patch
 # from nose.tools import (istest, assert_equal, assert_not_equal, assert_in,
 #                         assert_raises)
-from ..models import DataSet, User, SubmittedThing, Action, Place
+from ..models import DataSet, User, SubmittedThing, Action, Place, SubmissionSet, Submission
 # from ..views import SubmissionCollectionView
 # from ..views import raise_error_if_not_authenticated
 # from ..views import ApiKeyCollectionView
@@ -63,6 +63,8 @@ class TestCacheClearingModel (TestCase):
         User.objects.all().delete()
         DataSet.objects.all().delete()
         Place.objects.all().delete()
+        SubmissionSet.objects.all().delete()
+        Submission.objects.all().delete()
         Action.objects.all().delete()
         cache.clear()
 
@@ -95,6 +97,17 @@ class TestCacheClearingModel (TestCase):
 
     def test_v1_cache_ignores_non_points(self):
         place = Place.objects.create(dataset=self.dataset, geometry='LINESTRING(0 0, 1 1)')
+
+        with mock.patch('sa_api_v1.models.Place.cache.clear_instance') as mockclear:
+            place.clear_instance_cache()
+
+            # Now the cached info should be gone again
+            self.assertEqual(mockclear.call_count, 0)
+
+    def test_saving_submission_on_non_point_place_is_happy(self):
+        place = Place.objects.create(dataset=self.dataset, geometry='LINESTRING(0 0, 1 1)')
+        sset = SubmissionSet.objects.create(place=place, name='doesnt-matter')
+        submission = Submission.objects.create(parent=sset, dataset=self.dataset)
 
         with mock.patch('sa_api_v1.models.Place.cache.clear_instance') as mockclear:
             place.clear_instance_cache()
