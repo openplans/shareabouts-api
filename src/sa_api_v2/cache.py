@@ -9,6 +9,67 @@ import logging
 logger = logging.getLogger('sa_api_v2.cache')
 
 
+class CacheBuffer (object):
+    def __init__(self):
+        self.queue = {}
+
+    def get_many(self, keys):
+        results = {}
+        unseen_keys = []
+
+        for key in keys:
+            try:
+                value = self.queue[key]
+            except KeyError:
+                unseen_keys.append(key)
+            else:
+                results[key] = value
+
+        if unseen_keys:
+            new_results = django_cache.cache.get_many(unseen_keys)
+            if new_results:
+                results.update(new_results)
+                self.queue.update(new_results)
+
+        return results
+
+    def get(self, key):
+        try:
+            return self.queue[key]
+        except KeyError:
+            value = django_cache.cache.get(key)
+            if value is not None:
+                self.queue[key] = value
+            return value
+
+    def set(self, key, value):
+        self.queue[key] = value
+
+    def delete_many(self, keys):
+        for key in keys:
+            try:
+                del self.queue[key]
+            except KeyError:
+                pass
+        django_cache.cache.delete_many(keys)
+
+    def delete(self, key):
+        try:
+            del self.queue[key]
+        except KeyError:
+            pass
+        django_cache.cache.delete(key)
+
+    def flush(self):
+        if self.queue:
+            django_cache.cache.set_many(self.queue, settings.API_CACHE_TIMEOUT)
+            self.reset()
+
+    def reset(self):
+        self.queue = {}
+cache_buffer = CacheBuffer()
+
+
 class Cache (object):
     """
     The base class for objects responsible for caching Shareabouts data
@@ -42,7 +103,7 @@ class Cache (object):
         keys = set()
         for prefix in prefixes:
             meta_key = self.get_meta_key(prefix)
-            keys |= django_cache.cache.get(meta_key) or set()
+            keys |= cache_buffer.get(meta_key) or set()
             keys.add(meta_key)
         logger.debug('Keys with prefixes "%s": "%s"' % ('", "'.join(prefixes), '", "'.join(keys)))
         return keys
@@ -52,7 +113,7 @@ class Cache (object):
         Delete all of the data from the cache identified by the given keys.
         """
         logger.debug('Deleting: "%s"' % '", "'.join(keys))
-        django_cache.cache.delete_many(keys)
+        cache_buffer.delete_many(keys)
 
     def get_instance_params_key(self, inst_key):
         """
@@ -75,7 +136,7 @@ class Cache (object):
         """
         instance_params_key = self.get_instance_params_key(obj)
         logger.debug('Deleting: "%s"' % instance_params_key)
-        django_cache.cache.delete(instance_params_key)
+        cache_buffer.delete(instance_params_key)
 
     def get_cached_instance_params(self, inst_key, obj_getter):
         """
@@ -86,13 +147,13 @@ class Cache (object):
         evaluating it may involve additional queries.
         """
         instance_params_key = self.get_instance_params_key(inst_key)
-        params = django_cache.cache.get(instance_params_key)
+        params = cache_buffer.get(instance_params_key)
 
         if params is None:
             obj = obj_getter()
             params = self.get_instance_params(obj)
             logger.debug('Setting instance parameters for "%s": %r' % (instance_params_key, params))
-            django_cache.cache.set(instance_params_key, params, settings.API_CACHE_TIMEOUT)
+            cache_buffer.set(instance_params_key, params)
         else:
             logger.debug('Found instance parameters for "%s": %r' % (instance_params_key, params))
         return params
@@ -108,24 +169,24 @@ class Cache (object):
 
     def get_serialized_data(self, inst_key, data_getter, **params):
         key = self.get_serialized_data_key(inst_key, **params)
-        data = django_cache.cache.get(key)
+        data = cache_buffer.get(key)
 
         if data is None:
             data = data_getter()
-            django_cache.cache.set(key, data)
+            cache_buffer.set(key, data)
 
             # Cache the key itself
             meta_key = self.get_serialized_data_meta_key(inst_key)
-            keys = django_cache.cache.get(meta_key) or set()
+            keys = cache_buffer.get(meta_key) or set()
             keys.add(key)
-            django_cache.cache.set(meta_key, keys, settings.API_CACHE_TIMEOUT)
+            cache_buffer.set(meta_key, keys)
 
         return data
 
     def get_serialized_data_keys(self, inst_key):
         meta_key = self.get_serialized_data_meta_key(inst_key)
         if meta_key is not None:
-            keys = django_cache.cache.get(meta_key)
+            keys = cache_buffer.get(meta_key)
             return (keys or set()) | set([meta_key])
         else:
             return set()
@@ -272,9 +333,9 @@ class SubmissionCache (Cache):
 
 class ActionCache (Cache):
     def clear_instance(self, obj):
-        keys = django_cache.cache.get('action_keys') or set()
+        keys = cache_buffer.get('action_keys') or set()
         keys.add('action_keys')
-        django_cache.cache.delete_many(keys)
+        cache_buffer.delete_many(keys)
 
 
 class ThingWithAttachmentCache (Cache):
@@ -298,7 +359,7 @@ class ThingWithAttachmentCache (Cache):
 
 
 class AttachmentCache (Cache):
-    thing_cache = ThingWithAttachmentCache()    
+    thing_cache = ThingWithAttachmentCache()
     place_cache = PlaceCache()
     submission_cache = SubmissionCache()
 

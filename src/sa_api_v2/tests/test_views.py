@@ -1,7 +1,7 @@
 from django.test import TestCase
 from django.test.client import RequestFactory
 from django.core.urlresolvers import reverse
-from django.core.cache import cache
+from django.core.cache import cache as django_cache
 from django.core.files import File
 from django.contrib.gis import geos
 import base64
@@ -9,6 +9,7 @@ import csv
 import json
 from StringIO import StringIO
 from ..models import User, DataSet, Place, SubmissionSet, Submission, Attachment, Action
+from ..cache import cache_buffer
 from ..apikey.models import ApiKey
 from ..apikey.auth import KEY_HEADER
 from ..cors.models import OriginPermission
@@ -26,7 +27,8 @@ class APITestMixin (object):
 
 class TestPlaceInstanceView (APITestMixin, TestCase):
     def setUp(self):
-        cache.clear()
+        cache_buffer.reset()
+        django_cache.clear()
 
         self.owner = User.objects.create_user(username='aaron', password='123', email='abc@example.com')
         self.submitter = User.objects.create_user(username='mjumbe', password='456', email='123@example.com')
@@ -101,7 +103,8 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
         Submission.objects.all().delete()
         ApiKey.objects.all().delete()
 
-        cache.clear()
+        cache_buffer.reset()
+        django_cache.clear()
 
     def test_GET_response(self):
         request = self.factory.get(self.path)
@@ -701,7 +704,8 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
 
 class TestPlaceListView (APITestMixin, TestCase):
     def setUp(self):
-        cache.clear()
+        cache_buffer.reset()
+        django_cache.clear()
 
         self.owner = User.objects.create_user(username='aaron', password='123', email='abc@example.com')
         self.submitter = User.objects.create_user(username='mjumbe', password='456', email='123@example.com')
@@ -763,7 +767,8 @@ class TestPlaceListView (APITestMixin, TestCase):
         Submission.objects.all().delete()
         ApiKey.objects.all().delete()
 
-        cache.clear()
+        cache_buffer.reset()
+        django_cache.clear()
 
     def test_GET_response(self):
         request = self.factory.get(self.path)
@@ -1239,7 +1244,8 @@ class TestPlaceListView (APITestMixin, TestCase):
 
 class TestSubmissionInstanceView (APITestMixin, TestCase):
     def setUp(self):
-        cache.clear()
+        cache_buffer.reset()
+        django_cache.clear()
 
         self.owner = User.objects.create_user(username='aaron', password='123', email='abc@example.com')
         self.submitter = User.objects.create_user(username='mjumbe', password='456', email='123@example.com')
@@ -1298,7 +1304,8 @@ class TestSubmissionInstanceView (APITestMixin, TestCase):
         Submission.objects.all().delete()
         ApiKey.objects.all().delete()
 
-        cache.clear()
+        cache_buffer.reset()
+        django_cache.clear()
 
     def test_GET_response(self):
         request = self.factory.get(self.path)
@@ -1461,7 +1468,7 @@ class TestSubmissionInstanceView (APITestMixin, TestCase):
         # - SELECT * FROM sa_api_attachment AS a
         #    WHERE a.thing_id IN (<self.submission.id>);
         #
-        with self.assertNumQueries(2):
+        with self.assertNumQueries(4):
             response = self.view(request, **self.request_kwargs)
             self.assertStatusCode(response, 200)
 
@@ -1537,7 +1544,8 @@ class TestSubmissionInstanceView (APITestMixin, TestCase):
 
 class TestSubmissionListView (APITestMixin, TestCase):
     def setUp(self):
-        cache.clear()
+        cache_buffer.reset()
+        django_cache.clear()
 
         self.owner_password = '123'
         self.owner = User.objects.create_user(
@@ -1619,7 +1627,8 @@ class TestSubmissionListView (APITestMixin, TestCase):
         Submission.objects.all().delete()
         ApiKey.objects.all().delete()
 
-        cache.clear()
+        cache_buffer.reset()
+        django_cache.clear()
 
     def test_GET_response(self):
         request = self.factory.get(self.path)
@@ -2082,7 +2091,8 @@ class TestSubmissionListView (APITestMixin, TestCase):
 
 class TestDataSetSubmissionListView (APITestMixin, TestCase):
     def setUp(self):
-        cache.clear()
+        cache_buffer.reset()
+        django_cache.clear()
 
         self.owner_password = '123'
         self.owner = User.objects.create_user(
@@ -2187,7 +2197,8 @@ class TestDataSetSubmissionListView (APITestMixin, TestCase):
         Submission.objects.all().delete()
         ApiKey.objects.all().delete()
 
-        cache.clear()
+        cache_buffer.reset()
+        django_cache.clear()
 
     def test_GET_response(self):
         request = self.factory.get(self.path)
@@ -2448,7 +2459,8 @@ class TestDataSetSubmissionListView (APITestMixin, TestCase):
 
 class TestDataSetInstanceView (APITestMixin, TestCase):
     def setUp(self):
-        cache.clear()
+        cache_buffer.reset()
+        django_cache.clear()
 
         self.owner = User.objects.create_user(username='aaron', password='123', email='abc@example.com')
         self.submitter = User.objects.create_user(username='mjumbe', password='456', email='123@example.com')
@@ -2509,7 +2521,8 @@ class TestDataSetInstanceView (APITestMixin, TestCase):
         Submission.objects.all().delete()
         ApiKey.objects.all().delete()
 
-        cache.clear()
+        cache_buffer.reset()
+        django_cache.clear()
 
     def test_GET_response(self):
         request = self.factory.get(self.path)
@@ -2726,7 +2739,8 @@ class TestDataSetInstanceView (APITestMixin, TestCase):
 
 class TestDataSetListView (APITestMixin, TestCase):
     def setUp(self):
-        cache.clear()
+        cache_buffer.reset()
+        django_cache.clear()
 
         self.owner_password = '123'
         self.owner = User.objects.create_user(
@@ -2811,7 +2825,8 @@ class TestDataSetListView (APITestMixin, TestCase):
         Submission.objects.all().delete()
         ApiKey.objects.all().delete()
 
-        cache.clear()
+        cache_buffer.reset()
+        django_cache.clear()
 
     def test_GET_response(self):
         request = self.factory.get(self.path)
@@ -2975,7 +2990,8 @@ class TestDataSetListView (APITestMixin, TestCase):
 
 class TestPlaceAttachmentListView (APITestMixin, TestCase):
     def setUp(self):
-        cache.clear()
+        cache_buffer.reset()
+        django_cache.clear()
 
         self.owner = User.objects.create_user(username='aaron', password='123', email='abc@example.com')
         self.submitter = User.objects.create_user(username='mjumbe', password='456', email='123@example.com')
@@ -3035,7 +3051,8 @@ class TestPlaceAttachmentListView (APITestMixin, TestCase):
         Submission.objects.all().delete()
         ApiKey.objects.all().delete()
 
-        cache.clear()
+        cache_buffer.reset()
+        django_cache.clear()
 
     def test_GET_attachments_from_place(self):
         Attachment.objects.create(
@@ -3280,7 +3297,8 @@ class TestPlaceAttachmentListView (APITestMixin, TestCase):
 
 class TestSubmissionAttachmentListView (APITestMixin, TestCase):
     def setUp(self):
-        cache.clear()
+        cache_buffer.reset()
+        django_cache.clear()
 
         self.owner = User.objects.create_user(username='aaron', password='123', email='abc@example.com')
         self.submitter = User.objects.create_user(username='mjumbe', password='456', email='123@example.com')
@@ -3348,7 +3366,8 @@ class TestSubmissionAttachmentListView (APITestMixin, TestCase):
         Submission.objects.all().delete()
         ApiKey.objects.all().delete()
 
-        cache.clear()
+        cache_buffer.reset()
+        django_cache.clear()
 
     def test_GET_attachments_from_visible_submission(self):
         Attachment.objects.create(
@@ -3855,7 +3874,8 @@ class TestActivityView(APITestMixin, TestCase):
 #         ApiKey.objects.all().delete()
 #         User.objects.all().delete()
 
-#         cache.clear()
+#         cache_buffer.reset()
+#         django_cache.clear()
 
 #     @istest
 #     def post_without_permission_does_not_invalidate_cache(self):
@@ -4127,7 +4147,8 @@ class TestActivityView(APITestMixin, TestCase):
 #         SubmissionSet.objects.all().delete()
 #         ApiKey.objects.all().delete()
 
-#         cache.clear()
+#         cache_buffer.reset()
+#         django_cache.clear()
 
 #         self.owner = User.objects.create(username='user')
 #         self.apikey = ApiKey.objects.create(user_id=self.owner.id, key='abcd1234')
@@ -4655,7 +4676,8 @@ class TestActivityView(APITestMixin, TestCase):
 #         models.Activity.objects.all().delete()
 #         User.objects.all().delete()
 
-#         cache.clear()
+#         cache_buffer.reset()
+#         django_cache.clear()
 
 #     def setUp(self):
 #         self._cleanup()

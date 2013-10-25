@@ -24,6 +24,7 @@ from . import parsers
 from . import apikey
 from . import cors
 from . import utils
+from .cache import cache_buffer
 from .params import (INCLUDE_INVISIBLE_PARAM, INCLUDE_PRIVATE_PARAM,
     INCLUDE_SUBMISSIONS_PARAM, NEAR_PARAM, FORMAT_PARAM, PAGE_PARAM,
     PAGE_SIZE_PARAM, CALLBACK_PARAM)
@@ -428,6 +429,9 @@ class CachedResourceMixin (object):
             # Only cache on OK resposne
             if response.status_code == 200:
                 self.cache_response(key, response)
+
+        # Save all the buffered data to the cache
+        cache_buffer.flush()
 
         # Disable client-side caching. Cause IE wrongly assumes that it should
         # cache.
