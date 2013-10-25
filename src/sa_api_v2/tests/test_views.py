@@ -1468,7 +1468,7 @@ class TestSubmissionInstanceView (APITestMixin, TestCase):
         # - SELECT * FROM sa_api_attachment AS a
         #    WHERE a.thing_id IN (<self.submission.id>);
         #
-        with self.assertNumQueries(4):
+        with self.assertNumQueries(2):
             response = self.view(request, **self.request_kwargs)
             self.assertStatusCode(response, 200)
 

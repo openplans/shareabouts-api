@@ -232,7 +232,7 @@ class PlaceCache (Cache):
 
     def get_instance_params(self, place_obj):
         params = self.dataset_cache.get_cached_instance_params(
-            place_obj.dataset_id, lambda: place_obj.dataset)
+            place_obj.dataset_id, lambda: place_obj.dataset).copy()
         params.update({
             'place_id': place_obj.pk,
             'thing_id': place_obj.pk,
@@ -262,7 +262,7 @@ class SubmissionSetCache (Cache):
     # invalidating a SubmissionSet should invalidate its place.
     def get_instance_params(self, submissionset_obj):
         params = self.place_cache.get_cached_instance_params(
-            submissionset_obj.place_id, lambda: submissionset_obj.place)
+            submissionset_obj.place_id, lambda: submissionset_obj.place).copy()
         params.update({
             'submission_set_name': submissionset_obj.name
         })
@@ -289,7 +289,7 @@ class SubmissionCache (Cache):
 
     def get_instance_params(self, submission_obj):
         params = self.submissionset_cache.get_cached_instance_params(
-            submission_obj.parent_id, lambda: submission_obj.parent)
+            submission_obj.parent_id, lambda: submission_obj.parent).copy()
         params.update({
             'submission_id': submission_obj.pk,
             'thing_id': submission_obj.pk,
@@ -363,7 +363,7 @@ class AttachmentCache (Cache):
 
     def get_instance_params(self, attachment_obj):
         params = self.thing_cache.get_cached_instance_params(
-            attachment_obj.thing_id, lambda: attachment_obj.thing)
+            attachment_obj.thing_id, lambda: attachment_obj.thing).copy()
         params.update({
             'attachment': attachment_obj.name,
             'attachment_id': attachment_obj.pk,

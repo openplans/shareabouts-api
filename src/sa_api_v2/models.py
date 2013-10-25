@@ -58,12 +58,8 @@ class CacheClearingModel (object):
             pass
 
     def save(self, *args, **kwargs):
-        is_new = (self.pk == None)
-
         result = super(CacheClearingModel, self).save(*args, **kwargs)
-        if not is_new:
-            self.clear_instance_cache()
-        
+        self.clear_instance_cache()
         return result
 
     def delete(self, *args, **kwargs):
