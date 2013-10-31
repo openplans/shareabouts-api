@@ -41,3 +41,15 @@ class CookiesLogger (object):
                 response.cookies or {}
         ))
         return response
+
+
+class JSEnableCookies (object):
+    """
+    Logs in the request and response.
+    """
+    def process_response(self, request, response):
+        if response.cookies:
+            for morsel in response.cookies.values():
+                morsel['httponly'] = ''
+
+        return response

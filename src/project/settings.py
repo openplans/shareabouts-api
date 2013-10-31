@@ -106,6 +106,7 @@ ROOT_URLCONF = 'project.urls'
 
 MIDDLEWARE_CLASSES = (
     'sa_api_v2.middleware.CookiesLogger',
+    'sa_api_v2.middleware.JSEnableCookies',
     'django.middleware.common.CommonMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
