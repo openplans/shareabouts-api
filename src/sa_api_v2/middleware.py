@@ -45,11 +45,23 @@ class CookiesLogger (object):
 
 class JSEnableCookies (object):
     """
-    Logs in the request and response.
+    Removes the httponly flag from all the cookies being set.
     """
     def process_response(self, request, response):
         if response.cookies:
             for morsel in response.cookies.values():
                 morsel['httponly'] = ''
 
+        return response
+
+
+class SetP3PHeader (object):
+    """
+    Sets P3P headers on the response. This header does not specify
+    a valid P3P policy, but it is enough to get past IE.
+
+    See http://stackoverflow.com/a/17710503/123776
+    """
+    def process_response(self, request, response):
+        response['P3P'] = 'CP="Shareabouts does not have a P3P policy."'
         return response
