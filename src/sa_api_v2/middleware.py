@@ -43,7 +43,7 @@ class CookiesLogger (object):
         return response
 
 
-class JSEnableCookies (object):
+class JSEnableAllCookies (object):
     """
     Removes the httponly flag from all the cookies being set.
     """
@@ -55,7 +55,7 @@ class JSEnableCookies (object):
         return response
 
 
-class SetP3PHeader (object):
+class UniversalP3PHeader (object):
     """
     Sets P3P headers on the response. This header does not specify
     a valid P3P policy, but it is enough to get past IE.

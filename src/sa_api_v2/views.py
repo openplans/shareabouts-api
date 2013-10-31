@@ -260,23 +260,6 @@ class CorsEnabledMixin (object):
         return response
 
 
-class P3PInformationMixin (object):
-    """
-    A view that sets P3P headers on the response. This header does not specify
-    a valid P3P policy, but it is enough to get past IE.
-
-    See http://stackoverflow.com/a/17710503/123776
-    """
-
-    def finalize_response(self, request, response, *args, **kwargs):
-        response = super(P3PInformationMixin, self).finalize_response(request, response, *args, **kwargs)
-
-        # Set the P3P header
-        response['P3P'] = 'CP="Shareabouts does not have a P3P policy."'
-        # response['P3P'] = 'CP="IDC DSP COR ADM DEVi TAIi PSA PSD IVAi IVDi CONi HIS OUR IND CNT"'
-        return response
-
-
 class FilteredResourceMixin (object):
     """
     A view mixin that filters queryset of ModelWithDataBlob results based on
@@ -330,7 +313,7 @@ class LocatedResourceMixin (object):
         return queryset
 
 
-class OwnedResourceMixin (ClientAuthenticationMixin, CorsEnabledMixin, P3PInformationMixin):
+class OwnedResourceMixin (ClientAuthenticationMixin, CorsEnabledMixin):
     """
     A view mixin that retrieves the username of the resource owner, as provided
     in the URL, and stores it on the request object.
@@ -1186,7 +1169,7 @@ class UserInstanceView (OwnedResourceMixin, generics.RetrieveAPIView):
         return owner
 
 
-class CurrentUserInstanceView (CorsEnabledMixin, P3PInformationMixin, views.APIView):
+class CurrentUserInstanceView (CorsEnabledMixin, views.APIView):
     renderer_classes = (JSONRenderer, JSONPRenderer, BrowsableAPIRenderer, renderers.PaginatedCSVRenderer)
 
     def get(self, request):
@@ -1197,7 +1180,7 @@ class CurrentUserInstanceView (CorsEnabledMixin, P3PInformationMixin, views.APIV
             return HttpResponse(status=204)
 
 
-class SessionKeyView (CorsEnabledMixin, P3PInformationMixin, views.APIView):
+class SessionKeyView (CorsEnabledMixin, views.APIView):
     renderer_classes = (JSONRenderer, JSONPRenderer, BrowsableAPIRenderer)
 
     def get(self, request):
