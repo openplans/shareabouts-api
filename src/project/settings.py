@@ -105,6 +105,7 @@ WSGI_APPLICATION = 'project.wsgi.application'
 ROOT_URLCONF = 'project.urls'
 
 MIDDLEWARE_CLASSES = (
+    'sa_api_v2.middleware.CookiesLogger',
     'django.middleware.common.CommonMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',

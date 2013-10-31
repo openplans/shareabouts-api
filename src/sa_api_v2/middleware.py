@@ -22,3 +22,22 @@ class RequestTimeLogger (object):
             ))
 
         return response
+
+
+class CookiesLogger (object):
+    """
+    Logs in the request and response.
+    """
+    def process_response(self, request, response):
+        logger = logging.getLogger('utils.cookies_logger')
+        logger.debug(
+            '(%s)\n'
+            '\n'
+            'Request cookies: %s\n'
+            '\n'
+            'Response cookies: %s' % (
+                response.status_code, 
+                request.COOKIES, 
+                response.cookies or {}
+        ))
+        return response

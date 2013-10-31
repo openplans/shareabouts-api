@@ -130,6 +130,12 @@ LOGGING = {
             'propagate': True,
         },
 
+        'utils.cookies_logger': {
+            'handlers': ['debug_file'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+
         'storages': {
             'handlers': ['debug_file'],
             'level': 'DEBUG',
