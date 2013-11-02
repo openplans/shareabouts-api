@@ -175,4 +175,17 @@ gzip on;
 gzip_types
     text/plain text/html text/css text/csv
     application/json application/javascript;
+
+error_page 411 = @cors;
+location @cors {
+  if (\$request_method = OPTIONS) {
+    add_header Access-Control-Allow-Origin *;
+    add_header Access-Control-Allow-Methods 'GET, OPTIONS, PUT, POST, DELETE, PATCH, HEAD';
+    add_header Access-Control-Allow-Headers 'origin, authorization, accept, content-type';
+    add_header Access-Control-Allow-Credentials 'true';add_header Content-Length 0;
+    add_header Content-Type text/plain;
+    return 200;
+  }
+  return 411;
+}
 EOF
