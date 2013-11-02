@@ -52,7 +52,7 @@ class OriginPermission(models.Model):
             return None
 
     def __unicode__(self):
-        return self.origin_pattern
+        return self.pattern
 
     @staticmethod
     def match(pattern, origin):
