@@ -25,6 +25,12 @@ class GeoJSONRenderer(JSONRenderer):
         """
         Renders *data* into a GeoJSON feature.
         """
+        # Let error codes slip through to the super class method.
+        response = renderer_context.get('response')
+        if response and response.status_code >= 400:
+            return super(GeoJSONRenderer, self).render(data, media_type, renderer_context)
+
+        # Assume everything else is a successful geometry.
         if isinstance(data, list):
             new_data = {
               'type': 'FeatureCollection',
