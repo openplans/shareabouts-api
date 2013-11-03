@@ -3619,6 +3619,9 @@ class TestActivityView(APITestMixin, TestCase):
         Submission.objects.all().delete()
         Action.objects.all().delete()
 
+        cache_buffer.reset()
+        django_cache.clear()
+
         self.owner = User.objects.create_user(username='myuser', password='123')
         self.dataset = DataSet.objects.create(slug='data',
                                               owner_id=self.owner.id)

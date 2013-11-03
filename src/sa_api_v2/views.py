@@ -7,6 +7,8 @@ from django.db.models import Count, Q
 from django.http import Http404, HttpResponse, HttpResponseBadRequest, HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from django.test.utils import override_settings
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_exempt
 from rest_framework import (views, permissions, mixins, authentication,
                             generics, exceptions, status)
 from rest_framework.parsers import JSONParser, FormParser, MultiPartParser
@@ -38,6 +40,38 @@ import ujson as json
 import logging
 
 logger = logging.getLogger('sa_api_v2.views')
+
+
+###############################################################################
+#
+# Authentication (that doesn't require an extra model)
+# --------------
+#
+
+
+class ShareaboutsSessionAuth(authentication.BaseAuthentication):
+    """
+    A copy of Django REST Framework's session auth class without the CSRF
+    check. We don't do cookie-based CSRF here because the context of receiving
+    a submission from a form doesn't usually apply for an API. Also, with CORS
+    if the request is coming from a different domain it won't be allowed.
+    """
+
+    def authenticate(self, request):
+        """
+        Returns a `User` if the request session currently has a logged in user.
+        Otherwise returns `None`.
+        """
+
+        # Get the underlying HttpRequest object
+        http_request = request._request
+        user = getattr(http_request, 'user', None)
+
+        # Unauthenticated, CSRF validation not required
+        if not user or not user.is_active:
+            return None
+
+        return (user, None)
 
 ###############################################################################
 #
@@ -254,9 +288,16 @@ class CorsEnabledMixin (object):
     def finalize_response(self, request, response, *args, **kwargs):
         response = super(CorsEnabledMixin, self).finalize_response(request, response, *args, **kwargs)
 
-        # Allow AJAX requests from anywhere, knowing that we're protected
-        # by origin-based client authentication.
-        response['Access-Control-Allow-Origin'] = '*'
+        # Allow AJAX requests from anywhere for safe methods.
+        if request.method in ('GET', 'HEAD', 'OPTIONS', 'TRACE'):
+            response['Access-Control-Allow-Origin'] = '*'
+
+        # Allow AJAX requests only from trusted domains for unsafe methods.
+        elif isinstance(request.client, cors.models.OriginPermission):
+            response['Access-Control-Allow-Origin'] = request.META.get('HTTP_ORIGIN')
+
+        response['Access-Control-Allow-Headers'] = 'content-type'
+
         return response
 
 
@@ -328,12 +369,13 @@ class OwnedResourceMixin (ClientAuthenticationMixin, CorsEnabledMixin):
     renderer_classes = (JSONRenderer, JSONPRenderer, BrowsableAPIRenderer, renderers.PaginatedCSVRenderer)
     parser_classes = (JSONParser, FormParser, MultiPartParser)
     permission_classes = (IsOwnerOrReadOnly, IsLoggedInOwnerOrPublicDataOnly)
-    authentication_classes = (authentication.BasicAuthentication, authentication.SessionAuthentication)
+    authentication_classes = (authentication.BasicAuthentication, ShareaboutsSessionAuth)
     client_authentication_classes = (apikey.auth.ApiKeyAuthentication, cors.auth.OriginAuthentication)
 
     owner_username_kwarg = 'owner_username'
     dataset_slug_kwarg = 'dataset_slug'
 
+    @csrf_exempt
     def dispatch(self, request, *args, **kwargs):
         request.allowed_username = kwargs[self.owner_username_kwarg]
 
@@ -395,6 +437,7 @@ class CachedResourceMixin (object):
         prefix = self.cache_prefix
         return prefix + '_keys'
 
+    @csrf_exempt
     def dispatch(self, request, *args, **kwargs):
         # Only do the cache for GET, OPTIONS, or HEAD method.
         if request.method.upper() not in permissions.SAFE_METHODS:
@@ -873,7 +916,7 @@ class DataSetInstanceView (CachedResourceMixin, OwnedResourceMixin, generics.Ret
 
     model = models.DataSet
     serializer_class = serializers.DataSetSerializer
-    authentication_classes = (authentication.BasicAuthentication, authentication.SessionAuthentication)
+    authentication_classes = (authentication.BasicAuthentication, ShareaboutsSessionAuth)
     client_authentication_classes = ()
 
     def get_object_or_404(self, owner_username, dataset_slug):
@@ -954,7 +997,7 @@ class DataSetListMixin (object):
     model = models.DataSet
     serializer_class = serializers.DataSetSerializer
     pagination_serializer_class = serializers.PaginatedResultsSerializer
-    authentication_classes = (authentication.BasicAuthentication, authentication.SessionAuthentication)
+    authentication_classes = (authentication.BasicAuthentication, ShareaboutsSessionAuth)
     client_authentication_classes = ()
 
     @utils.memo
