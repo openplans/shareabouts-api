@@ -5,6 +5,7 @@ import ujson as json
 import re
 from itertools import groupby
 from django.contrib.gis.geos import GEOSGeometry
+from django.core.exceptions import ValidationError
 from django.core.paginator import Page
 from django.db.models import Count
 from rest_framework import pagination
@@ -48,8 +49,11 @@ class GeometryField(serializers.WritableField):
     def from_native(self, data):
         if not isinstance(data, basestring):
             data = json.dumps(data)
-        return GEOSGeometry(data)
 
+        try:
+            return GEOSGeometry(data)
+        except Exception as exc:
+            raise ValidationError('Problem converting native data to Geometry: %s' % (exc,))
 
 ###############################################################################
 #
