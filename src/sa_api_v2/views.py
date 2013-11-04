@@ -294,11 +294,14 @@ class CorsEnabledMixin (object):
         # allowed to make unsafe requests. So, we omit OPTIONS from the safe
         # methods so that clients get an honest answer.
         if request.method in ('GET', 'HEAD', 'TRACE'):
-            response['Access-Control-Allow-Origin'] = '*'
+            response['Access-Control-Allow-Origin'] = request.META.get('HTTP_ORIGIN')
 
         # Allow AJAX requests only from trusted domains for unsafe methods.
         elif isinstance(request.client, cors.models.OriginPermission):
             response['Access-Control-Allow-Origin'] = request.META.get('HTTP_ORIGIN')
+
+        else:
+            response['Access-Control-Allow-Origin'] = ''
 
         response['Access-Control-Allow-Methods'] = ', '.join(self.allowed_methods)
         response['Access-Control-Allow-Headers'] = 'content-type, *'
