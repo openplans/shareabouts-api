@@ -23,7 +23,7 @@ of the files necessary are already in the repository.
   For more options, see `dotcloud push --help`
 
 * If you wish to use attachments, you'll need to set up your Django storage
-  settings. By default, Djangoo uses a FileSystemStorage backend, which stores
+  settings. By default, Django uses a FileSystemStorage backend, which stores
   files on a local file system. If you wish to use this default, then set your
   MEDIA_ROOT and MEDIA_URL in local_settings.py (see Django's documentation on
   [The built-in filesystem storage class](https://docs.djangoproject.com/en/1.4/topics/files/#the-built-in-filesystem-storage-class)).
