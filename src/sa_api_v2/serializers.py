@@ -406,6 +406,22 @@ class FacebookUserDataStrategy (object):
         return user_info['bio']
 
 
+class ShareaboutsUserDataStrategy (object):
+    """
+    This strategy exists so that we can add avatars and full names to users
+    that already exist in the system without them creating a Twitter or
+    Facebook account.
+    """
+    def extract_avatar_url(self, user_info):
+        return user_info.get('avatar_url', '')
+
+    def extract_full_name(self, user_info):
+        return user_info.get('full_name', '')
+
+    def extract_bio(self, user_info):
+        return user_info.get('bio', '')
+
+
 ###############################################################################
 #
 # Serializers
@@ -418,7 +434,8 @@ class UserSerializer (serializers.ModelSerializer):
 
     strategies = {
         'twitter': TwitterUserDataStrategy(),
-        'facebook': FacebookUserDataStrategy()
+        'facebook': FacebookUserDataStrategy(),
+        'shareabouts': ShareaboutsUserDataStrategy()
     }
     default_strategy = DefaultUserDataStrategy()
 
