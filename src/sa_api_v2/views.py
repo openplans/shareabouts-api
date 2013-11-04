@@ -288,8 +288,12 @@ class CorsEnabledMixin (object):
     def finalize_response(self, request, response, *args, **kwargs):
         response = super(CorsEnabledMixin, self).finalize_response(request, response, *args, **kwargs)
 
-        # Allow AJAX requests from anywhere for safe methods.
-        if request.method in ('GET', 'HEAD', 'OPTIONS', 'TRACE'):
+        # Allow AJAX requests from anywhere for safe methods. Though OPTIONS
+        # is also a safe method in that it does not modify data on the server,
+        # it is used in preflight requests to determine whether a client is
+        # allowed to make unsafe requests. So, we omit OPTIONS from the safe
+        # methods so that clients get an honest answer.
+        if request.method in ('GET', 'HEAD', 'TRACE'):
             response['Access-Control-Allow-Origin'] = '*'
 
         # Allow AJAX requests only from trusted domains for unsafe methods.
