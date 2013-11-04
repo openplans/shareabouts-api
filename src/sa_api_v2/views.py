@@ -11,6 +11,7 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework import (views, permissions, mixins, authentication,
                             generics, exceptions, status)
+from rest_framework.negotiation import DefaultContentNegotiation
 from rest_framework.parsers import JSONParser, FormParser, MultiPartParser
 from rest_framework.response import Response
 from rest_framework.renderers import JSONRenderer, JSONPRenderer, BrowsableAPIRenderer
@@ -40,6 +41,25 @@ import ujson as json
 import logging
 
 logger = logging.getLogger('sa_api_v2.views')
+
+
+###############################################################################
+#
+# Content Negotiation
+# -------------------
+#
+
+
+class JSONPCallbackNegotiation (DefaultContentNegotiation):
+    """
+    If the request has a 'callback' querystring parameter then we shouldn't
+    have to specify format=jsonp; it should be implied.
+    """
+
+    def select_renderer(self, request, renderers, format_suffix=None):
+        if 'callback' in request.QUERY_PARAMS:
+            format_suffix = 'jsonp'
+        return super(JSONPCallbackNegotiation, self).select_renderer(request, renderers, format_suffix)
 
 
 ###############################################################################
@@ -380,6 +400,7 @@ class OwnedResourceMixin (ClientAuthenticationMixin, CorsEnabledMixin):
     permission_classes = (IsOwnerOrReadOnly, IsLoggedInOwnerOrPublicDataOnly)
     authentication_classes = (authentication.BasicAuthentication, ShareaboutsSessionAuth)
     client_authentication_classes = (apikey.auth.ApiKeyAuthentication, cors.auth.OriginAuthentication)
+    content_negotiation_class = JSONPCallbackNegotiation
 
     owner_username_kwarg = 'owner_username'
     dataset_slug_kwarg = 'dataset_slug'
@@ -1124,6 +1145,7 @@ class AdminDataSetListView (CachedResourceMixin, DataSetListMixin, generics.List
     """
 
     permission_classes = (IsLoggedInAdmin,)
+    content_negotiation_class = JSONPCallbackNegotiation
 
 
 class AttachmentListView (OwnedResourceMixin, FilteredResourceMixin, generics.ListCreateAPIView):
@@ -1223,6 +1245,7 @@ class UserInstanceView (OwnedResourceMixin, generics.RetrieveAPIView):
 
 class CurrentUserInstanceView (CorsEnabledMixin, views.APIView):
     renderer_classes = (JSONRenderer, JSONPRenderer, BrowsableAPIRenderer, renderers.PaginatedCSVRenderer)
+    content_negotiation_class = JSONPCallbackNegotiation
 
     def get(self, request):
         if request.user.is_authenticated():
@@ -1234,6 +1257,7 @@ class CurrentUserInstanceView (CorsEnabledMixin, views.APIView):
 
 class SessionKeyView (CorsEnabledMixin, views.APIView):
     renderer_classes = (JSONRenderer, JSONPRenderer, BrowsableAPIRenderer)
+    content_negotiation_class = JSONPCallbackNegotiation
 
     def get(self, request):
         return Response({
