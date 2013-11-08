@@ -352,6 +352,7 @@ class FilteredResourceMixin (object):
         for key, values in self.request.GET.iterlists():
             if key not in special_filters:
                 # Filter!
+                excluded = []
                 for obj in queryset:
                     if hasattr(obj, key):
                         if getattr(obj, key) not in values:
@@ -360,7 +361,8 @@ class FilteredResourceMixin (object):
                         # Is it in the data blob?
                         data = json.loads(obj.data)
                         if key not in data or data[key] not in values:
-                            queryset = queryset.exclude(pk=obj.pk)
+                            excluded.append(obj.pk)
+                queryset = queryset.exclude(pk__in=excluded)
 
         return queryset
 
