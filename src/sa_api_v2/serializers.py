@@ -413,13 +413,13 @@ class ShareaboutsUserDataStrategy (object):
     Facebook account.
     """
     def extract_avatar_url(self, user_info):
-        return user_info.get('avatar_url', '')
+        return user_info.get('avatar_url', None)
 
     def extract_full_name(self, user_info):
-        return user_info.get('full_name', '')
+        return user_info.get('full_name', None)
 
     def extract_bio(self, user_info):
-        return user_info.get('bio', '')
+        return user_info.get('bio', None)
 
 
 ###############################################################################
