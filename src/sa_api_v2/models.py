@@ -3,6 +3,7 @@ from django.contrib.gis.db import models
 from django.conf import settings
 from django.core.files.storage import get_storage_class
 from django.core.exceptions import ObjectDoesNotExist
+from django.utils.timezone import now
 from django.utils.importlib import import_module
 from . import cache
 from . import utils
@@ -10,7 +11,7 @@ import sa_api_v1.models
 
 
 class TimeStampedModel (models.Model):
-    created_datetime = models.DateTimeField(auto_now_add=True)
+    created_datetime = models.DateTimeField(default=now, blank=True)
     updated_datetime = models.DateTimeField(auto_now=True)
 
     class Meta:
