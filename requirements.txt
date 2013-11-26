@@ -4,7 +4,7 @@
 
 Django==1.5.4
 # gevent
-gunicorn
+  gunicorn
 
 
 
@@ -58,11 +58,7 @@ nose
 django-nose
 mock
 mock_django
-
-# Using trunk of debugtoolbar which includes things like cache paels and a
-# working profiling panel.
-git+https://github.com/django-debug-toolbar/django-debug-toolbar.git#egg=django-debug-toolbar
-
+django-debug-toolbar==0.9.4
 
 
 # - - - - - - - - - - - - - - - -
