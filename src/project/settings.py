@@ -307,6 +307,7 @@ if 'DATABASE_URL' in environ:
     import dj_database_url
     # NOTE: Be sure that your DATABASE_URL has the 'postgis://' scheme.
     DATABASES = {'default': dj_database_url.config()}
+    DATABASES['default']['ENGINE'] = 'django.contrib.gis.db.backends.postgis'
 
 if 'DEBUG' in environ:
     DEBUG = (environ['DEBUG'].lower() == 'true')
