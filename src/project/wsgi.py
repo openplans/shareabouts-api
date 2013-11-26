@@ -14,6 +14,12 @@ framework.
 
 """
 import os
+import sys
+from os.path import abspath, join
+
+CURR_DIR = os.path.dirname(__file__)
+sys.path.append(abspath(join(CURR_DIR, '../../libs', 'django-rest-framework-0.4')))
+
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "project.settings")
 
