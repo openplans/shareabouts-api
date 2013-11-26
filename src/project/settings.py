@@ -320,7 +320,7 @@ if 'REDIS_URL' in environ:
     CACHES = {
         "default": {
             "BACKEND": "redis_cache.cache.RedisCache",
-            "LOCATION": "%s:1" % (netloc,),
+            "LOCATION": "%s:0" % (netloc,),
             "OPTIONS": {
                 "CLIENT_CLASS": "redis_cache.client.DefaultClient",
                 "PASSWORD": password,
