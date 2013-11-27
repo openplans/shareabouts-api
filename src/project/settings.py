@@ -301,7 +301,6 @@ LOGGING = {
 
 ##############################################################################
 # Environment loading
-from urlparse import urlparse
 
 if 'DATABASE_URL' in environ:
     import dj_database_url
@@ -312,6 +311,7 @@ if 'DATABASE_URL' in environ:
 if 'DEBUG' in environ:
     DEBUG = (environ['DEBUG'].lower() == 'true')
     TEMPLATE_DEBUG = DEBUG
+    SHOW_DEBUG_TOOLBAR = DEBUG
 
 if 'REDIS_URL' in environ:
     scheme, connstring = environ['REDIS_URL'].split('://')
