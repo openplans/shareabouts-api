@@ -1,1 +1,1 @@
-web: gunicorn project.wsgi --pythonpath src --workers 4
+web: newrelic-admin run-program gunicorn project.wsgi --pythonpath src --workers 4

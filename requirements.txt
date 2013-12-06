@@ -5,6 +5,7 @@
 Django==1.5.4
 # gevent
 gunicorn
+newrelic
 
 
 
