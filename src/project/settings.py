@@ -248,7 +248,7 @@ LOGGING = {
     },
     'loggers': {
         'django.request': {
-            'handlers': ['mail_admins'],
+            'handlers': ['mail_admins', 'console'],
             'level': 'ERROR',
             'propagate': True,
         },
@@ -265,12 +265,6 @@ LOGGING = {
         'sa_manager': {
             'handlers': ['console'],
             'level': 'INFO',
-            'propagate': True,
-        },
-
-        'django.request': {
-            'handlers': ['mail_admins'],
-            'level': 'ERROR',
             'propagate': True,
         },
 
