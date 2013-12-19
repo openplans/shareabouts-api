@@ -14,26 +14,15 @@ sudo pip install -r requirements.txt
 # ... and this, optional testing stuff
 sudo pip install coverage
 
-# Create a PostGIS template database
-psql -c "CREATE DATABASE template_postgis;" -U postgres
-psql -c "UPDATE pg_database SET datistemplate='true' WHERE datname='template_postgis';" -U postgres
-createlang plpgsql template_postgis -U postgres
-# Loading the PostGIS SQL routines
-psql -d template_postgis -f /usr/share/postgresql/9.1/contrib/postgis-1.5/postgis.sql -q
-psql -d template_postgis -f /usr/share/postgresql/9.1/contrib/postgis-1.5/spatial_ref_sys.sql -q
-# Enabling users to alter spatial tables.
-psql -d template_postgis -c "GRANT ALL ON geometry_columns TO PUBLIC;"
-psql -d template_postgis -c "GRANT ALL ON geography_columns TO PUBLIC;"
-psql -d template_postgis -c "GRANT ALL ON spatial_ref_sys TO PUBLIC;"
-
 # Initialize the database
 psql -U postgres <<EOF
     CREATE USER shareabouts WITH PASSWORD 'shareabouts';
-    CREATE DATABASE shareabouts WITH TEMPLATE = template_postgis;
-    GRANT ALL ON DATABASE template_postgis TO shareabouts;
+    CREATE DATABASE shareabouts;
     GRANT ALL ON DATABASE shareabouts TO shareabouts;
     ALTER USER shareabouts WITH CREATEDB;
 EOF
+
+psql -U postgres -d shareabouts -c "CREATE EXTENSION postgis;"
 
 # Initialize the project settings
 cp src/project/local_settings.py.template src/project/local_settings.py
