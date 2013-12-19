@@ -264,7 +264,8 @@ class SubmissionSetCache (Cache):
         params = self.place_cache.get_cached_instance_params(
             submissionset_obj.place_id, lambda: submissionset_obj.place).copy()
         params.update({
-            'submission_set_name': submissionset_obj.name
+            'submission_set_name': submissionset_obj.name,
+            'submission_set_id': submissionset_obj.pk
         })
         return params
 
@@ -298,10 +299,11 @@ class SubmissionCache (Cache):
         return params
 
     def get_other_keys(self, **params):
-        dataset_id, place_id = map(params.get, ['dataset_id', 'place_id'])
+        dataset_id, place_id, submissionset_id = map(params.get, ['dataset_id', 'place_id', 'submission_set_id'])
         dataset_serialized_data_keys = self.dataset_cache.get_serialized_data_keys(dataset_id)
         place_serialized_data_keys = self.place_cache.get_serialized_data_keys(place_id)
-        return dataset_serialized_data_keys | place_serialized_data_keys
+        submissionset_serialized_data_keys = self.submissionset_cache.get_serialized_data_keys(submissionset_id)
+        return dataset_serialized_data_keys | place_serialized_data_keys | submissionset_serialized_data_keys
 
     def get_request_prefixes(self, **params):
         owner, dataset, place, submission_set_name, submission = map(params.get, ['owner_username', 'dataset_slug', 'place_id', 'submission_set_name', 'submission_id'])

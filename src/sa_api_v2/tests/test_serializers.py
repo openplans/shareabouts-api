@@ -5,10 +5,12 @@ from django.test.client import RequestFactory
 from django.core.files.base import ContentFile
 from nose.tools import istest
 from sa_api_v2.models import Attachment, Action, User, DataSet, Place, SubmissionSet, Submission
-from sa_api_v2.serializers import AttachmentSerializer, ActionSerializer, UserSerializer
+from sa_api_v2.serializers import AttachmentSerializer, ActionSerializer, UserSerializer, PlaceSerializer, DataSetSerializer
 from social.apps.django_app.default.models import UserSocialAuth
+from ..serializers import cache_buffer
 import json
 from os import path
+from mock import patch
 
 
 class TestAttachmentSerializer (TestCase):
@@ -157,3 +159,98 @@ class TestUserSerializer (TestCase):
 
         self.assertEqual(serializer.data['name'], '')
         self.assertEqual(serializer.data['avatar_url'], '')
+
+
+class TestPlaceSerializer (TestCase):
+
+    def setUp(self):
+        User.objects.all().delete()
+        DataSet.objects.all().delete()
+        Place.objects.all().delete()
+        SubmissionSet.objects.all().delete()
+        Submission.objects.all().delete()
+        cache_buffer.reset()
+
+        self.owner = User.objects.create(username='myuser')
+        self.dataset = DataSet.objects.create(slug='data',
+                                              owner_id=self.owner.id)
+        self.place = Place.objects.create(dataset=self.dataset, geometry='POINT(2 3)')
+        self.comments = SubmissionSet.objects.create(place=self.place, name='comments')
+        Submission.objects.create(dataset=self.dataset, parent=self.comments)
+        Submission.objects.create(dataset=self.dataset, parent=self.comments)
+
+    def test_place_has_right_number_of_submissions(self):
+        serializer = PlaceSerializer(self.place)
+        serializer.context = {
+            'request': RequestFactory().get('')
+        }
+
+        self.assertEqual(serializer.data['submission_sets']['comments']['length'], 2)
+
+    def test_place_cache_cleared_on_new_submissions(self):
+        serializer = PlaceSerializer(self.place)
+        serializer.context = {
+            'request': RequestFactory().get('')
+        }
+
+        # Make sure that the metakey gets entered into the cache, and gets
+        # cleared when a new submission is created.
+        p_metakey = Place.cache.get_serialized_data_meta_key(self.place.pk)
+        ss_metakey = SubmissionSet.cache.get_serialized_data_meta_key(self.comments.pk)
+        self.assertIsNone(cache_buffer.get(p_metakey))
+        self.assertIsNone(cache_buffer.get(ss_metakey))
+
+        initial_data = serializer.data
+        self.assertIsNotNone(cache_buffer.get(p_metakey))
+        self.assertIsNotNone(cache_buffer.get(ss_metakey))
+
+        Submission.objects.create(dataset=self.dataset, parent=self.comments)
+        self.assertIsNone(cache_buffer.get(p_metakey))
+        self.assertIsNone(cache_buffer.get(ss_metakey))
+
+        # Make sure that the actual serialized data is different.
+        serializer = PlaceSerializer(self.place)
+        serializer.context = {
+            'request': RequestFactory().get('')
+        }
+
+        final_data = serializer.data
+        self.assertNotEqual(initial_data, final_data)
+
+
+class TestDataSetSerializer (TestCase):
+
+    def setUp(self):
+        User.objects.all().delete()
+        DataSet.objects.all().delete()
+        Place.objects.all().delete()
+        SubmissionSet.objects.all().delete()
+        Submission.objects.all().delete()
+        cache_buffer.reset()
+
+        self.owner = User.objects.create(username='myuser')
+        self.dataset = DataSet.objects.create(slug='data',
+                                              owner_id=self.owner.id)
+        self.place = Place.objects.create(dataset=self.dataset, geometry='POINT(2 3)')
+        self.comments = SubmissionSet.objects.create(place=self.place, name='comments')
+        Submission.objects.create(dataset=self.dataset, parent=self.comments)
+        Submission.objects.create(dataset=self.dataset, parent=self.comments)
+
+    def test_dataset_cache_cleared_on_new_submissions(self):
+        serializer = DataSetSerializer(self.dataset)
+        serializer.context = {
+            'request': RequestFactory().get(''),
+            'place_count_map_getter': (lambda: {self.dataset.pk: 0}),
+            'submission_sets_map_getter': (lambda: {self.dataset.pk: []})
+        }
+
+        # Check that we call summaries when serializing a place for the first
+        # time.
+        metakey = DataSet.cache.get_serialized_data_meta_key(self.dataset.pk)
+        self.assertIsNone(cache_buffer.get(metakey))
+
+        serializer.data
+        self.assertIsNotNone(cache_buffer.get(metakey))
+
+        Submission.objects.create(dataset=self.dataset, parent=self.comments)
+        self.assertIsNone(cache_buffer.get(metakey))
