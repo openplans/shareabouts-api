@@ -22,7 +22,7 @@ psql -U postgres <<EOF
     ALTER USER shareabouts WITH CREATEDB;
 EOF
 
-sudo psql -d shareabouts -c "CREATE EXTENSION postgis;"
+psql -d shareabouts -c "CREATE EXTENSION postgis;"
 
 # Initialize the project settings
 cp src/project/local_settings.py.template src/project/local_settings.py
