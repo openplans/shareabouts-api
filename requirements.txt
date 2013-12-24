@@ -3,7 +3,7 @@
 # ==============================
 
 Django==1.5.4
-# gevent
+gevent
 gunicorn
 newrelic
 
