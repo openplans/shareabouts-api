@@ -19,6 +19,13 @@ class SubmittedThingAdmin(admin.OSMGeoAdmin):
     def submitter_name(self, obj):
         return obj.submitter.username if obj.submitter else None
 
+    def get_queryset(self, request):
+        qs = super(SubmittedThingAdmin, self).get_queryset(request)
+        user = request.user
+        if not user.is_superuser:
+            qs = qs.filter(dataset__owner=user)
+        return qs
+
 
 class InlineApiKeyAdmin(admin.StackedInline):
     model = ApiKey.datasets.through
