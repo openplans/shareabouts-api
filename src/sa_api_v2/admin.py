@@ -4,13 +4,12 @@ via django.contrib.admin.
 """
 
 import models
-from django.contrib import admin
+from django.contrib.gis import admin
 from .apikey.models import ApiKey
 
 
-class SubmittedThingAdmin(admin.ModelAdmin):
+class SubmittedThingAdmin(admin.OSMGeoAdmin):
     date_hierarchy = 'created_datetime'
-    model = models.SubmittedThing
     list_display = ('id', 'created_datetime', 'updated_datetime', 'submitter_name', 'dataset')
     list_filter = ('dataset',)
 
