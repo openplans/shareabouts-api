@@ -284,7 +284,7 @@ class CachedSerializer (object):
         if self.many is not None:
             many = self.many
         else:
-            many = hasattr(obj, '__iter__') and not isinstance(obj, dict)
+            many = hasattr(obj, '__iter__') and not isinstance(obj, (dict, Page))
             if many:
                 warnings.warn('Implict list/queryset serialization is deprecated. '
                               'Use the `many=True` flag when instantiating the serializer.',
@@ -539,7 +539,7 @@ class PlaceSerializer (SubmittedThingSerializer, serializers.HyperlinkedModelSer
     id = serializers.PrimaryKeyRelatedField(read_only=True)
     geometry = GeometryField(format='wkt')
     dataset = DataSetRelatedField()
-    attachments = AttachmentSerializer(read_only=True)
+    attachments = AttachmentSerializer(read_only=True, many=True)
     submitter = UserSerializer(read_only=False)
 
     class Meta:
@@ -620,7 +620,7 @@ class SubmissionSerializer (SubmittedThingSerializer, serializers.HyperlinkedMod
     dataset = DataSetRelatedField()
     set = SubmissionSetRelatedField(source='parent')
     place = PlaceRelatedField(source='parent.place')
-    attachments = AttachmentSerializer(read_only=True)
+    attachments = AttachmentSerializer(read_only=True, many=True)
     submitter = UserSerializer()
 
     class Meta:
@@ -632,10 +632,10 @@ class DataSetSerializer (CachedSerializer, serializers.HyperlinkedModelSerialize
     url = DataSetIdentityField()
     id = serializers.PrimaryKeyRelatedField(read_only=True)
     owner = UserRelatedField()
-    keys = DataSetKeysRelatedField(source='*')
+    keys = DataSetKeysRelatedField(source='*', many=True)
 
-    places = DataSetPlaceSetSummarySerializer(source='*', read_only=True)
-    submission_sets = DataSetSubmissionSetSummarySerializer(source='*', read_only=True)
+    places = DataSetPlaceSetSummarySerializer(source='*', read_only=True, many=True)
+    submission_sets = DataSetSubmissionSetSummarySerializer(source='*', read_only=True, many=True)
 
     class Meta:
         model = models.DataSet
