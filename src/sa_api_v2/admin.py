@@ -12,6 +12,7 @@ class SubmittedThingAdmin(admin.OSMGeoAdmin):
     date_hierarchy = 'created_datetime'
     list_display = ('id', 'created_datetime', 'updated_datetime', 'submitter_name', 'dataset')
     list_filter = ('dataset',)
+    search_fields = ('submitter__username', 'data',)
 
     raw_id_fields = ('submitter', 'dataset')
 
@@ -50,6 +51,7 @@ class SubmissionAdmin(SubmittedThingAdmin):
     list_display = SubmittedThingAdmin.list_display + ('place', 'set_',)
     list_filter = ('parent__name',) + SubmittedThingAdmin.list_filter
     list_select_related = ('parent',)
+    search_fields = ('parent__name',) + SubmittedThingAdmin.search_fields
 
     def set_(self, obj):
         return obj.parent.name
