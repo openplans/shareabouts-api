@@ -19,10 +19,10 @@ psql -U postgres <<EOF
     CREATE USER shareabouts WITH PASSWORD 'shareabouts';
     CREATE DATABASE shareabouts;
     GRANT ALL ON DATABASE shareabouts TO shareabouts;
-    ALTER USER shareabouts WITH CREATEDB;
+    ALTER USER shareabouts SUPERUSER;
 EOF
 
-psql -d shareabouts -c "CREATE EXTENSION postgis;"
+psql -U postgres -d shareabouts -c "CREATE EXTENSION postgis;"
 
 # Initialize the project settings
 cp src/project/local_settings.py.template src/project/local_settings.py
