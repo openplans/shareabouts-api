@@ -13,6 +13,8 @@ class SubmittedThingAdmin(admin.OSMGeoAdmin):
     list_display = ('id', 'created_datetime', 'updated_datetime', 'submitter_name', 'dataset')
     list_filter = ('dataset',)
 
+    raw_id_fields = ('submitter', 'dataset')
+
     def submitter_name(self, obj):
         return obj.submitter.username if obj.submitter else None
 
