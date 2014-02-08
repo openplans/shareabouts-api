@@ -11,7 +11,8 @@ from .apikey.models import ApiKey
 class SubmittedThingAdmin(admin.ModelAdmin):
     date_hierarchy = 'created_datetime'
     model = models.SubmittedThing
-    list_display = ('id', 'created_datetime', 'updated_datetime', 'submitter_name',)
+    list_display = ('id', 'created_datetime', 'updated_datetime', 'submitter_name', 'dataset')
+    list_filter = ('dataset',)
 
     def submitter_name(self, obj):
         return obj.submitter.username if obj.submitter else None
@@ -28,13 +29,12 @@ class InlineGroupAdmin(admin.StackedInline):
 
 
 class DataSetAdmin(admin.ModelAdmin):
-    list_display = ('id', 'slug', 'display_name', 'owner')
+    list_display = ('display_name', 'slug', 'owner')
     prepopulated_fields = {'slug': ['display_name']}
     inlines = [InlineApiKeyAdmin, InlineGroupAdmin]
 
 
 class PlaceAdmin(SubmittedThingAdmin):
-    list_display = SubmittedThingAdmin.list_display + ('dataset', )
     model = models.Place
 
 
