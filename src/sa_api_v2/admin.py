@@ -79,7 +79,32 @@ class InlineGroupAdmin(admin.StackedInline):
 class DataSetAdmin(admin.ModelAdmin):
     list_display = ('display_name', 'slug', 'owner')
     prepopulated_fields = {'slug': ['display_name']}
+
+    raw_id_fields = ('owner',)
     inlines = [InlineApiKeyAdmin, InlineGroupAdmin]
+
+    def get_queryset(self, request):
+        qs = super(DataSetAdmin, self).get_queryset(request)
+        user = request.user
+        if not user.is_superuser:
+            qs = qs.filter(owner=user)
+        return qs
+    
+    def get_form(self, request, obj=None, **kwargs):
+        # Hide the owner field from non-superusers. All objects visible to the
+        # user should be assumed to be owned by themselves.
+        if not request.user.is_superuser:
+            self.exclude = (self.exclude or ()) + ('owner',)
+        return super(DataSetAdmin, self).get_form(request, obj, **kwargs)
+
+    def save_model(self, request, obj, form, change):
+        # Set the current user as the owner if the object has no owner and the
+        # user is not a superuser.
+        user = request.user
+        if not user.is_superuser:
+            if obj.owner_id is None:
+                obj.owner = user
+        super(DataSetAdmin, self).save_model(request, obj, form, change)
 
 
 class PlaceAdmin(SubmittedThingAdmin):
