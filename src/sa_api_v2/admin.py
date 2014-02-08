@@ -47,6 +47,19 @@ class SubmissionSetAdmin(admin.ModelAdmin):
 class SubmissionAdmin(SubmittedThingAdmin):
     model = models.Submission
 
+    list_display = SubmittedThingAdmin.list_display + ('place', 'set_',)
+    list_filter = ('parent__name',) + SubmittedThingAdmin.list_filter
+    list_select_related = ('parent',)
+
+    def set_(self, obj):
+        return obj.parent.name
+    set_.short_description = 'Set'
+    set_.admin_order_field = 'parent__name'
+
+    def place(self, obj):
+        return obj.parent.place_id
+    place.admin_order_field = 'parent__place'
+
 
 class ActionAdmin(admin.ModelAdmin):
     date_hierarchy = 'created_datetime'
