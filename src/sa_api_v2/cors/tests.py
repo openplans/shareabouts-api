@@ -4,42 +4,42 @@ from django.test import TestCase
 from django.core.exceptions import PermissionDenied
 from nose.tools import assert_true, assert_false, assert_raises, assert_is_not_none, assert_equal
 from sa_api_v2.cors.auth import OriginAuthentication
-from sa_api_v2.cors.models import OriginPermission
+from sa_api_v2.cors.models import Origin
 from sa_api_v2.models import DataSet, User
 
 
 class TestOriginMatching (TestCase):
     def test_match_simple_domains(self):
         pattern = 'github.com'
-        assert_true(OriginPermission.match(pattern, 'github.com'))
-        assert_false(OriginPermission.match(pattern, 'openplans.github.com'))
+        assert_true(Origin.match(pattern, 'github.com'))
+        assert_false(Origin.match(pattern, 'openplans.github.com'))
 
     def test_match_subdomains_with_asterisk(self):
         pattern = '*.github.com'
-        assert_false(OriginPermission.match(pattern, 'github.com'))
-        assert_true(OriginPermission.match(pattern, 'openplans.github.com'))
-        assert_false(OriginPermission.match(pattern, 'openplansngithub.com'))
+        assert_false(Origin.match(pattern, 'github.com'))
+        assert_true(Origin.match(pattern, 'openplans.github.com'))
+        assert_false(Origin.match(pattern, 'openplansngithub.com'))
 
     def test_match_ports_with_asterisk(self):
         pattern = 'localhost:*'
-        assert_false(OriginPermission.match(pattern, 'github.com'))
-        assert_true(OriginPermission.match(pattern, 'localhost:8000'))
+        assert_false(Origin.match(pattern, 'github.com'))
+        assert_true(Origin.match(pattern, 'localhost:8000'))
 
     def test_lone_asterisk_matches_everything(self):
         pattern = '*'
-        assert_true(OriginPermission.match(pattern, 'ishkabibble.com:443'))
+        assert_true(Origin.match(pattern, 'ishkabibble.com:443'))
 
 
 class TestOriginClientAuth (TestCase):
     def setUp(self):
-        OriginPermission.objects.all().delete()
+        Origin.objects.all().delete()
         DataSet.objects.all().delete()
 
         self.user = User.objects.create_user(username='user', password='password')
         self.dataset = DataSet.objects.create(owner=self.user, slug='dataset')
-        self.permission1 = OriginPermission.objects.create(pattern='github.com')
+        self.permission1 = Origin.objects.create(pattern='github.com')
         self.permission1.datasets.add(self.dataset)
-        self.permission2 = OriginPermission.objects.create(pattern='localhost:*')
+        self.permission2 = Origin.objects.create(pattern='localhost:*')
         self.permission2.datasets.add(self.dataset)
 
     def test_simple_origin_matching_on_first_origin(self):

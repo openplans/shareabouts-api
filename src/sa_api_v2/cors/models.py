@@ -15,7 +15,7 @@ from ..models import DataSet
 import re
 
 
-class OriginPermission(models.Model):
+class Origin(models.Model):
     pattern = models.CharField(max_length=100, help_text='The origin pattern, e.g., *.github.com, localhost:*, map.phila.gov')
     logged_ip = models.IPAddressField(blank=True, null=True)
     last_used = models.DateTimeField(blank=True, default=now)
@@ -23,10 +23,10 @@ class OriginPermission(models.Model):
     # I think we are going to only have one key per dataset,
     # but that could change on either end.
     datasets = models.ManyToManyField(DataSet, blank=True,
-                                      related_name='origin_permissions')
+                                      related_name='origins')
 
     class Meta:
-        db_table = 'cors_originpermission'
+        db_table = 'cors_origin'
 
     def login(self, ip_address):
         self.logged_ip = ip_address

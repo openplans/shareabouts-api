@@ -317,7 +317,7 @@ class CorsEnabledMixin (object):
             response['Access-Control-Allow-Origin'] = request.META.get('HTTP_ORIGIN')
 
         # Allow AJAX requests only from trusted domains for unsafe methods.
-        elif isinstance(request.client, cors.models.OriginPermission):
+        elif isinstance(request.client, cors.models.Origin):
             response['Access-Control-Allow-Origin'] = request.META.get('HTTP_ORIGIN')
 
         else:
