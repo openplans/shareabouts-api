@@ -409,7 +409,9 @@ class DataSetFormMixin (BaseDataBlobFormMixin):
         # Arrange the data fields for display on the form
         data_fields = self.make_data_fields_tuples(dataset)
 
-        dataset['url'] = dataset['url'].replace('api/v1', 'api/v2')
+        # Make sure that we refer to the v2 dataset root URL.
+        if 'url' in dataset:
+            dataset['url'] = dataset['url'].replace('api/v1', 'api/v2')
 
         return render(request, "manager/dataset.html", {
             'dataset': dataset,
