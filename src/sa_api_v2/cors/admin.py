@@ -20,6 +20,13 @@ class OriginAdmin(ModelAdmin):
             'admin/js/admin-list-reorder.js',
         )
 
+    def get_queryset(self, request):
+        qs = super(OriginAdmin, self).get_queryset(request)
+        user = request.user
+        if not user.is_superuser:
+            qs = qs.filter(datasets__owner=user)
+        return qs
+
     def save_model(self, request, obj, form, change):
         if obj.logged_ip == '':
             obj.logged_ip = None

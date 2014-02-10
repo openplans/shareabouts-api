@@ -23,4 +23,11 @@ class ApiKeyAdmin(ModelAdmin):
             'admin/js/admin-list-reorder.js',
         )
 
+    def get_queryset(self, request):
+        qs = super(ApiKeyAdmin, self).get_queryset(request)
+        user = request.user
+        if not user.is_superuser:
+            qs = qs.filter(datasets__owner=user)
+        return qs
+
 admin.site.register(ApiKey, ApiKeyAdmin)

@@ -7,6 +7,7 @@ import models
 from django.contrib.admin import SimpleListFilter
 from django.contrib.gis import admin
 from .apikey.models import ApiKey
+from .cors.models import OriginPermission
 
 
 class SubmissionSetFilter (SimpleListFilter):
@@ -68,6 +69,14 @@ class SubmittedThingAdmin(admin.OSMGeoAdmin):
 
 class InlineApiKeyAdmin(admin.StackedInline):
     model = ApiKey.datasets.through
+    raw_id_fields = ['apikey']
+    extra = 1
+
+
+class InlineOriginPermissionAdmin(admin.StackedInline):
+    model = OriginPermission.datasets.through
+    raw_id_fields = ['originpermission']
+    extra = 1
 
 
 class InlineGroupAdmin(admin.StackedInline):
@@ -81,7 +90,7 @@ class DataSetAdmin(admin.ModelAdmin):
     prepopulated_fields = {'slug': ['display_name']}
 
     raw_id_fields = ('owner',)
-    inlines = [InlineApiKeyAdmin, InlineGroupAdmin]
+    inlines = [InlineApiKeyAdmin, InlineOriginPermissionAdmin, InlineGroupAdmin]
 
     def get_queryset(self, request):
         qs = super(DataSetAdmin, self).get_queryset(request)
