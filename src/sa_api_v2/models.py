@@ -254,4 +254,21 @@ class Attachment (CacheClearingModel, TimeStampedModel):
     class Meta:
         db_table = 'sa_api_attachment'
 
+
+class Role (models.Model):
+    """
+    A submitter role within a dataset.
+    """
+    dataset = models.ForeignKey('DataSet')
+    name = models.CharField(max_length=32)
+    submitters = models.ManyToManyField(User, related_name='roles', blank=True)
+
+    class Meta:
+        db_table = 'sa_api_role'
+        unique_together = [('name', 'dataset')]
+
+    def __unicode__(self):
+        return '%s in %s' % (self.name, self.dataset.slug)
+
+
 #

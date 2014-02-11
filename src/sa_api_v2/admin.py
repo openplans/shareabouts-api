@@ -21,10 +21,16 @@ class InlineApiKeyAdmin(admin.StackedInline):
     model = ApiKey.datasets.through
 
 
+class InlineRoleAdmin(admin.StackedInline):
+    model = models.Role
+    filter_horizontal = ('submitters',)
+    extra = 1
+
+
 class DataSetAdmin(admin.ModelAdmin):
     list_display = ('id', 'slug', 'display_name', 'owner')
     prepopulated_fields = {'slug': ['display_name']}
-    inlines = [InlineApiKeyAdmin]
+    inlines = [InlineApiKeyAdmin, InlineRoleAdmin]
 
 
 class PlaceAdmin(SubmittedThingAdmin):
@@ -48,8 +54,15 @@ class ActionAdmin(admin.ModelAdmin):
     def submitter_name(self, obj):
         return obj.submitter.username if obj.submitter else None
 
+
+class RoleAdmin(admin.ModelAdmin):
+    raw_id_fields = ('dataset',)
+    filter_horizontal = ('submitters',)
+
+
 admin.site.register(models.DataSet, DataSetAdmin)
 admin.site.register(models.Place, PlaceAdmin)
 admin.site.register(models.SubmissionSet, SubmissionSetAdmin)
 admin.site.register(models.Submission, SubmissionAdmin)
 admin.site.register(models.Action, ActionAdmin)
+admin.site.register(models.Role, RoleAdmin)
