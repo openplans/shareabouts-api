@@ -6,6 +6,9 @@ from django.db import models
 
 
 class Migration(SchemaMigration):
+    depends_on = (
+        ('sa_api_v2.cors', '0004__rename_originpermission_to_origin.py'),
+    )
 
     def forwards(self, orm):
         # Adding model 'KeyPermission'
