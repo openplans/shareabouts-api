@@ -197,6 +197,12 @@ class AttachmentSerializer (serializers.ModelSerializer):
         model = models.Attachment
         exclude = ('id', 'thing',)
 
+    def to_native(self, obj):
+        return {
+            'file': obj.storage.url(obj.file.name),
+            'name': obj.name
+        }
+
 ###############################################################################
 #
 # Serializer Mixins
@@ -262,8 +268,7 @@ class DataBlobProcessor (object):
 
         return super(DataBlobProcessor, self).restore_fields(data_copy, files)
 
-    def to_native(self, obj):
-        data = super(DataBlobProcessor, self).to_native(obj)
+    def explode_data_blob(self, data):
         blob = data.pop('data')
 
         blob_data = json.loads(blob)
@@ -276,6 +281,11 @@ class DataBlobProcessor (object):
                     del blob_data[key]
 
         data.update(blob_data)
+        return data
+
+    def to_native(self, obj):
+        data = super(DataBlobProcessor, self).to_native(obj)
+        self.explode_data_blob(data)
         return data
 
 
@@ -483,6 +493,12 @@ class SubmissionSetSummarySerializer (CachedSerializer, serializers.HyperlinkedM
         model = models.SubmissionSet
         fields = ('length', 'url')
 
+    def to_native(self, obj):
+        return {
+            'length': obj.length,
+            'url': self.fields['url'].field_to_native(obj, 'url')
+        }
+
 
 class DataSetPlaceSetSummarySerializer (serializers.HyperlinkedModelSerializer):
     length = serializers.IntegerField(source='places_length')
@@ -598,7 +614,19 @@ class PlaceSerializer (SubmittedThingSerializer, serializers.HyperlinkedModelSer
         return details
 
     def to_native(self, obj):
-        data = super(PlaceSerializer, self).to_native(obj)
+        data = {
+            'url': self.fields['url'].field_to_native(obj, 'pk'),  # = PlaceIdentityField()
+            'id': obj.pk,  # = serializers.PrimaryKeyRelatedField(read_only=True)
+            'geometry': str(obj.geometry),  # = GeometryField(format='wkt')
+            'dataset': obj.dataset_id,  # = DataSetRelatedField()
+            'attachments': [AttachmentSerializer(a).data for a in obj.attachments.all()],  # = AttachmentSerializer(read_only=True)
+            'submitter': UserSerializer(obj.submitter).data if obj.submitter else None,
+            'data': obj.data
+        }
+
+        data = self.explode_data_blob(data)
+
+        # data = super(PlaceSerializer, self).to_native(obj)
         request = self.context['request']
 
         if INCLUDE_SUBMISSIONS_PARAM not in request.GET:
@@ -641,7 +669,18 @@ class DataSetSerializer (CachedSerializer, serializers.HyperlinkedModelSerialize
         model = models.DataSet
 
     def to_native(self, obj):
-        data = super(DataSetSerializer, self).to_native(obj)
+        # data = super(DataSetSerializer, self).to_native(obj)
+
+        self.url.context = self.context
+        self.url.parent = self
+
+        self.owner.context = self.context
+
+        data = {
+            'url': self.url.field_to_native(obj, 'url'),
+            'id': obj.pk,
+            'owner': self.owner.field_to_native(obj.owner)
+        }
 
         if hasattr(obj, 'distance'):
             data['distance'] = str(obj.distance)
