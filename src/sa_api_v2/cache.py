@@ -309,6 +309,9 @@ class SubmissionCache (Cache):
         owner, dataset, place, submission_set_name, submission = map(params.get, ['owner_username', 'dataset_slug', 'place_id', 'submission_set_name', 'submission_id'])
         prefixes = super(SubmissionCache, self).get_request_prefixes(**params)
 
+        # TODO: it's pretty clear that a developer should be able to register
+        # a URL with or cache key or prefix or something to be cleared. How
+        # would that work?
         specific_instance_path = reverse('submission-detail', args=[owner, dataset, place, submission_set_name, submission])
         general_instance_path = reverse('submission-detail', args=[owner, dataset, place, 'submissions', submission])
         specific_collection_path = reverse('submission-list', args=[owner, dataset, place, submission_set_name])
