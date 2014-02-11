@@ -275,32 +275,41 @@ class DataPermission (models.Model):
     """
     Rules for what permissions a given authentication method affords.
     """
-    can_create = models.BooleanField(default=True)
-    can_update = models.BooleanField(default=True)
-    can_destroy = models.BooleanField(default=True)
+    can_create = models.BooleanField(default=False)
+    can_update = models.BooleanField(default=False)
+    can_destroy = models.BooleanField(default=False)
     submission_set = models.CharField(max_length=128, blank=True, help_text='Either the name of a submission set (e.g., "comments"), or "places". Leave blank to refer to all things.')
 
     class Meta:
         abstract = True
 
-    def __unicode__(self):
+    def abilities(self):
         abilities = []
         if self.can_create: abilities.append('create')
         abilities.append('retrieve')
         if self.can_update: abilities.append('update')
         if self.can_destroy: abilities.append('destroy')
-        return 'can ' + ', '.join(abilities) + (' ' if self.submission_set else '') + self.submission_set
+        return 'can ' + ', '.join(abilities) + ' ' + (self.submission_set or 'anything')
 
 
 class RolePermission (DataPermission):
-    role = models.ForeignKey('Role')
+    role = models.ForeignKey('Role', related_name='permissions')
+
+    def __unicode__(self):
+        return '%s %s' % (self.role, self.abilities())
 
 
 class KeyPermission (DataPermission):
-    key = models.ForeignKey('apikey.ApiKey')
+    key = models.ForeignKey('apikey.ApiKey', related_name='permissions')
+
+    def __unicode__(self):
+        return 'submitters %s' % (self.abilities(),)
 
 
 class OriginPermission (DataPermission):
-    origin = models.ForeignKey('cors.Origin')
+    origin = models.ForeignKey('cors.Origin', related_name='permissions')
+
+    def __unicode__(self):
+        return 'submitters %s' % (self.abilities(),)
 
 #
