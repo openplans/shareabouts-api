@@ -55,9 +55,15 @@ class ActionAdmin(admin.ModelAdmin):
         return obj.submitter.username if obj.submitter else None
 
 
+class InlineRolePermissionAdmin(admin.StackedInline):
+    model = models.RolePermission
+    extra = 1
+
+
 class RoleAdmin(admin.ModelAdmin):
     raw_id_fields = ('dataset',)
     filter_horizontal = ('submitters',)
+    inlines = [InlineRolePermissionAdmin]
 
 
 admin.site.register(models.DataSet, DataSetAdmin)

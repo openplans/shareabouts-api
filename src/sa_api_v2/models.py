@@ -271,4 +271,36 @@ class Role (models.Model):
         return '%s in %s' % (self.name, self.dataset.slug)
 
 
+class DataPermission (models.Model):
+    """
+    Rules for what permissions a given authentication method affords.
+    """
+    can_create = models.BooleanField(default=True)
+    can_update = models.BooleanField(default=True)
+    can_destroy = models.BooleanField(default=True)
+    submission_set = models.CharField(max_length=128, blank=True, help_text='Either the name of a submission set (e.g., "comments"), or "places". Leave blank to refer to all things.')
+
+    class Meta:
+        abstract = True
+
+    def __unicode__(self):
+        abilities = []
+        if self.can_create: abilities.append('create')
+        abilities.append('retrieve')
+        if self.can_update: abilities.append('update')
+        if self.can_destroy: abilities.append('destroy')
+        return 'can ' + ', '.join(abilities) + (' ' if self.submission_set else '') + self.submission_set
+
+
+class RolePermission (DataPermission):
+    role = models.ForeignKey('Role')
+
+
+class KeyPermission (DataPermission):
+    key = models.ForeignKey('apikey.ApiKey')
+
+
+class OriginPermission (DataPermission):
+    origin = models.ForeignKey('cors.Origin')
+
 #
