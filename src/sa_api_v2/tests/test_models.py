@@ -1,9 +1,9 @@
 from django.test import TestCase
 # from django.test.client import Client
-# from django.test.client import RequestFactory
+from django.test.client import RequestFactory
 # from django.contrib.auth.models import User
 from django.core.cache import cache
-# from django.core.urlresolvers import reverse
+from django.core.urlresolvers import reverse
 # from djangorestframework.response import ErrorResponse
 # from mock import patch
 # from nose.tools import (istest, assert_equal, assert_not_equal, assert_in,
@@ -115,3 +115,56 @@ class TestCacheClearingModel (TestCase):
             # Now the cached info should be gone again
             self.assertEqual(mockclear.call_count, 0)
 
+
+class MiscCacheClearingTests (TestCase):
+    def test_new_submission_clears_v1_tabular_cache(self):
+        """
+        Related to a bug discovered in the Manager where the submission table
+        downloads would not get new values on subsequent downloads. This test
+        confirms that behavior.
+        (2014 Feb 11)
+        """
+        User.objects.all().delete()
+        DataSet.objects.all().delete()
+        Place.objects.all().delete()
+        SubmissionSet.objects.all().delete()
+        Submission.objects.all().delete()
+        Action.objects.all().delete()
+        cache.clear()
+
+        self.owner = User.objects.create(username='myuser')
+        self.dataset = DataSet.objects.create(slug='data',
+                                              owner_id=self.owner.id)
+        self.place = Place.objects.create(dataset_id=self.dataset.id,
+                                          geometry='POINT(0 0)')
+        self.comment_set = SubmissionSet.objects.create(place_id=self.place.id,
+                                                        name='comments')
+
+        from sa_api_v1 import views as v1_views
+        kwargs = {
+            'submission_type': self.comment_set.name,
+            'dataset__slug': self.dataset.slug,
+            'dataset__owner__username': self.owner.username
+        }
+        request = RequestFactory().get(reverse('v1:tabular_all_submissions_by_dataset', kwargs=kwargs))
+        view = v1_views.TabularAllSubmissionCollectionsView.as_view()
+
+        # Create a couple submissions
+        self.comments = [
+            Submission.objects.create(parent_id=self.comment_set.id, dataset_id=self.dataset.id),
+            Submission.objects.create(parent_id=self.comment_set.id, dataset_id=self.dataset.id)
+        ]
+
+        # Get table
+        response1 = view(request, **kwargs)
+
+        # Get table again, and ensure it's from cache, and it's the same
+        response2 = view(request, **kwargs)
+        self.assertEqual(response1.content, response2.content)
+
+        # Create another subimssion
+        Submission.objects.create(parent_id=self.comment_set.id, dataset_id=self.dataset.id)
+
+        # Get table and ensure it's different
+        response3 = view(request, **kwargs)
+        self.assertNotEqual(response1.content, response3.content)

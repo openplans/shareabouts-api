@@ -349,6 +349,8 @@ class SubmissionCache (ThingWithAttachmentCache, Cache):
         tabular_general_collection_path = reverse('v1:tabular_submission_collection_by_dataset', args=[owner, dataset, place, 'submissions'])
         specific_all_path = reverse('v1:all_submissions_by_dataset', args=[owner, dataset, set_name])
         general_all_path = reverse('v1:all_submissions_by_dataset', args=[owner, dataset, 'submissions'])
+        tabular_specific_all_path = reverse('v1:tabular_all_submissions_by_dataset', args=[owner, dataset, set_name])
+        tabular_general_all_path = reverse('v1:tabular_all_submissions_by_dataset', args=[owner, dataset, 'submissions'])
         place_instance_path = reverse('v1:place_instance_by_dataset', args=[owner, dataset, place])
         place_collection_path = reverse('v1:place_collection_by_dataset', args=[owner, dataset])
         tabular_place_collection_path = reverse('v1:tabular_place_collection_by_dataset', args=[owner, dataset])
@@ -361,6 +363,8 @@ class SubmissionCache (ThingWithAttachmentCache, Cache):
                          tabular_specific_collection_path, 
                          tabular_general_collection_path,
                          specific_all_path, general_all_path,
+                         tabular_specific_all_path,
+                         tabular_general_all_path,
                          place_instance_path, place_collection_path,
                          tabular_place_collection_path,
                          dataset_instance_path, dataset_collection_path,
