@@ -6,14 +6,21 @@ from .models import ApiKey
 from .forms import ApiKeyForm
 
 
-class InlineKeyPermissionAdmin(admin.StackedInline):
+class InlineKeyPermissionAdmin(admin.TabularInline):
     model = models.KeyPermission
-    extra = 1
+    extra = 0
 
 
 class ApiKeyAdmin(ModelAdmin):
     inlines = [InlineKeyPermissionAdmin]
     form = ApiKeyForm
     list_display = ('key', 'dataset', 'logged_ip', 'last_used')
+
+    class Media:
+        js = (
+            'admin/js/jquery-1.11.0.min.js',
+            'admin/js/jquery-ui-1.10.4.min.js',
+            'admin/js/admin-list-reorder.js',
+        )
 
 admin.site.register(ApiKey, ApiKeyAdmin)

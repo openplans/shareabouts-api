@@ -55,15 +55,22 @@ class ActionAdmin(admin.ModelAdmin):
         return obj.submitter.username if obj.submitter else None
 
 
-class InlineRolePermissionAdmin(admin.StackedInline):
+class InlineRolePermissionAdmin(admin.TabularInline):
     model = models.RolePermission
-    extra = 1
+    extra = 0
 
 
 class RoleAdmin(admin.ModelAdmin):
     raw_id_fields = ('dataset',)
     filter_horizontal = ('submitters',)
     inlines = [InlineRolePermissionAdmin]
+
+    class Media:
+        js = (
+            'admin/js/jquery-1.11.0.min.js',
+            'admin/js/jquery-ui-1.10.4.min.js',
+            'admin/js/admin-list-reorder.js',
+        )
 
 
 admin.site.register(models.DataSet, DataSetAdmin)

@@ -4,14 +4,21 @@ from .. import models
 from sa_api_v2.cors.models import Origin
 
 
-class InlineOriginPermissionAdmin(admin.StackedInline):
+class InlineOriginPermissionAdmin(admin.TabularInline):
     model = models.OriginPermission
-    extra = 1
+    extra = 0
 
 
 class OriginAdmin(ModelAdmin):
     inlines = [InlineOriginPermissionAdmin]
     list_display = ('pattern', 'dataset', 'logged_ip', 'last_used')
+
+    class Media:
+        js = (
+            'admin/js/jquery-1.11.0.min.js',
+            'admin/js/jquery-ui-1.10.4.min.js',
+            'admin/js/admin-list-reorder.js',
+        )
 
     def save_model(self, request, obj, form, change):
         if obj.logged_ip == '':

@@ -275,21 +275,42 @@ class DataPermission (models.Model):
     """
     Rules for what permissions a given authentication method affords.
     """
+    submission_set = models.CharField(max_length=128, blank=True, help_text='Either the name of a submission set (e.g., "comments"), or "places". Leave blank to refer to all things.')
+    can_retrieve = models.BooleanField(default=True)
     can_create = models.BooleanField(default=False)
     can_update = models.BooleanField(default=False)
     can_destroy = models.BooleanField(default=False)
-    submission_set = models.CharField(max_length=128, blank=True, help_text='Either the name of a submission set (e.g., "comments"), or "places". Leave blank to refer to all things.')
+    priority = models.PositiveIntegerField(blank=True)
 
     class Meta:
         abstract = True
+        ordering = ('priority',)
 
     def abilities(self):
         abilities = []
         if self.can_create: abilities.append('create')
-        abilities.append('retrieve')
+        if self.can_retrieve: abilities.append('retrieve')
         if self.can_update: abilities.append('update')
         if self.can_destroy: abilities.append('destroy')
-        return 'can ' + ', '.join(abilities) + ' ' + (self.submission_set or 'anything')
+
+        if abilities:
+            if len(abilities) > 1: abilities[-1] = 'or ' + abilities[-1]
+            return 'can ' + ', '.join(abilities) + ' ' + (self.submission_set or 'anything')
+        else:
+            return 'can not create, retrieve, update, or destroy ' + (self.submission_set or 'anything') + ' at all'
+
+    def save(self, *args, **kwargs):
+        # Use self.__class__ so that inherited models work.
+        ModelClass = self.__class__
+
+        if self.priority is None:
+            try:
+                lowest = ModelClass.objects.order_by('-priority')[0]
+                self.priority = lowest.priority + 1
+            except IndexError:
+                self.priority = 0
+
+        return super(DataPermission, self).save(*args, **kwargs)
 
 
 class RolePermission (DataPermission):
