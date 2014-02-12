@@ -428,9 +428,18 @@ class ShareaboutsUserDataStrategy (object):
 # -----------
 #
 
+class RoleSerializer (serializers.ModelSerializer):
+    dataset = DataSetRelatedField()
+
+    class Meta:
+        model = models.Role
+        exclude = ('submitters', 'id')
+
+
 class UserSerializer (serializers.ModelSerializer):
     name = serializers.SerializerMethodField('get_name')
     avatar_url = serializers.SerializerMethodField('get_avatar_url')
+    roles = RoleSerializer(many=True)
 
     strategies = {
         'twitter': TwitterUserDataStrategy(),

@@ -3,8 +3,9 @@
 from django.test import TestCase
 from django.test.client import RequestFactory
 from django.core.files.base import ContentFile
+from django.core.urlresolvers import reverse
 from nose.tools import istest
-from sa_api_v2.models import Attachment, Action, User, DataSet, Place, SubmissionSet, Submission
+from sa_api_v2.models import Attachment, Action, User, DataSet, Place, SubmissionSet, Submission, Role
 from sa_api_v2.serializers import AttachmentSerializer, ActionSerializer, UserSerializer, PlaceSerializer, DataSetSerializer
 from social.apps.django_app.default.models import UserSocialAuth
 from ..serializers import cache_buffer
@@ -106,7 +107,7 @@ class TestActionSerializer (TestCase):
         self.assertNotIn('thing', serializer.data)
 
 
-class TestUserSerializer (TestCase):
+class TestSocialUserSerializer (TestCase):
 
     def setUp(self):
         test_dir = path.dirname(__file__)
@@ -159,6 +160,43 @@ class TestUserSerializer (TestCase):
 
         self.assertEqual(serializer.data['name'], '')
         self.assertEqual(serializer.data['avatar_url'], '')
+
+
+class TestUserSerializer (TestCase):
+
+    def setUp(self):
+        self.owner = User.objects.create_user(
+            username='my_owning_user', password='mypassword')
+        self.normal_user = User.objects.create_user(
+            username='my_normal_user', password='password')
+        self.special_user = User.objects.create_user(
+            username='my_special_user', password='password')
+
+        self.datasets = [
+            DataSet.objects.create(owner=self.owner, slug='ds1'),
+            DataSet.objects.create(owner=self.owner, slug='ds2')
+        ]
+        self.roles = [
+            Role.objects.create(dataset=self.datasets[0], name='special users')
+        ]
+
+        self.special_user.roles.add(self.roles[0])
+
+    def tearDown(self):
+        User.objects.all().delete()
+        UserSocialAuth.objects.all().delete()
+        Role.objects.all().delete()
+        DataSet.objects.all().delete()
+
+    def test_returns_an_empty_list_of_roles_for_normal_users(self):
+        serializer = UserSerializer(self.normal_user)
+        self.assertIn('roles', serializer.data)
+        self.assertEqual(serializer.data['roles'], [])
+
+    def test_returns_a_users_roles(self):
+        serializer = UserSerializer(self.special_user)
+        self.assertIn('roles', serializer.data)
+        self.assertEqual(serializer.data['roles'], [{'dataset': reverse('dataset-detail', kwargs={'dataset_slug': 'ds1', 'owner_username': 'my_owning_user'}), 'name': 'special users'}])
 
 
 class TestPlaceSerializer (TestCase):
