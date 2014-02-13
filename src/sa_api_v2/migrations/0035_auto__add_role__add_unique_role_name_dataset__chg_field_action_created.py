@@ -8,25 +8,25 @@ from django.db import models
 class Migration(SchemaMigration):
 
     def forwards(self, orm):
-        # Adding model 'Role'
-        db.create_table('sa_api_role', (
+        # Adding model 'Group'
+        db.create_table('sa_api_group', (
             (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
             ('dataset', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['sa_api_v2.DataSet'])),
             ('name', self.gf('django.db.models.fields.CharField')(max_length=32)),
         ))
-        db.send_create_signal(u'sa_api_v2', ['Role'])
+        db.send_create_signal(u'sa_api_v2', ['Group'])
 
-        # Adding M2M table for field submitters on 'Role'
-        m2m_table_name = db.shorten_name('sa_api_role_submitters')
+        # Adding M2M table for field submitters on 'Group'
+        m2m_table_name = db.shorten_name('sa_api_group_submitters')
         db.create_table(m2m_table_name, (
             ('id', models.AutoField(verbose_name='ID', primary_key=True, auto_created=True)),
-            ('role', models.ForeignKey(orm[u'sa_api_v2.role'], null=False)),
+            ('group', models.ForeignKey(orm[u'sa_api_v2.group'], null=False)),
             ('user', models.ForeignKey(orm[u'auth.user'], null=False))
         ))
-        db.create_unique(m2m_table_name, ['role_id', 'user_id'])
+        db.create_unique(m2m_table_name, ['group_id', 'user_id'])
 
-        # Adding unique constraint on 'Role', fields ['name', 'dataset']
-        db.create_unique('sa_api_role', ['name', 'dataset_id'])
+        # Adding unique constraint on 'Group', fields ['name', 'dataset']
+        db.create_unique('sa_api_group', ['name', 'dataset_id'])
 
 
         # Changing field 'Action.created_datetime'
@@ -39,14 +39,14 @@ class Migration(SchemaMigration):
         db.alter_column('sa_api_attachment', 'created_datetime', self.gf('django.db.models.fields.DateTimeField')())
 
     def backwards(self, orm):
-        # Removing unique constraint on 'Role', fields ['name', 'dataset']
-        db.delete_unique('sa_api_role', ['name', 'dataset_id'])
+        # Removing unique constraint on 'Group', fields ['name', 'dataset']
+        db.delete_unique('sa_api_group', ['name', 'dataset_id'])
 
-        # Deleting model 'Role'
-        db.delete_table('sa_api_role')
+        # Deleting model 'Group'
+        db.delete_table('sa_api_group')
 
-        # Removing M2M table for field submitters on 'Role'
-        db.delete_table(db.shorten_name('sa_api_role_submitters'))
+        # Removing M2M table for field submitters on 'Group'
+        db.delete_table(db.shorten_name('sa_api_group_submitters'))
 
 
         # Changing field 'Action.created_datetime'
@@ -124,12 +124,12 @@ class Migration(SchemaMigration):
             'geometry': ('django.contrib.gis.db.models.fields.GeometryField', [], {}),
             u'submittedthing_ptr': ('django.db.models.fields.related.OneToOneField', [], {'to': u"orm['sa_api_v2.SubmittedThing']", 'unique': 'True', 'primary_key': 'True'})
         },
-        u'sa_api_v2.role': {
-            'Meta': {'unique_together': "[('name', 'dataset')]", 'object_name': 'Role', 'db_table': "'sa_api_role'"},
+        u'sa_api_v2.group': {
+            'Meta': {'unique_together': "[('name', 'dataset')]", 'object_name': 'Group', 'db_table': "'sa_api_group'"},
             'dataset': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['sa_api_v2.DataSet']"}),
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'name': ('django.db.models.fields.CharField', [], {'max_length': '32'}),
-            'submitters': ('django.db.models.fields.related.ManyToManyField', [], {'related_name': "'roles'", 'symmetrical': 'False', 'to': u"orm['auth.User']"})
+            'submitters': ('django.db.models.fields.related.ManyToManyField', [], {'related_name': "'groups'", 'symmetrical': 'False', 'to': u"orm['auth.User']"})
         },
         u'sa_api_v2.submission': {
             'Meta': {'ordering': "['-updated_datetime']", 'object_name': 'Submission', 'db_table': "'sa_api_submission'", '_ormbases': [u'sa_api_v2.SubmittedThing']},

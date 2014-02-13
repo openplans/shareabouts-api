@@ -117,20 +117,20 @@ class Migration(DataMigration):
             'geometry': ('django.contrib.gis.db.models.fields.GeometryField', [], {}),
             u'submittedthing_ptr': ('django.db.models.fields.related.OneToOneField', [], {'to': u"orm['sa_api_v2.SubmittedThing']", 'unique': 'True', 'primary_key': 'True'})
         },
-        u'sa_api_v2.role': {
-            'Meta': {'unique_together': "[('name', 'dataset')]", 'object_name': 'Role', 'db_table': "'sa_api_role'"},
+        u'sa_api_v2.group': {
+            'Meta': {'unique_together': "[('name', 'dataset')]", 'object_name': 'Group', 'db_table': "'sa_api_group'"},
             'dataset': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['sa_api_v2.DataSet']"}),
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'name': ('django.db.models.fields.CharField', [], {'max_length': '32'}),
-            'submitters': ('django.db.models.fields.related.ManyToManyField', [], {'symmetrical': 'False', 'related_name': "'roles'", 'blank': 'True', 'to': u"orm['auth.User']"})
+            'submitters': ('django.db.models.fields.related.ManyToManyField', [], {'symmetrical': 'False', 'related_name': "'groups'", 'blank': 'True', 'to': u"orm['auth.User']"})
         },
-        u'sa_api_v2.rolepermission': {
-            'Meta': {'object_name': 'RolePermission'},
+        u'sa_api_v2.grouppermission': {
+            'Meta': {'object_name': 'GroupPermission'},
             'can_create': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'can_destroy': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'can_update': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'role': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['sa_api_v2.Role']", 'related_name': "'permissions'"}),
+            'group': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['sa_api_v2.Group']", 'related_name': "'permissions'"}),
             'submission_set': ('django.db.models.fields.CharField', [], {'max_length': '128', 'blank': 'True'})
         },
         u'sa_api_v2.submission': {

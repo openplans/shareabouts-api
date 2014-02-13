@@ -5,7 +5,7 @@ from django.test.client import RequestFactory
 from django.core.files.base import ContentFile
 from django.core.urlresolvers import reverse
 from nose.tools import istest
-from sa_api_v2.models import Attachment, Action, User, DataSet, Place, SubmissionSet, Submission, Role
+from sa_api_v2.models import Attachment, Action, User, DataSet, Place, SubmissionSet, Submission, Group
 from sa_api_v2.serializers import AttachmentSerializer, ActionSerializer, UserSerializer, PlaceSerializer, DataSetSerializer
 from social.apps.django_app.default.models import UserSocialAuth
 from ..serializers import cache_buffer
@@ -176,27 +176,27 @@ class TestUserSerializer (TestCase):
             DataSet.objects.create(owner=self.owner, slug='ds1'),
             DataSet.objects.create(owner=self.owner, slug='ds2')
         ]
-        self.roles = [
-            Role.objects.create(dataset=self.datasets[0], name='special users')
+        self.groups = [
+            Group.objects.create(dataset=self.datasets[0], name='special users')
         ]
 
-        self.special_user.roles.add(self.roles[0])
+        self.special_user.groups.add(self.groups[0])
 
     def tearDown(self):
         User.objects.all().delete()
         UserSocialAuth.objects.all().delete()
-        Role.objects.all().delete()
+        Group.objects.all().delete()
         DataSet.objects.all().delete()
 
-    def test_returns_an_empty_list_of_roles_for_normal_users(self):
+    def test_returns_an_empty_list_of_groups_for_normal_users(self):
         serializer = UserSerializer(self.normal_user)
-        self.assertIn('roles', serializer.data)
-        self.assertEqual(serializer.data['roles'], [])
+        self.assertIn('groups', serializer.data)
+        self.assertEqual(serializer.data['groups'], [])
 
-    def test_returns_a_users_roles(self):
+    def test_returns_a_users_groups(self):
         serializer = UserSerializer(self.special_user)
-        self.assertIn('roles', serializer.data)
-        self.assertEqual(serializer.data['roles'], [{'dataset': reverse('dataset-detail', kwargs={'dataset_slug': 'ds1', 'owner_username': 'my_owning_user'}), 'name': 'special users'}])
+        self.assertIn('groups', serializer.data)
+        self.assertEqual(serializer.data['groups'], [{'dataset': reverse('dataset-detail', kwargs={'dataset_slug': 'ds1', 'owner_username': 'my_owning_user'}), 'name': 'special users'}])
 
 
 class TestPlaceSerializer (TestCase):

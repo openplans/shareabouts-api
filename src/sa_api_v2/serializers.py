@@ -428,18 +428,18 @@ class ShareaboutsUserDataStrategy (object):
 # -----------
 #
 
-class RoleSerializer (serializers.ModelSerializer):
+class GroupSerializer (serializers.ModelSerializer):
     dataset = DataSetRelatedField()
 
     class Meta:
-        model = models.Role
+        model = models.Group
         exclude = ('submitters', 'id')
 
 
 class UserSerializer (serializers.ModelSerializer):
     name = serializers.SerializerMethodField('get_name')
     avatar_url = serializers.SerializerMethodField('get_avatar_url')
-    roles = RoleSerializer(many=True)
+    groups = GroupSerializer(many=True, source='_groups')
 
     strategies = {
         'twitter': TwitterUserDataStrategy(),
@@ -450,7 +450,7 @@ class UserSerializer (serializers.ModelSerializer):
 
     class Meta:
         model = models.User
-        exclude = ('first_name', 'last_name', 'email', 'password', 'is_staff', 'is_active', 'is_superuser', 'last_login', 'date_joined', 'groups', 'user_permissions')
+        exclude = ('first_name', 'last_name', 'email', 'password', 'is_staff', 'is_active', 'is_superuser', 'last_login', 'date_joined', 'user_permissions')
 
     def get_strategy(self, obj):
         for social_auth in obj.social_auth.all():

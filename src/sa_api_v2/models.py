@@ -255,16 +255,16 @@ class Attachment (CacheClearingModel, TimeStampedModel):
         db_table = 'sa_api_attachment'
 
 
-class Role (models.Model):
+class Group (models.Model):
     """
-    A submitter role within a dataset.
+    A group of submitters within a dataset.
     """
-    dataset = models.ForeignKey('DataSet')
-    name = models.CharField(max_length=32)
-    submitters = models.ManyToManyField(User, related_name='roles', blank=True)
+    dataset = models.ForeignKey('DataSet', help_text='Which dataset does this group apply to?')
+    name = models.CharField(max_length=32, help_text='What is the name of the group to which users with this group belong? For example: "judges", "administrators", "winners", ...')
+    submitters = models.ManyToManyField(User, related_name='_groups', blank=True)
 
     class Meta:
-        db_table = 'sa_api_role'
+        db_table = 'sa_api_group'
         unique_together = [('name', 'dataset')]
 
     def __unicode__(self):
@@ -313,11 +313,11 @@ class DataPermission (models.Model):
         return super(DataPermission, self).save(*args, **kwargs)
 
 
-class RolePermission (DataPermission):
-    role = models.ForeignKey('Role', related_name='permissions')
+class GroupPermission (DataPermission):
+    group = models.ForeignKey('Group', related_name='permissions')
 
     def __unicode__(self):
-        return '%s %s' % (self.role, self.abilities())
+        return '%s %s' % (self.group, self.abilities())
 
 
 class KeyPermission (DataPermission):
