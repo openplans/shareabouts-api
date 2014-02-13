@@ -180,7 +180,7 @@ class TestUserSerializer (TestCase):
             Group.objects.create(dataset=self.datasets[0], name='special users')
         ]
 
-        self.special_user.groups.add(self.groups[0])
+        self.special_user._groups.add(self.groups[0])
 
     def tearDown(self):
         User.objects.all().delete()
