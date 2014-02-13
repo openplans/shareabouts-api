@@ -439,7 +439,7 @@ class GroupSerializer (serializers.ModelSerializer):
 class UserSerializer (serializers.ModelSerializer):
     name = serializers.SerializerMethodField('get_name')
     avatar_url = serializers.SerializerMethodField('get_avatar_url')
-    groups = GroupSerializer(many=True, source='_groups')
+    groups = GroupSerializer(many=True, source='_groups', read_only=True)
 
     strategies = {
         'twitter': TwitterUserDataStrategy(),
