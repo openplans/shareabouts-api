@@ -707,7 +707,7 @@ class PlaceListView (CachedResourceMixin, LocatedResourceMixin, OwnedResourceMix
             queryset = queryset.filter(visible=True)
 
         return queryset.filter(dataset=dataset).select_related('dataset', 'dataset__owner', 'submitter')\
-            .prefetch_related('submitter__social_auth', 'submission_sets', 'submission_sets__children', 'submission_sets__children__attachments', 'attachments')
+            .prefetch_related('submitter__social_auth', 'submission_sets', 'submission_sets__children', 'submission_sets__children__attachments', 'attachments', 'submitter___groups')
 
 
 class SubmissionInstanceView (CachedResourceMixin, OwnedResourceMixin, generics.RetrieveUpdateDestroyAPIView):
@@ -854,7 +854,7 @@ class SubmissionListView (CachedResourceMixin, OwnedResourceMixin, FilteredResou
 
         return queryset.filter(parent=submission_set)\
             .select_related('dataset', 'dataset__owner', 'parent', 'parent__place', 'submitter')\
-            .prefetch_related('attachments', 'submitter__social_auth')
+            .prefetch_related('attachments', 'submitter__social_auth', 'submitter___groups')
 
 
 class DataSetSubmissionListView (CachedResourceMixin, OwnedResourceMixin, FilteredResourceMixin, generics.ListAPIView):
@@ -913,7 +913,7 @@ class DataSetSubmissionListView (CachedResourceMixin, OwnedResourceMixin, Filter
 
         return queryset.filter(parent__in=submission_sets)\
             .select_related('dataset', 'parent', 'parent__place', 'submitter')\
-            .prefetch_related('attachments', 'submitter__social_auth')
+            .prefetch_related('attachments', 'submitter__social_auth', 'submitter___groups')
 
 
 class DataSetInstanceView (CachedResourceMixin, OwnedResourceMixin, generics.RetrieveUpdateDestroyAPIView):
