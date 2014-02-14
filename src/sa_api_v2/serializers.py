@@ -199,6 +199,8 @@ class AttachmentSerializer (serializers.ModelSerializer):
 
     def to_native(self, obj):
         return {
+            'created_datetime': obj.created_datetime,
+            'updated_datetime': obj.updated_datetime,
             'file': obj.file.storage.url(obj.file.name),
             'name': obj.name
         }
