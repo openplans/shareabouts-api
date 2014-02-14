@@ -671,15 +671,10 @@ class DataSetSerializer (CachedSerializer, serializers.HyperlinkedModelSerialize
     def to_native(self, obj):
         # data = super(DataSetSerializer, self).to_native(obj)
 
-        self.url.context = self.context
-        self.url.parent = self
-
-        self.owner.context = self.context
-
         data = {
-            'url': self.url.field_to_native(obj, 'url'),
+            'url': self.fields['url'].field_to_native(obj, 'url'),
             'id': obj.pk,
-            'owner': self.owner.field_to_native(obj.owner)
+            'owner': self.fields['owner'].field_to_native(obj, 'owner')
         }
 
         if hasattr(obj, 'distance'):
