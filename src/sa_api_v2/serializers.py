@@ -199,7 +199,7 @@ class AttachmentSerializer (serializers.ModelSerializer):
 
     def to_native(self, obj):
         return {
-            'file': obj.storage.url(obj.file.name),
+            'file': obj.file.storage.url(obj.file.name),
             'name': obj.name
         }
 
