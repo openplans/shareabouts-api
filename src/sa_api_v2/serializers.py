@@ -292,6 +292,12 @@ class CachedSerializer (object):
         return many
 
     def preload_serialized_data_keys(self, items):
+        # When serializing a page, preload the object list so that it does not
+        # cause two separate queries (or sets of queries when prefetch_related
+        # is used).
+        if isinstance(items, Page):
+            items.object_list = list(items.object_list)
+
         if self.is_many(items):
             # Preload the serialized_data_keys from the cache
             cache = self.opts.model.cache
