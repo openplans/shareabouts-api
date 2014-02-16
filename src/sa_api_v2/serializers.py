@@ -187,7 +187,7 @@ class DataSetIdentityField (ShareaboutsIdentityField):
 
 class AttachmentFileField (serializers.FileField):
     def to_native(self, obj):
-        return obj.storage.url(obj.file.name)
+        return obj.storage.url(obj.name)
 
 
 class AttachmentSerializer (serializers.ModelSerializer):
