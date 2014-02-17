@@ -579,19 +579,23 @@ class PlaceSerializer (SubmittedThingSerializer, serializers.HyperlinkedModelSer
     def get_data_cache_keys(self, items):
         place_keys = super(PlaceSerializer, self).get_data_cache_keys(items)
 
-        ss_cache = models.SubmissionSet.cache
-        ss_keys = [
-            ss_cache.get_instance_params_key(ss.pk)
-            for ss in chain.from_iterable(item.submission_sets.all() for item in items)
-        ]
+        ss_serializer = SubmissionSetSummarySerializer([], context=self.context, many=True)
+        ss_serializer.parent = self
+        submission_sets = list(chain.from_iterable(item.submission_sets.all() for item in items))
+        ss_keys = ss_serializer.get_data_cache_keys(submission_sets)
 
+        # If include_submissions=on, also preload submission data from the
+        # cache.
+        #
+        # TODO: Can we make it so that we only need the SubmissionSet cache
+        #       data (above) when include_submissions=off?
+        #
         request = self.context['request']
         if INCLUDE_SUBMISSIONS_PARAM in request.GET:
             submission_serializer = SubmissionSerializer([], context=self.context, many=True)
             submission_serializer.parent = self
-            submission_sets = chain.from_iterable(item.submission_sets.all() for item in items)
-            submissions = chain.from_iterable(ss.children.all() for ss in submission_sets)
-            ss_keys += submission_serializer.get_data_cache_keys(list(submissions))
+            submissions = list(chain.from_iterable(ss.children.all() for ss in submission_sets))
+            ss_keys += submission_serializer.get_data_cache_keys(submissions)
 
         return place_keys + ss_keys
 
