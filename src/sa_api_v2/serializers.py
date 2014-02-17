@@ -659,7 +659,8 @@ class PlaceSerializer (SubmittedThingSerializer, serializers.HyperlinkedModelSer
             'dataset': obj.dataset_id,  # = DataSetRelatedField()
             'attachments': [AttachmentSerializer(a).data for a in obj.attachments.all()],  # = AttachmentSerializer(read_only=True)
             'submitter': UserSerializer(obj.submitter).data if obj.submitter else None,
-            'data': obj.data
+            'data': obj.data,
+            'visible': obj.visible,
         }
 
         data = self.explode_data_blob(data)
@@ -707,16 +708,19 @@ class DataSetSerializer (CachedSerializer, serializers.HyperlinkedModelSerialize
         model = models.DataSet
 
     def get_uncached_data(self, obj):
-        # data = super(DataSetSerializer, self).to_native(obj)
+        self.fields['places'].context = self.context
+        self.fields['submission_sets'].context = self.context
 
         data = {
             'url': self.fields['url'].field_to_native(obj, 'url'),
             'id': obj.pk,
-            'owner': self.fields['owner'].field_to_native(obj, 'owner')
+            'slug': obj.slug,
+            'display_name': obj.display_name,
+            'owner': self.fields['owner'].field_to_native(obj, 'owner'),
+            'keys': self.fields['keys'].field_to_native(obj, 'keys'),
+            'places': self.fields['places'].field_to_native(obj, 'places'),
+            'submission_sets': self.fields['submission_sets'].field_to_native(obj, 'submission_sets'),
         }
-
-        if hasattr(obj, 'distance'):
-            data['distance'] = str(obj.distance)
 
         return data
 
