@@ -3,7 +3,7 @@ DjangoRestFramework resources for the Shareabouts REST API.
 """
 import ujson as json
 import re
-from itertools import groupby
+from itertools import groupby, chain
 from django.contrib.gis.geos import GEOSGeometry
 from django.core.exceptions import ValidationError
 from django.core.paginator import Page
@@ -327,7 +327,11 @@ class CachedSerializer (object):
                 cache.get_instance_params_key(item.pk)
                 for item in items]
 
-            cache_buffer.get_many(param_keys + data_keys + data_meta_keys)
+            cache_buffer.get_many(param_keys + data_keys + data_meta_keys +
+                                  self.other_preload_cache_keys(items))
+
+    def other_preload_cache_keys(self, items):
+        return []
 
     @property
     def data(self):
@@ -562,6 +566,14 @@ class PlaceSerializer (SubmittedThingSerializer, serializers.HyperlinkedModelSer
 
     class Meta:
         model = models.Place
+
+    def other_preload_cache_keys(self, items):
+        ss_cache = models.SubmissionSet.cache
+        submission_set_summary_keys = [
+            ss_cache.get_instance_params_key(ss.pk)
+            for ss in chain.from_iterable(item.submission_sets.all() for item in items)
+        ]
+        return submission_set_summary_keys
 
     def get_submission_set_summaries(self, obj):
         """
