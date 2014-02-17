@@ -349,10 +349,16 @@ class CachedSerializer (object):
     def to_native(self, obj):
         cache = self.opts.model.cache
         cache_params = self.get_cache_params()
-        data_getter = lambda: super(CachedSerializer, self).to_native(obj)
+        data_getter = lambda: self.get_uncached_data(obj)
 
         data = cache.get_serialized_data(obj, data_getter, **cache_params)
         return data
+
+    def get_uncached_data(self, obj):
+        # The default behavior is to go through the to_native machinery in
+        # Django REST Framework. To do something different, override this
+        # method.
+        return super(CachedSerializer, self).to_native(obj)
 
     def get_cache_params(self):
         """
@@ -502,7 +508,7 @@ class SubmissionSetSummarySerializer (CachedSerializer, serializers.HyperlinkedM
         model = models.SubmissionSet
         fields = ('length', 'url')
 
-    def to_native(self, obj):
+    def get_uncached_data(self, obj):
         return {
             'length': obj.length,
             'url': self.fields['url'].field_to_native(obj, 'url')
@@ -641,7 +647,7 @@ class PlaceSerializer (SubmittedThingSerializer, serializers.HyperlinkedModelSer
 
         return details
 
-    def to_native(self, obj):
+    def get_uncached_data(self, obj):
         data = {
             'url': self.fields['url'].field_to_native(obj, 'pk'),  # = PlaceIdentityField()
             'id': obj.pk,  # = serializers.PrimaryKeyRelatedField(read_only=True)
@@ -696,7 +702,7 @@ class DataSetSerializer (CachedSerializer, serializers.HyperlinkedModelSerialize
     class Meta:
         model = models.DataSet
 
-    def to_native(self, obj):
+    def get_uncached_data(self, obj):
         # data = super(DataSetSerializer, self).to_native(obj)
 
         data = {
