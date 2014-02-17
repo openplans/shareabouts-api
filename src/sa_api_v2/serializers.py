@@ -303,6 +303,25 @@ class CachedSerializer (object):
                               DeprecationWarning, stacklevel=2)
         return many
 
+    def get_data_cache_keys(self, items):
+        # Preload the serialized_data_keys from the cache
+        cache = self.opts.model.cache
+        cache_params = self.get_cache_params()
+        
+        data_keys = [
+            cache.get_serialized_data_key(item.pk, **cache_params)
+            for item in items]
+
+        data_meta_keys = [
+            cache.get_serialized_data_meta_key(item.pk)
+            for item in items]
+
+        param_keys = [
+            cache.get_instance_params_key(item.pk)
+            for item in items]
+
+        return (param_keys + data_keys + data_meta_keys)
+
     def preload_serialized_data_keys(self, items):
         # When serializing a page, preload the object list so that it does not
         # cause two separate queries (or sets of queries when prefetch_related
@@ -311,24 +330,8 @@ class CachedSerializer (object):
             items.object_list = list(items.object_list)
 
         if self.is_many(items):
-            # Preload the serialized_data_keys from the cache
-            cache = self.opts.model.cache
-            cache_params = self.get_cache_params()
-            
-            data_keys = [
-                cache.get_serialized_data_key(item.pk, **cache_params)
-                for item in items]
-
-            data_meta_keys = [
-                cache.get_serialized_data_meta_key(item.pk)
-                for item in items]
-
-            param_keys = [
-                cache.get_instance_params_key(item.pk)
-                for item in items]
-
-            cache_buffer.get_many(param_keys + data_keys + data_meta_keys +
-                                  self.other_preload_cache_keys(items))
+            cache_keys = self.get_data_cache_keys(items)
+            cache_buffer.get_many(cache_keys)
 
     def other_preload_cache_keys(self, items):
         return []
@@ -567,13 +570,24 @@ class PlaceSerializer (SubmittedThingSerializer, serializers.HyperlinkedModelSer
     class Meta:
         model = models.Place
 
-    def other_preload_cache_keys(self, items):
+    def get_data_cache_keys(self, items):
+        place_keys = super(PlaceSerializer, self).get_data_cache_keys(items)
+
         ss_cache = models.SubmissionSet.cache
-        submission_set_summary_keys = [
+        ss_keys = [
             ss_cache.get_instance_params_key(ss.pk)
             for ss in chain.from_iterable(item.submission_sets.all() for item in items)
         ]
-        return submission_set_summary_keys
+
+        request = self.context['request']
+        if INCLUDE_SUBMISSIONS_PARAM in request.GET:
+            submission_serializer = SubmissionSerializer([], context=self.context, many=True)
+            submission_serializer.parent = self
+            submission_sets = chain.from_iterable(item.submission_sets.all() for item in items)
+            submissions = chain.from_iterable(ss.children.all() for ss in submission_sets)
+            ss_keys += submission_serializer.get_data_cache_keys(list(submissions))
+
+        return place_keys + ss_keys
 
     def get_submission_set_summaries(self, obj):
         """
