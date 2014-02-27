@@ -64,6 +64,9 @@ class ShareaboutsApi (object):
         if method == 'DELETE':
             headers.update({'Content-Length': '0'})
 
+        # Add/update all data silently (do not generate activity)
+        headers.update({'X-Shareabouts-Silent': 'True'})
+
         response = requests.request(method, url, data=data, headers=headers)
         return response
 
