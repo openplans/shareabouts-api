@@ -442,6 +442,8 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
         # - SELECT * FROM sa_api_place AS p
         #     JOIN sa_api_submittedthing AS t ON (p.submittedthing_ptr_id = t.id)
         #     JOIN sa_api_dataset AS ds ON (t.dataset_id = ds.id)
+        #     JOIN auth_user as u1 ON (t.submitter_id = u1.id)
+        #     JOIN auth_user as u2 ON (ds.owner_id = u2.id)
         #    WHERE t.id = <self.place.id>;
         #
         # - SELECT * FROM sa_api_submissionset AS ss
@@ -457,7 +459,11 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
         # - SELECT * FROM sa_api_attachment AS a
         #    WHERE a.thing_id IN (<self.place.id>);
         #
-        with self.assertNumQueries(6):
+        # - SELECT * FROM sa_api_group as g
+        #     JOIN sa_api_group_submitters as s ON (g.id = s.group_id)
+        #    WHERE gs.user_id IN (<[each submitter id]>);
+        #
+        with self.assertNumQueries(7):
             response = self.view(request, **self.request_kwargs)
             self.assertStatusCode(response, 200)
 
