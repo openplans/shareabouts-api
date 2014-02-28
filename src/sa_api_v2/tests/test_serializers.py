@@ -255,6 +255,32 @@ class TestPlaceSerializer (TestCase):
         final_data = serializer.data
         self.assertNotEqual(initial_data, final_data)
 
+    def test_place_cache_cleared_on_new_attachment(self):
+        serializer = PlaceSerializer(self.place)
+        serializer.context = {
+            'request': RequestFactory().get('')
+        }
+
+        # Make sure that the metakey gets entered into the cache, and gets
+        # cleared when a new submission is created.
+        p_metakey = Place.cache.get_serialized_data_meta_key(self.place.pk)
+        self.assertIsNone(cache_buffer.get(p_metakey))
+
+        initial_data = serializer.data
+        self.assertIsNotNone(cache_buffer.get(p_metakey))
+
+        Attachment.objects.create(file=None, name='hello.txt', thing=self.place)
+        self.assertIsNone(cache_buffer.get(p_metakey))
+
+        # Make sure that the actual serialized data is different.
+        serializer = PlaceSerializer(self.place)
+        serializer.context = {
+            'request': RequestFactory().get('')
+        }
+
+        final_data = serializer.data
+        self.assertNotEqual(initial_data, final_data)
+
 
 class TestDataSetSerializer (TestCase):
 

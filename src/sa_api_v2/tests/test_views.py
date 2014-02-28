@@ -221,6 +221,32 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
         a = self.place.attachments.all()[0]
         self.assertEqual(a.file.read(), 'This is test content in a "file"')
 
+    def test_new_attachment_clears_GET_cache(self):
+        request = self.factory.get(self.path)
+        response = self.view(request, **self.request_kwargs)
+        initial_data = json.loads(response.rendered_content)
+
+        # Create a dummy view instance so that we can call get_cache_key
+        temp_view = PlaceInstanceView()
+        temp_view.request = request
+
+        # Check that the response is cached
+        cache_key = temp_view.get_cache_key(request)
+        self.assertIsNotNone(django_cache.get(cache_key))
+
+        # Save another attachment
+        Attachment.objects.create(file=None, name='my_new_file_name', thing=self.place)
+        cache_buffer.flush()
+
+        # Check that the response cache was cleared
+        cache_key = temp_view.get_cache_key(request)
+        self.assertIsNone(django_cache.get(cache_key))
+
+        # Check that the we get a different response
+        response = self.view(request, **self.request_kwargs)
+        new_data = json.loads(response.rendered_content)
+        self.assertNotEqual(initial_data, new_data)
+
     def test_GET_response_with_private_data(self):
         #
         # View should not return private data normally
