@@ -50,7 +50,7 @@ class DataSetFilter (SimpleListFilter):
 
 class SubmittedThingAdmin(admin.OSMGeoAdmin):
     date_hierarchy = 'created_datetime'
-    list_display = ('id', 'created_datetime', 'updated_datetime', 'submitter_name', 'dataset')
+    list_display = ('id', 'created_datetime', 'submitter_name', 'dataset', 'data')
     list_filter = (DataSetFilter,)
     search_fields = ('submitter__username', 'data',)
 
