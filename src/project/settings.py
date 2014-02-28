@@ -12,12 +12,12 @@ MANAGERS = ADMINS
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.', # Add 'postgresql_psycopg2', 'mysql', 'sqlite3' or 'oracle'.
-        'NAME': '',                      # Or path to database file if using sqlite3.
-        'USER': '',                      # Not used with sqlite3.
-        'PASSWORD': '',                  # Not used with sqlite3.
-        'HOST': '',                      # Set to empty string for localhost. Not used with sqlite3.
-        'PORT': '',                      # Set to empty string for default. Not used with sqlite3.
+        'ENGINE': 'django.contrib.gis.db.backends.postgis',
+        'NAME': 'shareabouts',
+        'USER': 'postgres',
+        'PASSWORD': 'postgres',
+        'HOST': 'localhost',
+        'PORT': '5432',
     }
 }
 
@@ -58,6 +58,8 @@ USE_L10N = True
 #
 # Templates and Static Assets
 #
+
+ATTACHMENT_STORAGE = 'django.core.files.storage.FileSystemStorage'
 
 MEDIA_ROOT = ''
 MEDIA_URL = ''
@@ -139,7 +141,6 @@ INSTALLED_APPS = (
     'django.contrib.gis',
 
     # 3rd-party reusaple apps
-    'djangorestframework',
     'rest_framework',
     'south',
     'django_nose',
@@ -152,8 +153,6 @@ INSTALLED_APPS = (
     'sa_api_v2',
     'sa_api_v2.apikey',
     'sa_api_v2.cors',
-    'sa_api_v1',
-    'sa_api_v1.apikey_v1',
     'sa_manager',
 )
 
@@ -253,11 +252,6 @@ LOGGING = {
             'propagate': True,
         },
         'sa_api_v2': {
-            'handlers': ['console'],
-            'level': 'INFO',
-            'propagate': True,
-        },
-        'sa_api_v1': {
             'handlers': ['console'],
             'level': 'INFO',
             'propagate': True,

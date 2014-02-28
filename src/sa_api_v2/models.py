@@ -7,7 +7,6 @@ from django.utils.timezone import now
 from django.utils.importlib import import_module
 from . import cache
 from . import utils
-import sa_api_v1.models
 
 
 class TimeStampedModel (models.Model):
@@ -125,7 +124,6 @@ class DataSet (CacheClearingModel, models.Model):
     slug = models.SlugField(max_length=128, default=u'')
 
     cache = cache.DataSetCache()
-    previous_version = 'sa_api_v1.models.DataSet'
 
     def __unicode__(self):
         return self.slug
@@ -158,7 +156,6 @@ class Place (SubmittedThing):
 
     objects = models.GeoManager()
     cache = cache.PlaceCache()
-    previous_version = 'sa_api_v1.models.Place'
 
     class Meta:
         db_table = 'sa_api_place'
@@ -176,7 +173,6 @@ class SubmissionSet (CacheClearingModel, models.Model):
     name = models.CharField(max_length=128)
 
     cache = cache.SubmissionSetCache()
-    previous_version = 'sa_api_v1.models.SubmissionSet'
 
     class Meta(object):
         db_table = 'sa_api_submissionset'
@@ -205,7 +201,6 @@ class Submission (SubmittedThing):
         return self.parent.name
 
     cache = cache.SubmissionCache()
-    previous_version = 'sa_api_v1.models.Submission'
 
     class Meta:
         db_table = 'sa_api_submission'
@@ -221,7 +216,6 @@ class Action (CacheClearingModel, TimeStampedModel):
     thing = models.ForeignKey(SubmittedThing, db_column='data_id', related_name='actions')
 
     cache = cache.ActionCache()
-    previous_version = 'sa_api_v1.models.Activity'
 
     class Meta:
         db_table = 'sa_api_activity'
@@ -249,7 +243,6 @@ class Attachment (CacheClearingModel, TimeStampedModel):
     thing = models.ForeignKey('SubmittedThing', related_name='attachments')
 
     cache = cache.AttachmentCache()
-    previous_version = 'sa_api_v1.models.Attachment'
 
     class Meta:
         db_table = 'sa_api_attachment'
