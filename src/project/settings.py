@@ -116,11 +116,11 @@ MIDDLEWARE_CLASSES = (
     'social.apps.django_app.middleware.SocialAuthExceptionMiddleware',
     # Uncomment the next line for simple clickjacking protection:
     # 'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'debug_toolbar.middleware.DebugToolbarMiddleware',
 
     'sa_api_v2.middleware.RequestTimeLogger',
     'sa_api_v2.middleware.UniversalP3PHeader',
 )
+
 
 ###############################################################################
 #
@@ -144,7 +144,6 @@ INSTALLED_APPS = (
     'rest_framework',
     'south',
     'django_nose',
-    'debug_toolbar',
     'storages',
     'social.apps.django_app.default',
 
@@ -191,10 +190,12 @@ SOUTH_TESTS_MIGRATE = True
 # Debug toolbar
 def custom_show_toolbar(request):
     return SHOW_DEBUG_TOOLBAR
+
 DEBUG_TOOLBAR_CONFIG = {
     'SHOW_TOOLBAR_CALLBACK': custom_show_toolbar,
     'INTERCEPT_REDIRECTS': False
 }
+
 INTERNAL_IPS = ('127.0.0.1',)
 DEBUG_TOOLBAR_PANELS = (
     'debug_toolbar.panels.version.VersionDebugPanel',
@@ -209,6 +210,9 @@ DEBUG_TOOLBAR_PANELS = (
     'debug_toolbar.panels.signals.SignalDebugPanel',
     'debug_toolbar.panels.logger.LoggingPanel',
 )
+# (See the very end of the file for more debug toolbar settings)
+
+
 ################################################################################
 #
 # Logging Configuration
@@ -372,3 +376,14 @@ try:
     from .local_settings import *
 except ImportError:
     pass
+
+
+##############################################################################
+# Debug Toolbar
+# ------------------------
+# Do this after all the settings files have been processed, in case the 
+# SHOW_DEBUG_TOOLBAR setting is set.
+
+if SHOW_DEBUG_TOOLBAR:
+    INSTALLED_APPS += ('debug_toolbar',)
+    MIDDLEWARE_CLASSES += ('debug_toolbar.middleware.DebugToolbarMiddleware',)

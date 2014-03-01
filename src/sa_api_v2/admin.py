@@ -4,21 +4,79 @@ via django.contrib.admin.
 """
 
 import models
-from django.contrib import admin
+from django.contrib.admin import SimpleListFilter
+from django.contrib.gis import admin
 from .apikey.models import ApiKey
+from .cors.models import Origin
 
 
-class SubmittedThingAdmin(admin.ModelAdmin):
+class SubmissionSetFilter (SimpleListFilter):
+    """
+    Used to filter a list of submissions by type (set name).
+    """
+    title = 'Submission Set'
+    parameter_name = 'set'
+
+    def lookups(self, request, model_admin):
+        qs = model_admin.get_queryset(request)
+        qs = qs.order_by('parent__name').distinct('parent__name').values('parent__name')
+        return [(elem['parent__name'], elem['parent__name']) for elem in qs]
+
+    def queryset(self, request, qs):
+        parent__name = self.value()
+        if parent__name:
+            qs = qs.filter(parent__name=parent__name)
+        return qs
+
+
+class DataSetFilter (SimpleListFilter):
+    """
+    Used to filter a list of submitted things by dataset slug.
+    """
+    title = 'Dataset'
+    parameter_name = 'dataset'
+
+    def lookups(self, request, model_admin):
+        qs = model_admin.get_queryset(request)
+        qs = qs.order_by('dataset__slug').distinct('dataset__slug').values('dataset__slug')
+        return [(elem['dataset__slug'], elem['dataset__slug']) for elem in qs]
+
+    def queryset(self, request, qs):
+        dataset__slug = self.value()
+        if dataset__slug:
+            qs = qs.filter(dataset__slug=dataset__slug)
+        return qs
+
+
+class SubmittedThingAdmin(admin.OSMGeoAdmin):
     date_hierarchy = 'created_datetime'
-    model = models.SubmittedThing
-    list_display = ('id', 'created_datetime', 'updated_datetime', 'submitter_name',)
+    list_display = ('id', 'created_datetime', 'submitter_name', 'dataset', 'data')
+    list_filter = (DataSetFilter,)
+    search_fields = ('submitter__username', 'data',)
+
+    raw_id_fields = ('submitter', 'dataset')
 
     def submitter_name(self, obj):
         return obj.submitter.username if obj.submitter else None
 
+    def get_queryset(self, request):
+        qs = super(SubmittedThingAdmin, self).get_queryset(request)
+        user = request.user
+        if not user.is_superuser:
+            qs = qs.filter(dataset__owner=user)
+        return qs
+
 
 class InlineApiKeyAdmin(admin.StackedInline):
     model = ApiKey.datasets.through
+    raw_id_fields = ['apikey']
+    extra = 1
+
+
+class InlineOriginAdmin(admin.StackedInline):
+    model = Origin.datasets.through
+    raw_id_fields = ['origin']
+    extra = 1
 
 
 class InlineGroupAdmin(admin.StackedInline):
@@ -28,13 +86,37 @@ class InlineGroupAdmin(admin.StackedInline):
 
 
 class DataSetAdmin(admin.ModelAdmin):
-    list_display = ('id', 'slug', 'display_name', 'owner')
+    list_display = ('display_name', 'slug', 'owner')
     prepopulated_fields = {'slug': ['display_name']}
-    inlines = [InlineApiKeyAdmin, InlineGroupAdmin]
+
+    raw_id_fields = ('owner',)
+    inlines = [InlineApiKeyAdmin, InlineOriginAdmin, InlineGroupAdmin]
+
+    def get_queryset(self, request):
+        qs = super(DataSetAdmin, self).get_queryset(request)
+        user = request.user
+        if not user.is_superuser:
+            qs = qs.filter(owner=user)
+        return qs
+    
+    def get_form(self, request, obj=None, **kwargs):
+        # Hide the owner field from non-superusers. All objects visible to the
+        # user should be assumed to be owned by themselves.
+        if not request.user.is_superuser:
+            self.exclude = (self.exclude or ()) + ('owner',)
+        return super(DataSetAdmin, self).get_form(request, obj, **kwargs)
+
+    def save_model(self, request, obj, form, change):
+        # Set the current user as the owner if the object has no owner and the
+        # user is not a superuser.
+        user = request.user
+        if not user.is_superuser:
+            if obj.owner_id is None:
+                obj.owner = user
+        super(DataSetAdmin, self).save_model(request, obj, form, change)
 
 
 class PlaceAdmin(SubmittedThingAdmin):
-    list_display = SubmittedThingAdmin.list_display + ('dataset', )
     model = models.Place
 
 
@@ -45,6 +127,19 @@ class SubmissionSetAdmin(admin.ModelAdmin):
 
 class SubmissionAdmin(SubmittedThingAdmin):
     model = models.Submission
+
+    list_display = SubmittedThingAdmin.list_display + ('place', 'set_',)
+    list_filter = (SubmissionSetFilter,) + SubmittedThingAdmin.list_filter
+    search_fields = ('parent__name',) + SubmittedThingAdmin.search_fields
+
+    def set_(self, obj):
+        return obj.parent.name
+    set_.short_description = 'Set'
+    set_.admin_order_field = 'parent__name'
+
+    def place(self, obj):
+        return obj.parent.place_id
+    place.admin_order_field = 'parent__place'
 
 
 class ActionAdmin(admin.ModelAdmin):
