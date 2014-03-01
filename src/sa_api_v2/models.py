@@ -1,6 +1,7 @@
 from django.contrib.auth.models import User
 from django.contrib.gis.db import models
 from django.conf import settings
+from django.core.exceptions import ImproperlyConfigured
 from django.core.files.storage import get_storage_class
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils.timezone import now
@@ -231,7 +232,16 @@ def timestamp_filename(attachment, filename):
     # Django 1.4 tries to convert the function to a string when we do that.
     return ''.join(['attachments/', utils.base62_time(), '-', filename])
 
-AttachmentStorage = get_storage_class(settings.ATTACHMENT_STORAGE)
+try:
+    attachment_storage_class = settings.ATTACHMENT_STORAGE
+except AttributeError:
+    raise ImproperlyConfigured(
+        'An ATTACHMENT_STORAGE class must be specified in the project '
+        'settings. This value will work similarly to DEFAULT_FILE_STORAGE '
+        '(https://docs.djangoproject.com/en/dev/ref/settings/#default-file'
+        '-storage).')
+
+AttachmentStorage = get_storage_class(attachment_storage_class)
 
 
 class Attachment (CacheClearingModel, TimeStampedModel):
