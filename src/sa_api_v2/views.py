@@ -706,8 +706,24 @@ class PlaceListView (CachedResourceMixin, LocatedResourceMixin, OwnedResourceMix
         if INCLUDE_INVISIBLE_PARAM not in self.request.GET:
             queryset = queryset.filter(visible=True)
 
-        return queryset.filter(dataset=dataset).select_related('dataset', 'dataset__owner', 'submitter')\
-            .prefetch_related('submitter__social_auth', 'submission_sets', 'submission_sets__children', 'submission_sets__children__attachments', 'attachments', 'submitter___groups')
+        queryset = queryset.filter(dataset=dataset)\
+            .select_related('dataset', 'dataset__owner', 'submitter')\
+            .prefetch_related(
+                'submitter__social_auth',
+                'submitter___groups',
+                'submission_sets',
+                'submission_sets__children',
+                'attachments')
+
+        if INCLUDE_SUBMISSIONS_PARAM in self.request.GET:
+            queryset = queryset.prefetch_related(
+                'submission_sets__children',
+                'submission_sets__children__submitter',
+                'submission_sets__children__submitter__social_auth',
+                'submission_sets__children__submitter___groups',
+                'submission_sets__children__attachments')
+
+        return queryset
 
 
 class SubmissionInstanceView (CachedResourceMixin, OwnedResourceMixin, generics.RetrieveUpdateDestroyAPIView):

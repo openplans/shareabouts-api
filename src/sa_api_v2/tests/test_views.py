@@ -472,6 +472,9 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
         #     JOIN auth_user as u2 ON (ds.owner_id = u2.id)
         #    WHERE t.id = <self.place.id>;
         #
+        # - SELECT * FROM social_auth_usersocialauth
+        #    WHERE user_id IN (<self.owner.id>)
+        #
         # - SELECT * FROM sa_api_submissionset AS ss
         #    WHERE ss.place_id IN (<self.place.id>);
         #
