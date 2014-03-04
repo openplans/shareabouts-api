@@ -20,6 +20,9 @@ from .cache import cache_buffer
 from .params import (INCLUDE_INVISIBLE_PARAM, INCLUDE_PRIVATE_PARAM,
     INCLUDE_SUBMISSIONS_PARAM, FORMAT_PARAM)
 
+import logging
+log = logging.getLogger(__name__)
+
 
 ###############################################################################
 #
