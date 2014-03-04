@@ -146,6 +146,8 @@ class ShareaboutsIdentityField (ShareaboutsFieldMixin, serializers.HyperlinkedId
         super(ShareaboutsIdentityField, self).__init__(view_name=view_name, *args, **kwargs)
 
     def field_to_native(self, obj, field_name):
+        if obj.pk is None: return None
+
         request = self.context.get('request', None)
         format = self.context.get('format', None)
         view_name = self.view_name or self.parent.opts.view_name
@@ -198,6 +200,7 @@ class AttachmentSerializer (serializers.ModelSerializer):
         exclude = ('id', 'thing',)
 
     def to_native(self, obj):
+        if obj is None: obj = models.Attachment()
         return {
             'created_datetime': obj.created_datetime,
             'updated_datetime': obj.updated_datetime,
@@ -249,7 +252,7 @@ class DataBlobProcessor (object):
 
         # Also ignore the following field names (treat them like reserved
         # words).
-        known_fields.update(self.fields.keys())
+        known_fields.update(self.base_fields.keys())
 
         # And allow an arbitrary value field named 'data' (don't let the
         # data blob get in the way).
@@ -264,7 +267,7 @@ class DataBlobProcessor (object):
         data_copy['data'] = json.dumps(blob)
 
         if not self.partial:
-            for field_name, field in self.fields.items():
+            for field_name, field in self.base_fields.items():
                 if (not field.read_only and field_name not in data_copy):
                     data_copy[field_name] = field.default
 
@@ -347,6 +350,8 @@ class CachedSerializer (object):
         return super(CachedSerializer, self).field_to_native(obj, field_name)
 
     def to_native(self, obj):
+        if obj is None: obj = self.opts.model()
+
         cache = self.opts.model.cache
         cache_params = self.get_cache_params()
         data_getter = lambda: self.get_uncached_data(obj)
@@ -652,10 +657,12 @@ class PlaceSerializer (SubmittedThingSerializer, serializers.HyperlinkedModelSer
         return details
 
     def get_uncached_data(self, obj):
+        fields = self.get_fields()
+
         data = {
-            'url': self.fields['url'].field_to_native(obj, 'pk'),  # = PlaceIdentityField()
+            'url': fields['url'].field_to_native(obj, 'pk'),  # = PlaceIdentityField()
             'id': obj.pk,  # = serializers.PrimaryKeyRelatedField(read_only=True)
-            'geometry': str(obj.geometry),  # = GeometryField(format='wkt')
+            'geometry': str(obj.geometry or 'POINT(0 0)'),  # = GeometryField(format='wkt')
             'dataset': obj.dataset_id,  # = DataSetRelatedField()
             'attachments': [AttachmentSerializer(a).data for a in obj.attachments.all()],  # = AttachmentSerializer(read_only=True)
             'submitter': UserSerializer(obj.submitter).data if obj.submitter else None,
@@ -708,18 +715,19 @@ class DataSetSerializer (CachedSerializer, serializers.HyperlinkedModelSerialize
         model = models.DataSet
 
     def get_uncached_data(self, obj):
-        self.fields['places'].context = self.context
-        self.fields['submission_sets'].context = self.context
+        fields = self.get_fields()
+        fields['places'].context = self.context
+        fields['submission_sets'].context = self.context
 
         data = {
-            'url': self.fields['url'].field_to_native(obj, 'url'),
+            'url': fields['url'].field_to_native(obj, 'url'),
             'id': obj.pk,
             'slug': obj.slug,
             'display_name': obj.display_name,
-            'owner': self.fields['owner'].field_to_native(obj, 'owner'),
-            'keys': self.fields['keys'].field_to_native(obj, 'keys'),
-            'places': self.fields['places'].field_to_native(obj, 'places'),
-            'submission_sets': self.fields['submission_sets'].field_to_native(obj, 'submission_sets'),
+            'owner': fields['owner'].field_to_native(obj, 'owner') if obj.owner_id else None,
+            'keys': fields['keys'].field_to_native(obj, 'keys'),
+            'places': fields['places'].field_to_native(obj, 'places'),
+            'submission_sets': fields['submission_sets'].field_to_native(obj, 'submission_sets'),
         }
 
         return data
