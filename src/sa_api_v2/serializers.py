@@ -671,6 +671,8 @@ class PlaceSerializer (SubmittedThingSerializer, serializers.HyperlinkedModelSer
             'submitter': UserSerializer(obj.submitter).data if obj.submitter else None,
             'data': obj.data,
             'visible': obj.visible,
+            'created_datetime': obj.created_datetime.isoformat() if obj.created_datetime else None,
+            'updated_datetime': obj.updated_datetime.isoformat() if obj.updated_datetime else None,
         }
 
         data = self.explode_data_blob(data)
