@@ -3,7 +3,7 @@ DjangoRestFramework resources for the Shareabouts REST API.
 """
 import ujson as json
 import re
-from itertools import groupby
+from itertools import groupby, chain
 from django.contrib.gis.geos import GEOSGeometry
 from django.core.exceptions import ValidationError
 from django.core.paginator import Page
@@ -19,6 +19,9 @@ from . import utils
 from .cache import cache_buffer
 from .params import (INCLUDE_INVISIBLE_PARAM, INCLUDE_PRIVATE_PARAM,
     INCLUDE_SUBMISSIONS_PARAM, FORMAT_PARAM)
+
+import logging
+log = logging.getLogger(__name__)
 
 
 ###############################################################################
@@ -146,6 +149,8 @@ class ShareaboutsIdentityField (ShareaboutsFieldMixin, serializers.HyperlinkedId
         super(ShareaboutsIdentityField, self).__init__(view_name=view_name, *args, **kwargs)
 
     def field_to_native(self, obj, field_name):
+        if obj.pk is None: return None
+
         request = self.context.get('request', None)
         format = self.context.get('format', None)
         view_name = self.view_name or self.parent.opts.view_name
@@ -197,6 +202,15 @@ class AttachmentSerializer (serializers.ModelSerializer):
         model = models.Attachment
         exclude = ('id', 'thing',)
 
+    def to_native(self, obj):
+        if obj is None: obj = models.Attachment()
+        return {
+            'created_datetime': obj.created_datetime,
+            'updated_datetime': obj.updated_datetime,
+            'file': obj.file.storage.url(obj.file.name),
+            'name': obj.name
+        }
+
 ###############################################################################
 #
 # Serializer Mixins
@@ -241,7 +255,7 @@ class DataBlobProcessor (object):
 
         # Also ignore the following field names (treat them like reserved
         # words).
-        known_fields.update(self.fields.keys())
+        known_fields.update(self.base_fields.keys())
 
         # And allow an arbitrary value field named 'data' (don't let the
         # data blob get in the way).
@@ -256,14 +270,13 @@ class DataBlobProcessor (object):
         data_copy['data'] = json.dumps(blob)
 
         if not self.partial:
-            for field_name, field in self.fields.items():
+            for field_name, field in self.base_fields.items():
                 if (not field.read_only and field_name not in data_copy):
                     data_copy[field_name] = field.default
 
         return super(DataBlobProcessor, self).restore_fields(data_copy, files)
 
-    def to_native(self, obj):
-        data = super(DataBlobProcessor, self).to_native(obj)
+    def explode_data_blob(self, data):
         blob = data.pop('data')
 
         blob_data = json.loads(blob)
@@ -276,6 +289,11 @@ class DataBlobProcessor (object):
                     del blob_data[key]
 
         data.update(blob_data)
+        return data
+
+    def to_native(self, obj):
+        data = super(DataBlobProcessor, self).to_native(obj)
+        self.explode_data_blob(data)
         return data
 
 
@@ -291,6 +309,25 @@ class CachedSerializer (object):
                               DeprecationWarning, stacklevel=2)
         return many
 
+    def get_data_cache_keys(self, items):
+        # Preload the serialized_data_keys from the cache
+        cache = self.opts.model.cache
+        cache_params = self.get_cache_params()
+        
+        data_keys = [
+            cache.get_serialized_data_key(item.pk, **cache_params)
+            for item in items]
+
+        data_meta_keys = [
+            cache.get_serialized_data_meta_key(item.pk)
+            for item in items]
+
+        param_keys = [
+            cache.get_instance_params_key(item.pk)
+            for item in items]
+
+        return (param_keys + data_keys + data_meta_keys)
+
     def preload_serialized_data_keys(self, items):
         # When serializing a page, preload the object list so that it does not
         # cause two separate queries (or sets of queries when prefetch_related
@@ -299,23 +336,11 @@ class CachedSerializer (object):
             items.object_list = list(items.object_list)
 
         if self.is_many(items):
-            # Preload the serialized_data_keys from the cache
-            cache = self.opts.model.cache
-            cache_params = self.get_cache_params()
-            
-            data_keys = [
-                cache.get_serialized_data_key(item.pk, **cache_params)
-                for item in items]
+            cache_keys = self.get_data_cache_keys(items)
+            cache_buffer.get_many(cache_keys)
 
-            data_meta_keys = [
-                cache.get_serialized_data_meta_key(item.pk)
-                for item in items]
-
-            param_keys = [
-                cache.get_instance_params_key(item.pk)
-                for item in items]
-
-            cache_buffer.get_many(param_keys + data_keys + data_meta_keys)
+    def other_preload_cache_keys(self, items):
+        return []
 
     @property
     def data(self):
@@ -328,12 +353,20 @@ class CachedSerializer (object):
         return super(CachedSerializer, self).field_to_native(obj, field_name)
 
     def to_native(self, obj):
+        if obj is None: obj = self.opts.model()
+
         cache = self.opts.model.cache
         cache_params = self.get_cache_params()
-        data_getter = lambda: super(CachedSerializer, self).to_native(obj)
+        data_getter = lambda: self.get_uncached_data(obj)
 
         data = cache.get_serialized_data(obj, data_getter, **cache_params)
         return data
+
+    def get_uncached_data(self, obj):
+        # The default behavior is to go through the to_native machinery in
+        # Django REST Framework. To do something different, override this
+        # method.
+        return super(CachedSerializer, self).to_native(obj)
 
     def get_cache_params(self):
         """
@@ -483,6 +516,12 @@ class SubmissionSetSummarySerializer (CachedSerializer, serializers.HyperlinkedM
         model = models.SubmissionSet
         fields = ('length', 'url')
 
+    def get_uncached_data(self, obj):
+        return {
+            'length': obj.length,
+            'url': self.fields['url'].field_to_native(obj, 'url')
+        }
+
 
 class DataSetPlaceSetSummarySerializer (serializers.HyperlinkedModelSerializer):
     length = serializers.IntegerField(source='places_length')
@@ -545,6 +584,29 @@ class PlaceSerializer (SubmittedThingSerializer, serializers.HyperlinkedModelSer
     class Meta:
         model = models.Place
 
+    def get_data_cache_keys(self, items):
+        place_keys = super(PlaceSerializer, self).get_data_cache_keys(items)
+
+        ss_serializer = SubmissionSetSummarySerializer([], context=self.context, many=True)
+        ss_serializer.parent = self
+        submission_sets = list(chain.from_iterable(item.submission_sets.all() for item in items))
+        ss_keys = ss_serializer.get_data_cache_keys(submission_sets)
+
+        # If include_submissions=on, also preload submission data from the
+        # cache.
+        #
+        # TODO: Can we make it so that we only need the SubmissionSet cache
+        #       data (above) when include_submissions=off?
+        #
+        request = self.context['request']
+        if INCLUDE_SUBMISSIONS_PARAM in request.GET:
+            submission_serializer = SubmissionSerializer([], context=self.context, many=True)
+            submission_serializer.parent = self
+            submissions = list(chain.from_iterable(ss.children.all() for ss in submission_sets))
+            ss_keys += submission_serializer.get_data_cache_keys(submissions)
+
+        return place_keys + ss_keys
+
     def get_submission_set_summaries(self, obj):
         """
         Get a mapping from place id to a submission set summary dictionary.
@@ -597,8 +659,23 @@ class PlaceSerializer (SubmittedThingSerializer, serializers.HyperlinkedModelSer
 
         return details
 
-    def to_native(self, obj):
-        data = super(PlaceSerializer, self).to_native(obj)
+    def get_uncached_data(self, obj):
+        fields = self.get_fields()
+
+        data = {
+            'url': fields['url'].field_to_native(obj, 'pk'),  # = PlaceIdentityField()
+            'id': obj.pk,  # = serializers.PrimaryKeyRelatedField(read_only=True)
+            'geometry': str(obj.geometry or 'POINT(0 0)'),  # = GeometryField(format='wkt')
+            'dataset': obj.dataset_id,  # = DataSetRelatedField()
+            'attachments': [AttachmentSerializer(a).data for a in obj.attachments.all()],  # = AttachmentSerializer(read_only=True)
+            'submitter': UserSerializer(obj.submitter).data if obj.submitter else None,
+            'data': obj.data,
+            'visible': obj.visible,
+        }
+
+        data = self.explode_data_blob(data)
+
+        # data = super(PlaceSerializer, self).to_native(obj)
         request = self.context['request']
 
         if INCLUDE_SUBMISSIONS_PARAM not in request.GET:
@@ -640,11 +717,21 @@ class DataSetSerializer (CachedSerializer, serializers.HyperlinkedModelSerialize
     class Meta:
         model = models.DataSet
 
-    def to_native(self, obj):
-        data = super(DataSetSerializer, self).to_native(obj)
+    def get_uncached_data(self, obj):
+        fields = self.get_fields()
+        fields['places'].context = self.context
+        fields['submission_sets'].context = self.context
 
-        if hasattr(obj, 'distance'):
-            data['distance'] = str(obj.distance)
+        data = {
+            'url': fields['url'].field_to_native(obj, 'url'),
+            'id': obj.pk,
+            'slug': obj.slug,
+            'display_name': obj.display_name,
+            'owner': fields['owner'].field_to_native(obj, 'owner') if obj.owner_id else None,
+            'keys': fields['keys'].field_to_native(obj, 'keys'),
+            'places': fields['places'].field_to_native(obj, 'places'),
+            'submission_sets': fields['submission_sets'].field_to_native(obj, 'submission_sets'),
+        }
 
         return data
 

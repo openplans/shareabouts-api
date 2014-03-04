@@ -89,6 +89,8 @@ TEMPLATE_CONTEXT_PROCESSORS = (
     'django.core.context_processors.request',
 )
 
+ATTACHMENT_STORAGE = 'django.core.files.storage.FileSystemStorage'
+
 ###############################################################################
 #
 # Django Rest Framework
@@ -308,8 +310,12 @@ if 'DEBUG' in environ:
 
 if 'REDIS_URL' in environ:
     scheme, connstring = environ['REDIS_URL'].split('://')
-    userpass, netloc = connstring.split('@')
-    userename, password = userpass.split(':')
+    if '@' in connstring:
+        userpass, netloc = connstring.split('@')
+        userename, password = userpass.split(':')
+    else:
+        userpass = None
+        netloc = connstring
     CACHES = {
         "default": {
             "BACKEND": "redis_cache.cache.RedisCache",
@@ -317,7 +323,7 @@ if 'REDIS_URL' in environ:
             "OPTIONS": {
                 "CLIENT_CLASS": "redis_cache.client.DefaultClient",
                 "PASSWORD": password,
-            }
+            } if userpass else {}
         }
     }
 

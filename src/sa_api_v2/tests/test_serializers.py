@@ -6,7 +6,7 @@ from django.core.files.base import ContentFile
 from django.core.urlresolvers import reverse
 from nose.tools import istest
 from sa_api_v2.models import Attachment, Action, User, DataSet, Place, SubmissionSet, Submission, Group
-from sa_api_v2.serializers import AttachmentSerializer, ActionSerializer, UserSerializer, PlaceSerializer, DataSetSerializer
+from sa_api_v2.serializers import AttachmentSerializer, ActionSerializer, UserSerializer, PlaceSerializer, DataSetSerializer, SubmissionSerializer
 from social.apps.django_app.default.models import UserSocialAuth
 from ..serializers import cache_buffer
 import json
@@ -30,6 +30,11 @@ class TestAttachmentSerializer (TestCase):
         self.assertIn('updated_datetime', serializer.data)
         self.assertIn('file', serializer.data)
         self.assertIn('name', serializer.data)
+
+    def test_can_serlialize_a_null_instance(self):
+        serializer = AttachmentSerializer(None)
+        data = serializer.data
+        self.assertIsInstance(data, dict)
 
 
 class TestActionSerializer (TestCase):
@@ -217,6 +222,15 @@ class TestPlaceSerializer (TestCase):
         Submission.objects.create(dataset=self.dataset, parent=self.comments)
         Submission.objects.create(dataset=self.dataset, parent=self.comments)
 
+    def test_can_serlialize_a_null_instance(self):
+        serializer = PlaceSerializer(None)
+        serializer.context = {
+            'request': RequestFactory().get('')
+        }
+
+        data = serializer.data
+        self.assertIsInstance(data, dict)
+
     def test_place_has_right_number_of_submissions(self):
         serializer = PlaceSerializer(self.place)
         serializer.context = {
@@ -282,6 +296,26 @@ class TestPlaceSerializer (TestCase):
         self.assertNotEqual(initial_data, final_data)
 
 
+class TestSubmissionSerializer (TestCase):
+
+    def setUp(self):
+        User.objects.all().delete()
+        DataSet.objects.all().delete()
+        Place.objects.all().delete()
+        SubmissionSet.objects.all().delete()
+        Submission.objects.all().delete()
+        cache_buffer.reset()
+
+    def test_can_serlialize_a_null_instance(self):
+        serializer = SubmissionSerializer(None)
+        serializer.context = {
+            'request': RequestFactory().get('')
+        }
+
+        data = serializer.data
+        self.assertIsInstance(data, dict)
+
+
 class TestDataSetSerializer (TestCase):
 
     def setUp(self):
@@ -299,6 +333,17 @@ class TestDataSetSerializer (TestCase):
         self.comments = SubmissionSet.objects.create(place=self.place, name='comments')
         Submission.objects.create(dataset=self.dataset, parent=self.comments)
         Submission.objects.create(dataset=self.dataset, parent=self.comments)
+
+    def test_can_serlialize_a_null_instance(self):
+        serializer = DataSetSerializer(None)
+        serializer.context = {
+            'request': RequestFactory().get(''),
+            'place_count_map_getter': (lambda: {}),
+            'submission_sets_map_getter': (lambda: {})
+        }
+
+        data = serializer.data
+        self.assertIsInstance(data, dict)
 
     def test_dataset_cache_cleared_on_new_submissions(self):
         serializer = DataSetSerializer(self.dataset)
