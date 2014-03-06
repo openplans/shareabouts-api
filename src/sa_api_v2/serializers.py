@@ -411,8 +411,37 @@ class DataSetPlaceSetSummarySerializer (serializers.HyperlinkedModelSerializer):
         model = models.DataSet
         fields = ('length', 'url')
 
+    def get_place_counts(self, obj):
+        """
+        Return a dictionary whose keys are dataset ids and values are the
+        corresponding count of places in that dataset.
+        """
+        # This will currently do a query for every dataset, not a single query
+        # for all datasets. Generally a bad idea, but not a huge problem
+        # considering the number of datasets at the moment. In the future,
+        # we should perhaps use some kind of many_to_native function.
+
+        # if self.many:
+        #     include_invisible = INCLUDE_INVISIBLE_PARAM in self.context['request'].GET
+        #     places = models.Place.objects.filter(dataset__in=obj)
+        #     if not include_invisible:
+        #         places = places.filter(visible=True)
+
+        #     # Unset any default ordering
+        #     places = places.order_by()
+
+        #     places = places.values('dataset').annotate(length=Count('dataset'))
+        #     return dict([(place['dataset'], place['length']) for place in places])
+
+        # else:
+        include_invisible = INCLUDE_INVISIBLE_PARAM in self.context['request'].GET
+        places = obj.places
+        if not include_invisible:
+            places = places.filter(visible=True)
+        return {obj.pk: places.count()}
+
     def to_native(self, obj):
-        place_count_map = self.context['place_count_map_getter']()
+        place_count_map = self.get_place_counts(obj)
         obj.places_length = place_count_map.get(obj.pk, 0)
         data = super(DataSetPlaceSetSummarySerializer, self).to_native(obj)
         return data
@@ -426,6 +455,11 @@ class DataSetSubmissionSetSummarySerializer (serializers.HyperlinkedModelSeriali
         model = models.DataSet
         fields = ('length', 'url')
 
+    def is_flag_on(self, flagname):
+        request = self.context['request']
+        param = request.GET.get(flagname, 'false')
+        return param.lower() not in ('false', 'no', 'off')
+
     def get_submission_sets(self, dataset):
         include_invisible = self.is_flag_on(INCLUDE_INVISIBLE_PARAM)
         submission_sets = defaultdict(list)
@@ -433,16 +467,14 @@ class DataSetSubmissionSetSummarySerializer (serializers.HyperlinkedModelSeriali
             if include_invisible or submission.visible:
                 set_name = submission.set_name
                 submission_sets[set_name].append(submission)
-        return submission_sets
+        return {dataset.id: submission_sets}
 
     def to_native(self, obj):
         request = self.context['request']
-        submission_sets_map = self.context['submission_sets_map_getter']()
+        submission_sets_map = self.get_submission_sets(obj)
         sets = submission_sets_map.get(obj.id, {})
         summaries = {}
-        for submission_set in sets:
-            set_name = submission_set['set_name']
-
+        for set_name, submission_set in sets.iteritems():
             # Ensure the user has read permission on the submission set.
             user = getattr(request, 'user', None)
             client = getattr(request, 'client', None)
@@ -451,7 +483,7 @@ class DataSetSubmissionSetSummarySerializer (serializers.HyperlinkedModelSeriali
                 continue
 
             obj.submission_set_name = set_name
-            obj.submission_set_length = submission_set['length']
+            obj.submission_set_length = len(submission_set)
             summaries[set_name] = super(DataSetSubmissionSetSummarySerializer, self).to_native(obj)
         return summaries
 
