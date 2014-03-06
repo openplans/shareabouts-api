@@ -19,7 +19,7 @@ south
 dj-database-url
 
 # Caching
-django-redis
+django-redis==3.5.1
 
 # File Storate
 boto
