@@ -35,7 +35,7 @@ SITE_ID = 1
 # How long to keep api cache values. Since the api will invalidate the cache
 # automatically when appropriate, this can (and should) be set to something
 # large.
-API_CACHE_TIMEOUT = 604800  # a week
+API_CACHE_TIMEOUT = None  # never timeout
 
 ###############################################################################
 #
