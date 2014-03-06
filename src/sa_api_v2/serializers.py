@@ -302,7 +302,7 @@ class CachedSerializer (object):
         if self.many is not None:
             many = self.many
         else:
-            many = hasattr(obj, '__iter__') and not isinstance(obj, (dict, Page))
+            many = hasattr(obj, '__iter__') and not isinstance(obj, dict)
             if many:
                 warnings.warn('Implict list/queryset serialization is deprecated. '
                               'Use the `many=True` flag when instantiating the serializer.',
@@ -783,6 +783,7 @@ class PaginationMetadataSerializer (serializers.Serializer):
 
 class PaginatedResultsSerializer (pagination.BasePaginationSerializer):
     metadata = PaginationMetadataSerializer(source='*')
+    many = True
 
 
 class FeatureCollectionSerializer (PaginatedResultsSerializer):
