@@ -1,7 +1,7 @@
 # https://github.com/travis-ci/travis-ci/wiki/.travis.yml-options
 
 install: "ci/install.sh"
-script: "src/manage.py test --with-coverage --cover-package=sa_api_v1 --cover-package=sa_api_v2 --exclude=sa_manager"
+script: "src/manage.py test --with-coverage --cover-package=sa_api_v1 --cover-package=sa_api_v2"
 python:
   - "2.7"
 notifications:
