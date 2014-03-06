@@ -14,7 +14,6 @@ We need a method to be able to:
 from django.http import QueryDict
 from django.http.multipartparser import MultiPartParser as DjangoMultiPartParser
 from django.http.multipartparser import MultiPartParserError
-from django.utils import simplejson as json
 from djangorestframework import status
 from djangorestframework.compat import yaml
 from djangorestframework.response import ErrorResponse
@@ -24,6 +23,7 @@ from djangorestframework.compat import ETParseError
 from xml.parsers.expat import ExpatError
 import datetime
 import decimal
+import json
 
 
 __all__ = (

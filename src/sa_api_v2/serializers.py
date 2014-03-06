@@ -578,7 +578,7 @@ class PlaceSerializer (SubmittedThingSerializer, serializers.HyperlinkedModelSer
     id = serializers.PrimaryKeyRelatedField(read_only=True)
     geometry = GeometryField(format='wkt')
     dataset = DataSetRelatedField()
-    attachments = AttachmentSerializer(read_only=True)
+    attachments = AttachmentSerializer(read_only=True, many=True)
     submitter = UserSerializer(read_only=False)
 
     class Meta:
@@ -699,7 +699,7 @@ class SubmissionSerializer (SubmittedThingSerializer, serializers.HyperlinkedMod
     dataset = DataSetRelatedField()
     set = SubmissionSetRelatedField(source='parent')
     place = PlaceRelatedField(source='parent.place')
-    attachments = AttachmentSerializer(read_only=True)
+    attachments = AttachmentSerializer(read_only=True, many=True)
     submitter = UserSerializer()
 
     class Meta:
@@ -711,10 +711,10 @@ class DataSetSerializer (CachedSerializer, serializers.HyperlinkedModelSerialize
     url = DataSetIdentityField()
     id = serializers.PrimaryKeyRelatedField(read_only=True)
     owner = UserRelatedField()
-    keys = DataSetKeysRelatedField(source='*')
+    keys = DataSetKeysRelatedField(source='*', many=True)
 
-    places = DataSetPlaceSetSummarySerializer(source='*', read_only=True)
-    submission_sets = DataSetSubmissionSetSummarySerializer(source='*', read_only=True)
+    places = DataSetPlaceSetSummarySerializer(source='*', read_only=True, many=True)
+    submission_sets = DataSetSubmissionSetSummarySerializer(source='*', read_only=True, many=True)
 
     class Meta:
         model = models.DataSet
@@ -783,6 +783,7 @@ class PaginationMetadataSerializer (serializers.Serializer):
 
 class PaginatedResultsSerializer (pagination.BasePaginationSerializer):
     metadata = PaginationMetadataSerializer(source='*')
+    many = True
 
 
 class FeatureCollectionSerializer (PaginatedResultsSerializer):
