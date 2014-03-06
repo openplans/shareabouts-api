@@ -186,7 +186,7 @@ class ShareaboutsAPIRequest (Request):
     """
 
     def __init__(self, request, parsers=None, authenticators=None,
-                 client_authenticators=None, negotiator=None, 
+                 client_authenticators=None, negotiator=None,
                  parser_context=None):
         super(ShareaboutsAPIRequest, self).__init__(request,
             parsers=parsers, authenticators=authenticators,
@@ -977,48 +977,9 @@ class DataSetInstanceView (CachedResourceMixin, OwnedResourceMixin, generics.Ret
         except self.model.DoesNotExist:
             raise Http404
 
-    @utils.memo
-    def get_place_count(self):
-        """
-        Get the number of places for this dataset.
-        """
-        include_invisible = INCLUDE_INVISIBLE_PARAM in self.request.GET
-        places = self.object.places
-        if not include_invisible:
-            places = places.filter(visible=True)
-        return places.count()
-
-    @utils.memo
-    def get_submission_sets(self):
-        """
-        Get a list of submission set summary data for this dataset.
-        """
-        include_invisible = INCLUDE_INVISIBLE_PARAM in self.request.GET
-        submissions = self.object.submissions.select_related('parent')
-        if not include_invisible:
-            submissions = submissions.filter(visible=True)
-
-        # Unset any default ordering
-        submissions = submissions.order_by()
-
-        submissions = submissions.values('dataset', 'parent__name').annotate(length=Count('dataset'))
-        return submissions
-
     def get_serializer_context(self):
         context = super(DataSetInstanceView, self).get_serializer_context()
         include_invisible = INCLUDE_INVISIBLE_PARAM in self.request.GET
-
-        # The place_count_map_getter returns a dictionary where the keys are
-        # dataset ids and the values are corresponding place counts.
-        context['place_count_map_getter'] = (
-            lambda: {self.object.pk: self.get_place_count()}
-        )
-
-        # The submission_sets_map_getter returns a dictionary where the keys are
-        # dataset ids and the values are corresponding submission set summaries.
-        context['submission_sets_map_getter'] = (
-            lambda: {self.object.pk: self.get_submission_sets()}
-        )
 
         return context
 
@@ -1049,23 +1010,6 @@ class DataSetListMixin (object):
     client_authentication_classes = ()
 
     @utils.memo
-    def get_place_counts(self):
-        """
-        Return a dictionary whose keys are dataset ids and values are the
-        corresponding count of places in that dataset.
-        """
-        include_invisible = INCLUDE_INVISIBLE_PARAM in self.request.GET
-        places = models.Place.objects.filter(dataset__in=self.get_queryset())
-        if not include_invisible:
-            places = places.filter(visible=True)
-
-        # Unset any default ordering
-        places = places.order_by()
-
-        places = places.values('dataset').annotate(length=Count('dataset'))
-        return dict([(place['dataset'], place['length']) for place in places])
-
-    @utils.memo
     def get_all_submission_sets(self):
         """
         Return a dictionary whose keys are dataset ids and values are a
@@ -1087,24 +1031,6 @@ class DataSetListMixin (object):
             sets[summary['dataset']].append(summary)
 
         return dict(sets.items())
-
-    def get_serializer_context(self):
-        context = super(DataSetListMixin, self).get_serializer_context()
-        include_invisible = INCLUDE_INVISIBLE_PARAM in self.request.GET
-
-        # The place_count_map_getter returns a dictionary where the keys are
-        # dataset ids and the values are corresponding place counts.
-        context['place_count_map_getter'] = (
-            lambda: self.get_place_counts()
-        )
-
-        # The submission_sets_map_getter returns a dictionary where the keys are
-        # dataset ids and the values are corresponding submission set summaries.
-        context['submission_sets_map_getter'] = (
-            lambda: self.get_all_submission_sets()
-        )
-
-        return context
 
 
 class DataSetListView (CachedResourceMixin, DataSetListMixin, OwnedResourceMixin, generics.ListCreateAPIView):
@@ -1223,7 +1149,7 @@ class ActionListView (CachedResourceMixin, OwnedResourceMixin, generics.ListAPIV
     ---
 
     Get the activity for a dataset
-    
+
     **Authentication**: Basic, session, or key auth *(optional)*
 
     ------------------------------------------------------------
@@ -1241,7 +1167,7 @@ class ActionListView (CachedResourceMixin, OwnedResourceMixin, generics.ListAPIV
 
         if INCLUDE_INVISIBLE_PARAM not in self.request.GET:
             queryset = queryset.filter(thing__visible=True)\
-                .filter(Q(thing__place__isnull=False) | 
+                .filter(Q(thing__place__isnull=False) |
                         Q(thing__submission__parent__place__visible=True))
 
         return queryset
