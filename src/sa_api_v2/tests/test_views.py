@@ -21,7 +21,7 @@ from ..views import (PlaceInstanceView, PlaceListView, SubmissionInstanceView,
 class APITestMixin (object):
     def assertStatusCode(self, response, *expected):
         self.assertIn(response.status_code, expected,
-            'Status code not in %s response: (%s) %s' % 
+            'Status code not in %s response: (%s) %s' %
             (expected, response.status_code, response.rendered_content))
 
 
@@ -2559,8 +2559,16 @@ class TestDataSetInstanceView (APITestMixin, TestCase):
         cache_buffer.reset()
         django_cache.clear()
 
+    def test_anonymous_GET_response(self):
+        request = self.factory.get(self.path)
+        response = self.view(request, **self.request_kwargs)
+
+        # Check that the request was successful
+        self.assertStatusCode(response, 401)
+
     def test_GET_response(self):
         request = self.factory.get(self.path)
+        request.user = self.owner
         response = self.view(request, **self.request_kwargs)
         data = json.loads(response.rendered_content)
 
@@ -2584,45 +2592,49 @@ class TestDataSetInstanceView (APITestMixin, TestCase):
             'http://testserver' + reverse('dataset-detail', args=[
                 self.owner.username, self.dataset.slug]))
 
-    def test_GET_from_cache(self):
-        path = reverse('dataset-detail', kwargs=self.request_kwargs)
-        request = self.factory.get(path)
+    #
+    # Temporarily disable caching on datasets until we add user data to the
+    # cache keys.
+    #
+    # def test_GET_from_cache(self):
+    #     path = reverse('dataset-detail', kwargs=self.request_kwargs)
+    #     request = self.factory.get(path)
 
-        # Check that we make a finite number of queries
-        # - SELECT * FROM sa_api_dataset
-        #       INNER JOIN auth_user ON (owner_id = auth_user.id)
-        #       WHERE (username = '<owner_username>'  AND slug = '<dataset_slug>' );
-        #
-        # - SELECT * FROM sa_api_submittedthing
-        #       WHERE dataset_id IN (<dataset_id>);
-        #
-        # - SELECT * FROM sa_api_place
-        #       INNER JOIN sa_api_submittedthing ON (submittedthing_ptr_id = sa_api_submittedthing.id)
-        #       WHERE submittedthing_ptr_id IN (<place_ids>);
-        #
-        # - SELECT * FROM "auth_user"
-        #       WHERE id = <owner_id>;
-        #
-        # - SELECT COUNT(*) FROM sa_api_place
-        #       INNER JOIN sa_api_submittedthing ON (submittedthing_ptr_id = sa_api_submittedthing.id)
-        #       WHERE dataset_id = <dataset_id>  AND visible = True;
-        #
-        # - SELECT sa_api_submittedthing.dataset_id, sa_api_submissionset.name, COUNT(*) AS "length" FROM sa_api_submission
-        #       LEFT OUTER JOIN sa_api_submittedthing ON (submittedthing_ptr_id = sa_api_submittedthing.id)
-        #       INNER JOIN sa_api_submissionset ON (parent_id = sa_api_submissionset.id)
-        #       WHERE dataset_id = <dataset_id>
-        #       GROUP BY dataset_id, sa_api_submissionset.name;
-        with self.assertNumQueries(6):
-            response = self.view(request, **self.request_kwargs)
-            self.assertStatusCode(response, 200)
+    #     # Check that we make a finite number of queries
+    #     # - SELECT * FROM sa_api_dataset
+    #     #       INNER JOIN auth_user ON (owner_id = auth_user.id)
+    #     #       WHERE (username = '<owner_username>'  AND slug = '<dataset_slug>' );
+    #     #
+    #     # - SELECT * FROM sa_api_submittedthing
+    #     #       WHERE dataset_id IN (<dataset_id>);
+    #     #
+    #     # - SELECT * FROM sa_api_place
+    #     #       INNER JOIN sa_api_submittedthing ON (submittedthing_ptr_id = sa_api_submittedthing.id)
+    #     #       WHERE submittedthing_ptr_id IN (<place_ids>);
+    #     #
+    #     # - SELECT * FROM "auth_user"
+    #     #       WHERE id = <owner_id>;
+    #     #
+    #     # - SELECT COUNT(*) FROM sa_api_place
+    #     #       INNER JOIN sa_api_submittedthing ON (submittedthing_ptr_id = sa_api_submittedthing.id)
+    #     #       WHERE dataset_id = <dataset_id>  AND visible = True;
+    #     #
+    #     # - SELECT sa_api_submittedthing.dataset_id, sa_api_submissionset.name, COUNT(*) AS "length" FROM sa_api_submission
+    #     #       LEFT OUTER JOIN sa_api_submittedthing ON (submittedthing_ptr_id = sa_api_submittedthing.id)
+    #     #       INNER JOIN sa_api_submissionset ON (parent_id = sa_api_submissionset.id)
+    #     #       WHERE dataset_id = <dataset_id>
+    #     #       GROUP BY dataset_id, sa_api_submissionset.name;
+    #     with self.assertNumQueries(6):
+    #         response = self.view(request, **self.request_kwargs)
+    #         self.assertStatusCode(response, 200)
 
-        path = reverse('dataset-detail', kwargs=self.request_kwargs)
-        request = self.factory.get(path)
+    #     path = reverse('dataset-detail', kwargs=self.request_kwargs)
+    #     request = self.factory.get(path)
 
-        # Check that this performs no more queries, since it's all cached
-        with self.assertNumQueries(0):
-            response = self.view(request, **self.request_kwargs)
-            self.assertStatusCode(response, 200)
+    #     # Check that this performs no more queries, since it's all cached
+    #     with self.assertNumQueries(0):
+    #         response = self.view(request, **self.request_kwargs)
+    #         self.assertStatusCode(response, 200)
 
     def test_DELETE_response(self):
         #
@@ -2660,6 +2672,7 @@ class TestDataSetInstanceView (APITestMixin, TestCase):
         # View should not return invisible data normally
         #
         request = self.factory.get(self.path)
+        request.user = self.owner
         response = self.view(request, **self.request_kwargs)
         data = json.loads(response.rendered_content)
 
@@ -2863,8 +2876,17 @@ class TestDataSetListView (APITestMixin, TestCase):
         cache_buffer.reset()
         django_cache.clear()
 
+    # 401, not logged in owner
+    def test_anonymous_GET_response(self):
+        request = self.factory.get(self.path)
+        response = self.view(request, **self.request_kwargs)
+
+        # Check that the request was successful
+        self.assertStatusCode(response, 401)
+
     def test_GET_response(self):
         request = self.factory.get(self.path)
+        request.user = self.owner
         response = self.view(request, **self.request_kwargs)
         data = json.loads(response.rendered_content)
 
@@ -2945,6 +2967,7 @@ class TestDataSetListView (APITestMixin, TestCase):
         # View should not return invisible data normally
         #
         request = self.factory.get(self.path)
+        request.user = self.owner
         response = self.view(request, **self.request_kwargs)
         data = json.loads(response.rendered_content)
 
@@ -3685,7 +3708,7 @@ class TestActivityView(APITestMixin, TestCase):
         self.apikey.datasets.add(self.dataset)
 
         self.kwargs = {
-            'owner_username': self.owner.username, 
+            'owner_username': self.owner.username,
             'dataset_slug': 'data'
         }
         self.url = reverse('action-list', kwargs=self.kwargs)

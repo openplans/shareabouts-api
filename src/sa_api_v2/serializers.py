@@ -750,11 +750,17 @@ class SubmissionSerializer (SubmittedThingSerializer, serializers.HyperlinkedMod
         exclude = ('parent',)
 
 
-class DataSetSerializer (CachedSerializer, serializers.HyperlinkedModelSerializer):
+class ApiKeySerializer (serializers.ModelSerializer):
+    class Meta:
+        model = apikey.models.ApiKey
+        exclude = ('id', 'datasets', 'logged_ip', 'last_used')
+
+
+class DataSetSerializer (serializers.HyperlinkedModelSerializer):
     url = DataSetIdentityField()
     id = serializers.PrimaryKeyRelatedField(read_only=True)
     owner = UserRelatedField()
-    keys = DataSetKeysRelatedField(source='*', many=True)
+    keys = ApiKeySerializer(many=True, read_only=True)
 
     places = DataSetPlaceSetSummarySerializer(source='*', read_only=True, many=True)
     submission_sets = DataSetSubmissionSetSummarySerializer(source='*', read_only=True, many=True)
@@ -762,7 +768,9 @@ class DataSetSerializer (CachedSerializer, serializers.HyperlinkedModelSerialize
     class Meta:
         model = models.DataSet
 
-    def get_uncached_data(self, obj):
+    def to_native(self, obj):
+        if obj is None: obj = self.opts.model()
+
         fields = self.get_fields()
         fields['places'].context = self.context
         fields['submission_sets'].context = self.context
@@ -773,18 +781,12 @@ class DataSetSerializer (CachedSerializer, serializers.HyperlinkedModelSerialize
             'slug': obj.slug,
             'display_name': obj.display_name,
             'owner': fields['owner'].field_to_native(obj, 'owner') if obj.owner_id else None,
-            'keys': fields['keys'].field_to_native(obj, 'keys'),
+            'keys': fields['keys'].field_to_native(obj, 'keys') if obj.pk else [],
             'places': fields['places'].field_to_native(obj, 'places'),
             'submission_sets': fields['submission_sets'].field_to_native(obj, 'submission_sets'),
         }
 
         return data
-
-
-class ApiKeySerializer (serializers.ModelSerializer):
-    class Meta:
-        model = apikey.models.ApiKey
-        exclude = ('id', 'datasets', 'logged_ip', 'last_used')
 
 
 class ActionSerializer (CachedSerializer, serializers.ModelSerializer):

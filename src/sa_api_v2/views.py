@@ -122,6 +122,17 @@ def is_really_logged_in(user, request):
             not is_origin_auth(auth))
 
 
+class IsLoggedInOwner(permissions.BasePermission):
+    def has_permission(self, request, view):
+        if not is_really_logged_in(request.user, request):
+            return False
+
+        if request.user.is_superuser or is_owner(request.user, request):
+            return True
+
+        return False
+
+
 class IsOwnerOrReadOnly(permissions.BasePermission):
     def has_permission(self, request, view):
         """
@@ -932,7 +943,7 @@ class DataSetSubmissionListView (CachedResourceMixin, OwnedResourceMixin, Filter
             .prefetch_related('attachments', 'submitter__social_auth', 'submitter___groups')
 
 
-class DataSetInstanceView (CachedResourceMixin, OwnedResourceMixin, generics.RetrieveUpdateDestroyAPIView):
+class DataSetInstanceView (OwnedResourceMixin, generics.RetrieveUpdateDestroyAPIView):
     """
     GET
     ---
@@ -965,6 +976,7 @@ class DataSetInstanceView (CachedResourceMixin, OwnedResourceMixin, generics.Ret
     model = models.DataSet
     serializer_class = serializers.DataSetSerializer
     authentication_classes = (authentication.BasicAuthentication, ShareaboutsSessionAuth)
+    permission_classes = (IsLoggedInOwner,)
     client_authentication_classes = ()
 
     def get_object_or_404(self, owner_username, dataset_slug):
@@ -1033,7 +1045,7 @@ class DataSetListMixin (object):
         return dict(sets.items())
 
 
-class DataSetListView (CachedResourceMixin, DataSetListMixin, OwnedResourceMixin, generics.ListCreateAPIView):
+class DataSetListView (DataSetListMixin, OwnedResourceMixin, generics.ListCreateAPIView):
     """
 
     GET
@@ -1058,6 +1070,9 @@ class DataSetListView (CachedResourceMixin, DataSetListMixin, OwnedResourceMixin
 
     ------------------------------------------------------------
     """
+
+    permission_classes = (IsLoggedInOwner,)
+    client_authentication_classes = ()
 
     def pre_save(self, obj):
         super(DataSetListView, self).pre_save(obj)
