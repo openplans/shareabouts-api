@@ -14,6 +14,7 @@ from rest_framework.reverse import reverse
 from social.apps.django_app.default.models import UserSocialAuth
 import warnings
 
+from . import apikey
 from . import models
 from . import utils
 from .cache import cache_buffer
@@ -778,6 +779,12 @@ class DataSetSerializer (CachedSerializer, serializers.HyperlinkedModelSerialize
         }
 
         return data
+
+
+class ApiKeySerializer (serializers.ModelSerializer):
+    class Meta:
+        model = apikey.models.ApiKey
+        exclude = ('id', 'datasets', 'logged_ip', 'last_used')
 
 
 class ActionSerializer (CachedSerializer, serializers.ModelSerializer):
