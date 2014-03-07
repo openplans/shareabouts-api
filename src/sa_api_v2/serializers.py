@@ -11,6 +11,7 @@ from rest_framework import pagination
 from rest_framework import serializers
 from rest_framework.reverse import reverse
 
+from . import apikey
 from . import models
 from .models import check_data_permission
 from .params import (INCLUDE_INVISIBLE_PARAM, INCLUDE_PRIVATE_PARAM,
@@ -705,6 +706,12 @@ class DataSetSerializer (EmptyModelSerializer, serializers.HyperlinkedModelSeria
         }
 
         return data
+
+
+class ApiKeySerializer (serializers.ModelSerializer):
+    class Meta:
+        model = apikey.models.ApiKey
+        exclude = ('id', 'datasets', 'logged_ip', 'last_used')
 
 
 class ActionSerializer (EmptyModelSerializer, serializers.ModelSerializer):
