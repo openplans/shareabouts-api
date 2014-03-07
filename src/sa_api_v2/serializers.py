@@ -676,11 +676,17 @@ class AttachmentSerializer (EmptyModelSerializer, serializers.ModelSerializer):
         }
 
 
+class ApiKeySerializer (serializers.ModelSerializer):
+    class Meta:
+        model = apikey.models.ApiKey
+        exclude = ('id', 'datasets', 'logged_ip', 'last_used')
+
+
 class DataSetSerializer (EmptyModelSerializer, serializers.HyperlinkedModelSerializer):
     url = DataSetIdentityField()
     id = serializers.PrimaryKeyRelatedField(read_only=True)
     owner = UserRelatedField()
-    keys = DataSetKeysRelatedField(source='*', many=True)
+    keys = ApiKeySerializer(many=True, read_only=True)
 
     places = DataSetPlaceSetSummarySerializer(source='*', read_only=True, many=True)
     submission_sets = DataSetSubmissionSetSummarySerializer(source='*', read_only=True, many=True)
@@ -700,18 +706,12 @@ class DataSetSerializer (EmptyModelSerializer, serializers.HyperlinkedModelSeria
             'slug': obj.slug,
             'display_name': obj.display_name,
             'owner': fields['owner'].field_to_native(obj, 'owner') if obj.owner_id else None,
-            'keys': fields['keys'].field_to_native(obj, 'keys'),
+            'keys': fields['keys'].field_to_native(obj, 'keys') if obj.pk else [],
             'places': fields['places'].field_to_native(obj, 'places'),
             'submission_sets': fields['submission_sets'].field_to_native(obj, 'submission_sets'),
         }
 
         return data
-
-
-class ApiKeySerializer (serializers.ModelSerializer):
-    class Meta:
-        model = apikey.models.ApiKey
-        exclude = ('id', 'datasets', 'logged_ip', 'last_used')
 
 
 class ActionSerializer (EmptyModelSerializer, serializers.ModelSerializer):
