@@ -1435,6 +1435,13 @@ class DataSetListView (DataSetListMixin, OwnedResourceMixin, generics.ListCreate
         super(DataSetListView, self).pre_save(obj)
         obj.owner = self.get_owner()
 
+    def post_save(self, obj, created=False):
+        # Automatically create a new api key for a new dataset
+        obj.keys.create(
+            dataset=obj,
+            key=apikey.models.generate_unique_api_key()
+        )
+
     def get_queryset(self):
         owner = self.get_owner()
         queryset = super(DataSetListView, self).get_queryset()
