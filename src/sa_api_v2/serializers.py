@@ -345,12 +345,12 @@ class CachedSerializer (object):
 
     @property
     def data(self):
-        if self._data is None:
-            self.preload_serialized_data_keys(self.object)
+        # if self._data is None:
+        #     self.preload_serialized_data_keys(self.object)
         return super(CachedSerializer, self).data
 
     def field_to_native(self, obj, field_name):
-        self.preload_serialized_data_keys(obj)
+        # self.preload_serialized_data_keys(obj)
         return super(CachedSerializer, self).field_to_native(obj, field_name)
 
     def to_native(self, obj):
