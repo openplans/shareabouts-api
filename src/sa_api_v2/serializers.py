@@ -314,19 +314,20 @@ class CachedSerializer (object):
         cache = self.opts.model.cache
         cache_params = self.get_cache_params()
         
-        data_keys = [
-            cache.get_serialized_data_key(item.pk, **cache_params)
-            for item in items]
+        # data_keys = [
+        #     cache.get_serialized_data_key(item.pk, **cache_params)
+        #     for item in items]
 
-        data_meta_keys = [
-            cache.get_serialized_data_meta_key(item.pk)
-            for item in items]
+        # data_meta_keys = [
+        #     cache.get_serialized_data_meta_key(item.pk)
+        #     for item in items]
 
         param_keys = [
             cache.get_instance_params_key(item.pk)
             for item in items]
 
-        return (param_keys + data_keys + data_meta_keys)
+        # return (param_keys + data_keys + data_meta_keys)
+        return param_keys
 
     def preload_serialized_data_keys(self, items):
         # When serializing a page, preload the object list so that it does not
@@ -355,12 +356,13 @@ class CachedSerializer (object):
     def to_native(self, obj):
         if obj is None: obj = self.opts.model()
 
-        cache = self.opts.model.cache
-        cache_params = self.get_cache_params()
-        data_getter = lambda: self.get_uncached_data(obj)
+        # cache = self.opts.model.cache
+        # cache_params = self.get_cache_params()
+        # data_getter = lambda: self.get_uncached_data(obj)
 
-        data = cache.get_serialized_data(obj, data_getter, **cache_params)
-        return data
+        # data = cache.get_serialized_data(obj, data_getter, **cache_params)
+        # return data
+        return self.get_uncached_data(obj)
 
     def get_uncached_data(self, obj):
         # The default behavior is to go through the to_native machinery in

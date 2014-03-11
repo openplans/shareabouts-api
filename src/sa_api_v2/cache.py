@@ -241,16 +241,19 @@ class Cache (object):
         so that it does not get evaluated if it doesn't have to be, since
         evaluating it may involve additional queries.
         """
-        instance_params_key = self.get_instance_params_key(inst_key)
-        params = cache_buffer.get(instance_params_key)
+        # instance_params_key = self.get_instance_params_key(inst_key)
+        # params = cache_buffer.get(instance_params_key)
 
-        if params is None:
-            obj = obj_getter()
-            params = self.get_instance_params(obj)
-            logger.debug('Setting instance parameters for "%s": %r' % (instance_params_key, params))
-            cache_buffer.set(instance_params_key, params)
-        else:
-            logger.debug('Found instance parameters for "%s": %r' % (instance_params_key, params))
+        # if params is None:
+        #     obj = obj_getter()
+        #     params = self.get_instance_params(obj)
+        #     logger.debug('Setting instance parameters for "%s": %r' % (instance_params_key, params))
+        #     cache_buffer.set(instance_params_key, params)
+        # else:
+        #     logger.debug('Found instance parameters for "%s": %r' % (instance_params_key, params))
+        # return params
+        obj = obj_getter()
+        params = self.get_instance_params(obj)
         return params
 
     def get_serialized_data_meta_key(self, inst_key):
