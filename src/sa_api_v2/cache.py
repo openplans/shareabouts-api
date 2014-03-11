@@ -9,9 +9,21 @@ import logging
 logger = logging.getLogger('sa_api_v2.cache')
 
 
+# A sentinel object to differentiate from None
+Undefined = object()
+
 class CacheBuffer (object):
-    def __init__(self):
+    def __init__(self, initial_buffer=None):
+        # When we get a value from the remote cache, it goes in to the buffer
+        # so that we can retrieve it quickly on our next try.
+        self.buffer = initial_buffer or {}
+        self.timeouts = {}
+
+        # When we set a value, it goes into the queue as well as the buffer.
+        # Values are not set in the remote cache from the queue until we call
+        # flush.
         self.queue = {}
+        self.delete_queue = set()
 
     def get_many(self, keys):
         results = {}
@@ -19,7 +31,9 @@ class CacheBuffer (object):
 
         for key in keys:
             try:
-                results[key] = self.queue[key]
+                value = self.buffer[key]
+                if value is not Undefined:
+                    results[key] = value
             except KeyError:
                 unseen_keys.append(key)
 
@@ -27,44 +41,127 @@ class CacheBuffer (object):
             new_results = django_cache.cache.get_many(unseen_keys)
             if new_results:
                 results.update(new_results)
-                self.queue.update(new_results)
+                self.buffer.update(new_results)
 
-        self.queue.update({key: None for key in set(keys) - set(results.keys())})
+        # TODO: Is this what's supposed to happen? get_many returns None for
+        #       each key that wasn't found?
+        all_results = dict([(key, Undefined) for key in set(keys) - set(results.keys())])
+        self.buffer.update(all_results)
         return results
 
-    def get(self, key):
+    def get(self, key, default=None):
+        if key in self.delete_queue:
+            return None
+
         try:
-            return self.queue[key]
+            value = self.buffer[key]
+            return None if value is Undefined else value
         except KeyError:
-            value = django_cache.cache.get(key)
-            self.queue[key] = value
+            value = django_cache.cache.get(key, default)
+            self.buffer[key] = value
             return value
 
-    def set(self, key, value):
-        self.queue[key] = value
+    def set(self, key, value, timeout=Undefined):
+        self.buffer[key] = self.queue[key] = value
+        self.timeouts[key] = timeout
+
+        try: self.delete_queue.remove(key)
+        except KeyError: pass
+
+    def set_many(self, mapping, timeout=Undefined):
+        self.buffer.update(mapping)
+        self.queue.update(mapping)
+
+        for key in mapping:
+            self.timeouts[key] = timeout
+
+            try: self.delete_queue.remove(key)
+            except KeyError: pass
+
+    def delete(self, key):
+        try: del self.queue[key]
+        except KeyError: pass
+
+        try: del self.buffer[key]
+        except KeyError: pass
+
+        try: del self.timeouts[key]
+        except KeyError: pass
+
+        self.delete_queue.add(key)
 
     def delete_many(self, keys):
         for key in keys:
-            try:
-                del self.queue[key]
-            except KeyError:
-                pass
-        django_cache.cache.delete_many(keys)
+            try: del self.queue[key]
+            except KeyError: pass
 
-    def delete(self, key):
-        try:
-            del self.queue[key]
-        except KeyError:
-            pass
-        django_cache.cache.delete(key)
+            try: del self.buffer[key]
+            except KeyError: pass
+
+            try: del self.timeouts[key]
+            except KeyError: pass
+
+        self.delete_queue.update(keys)
+
+    # === Set operations
+
+    def add(self, skey, members):
+        members = set(members)
+
+        if skey in self.srem_queue:
+            self.srem_queue[skey] -= members
+            if not self.srem_queue[skey]:
+                del self.srem_queue[skey]
+
+        new_members = (self.sadd_queue.get(skey) or set()) | members
+        self.sadd_queue[skey] = new_members
+
+        svalue = (self.buffer.get(skey) or set()) | members
+        self.buffer[skey] = svalue
+
+    def remove(self, skey, members):
+        members = set(members)
+
+        if skey in self.sadd_queue:
+            self.sadd_queue[skey] -= members
+            if not self.sadd_queue[skey]:
+                del self.sadd_queue[skey]
+
+        old_members = (self.srem_queue.get(skey) or set()) | members
+        self.srem_queue[skey] = old_members
+
+        svalue = (self.buffer.get(skey) or set()) - members
+        self.buffer[skey] = svalue
+
+    # === Flush, reset
 
     def flush(self):
+        timed_queues = defaultdict(dict)
+
         if self.queue:
-            django_cache.cache.set_many(self.queue, settings.API_CACHE_TIMEOUT)
-            self.reset()
+            for key, value in self.queue.iteritems():
+                timeout = self.timeouts[key]
+                timed_queues[timeout][key] = value
+
+            for timeout, queue in timed_queues.iteritems():
+                if timeout is not Undefined:
+                    django_cache.cache.set_many(queue, timeout)
+                else:
+                    django_cache.cache.set_many(queue, None)
+
+        # if self.sadd_queue:
+        #     for key, value in self.sadd_queue.iteritems():
+
+        if self.delete_queue:
+            django_cache.cache.delete_many(self.delete_queue)
+        
+        self.reset()
 
     def reset(self):
         self.queue = {}
+        self.delete_queue = set()
+        self.timeouts = {}
+        self.buffer = {}
 cache_buffer = CacheBuffer()
 
 

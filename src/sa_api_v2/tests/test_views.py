@@ -27,9 +27,6 @@ class APITestMixin (object):
 
 class TestPlaceInstanceView (APITestMixin, TestCase):
     def setUp(self):
-        cache_buffer.reset()
-        django_cache.clear()
-
         self.owner = User.objects.create_user(username='aaron', password='123', email='abc@example.com')
         self.submitter = User.objects.create_user(username='mjumbe', password='456', email='123@example.com')
         self.dataset = DataSet.objects.create(slug='ds', owner=self.owner)
@@ -94,6 +91,9 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
         self.path = reverse('place-detail', kwargs=self.request_kwargs)
         self.invisible_path = reverse('place-detail', kwargs=self.invisible_request_kwargs)
         self.view = PlaceInstanceView.as_view()
+
+        cache_buffer.reset()
+        django_cache.clear()
 
     def tearDown(self):
         User.objects.all().delete()
@@ -1279,9 +1279,6 @@ class TestPlaceListView (APITestMixin, TestCase):
 
 class TestSubmissionInstanceView (APITestMixin, TestCase):
     def setUp(self):
-        cache_buffer.reset()
-        django_cache.clear()
-
         self.owner = User.objects.create_user(username='aaron', password='123', email='abc@example.com')
         self.submitter = User.objects.create_user(username='mjumbe', password='456', email='123@example.com')
         self.dataset = DataSet.objects.create(slug='ds', owner=self.owner)
@@ -1330,6 +1327,9 @@ class TestSubmissionInstanceView (APITestMixin, TestCase):
         self.factory = RequestFactory()
         self.path = reverse('submission-detail', kwargs=self.request_kwargs)
         self.view = SubmissionInstanceView.as_view()
+
+        cache_buffer.reset()
+        django_cache.clear()
 
     def tearDown(self):
         User.objects.all().delete()
@@ -1503,7 +1503,7 @@ class TestSubmissionInstanceView (APITestMixin, TestCase):
         # - SELECT * FROM sa_api_attachment AS a
         #    WHERE a.thing_id IN (<self.submission.id>);
         #
-        with self.assertNumQueries(2):
+        with self.assertNumQueries(3):
             response = self.view(request, **self.request_kwargs)
             self.assertStatusCode(response, 200)
 
@@ -2494,9 +2494,6 @@ class TestDataSetSubmissionListView (APITestMixin, TestCase):
 
 class TestDataSetInstanceView (APITestMixin, TestCase):
     def setUp(self):
-        cache_buffer.reset()
-        django_cache.clear()
-
         self.owner = User.objects.create_user(username='aaron', password='123', email='abc@example.com')
         self.submitter = User.objects.create_user(username='mjumbe', password='456', email='123@example.com')
         self.dataset = DataSet.objects.create(slug='ds', owner=self.owner)
@@ -2547,6 +2544,9 @@ class TestDataSetInstanceView (APITestMixin, TestCase):
         self.factory = RequestFactory()
         self.path = reverse('dataset-detail', kwargs=self.request_kwargs)
         self.view = DataSetInstanceView.as_view()
+
+        cache_buffer.reset()
+        django_cache.clear()
 
     def tearDown(self):
         User.objects.all().delete()
@@ -3654,9 +3654,6 @@ class TestActivityView(APITestMixin, TestCase):
         Submission.objects.all().delete()
         Action.objects.all().delete()
 
-        cache_buffer.reset()
-        django_cache.clear()
-
         self.owner = User.objects.create_user(username='myuser', password='123')
         self.dataset = DataSet.objects.create(slug='data',
                                               owner_id=self.owner.id)
@@ -3695,6 +3692,9 @@ class TestActivityView(APITestMixin, TestCase):
         # This was here first and marked as deprecated, but above doesn't
         # work either.
         # self.url = reverse('activity_collection')
+
+        cache_buffer.reset()
+        django_cache.clear()
 
     def test_GET_with_no_params_returns_only_visible_things(self):
         request = self.factory.get(self.url)
@@ -3798,6 +3798,8 @@ class TestActivityView(APITestMixin, TestCase):
         # But cache should be invalidated after changing a place.
         self.visible_place.geometry = geos.Point(1, 1)
         self.visible_place.save()
+        cache_buffer.flush()
+
         response2 = self.view(request, **self.kwargs)
 
         self.assertNotEqual(response1.rendered_content, response2.rendered_content)
