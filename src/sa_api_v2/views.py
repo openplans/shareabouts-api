@@ -1236,8 +1236,27 @@ class ActionListView (CachedResourceMixin, OwnedResourceMixin, generics.ListAPIV
         dataset = self.get_dataset()
         queryset = super(ActionListView, self).get_queryset()\
             .filter(thing__dataset=dataset)\
-            .select_related('thing', 'thing__place', 'thing__submission', 'thing__submitter')\
-            .prefetch_related('thing__submitter__social_auth')
+            .select_related(
+                'thing',
+                'thing__place',       # It will have this if it's a place
+                'thing__submission',  # It will have this if it's a submission
+                'thing__submission__parent',
+                'thing__submission__parent__place',
+                'thing__submission__parent__place__dataset',
+                'thing__submission__parent__place__dataset__owner',
+
+                'thing__submitter',
+                'thing__dataset',
+                'thing__dataset__owner')\
+            .prefetch_related(
+                'thing__submitter___groups__dataset__owner',
+                'thing__submitter__social_auth',
+
+                'thing__place__attachments',
+                'thing__submission__attachments',
+
+                'thing__place__submission_sets',
+                'thing__place__submission_sets__children')
 
         if INCLUDE_INVISIBLE_PARAM not in self.request.GET:
             queryset = queryset.filter(thing__visible=True)\
