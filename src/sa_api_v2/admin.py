@@ -66,6 +66,10 @@ class SubmittedThingAdmin(admin.OSMGeoAdmin):
             qs = qs.filter(dataset__owner=user)
         return qs
 
+    def save_model(self, request, obj, form, change):
+        # Make changes through the admin silently.
+        obj.save(silent=True)
+
 
 class InlineApiKeyAdmin(admin.StackedInline):
     model = ApiKey.datasets.through
