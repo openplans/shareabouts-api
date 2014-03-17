@@ -189,22 +189,6 @@ class AttachmentFileField (serializers.FileField):
         return obj.storage.url(obj.name)
 
 
-class AttachmentSerializer (serializers.ModelSerializer):
-    file = AttachmentFileField()
-
-    class Meta:
-        model = models.Attachment
-        exclude = ('id', 'thing',)
-
-    def to_native(self, obj):
-        if obj is None: obj = models.Attachment()
-        return {
-            'created_datetime': obj.created_datetime,
-            'updated_datetime': obj.updated_datetime,
-            'file': obj.file.storage.url(obj.file.name),
-            'name': obj.name
-        }
-
 ###############################################################################
 #
 # Serializer Mixins
@@ -615,6 +599,23 @@ class SubmissionSerializer (SubmittedThingSerializer, serializers.HyperlinkedMod
     class Meta:
         model = models.Submission
         exclude = ('parent',)
+
+
+class AttachmentSerializer (EmptyModelSerializer, serializers.ModelSerializer):
+    file = AttachmentFileField()
+
+    class Meta:
+        model = models.Attachment
+        exclude = ('id', 'thing',)
+
+    def to_native(self, obj):
+        obj = self.ensure_obj(obj)
+        return {
+            'created_datetime': obj.created_datetime,
+            'updated_datetime': obj.updated_datetime,
+            'file': obj.file.storage.url(obj.file.name),
+            'name': obj.name
+        }
 
 
 class DataSetSerializer (EmptyModelSerializer, serializers.HyperlinkedModelSerializer):
