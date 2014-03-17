@@ -5,10 +5,10 @@ from django.test.client import RequestFactory
 from django.core.files.base import ContentFile
 from django.core.urlresolvers import reverse
 from nose.tools import istest
+from sa_api_v2.cache import cache_buffer
 from sa_api_v2.models import Attachment, Action, User, DataSet, Place, SubmissionSet, Submission, Group
 from sa_api_v2.serializers import AttachmentSerializer, ActionSerializer, UserSerializer, PlaceSerializer, DataSetSerializer, SubmissionSerializer
 from social.apps.django_app.default.models import UserSocialAuth
-from ..serializers import cache_buffer
 import json
 from os import path
 from mock import patch
@@ -239,62 +239,6 @@ class TestPlaceSerializer (TestCase):
 
         self.assertEqual(serializer.data['submission_sets']['comments']['length'], 2)
 
-    # def test_place_cache_cleared_on_new_submissions(self):
-    #     serializer = PlaceSerializer(self.place)
-    #     serializer.context = {
-    #         'request': RequestFactory().get('')
-    #     }
-
-    #     # Make sure that the metakey gets entered into the cache, and gets
-    #     # cleared when a new submission is created.
-    #     p_metakey = Place.cache.get_serialized_data_meta_key(self.place.pk)
-    #     ss_metakey = SubmissionSet.cache.get_serialized_data_meta_key(self.comments.pk)
-    #     self.assertIsNone(cache_buffer.get(p_metakey))
-    #     self.assertIsNone(cache_buffer.get(ss_metakey))
-
-    #     initial_data = serializer.data
-    #     self.assertIsNotNone(cache_buffer.get(p_metakey))
-    #     self.assertIsNotNone(cache_buffer.get(ss_metakey))
-
-    #     Submission.objects.create(dataset=self.dataset, parent=self.comments)
-    #     self.assertIsNone(cache_buffer.get(p_metakey))
-    #     self.assertIsNone(cache_buffer.get(ss_metakey))
-
-    #     # Make sure that the actual serialized data is different.
-    #     serializer = PlaceSerializer(self.place)
-    #     serializer.context = {
-    #         'request': RequestFactory().get('')
-    #     }
-
-    #     final_data = serializer.data
-    #     self.assertNotEqual(initial_data, final_data)
-
-    # def test_place_cache_cleared_on_new_attachment(self):
-    #     serializer = PlaceSerializer(self.place)
-    #     serializer.context = {
-    #         'request': RequestFactory().get('')
-    #     }
-
-    #     # Make sure that the metakey gets entered into the cache, and gets
-    #     # cleared when a new submission is created.
-    #     p_metakey = Place.cache.get_serialized_data_meta_key(self.place.pk)
-    #     self.assertIsNone(cache_buffer.get(p_metakey))
-
-    #     initial_data = serializer.data
-    #     self.assertIsNotNone(cache_buffer.get(p_metakey))
-
-    #     Attachment.objects.create(file=None, name='hello.txt', thing=self.place)
-    #     self.assertIsNone(cache_buffer.get(p_metakey))
-
-    #     # Make sure that the actual serialized data is different.
-    #     serializer = PlaceSerializer(self.place)
-    #     serializer.context = {
-    #         'request': RequestFactory().get('')
-    #     }
-
-    #     final_data = serializer.data
-    #     self.assertNotEqual(initial_data, final_data)
-
 
 class TestSubmissionSerializer (TestCase):
 
@@ -344,22 +288,3 @@ class TestDataSetSerializer (TestCase):
 
         data = serializer.data
         self.assertIsInstance(data, dict)
-
-    # def test_dataset_cache_cleared_on_new_submissions(self):
-    #     serializer = DataSetSerializer(self.dataset)
-    #     serializer.context = {
-    #         'request': RequestFactory().get(''),
-    #         'place_count_map_getter': (lambda: {self.dataset.pk: 0}),
-    #         'submission_sets_map_getter': (lambda: {self.dataset.pk: []})
-    #     }
-
-    #     # Check that we call summaries when serializing a place for the first
-    #     # time.
-    #     metakey = DataSet.cache.get_serialized_data_meta_key(self.dataset.pk)
-    #     self.assertIsNone(cache_buffer.get(metakey))
-
-    #     serializer.data
-    #     self.assertIsNotNone(cache_buffer.get(metakey))
-
-    #     Submission.objects.create(dataset=self.dataset, parent=self.comments)
-    #     self.assertIsNone(cache_buffer.get(metakey))
