@@ -48,8 +48,14 @@ class DataSetFilter (SimpleListFilter):
         return qs
 
 
+class InlineAttachmentAdmin(admin.StackedInline):
+    model = models.Attachment
+    extra = 0
+
+
 class SubmittedThingAdmin(admin.OSMGeoAdmin):
     date_hierarchy = 'created_datetime'
+    inlines = (InlineAttachmentAdmin,)
     list_display = ('id', 'created_datetime', 'submitter_name', 'dataset', 'data')
     list_filter = (DataSetFilter,)
     search_fields = ('submitter__username', 'data',)
@@ -65,6 +71,10 @@ class SubmittedThingAdmin(admin.OSMGeoAdmin):
         if not user.is_superuser:
             qs = qs.filter(dataset__owner=user)
         return qs
+
+    def save_model(self, request, obj, form, change):
+        # Make changes through the admin silently.
+        obj.save(silent=True)
 
 
 class InlineApiKeyAdmin(admin.StackedInline):
