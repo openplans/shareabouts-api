@@ -464,6 +464,23 @@ class SubmittedThingSerializer (ActivityGenerator, DataBlobProcessor):
         return result
 
 
+class AttachmentSerializer (serializers.ModelSerializer):
+    file = AttachmentFileField()
+
+    class Meta:
+        model = models.Attachment
+        exclude = ('id', 'thing',)
+
+    def to_native(self, obj):
+        if obj is None: obj = models.Attachment()
+        return {
+            'created_datetime': obj.created_datetime,
+            'updated_datetime': obj.updated_datetime,
+            'file': obj.file.storage.url(obj.file.name),
+            'name': obj.name
+        }
+
+
 class PlaceSerializer (SubmittedThingSerializer, serializers.HyperlinkedModelSerializer):
     url = PlaceIdentityField()
     id = serializers.PrimaryKeyRelatedField(read_only=True)
