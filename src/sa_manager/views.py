@@ -750,9 +750,9 @@ def download_places_view(request, owner_name, dataset_slug):
     places_uri = api.build_uri('place_collection_table', username=owner_name, dataset_slug=dataset_slug)
 
     api_response = api.send('GET', places_uri, content_type='text/csv')
-    places_csv = api_response.text
+    places_csv = api_response.content
 
-    response = HttpResponse(places_csv, content_type='text/csv')
+    response = HttpResponse(places_csv.decode('utf-8'), content_type='text/csv')
     response['Content-disposition'] = 'attachment; filename=places.csv'
 
     return response
@@ -763,9 +763,9 @@ def download_submissions_view(request, owner_name, dataset_slug, submission_type
     submissions_uri = api.build_uri('all_submissions_table', username=owner_name, dataset_slug=dataset_slug, type=submission_type)
 
     api_response = api.send('GET', submissions_uri, content_type='text/csv')
-    submissions_csv = api_response.text
+    submissions_csv = api_response.content
 
-    response = HttpResponse(submissions_csv, content_type='text/csv')
+    response = HttpResponse(submissions_csv.decode('utf-8'), content_type='text/csv')
     response['Content-disposition'] = 'attachment; filename=' + submission_type + '.csv'
 
     return response
