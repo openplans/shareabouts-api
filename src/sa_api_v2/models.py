@@ -11,8 +11,8 @@ import sa_api_v1.models
 
 
 class TimeStampedModel (models.Model):
-    created_datetime = models.DateTimeField(default=now, blank=True)
-    updated_datetime = models.DateTimeField(auto_now=True)
+    created_datetime = models.DateTimeField(default=now, blank=True, db_index=True)
+    updated_datetime = models.DateTimeField(auto_now=True, db_index=True)
 
     class Meta:
         abstract = True
@@ -95,12 +95,12 @@ class SubmittedThing (CacheClearingModel, ModelWithDataBlob, TimeStampedModel):
     """
     submitter = models.ForeignKey(User, related_name='things', null=True, blank=True)
     dataset = models.ForeignKey('DataSet', related_name='things', blank=True)
-    visible = models.BooleanField(default=True, blank=True)
+    visible = models.BooleanField(default=True, blank=True, db_index=True)
 
     class Meta:
         db_table = 'sa_api_submittedthing'
 
-    def save(self, silent=False, *args, **kwargs):
+    def save(self, silent=False, source='', *args, **kwargs):
         is_new = (self.id == None)
 
         ret = super(SubmittedThing, self).save(*args, **kwargs)
@@ -110,6 +110,7 @@ class SubmittedThing (CacheClearingModel, ModelWithDataBlob, TimeStampedModel):
             action = Action()
             action.action = 'create' if is_new else 'update'
             action.thing = self
+            action.source = source
             action.save()
 
         return ret
@@ -219,6 +220,7 @@ class Action (CacheClearingModel, TimeStampedModel):
     """
     action = models.CharField(max_length=16, default='create')
     thing = models.ForeignKey(SubmittedThing, db_column='data_id', related_name='actions')
+    source = models.TextField(blank=True, null=True)
 
     cache = cache.ActionCache()
     previous_version = 'sa_api_v1.models.Activity'

@@ -201,7 +201,8 @@ class ActivityGenerator (object):
         request = self.context['request']
         silent_header = request.META.get('HTTP_X_SHAREABOUTS_SILENT', 'False')
         is_silent = silent_header.lower() in ('true', 't', 'yes', 'y')
-        return super(ActivityGenerator, self).save(silent=is_silent, **kwargs)
+        request_source = request.META.get('HTTP_REFERER', '')
+        return super(ActivityGenerator, self).save(silent=is_silent, source=request_source, **kwargs)
 
 
 class EmptyModelSerializer (object):
@@ -673,7 +674,7 @@ class ActionSerializer (EmptyModelSerializer, serializers.ModelSerializer):
 
     class Meta:
         model = models.Action
-        exclude = ('thing',)
+        exclude = ('thing', 'source')
 
     def get_target_type(self, obj):
         try:

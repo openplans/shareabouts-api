@@ -108,7 +108,7 @@ class DataSetAdmin(admin.ModelAdmin):
         if not user.is_superuser:
             qs = qs.filter(owner=user)
         return qs
-    
+
     def get_form(self, request, obj=None, **kwargs):
         # Hide the owner field from non-superusers. All objects visible to the
         # user should be assumed to be owned by themselves.
@@ -154,10 +154,26 @@ class SubmissionAdmin(SubmittedThingAdmin):
 
 class ActionAdmin(admin.ModelAdmin):
     date_hierarchy = 'created_datetime'
-    list_display = ('id', 'created_datetime', 'action', 'submitter_name')
+    list_display = ('id', 'created_datetime', 'action', 'type_of_thing', 'submitter_name', 'source')
+
+    # Pre-Django 1.6
+    def queryset(self, request):
+        qs = super(ActionAdmin, self).queryset(request)
+        return qs.select_related('submitter', 'thing', 'thing__place')
+
+    # Django 1.6+
+    def get_queryset(self, request):
+        qs = super(ActionAdmin, self).get_queryset(request)
+        return qs.select_related('submitter', 'thing', 'thing__place')
 
     def submitter_name(self, obj):
         return obj.submitter.username if obj.submitter else None
+
+    def type_of_thing(self, obj):
+        if obj.thing.place:
+            return 'place'
+        else:
+            return 'submission'
 
 
 class InlineGroupPermissionAdmin(admin.TabularInline):
