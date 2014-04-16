@@ -359,9 +359,6 @@ def check_data_permission(user, client, do_action, dataset, submission_set):
     Check whether the given user has permission on the submission_set in
     the context of the given client (e.g., an API key or an origin).
     """
-    if user is None and client is None:
-        return True
-
     if do_action not in ('retrieve', 'create', 'update', 'delete'):
         raise ValueError
 
