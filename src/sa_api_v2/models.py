@@ -365,30 +365,29 @@ def check_data_permission(user, client, do_action, dataset, submission_set):
     if isinstance(submission_set, SubmissionSet):
         submission_set = submission_set.name
 
+    def any_permissions_allow(obj, do_action, submission_set):
+        for permission in obj.permissions.all():
+            if (permission.submission_set in (submission_set, '*')
+                and getattr(permission, 'can_' + do_action, False)):
+                return True
+        return False
+
     # Start with the dataset permission
-    for permission in dataset.permissions.all():
-        if (permission.submission_set in (submission_set, '*')
-            and getattr(permission, 'can_' + do_action, False)):
-            return True
+    if any_permissions_allow(dataset, do_action, submission_set):
+        return True
 
     # Then the client permission
     if client is not None:
-        for permission in client.permissions.all():
-            if (client.dataset == dataset
-                and permission.submission_set in (submission_set, '*')
-                and getattr(permission, 'can_' + do_action, False)):
-                return True
+        if (client.dataset == dataset and
+            any_permissions_allow(client, do_action, submission_set)):
+            return True
 
     # Next, check the user's groups
     if user is not None:
         for group in user._groups.all():
-            if group.dataset != dataset:
-                continue
-
-            for permission in group.permissions.all():
-                if (permission.submission_set in (submission_set, '*')
-                    and getattr(permission, 'can_' + do_action)):
-                    return True
+            if (group.dataset == dataset and
+                any_permissions_allow(group, do_action, submission_set)):
+                return True
 
     return False
 
