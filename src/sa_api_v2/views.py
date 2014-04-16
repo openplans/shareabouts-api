@@ -712,6 +712,8 @@ class PlaceListView (CachedResourceMixin, LocatedResourceMixin, OwnedResourceMix
             .prefetch_related(
                 'submitter__social_auth',
                 'submitter___groups',
+                'submitter___groups__dataset',
+                'submitter___groups__dataset__owner',
                 'submission_sets',
                 'submission_sets__children',
                 'attachments',
