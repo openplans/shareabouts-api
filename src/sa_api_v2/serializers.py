@@ -11,6 +11,7 @@ from rest_framework import serializers
 from rest_framework.reverse import reverse
 
 from . import models
+from .models import check_data_permission
 from .params import (INCLUDE_INVISIBLE_PARAM, INCLUDE_PRIVATE_PARAM,
     INCLUDE_SUBMISSIONS_PARAM, FORMAT_PARAM)
 
@@ -439,11 +440,19 @@ class DataSetSubmissionSetSummarySerializer (serializers.HyperlinkedModelSeriali
         fields = ('length', 'url')
 
     def to_native(self, obj):
+        request = self.context['request']
         submission_sets_map = self.context['submission_sets_map_getter']()
         sets = submission_sets_map.get(obj.id, {})
         summaries = {}
         for submission_set in sets:
             set_name = submission_set['parent__name']
+
+            # Ensure the user has read permission on the submission set.
+            user = getattr(request, 'user', None)
+            client = getattr(request, 'client', None)
+            if not check_data_permission(user, client, 'retrieve', obj, set_name):
+                continue
+
             obj.submission_set_name = set_name
             obj.submission_set_length = submission_set['length']
             summaries[set_name] = super(DataSetSubmissionSetSummarySerializer, self).to_native(obj)
@@ -493,30 +502,7 @@ class PlaceSerializer (SubmittedThingSerializer, serializers.HyperlinkedModelSer
     class Meta:
         model = models.Place
 
-    def get_data_cache_keys(self, items):
-        place_keys = super(PlaceSerializer, self).get_data_cache_keys(items)
-
-        ss_serializer = SubmissionSetSummarySerializer([], context=self.context, many=True)
-        ss_serializer.parent = self
-        submission_sets = list(chain.from_iterable(item.submission_sets.all() for item in items))
-        ss_keys = ss_serializer.get_data_cache_keys(submission_sets)
-
-        # If include_submissions=on, also preload submission data from the
-        # cache.
-        #
-        # TODO: Can we make it so that we only need the SubmissionSet cache
-        #       data (above) when include_submissions=off?
-        #
-        request = self.context['request']
-        if INCLUDE_SUBMISSIONS_PARAM in request.GET:
-            submission_serializer = SubmissionSerializer([], context=self.context, many=True)
-            submission_serializer.parent = self
-            submissions = list(chain.from_iterable(ss.children.all() for ss in submission_sets))
-            ss_keys += submission_serializer.get_data_cache_keys(submissions)
-
-        return place_keys + ss_keys
-
-    def get_submission_set_summaries(self, obj):
+    def get_submission_set_summaries(self, place):
         """
         Get a mapping from place id to a submission set summary dictionary.
         Get this for the entire dataset at once.
@@ -525,7 +511,13 @@ class PlaceSerializer (SubmittedThingSerializer, serializers.HyperlinkedModelSer
         include_invisible = INCLUDE_INVISIBLE_PARAM in request.GET
 
         summaries = {}
-        for submission_set in obj.submission_sets.all():
+        for submission_set in place.submission_sets.all():
+            # Ensure the user has read permission on the submission set.
+            user = getattr(request, 'user', None)
+            client = getattr(request, 'client', None)
+            if not check_data_permission(user, client, 'retrieve', place.dataset, submission_set):
+                continue
+
             submissions = submission_set.children.all()
             if not include_invisible:
                 submissions = filter(lambda s: s.visible, submissions)
@@ -540,7 +532,7 @@ class PlaceSerializer (SubmittedThingSerializer, serializers.HyperlinkedModelSer
 
         return summaries
 
-    def get_detailed_submission_sets(self, obj):
+    def get_detailed_submission_sets(self, place):
         """
         Get a mapping from place id to a detiled submission set dictionary.
         Get this for the entire dataset at once.
@@ -549,7 +541,13 @@ class PlaceSerializer (SubmittedThingSerializer, serializers.HyperlinkedModelSer
         include_invisible = INCLUDE_INVISIBLE_PARAM in request.GET
 
         details = {}
-        for submission_set in obj.submission_sets.all():
+        for submission_set in place.submission_sets.all():
+            # Ensure the user has read permission on the submission set.
+            user = getattr(request, 'user', None)
+            client = getattr(request, 'client', None)
+            if not check_data_permission(user, client, 'retrieve', place.dataset, submission_set):
+                continue
+
             submissions = submission_set.children.all()
             if not include_invisible:
                 submissions = filter(lambda s: s.visible, submissions)
@@ -560,7 +558,7 @@ class PlaceSerializer (SubmittedThingSerializer, serializers.HyperlinkedModelSer
             # We know that the submission datasets will be the same as the place
             # dataset, so say so and avoid an extra query for each.
             for submission in submissions:
-                submission.dataset = obj.dataset
+                submission.dataset = place.dataset
 
             serializer = SubmissionSerializer(submissions, context=self.context, many=True)
             serializer.parent = self

@@ -3,6 +3,7 @@ from django.contrib.gis.db import models
 from django.conf import settings
 from django.core.files.storage import get_storage_class
 from django.core.exceptions import ObjectDoesNotExist
+from django.db.models.signals import post_save
 from django.utils.timezone import now
 from django.utils.importlib import import_module
 from . import cache
@@ -273,6 +274,21 @@ class Group (models.Model):
         return '%s in %s' % (self.name, self.dataset.slug)
 
 
+class DataPermissionManager (models.Manager):
+    use_for_related_fields = True
+
+    def any_allow(self, do_action, submission_set):
+        """
+        Check whether any of the data permissions in the managed set allow the
+        action on a submission set with the given name.
+        """
+        for permission in self.all():
+            if (permission.submission_set in (submission_set, '*')
+                and getattr(permission, 'can_' + do_action, False)):
+                return True
+        return False
+
+
 class DataPermission (models.Model):
     """
     Rules for what permissions a given authentication method affords.
@@ -283,6 +299,8 @@ class DataPermission (models.Model):
     can_update = models.BooleanField(default=False)
     can_destroy = models.BooleanField(default=False)
     priority = models.PositiveIntegerField(blank=True)
+
+    objects = DataPermissionManager()
 
     class Meta:
         abstract = True
@@ -315,6 +333,13 @@ class DataPermission (models.Model):
         return super(DataPermission, self).save(*args, **kwargs)
 
 
+class DataSetPermission (DataPermission):
+    dataset = models.ForeignKey('DataSet', related_name='permissions')
+
+    def __unicode__(self):
+        return '%s %s' % ('submitters', self.abilities())
+
+
 class GroupPermission (DataPermission):
     group = models.ForeignKey('Group', related_name='permissions')
 
@@ -334,5 +359,50 @@ class OriginPermission (DataPermission):
 
     def __unicode__(self):
         return 'submitters %s' % (self.abilities(),)
+
+
+def create_data_permissions(sender, instance, created, **kwargs):
+    """
+    Create a default permission instance for a new dataset.
+    """
+    if created:
+        DataSetPermission.objects.create(dataset=instance, submission_set='*',
+            can_retrieve=True, can_create=False, can_update=False, can_destroy=False)
+post_save.connect(create_data_permissions, sender=DataSet, dispatch_uid="dataset-create-permissions")
+
+
+def check_data_permission(user, client, do_action, dataset, submission_set):
+    """
+    Check whether the given user has permission on the submission_set in
+    the context of the given client (e.g., an API key or an origin).
+    """
+    if do_action not in ('retrieve', 'create', 'update', 'destroy'):
+        raise ValueError
+
+    # Owner can do anything
+    if user and user.id == dataset.owner_id:
+        return True
+
+    if isinstance(submission_set, SubmissionSet):
+        submission_set = submission_set.name
+
+    # Start with the dataset permission
+    if dataset.permissions.any_allow(do_action, submission_set):
+        return True
+
+    # Then the client permission
+    if client is not None:
+        if (client.dataset == dataset and
+            client.permissions.any_allow(do_action, submission_set)):
+            return True
+
+    # Next, check the user's groups
+    if user is not None:
+        for group in user._groups.all():
+            if (dataset and group.dataset_id == dataset.id and
+                group.permissions.any_allow(do_action, submission_set)):
+                return True
+
+    return False
 
 #

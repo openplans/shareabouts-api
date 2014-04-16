@@ -80,19 +80,24 @@ class SubmittedThingAdmin(admin.OSMGeoAdmin):
 class InlineApiKeyAdmin(admin.StackedInline):
     model = ApiKey.datasets.through
     raw_id_fields = ['apikey']
-    extra = 1
+    extra = 0
 
 
 class InlineOriginAdmin(admin.StackedInline):
     model = Origin.datasets.through
     raw_id_fields = ['origin']
-    extra = 1
+    extra = 0
 
 
 class InlineGroupAdmin(admin.StackedInline):
     model = models.Group
     filter_horizontal = ('submitters',)
-    extra = 1
+    extra = 0
+
+
+class InlineDataSetPermissionAdmin(admin.TabularInline):
+    model = models.DataSetPermission
+    extra = 0
 
 
 class DataSetAdmin(admin.ModelAdmin):
@@ -100,7 +105,7 @@ class DataSetAdmin(admin.ModelAdmin):
     prepopulated_fields = {'slug': ['display_name']}
 
     raw_id_fields = ('owner',)
-    inlines = [InlineApiKeyAdmin, InlineOriginAdmin, InlineGroupAdmin]
+    inlines = [InlineDataSetPermissionAdmin, InlineApiKeyAdmin, InlineOriginAdmin, InlineGroupAdmin]
 
     def get_queryset(self, request):
         qs = super(DataSetAdmin, self).get_queryset(request)

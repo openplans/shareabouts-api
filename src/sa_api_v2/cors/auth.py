@@ -13,10 +13,12 @@ class OriginAuthentication(authentication.BaseAuthentication):
         permission to access the dataset;
         as per http://django-rest-framework.org/library/authentication.html
         """
-
-        dataset = request.get_dataset()
         origin = request.META.get('HTTP_ORIGIN', '')
 
+        if not origin:
+            return None
+
+        dataset = request.get_dataset()
         try:
             client, auth = self.check_origin_permission(origin, dataset)
         except PermissionDenied:
