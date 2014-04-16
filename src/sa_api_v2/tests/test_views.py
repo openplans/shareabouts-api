@@ -492,7 +492,10 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
         #     JOIN sa_api_group_submitters as s ON (g.id = s.group_id)
         #    WHERE gs.user_id IN (<[each submitter id]>);
         #
-        with self.assertNumQueries(11): # TODO: This should be 9, but might be 14 :(
+        # - SELECT * FROM sa_api_datasetpermission as perm
+        #    WHERE perm.dataset_id = <self.place.dataset.id>;
+        #
+        with self.assertNumQueries(8):
             response = self.view(request, **self.request_kwargs)
             self.assertStatusCode(response, 200)
 
@@ -1506,7 +1509,7 @@ class TestSubmissionInstanceView (APITestMixin, TestCase):
         # - SELECT * FROM sa_api_datasetpermissions AS perm
         #    WHERE perm.dataset_id IN (<self.submission.dataset.id>);
         #
-        with self.assertNumQueries(4):
+        with self.assertNumQueries(3):
             response = self.view(request, **self.request_kwargs)
             self.assertStatusCode(response, 200)
 

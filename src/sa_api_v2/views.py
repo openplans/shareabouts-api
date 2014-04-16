@@ -771,7 +771,14 @@ class SubmissionInstanceView (CachedResourceMixin, OwnedResourceMixin, generics.
         try:
             return self.model.objects\
                 .filter(pk=pk)\
-                .select_related('dataset', 'dataset__owner', 'parent', 'parent__place', 'parent__place__dataset', 'submitter')\
+                .select_related(
+                    'dataset',
+                    'dataset__owner',
+                    'parent',
+                    'parent__place',
+                    'parent__place__dataset',
+                    'parent__place__dataset__owner',
+                    'submitter')\
                 .prefetch_related('attachments', 'submitter__social_auth', 'dataset__permissions')\
                 .get()
         except self.model.DoesNotExist:
@@ -930,7 +937,14 @@ class DataSetSubmissionListView (CachedResourceMixin, OwnedResourceMixin, Filter
             queryset = queryset.filter(visible=True)
 
         return queryset.filter(parent__in=submission_sets)\
-            .select_related('dataset', 'parent', 'parent__place', 'submitter')\
+            .select_related(
+                'dataset',
+                'dataset__owner',
+                'parent',
+                'parent__place',
+                'parent__place__dataset',
+                'parent__place__dataset__owner',
+                'submitter')\
             .prefetch_related('attachments', 'submitter__social_auth', 'submitter___groups', 'dataset__permissions')
 
 
