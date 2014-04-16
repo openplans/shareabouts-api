@@ -10,8 +10,9 @@ license unknown.
 """
 
 from django.db import models
+from django.db.models.signals import post_save
 from django.utils.timezone import now
-from ..models import DataSet
+from ..models import DataSet, OriginPermission
 import re
 
 
@@ -71,3 +72,13 @@ class Origin(models.Model):
         else:
             pattern = pattern.replace('.', r'\.').replace('*', r'.*')
             return re.match(pattern, origin) is not None
+
+
+def create_data_permissions(sender, instance, created, **kwargs):
+    """
+    Create a default permission instance for a new origin.
+    """
+    if created:
+        OriginPermission.objects.create(origin=instance, submission_set='*',
+            can_retrieve=True, can_create=True, can_update=True, can_destroy=True)
+post_save.connect(create_data_permissions, sender=Origin, dispatch_uid="origin-create-permissions")

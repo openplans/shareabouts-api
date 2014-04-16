@@ -3,6 +3,7 @@ from django.contrib.gis.db import models
 from django.conf import settings
 from django.core.files.storage import get_storage_class
 from django.core.exceptions import ObjectDoesNotExist
+from django.db.models.signals import post_save
 from django.utils.timezone import now
 from django.utils.importlib import import_module
 from . import cache
@@ -315,6 +316,13 @@ class DataPermission (models.Model):
         return super(DataPermission, self).save(*args, **kwargs)
 
 
+class DataSetPermission (DataPermission):
+    dataset = models.ForeignKey('DataSet', related_name='permissions')
+
+    def __unicode__(self):
+        return '%s %s' % ('submitters', self.abilities())
+
+
 class GroupPermission (DataPermission):
     group = models.ForeignKey('Group', related_name='permissions')
 
@@ -334,5 +342,54 @@ class OriginPermission (DataPermission):
 
     def __unicode__(self):
         return 'submitters %s' % (self.abilities(),)
+
+
+def create_data_permissions(sender, instance, created, **kwargs):
+    """
+    Create a default permission instance for a new dataset.
+    """
+    if created:
+        DataSetPermission.objects.create(dataset=instance, submission_set='*',
+            can_retrieve=True, can_create=False, can_update=False, can_destroy=False)
+post_save.connect(create_data_permissions, sender=DataSet, dispatch_uid="dataset-create-permissions")
+
+
+def check_data_permission(user, client, do_action, dataset, submission_set):
+    """
+    Check whether the given user has permission on the submission_set in
+    the context of the given client (e.g., an API key or an origin).
+    """
+    if user is None and client is None:
+        return True
+
+    if do_action not in ('retrieve', 'create', 'update', 'delete'):
+        raise ValueError
+
+    # Start with the dataset permission
+    for permission in dataset.permissions.all():
+        if (permission.submission_set in (submission_set, '*')
+            and getattr(permission, 'can_' + do_action, False)):
+            return True
+
+    # Then the client permission
+    if client is not None:
+        for permission in client.permissions.all():
+            if (client.dataset == dataset
+                and permission.submission_set in (submission_set, '*')
+                and getattr(permission, 'can_' + do_action, False)):
+                return True
+
+    # Next, check the user's groups
+    if user is not None:
+        for group in user._groups.all():
+            if group.dataset != dataset:
+                continue
+
+            for permission in group.permissions.all():
+                if (permission.submission_set in (submission_set, '*')
+                    and getattr(permission, 'can_' + do_action)):
+                    return True
+
+    return False
 
 #

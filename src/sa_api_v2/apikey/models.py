@@ -10,8 +10,9 @@ license unknown.
 """
 
 from django.db import models
+from django.db.models.signals import post_save
 from django.utils.timezone import now
-from ..models import DataSet
+from ..models import DataSet, KeyPermission
 
 # Changing this would require a migration, ugh.
 KEY_SIZE = 32
@@ -76,3 +77,13 @@ def generate_unique_api_key():
         api_key += more_key
     api_key = api_key[:KEY_SIZE]
     return api_key
+
+
+def create_data_permissions(sender, instance, created, **kwargs):
+    """
+    Create a default permission instance for a new API key.
+    """
+    if created:
+        KeyPermission.objects.create(key=instance, submission_set='*',
+            can_retrieve=True, can_create=True, can_update=True, can_destroy=True)
+post_save.connect(create_data_permissions, sender=ApiKey, dispatch_uid="apikey-create-permissions")

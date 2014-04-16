@@ -8,7 +8,8 @@ from django.core.urlresolvers import reverse
 # from mock import patch
 # from nose.tools import (istest, assert_equal, assert_not_equal, assert_in,
 #                         assert_raises)
-from ..models import DataSet, User, SubmittedThing, Action, Place, SubmissionSet, Submission
+from ..models import DataSet, User, SubmittedThing, Action, Place, SubmissionSet, Submission, check_data_permission
+from ..apikey.models import ApiKey
 # from ..views import SubmissionCollectionView
 # from ..views import raise_error_if_not_authenticated
 # from ..views import ApiKeyCollectionView
@@ -168,3 +169,44 @@ class MiscCacheClearingTests (TestCase):
         # Get table and ensure it's different
         response3 = view(request, **kwargs)
         self.assertNotEqual(response1.content, response3.content)
+
+
+class PlacePermissionTests (TestCase):
+    def clear_objects(self):
+        User.objects.all().delete()
+        DataSet.objects.all().delete()
+        Place.objects.all().delete()
+        SubmissionSet.objects.all().delete()
+        Submission.objects.all().delete()
+        Action.objects.all().delete()
+        ApiKey.objects.all().delete()
+        cache.clear()
+
+    def test_group_permissions_can_restrict_reading(self):
+        self.clear_objects()
+
+        owner = User.objects.create(username='myowner')
+        user = User.objects.create(username='myuser')
+        dataset = DataSet.objects.create(slug='data', owner_id=owner.id)
+        place = Place.objects.create(dataset_id=dataset.id, geometry='POINT(0 0)')
+        comment_set = SubmissionSet.objects.create(place_id=place.id, name='comments')
+
+        # Create a key for the dataset
+        key = ApiKey.objects.create(key='abc')
+        key.datasets.add(dataset)
+
+        # Make sure a permission objects were created
+        self.assertEqual(dataset.permissions.count(), 1)
+        self.assertEqual(key.permissions.count(), 1)
+
+        # Get rid of the dataset permissions
+        dataset.permissions.all().delete()
+
+        # Revoke read permission on the key
+        permission = key.permissions.all()[0]
+        permission.can_retrieve = False
+        permission.save()
+
+        # Make sure we're not allowed to read.
+        has_permission = check_data_permission(user, key, 'retrieve', dataset, 'comments')
+        self.assertEqual(has_permission, False)
