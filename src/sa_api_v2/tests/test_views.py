@@ -3,12 +3,13 @@ from django.test.client import RequestFactory
 from django.core.urlresolvers import reverse
 from django.core.cache import cache as django_cache
 from django.core.files import File
+from django.contrib.auth.models import AnonymousUser
 from django.contrib.gis import geos
 import base64
 import csv
 import json
 from StringIO import StringIO
-from ..models import User, DataSet, Place, SubmissionSet, Submission, Attachment, Action
+from ..models import User, DataSet, Place, SubmissionSet, Submission, Attachment, Action, Group
 from ..cache import cache_buffer
 from ..apikey.models import ApiKey
 from ..apikey.auth import KEY_HEADER
@@ -465,6 +466,14 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
         request = self.factory.get(path)
 
         # Check that we make a finite number of queries
+        #
+        # ---- Checking data access permissions:
+        #
+        # - SELECT requested dataset and owner
+        # - SELECT dataset permissions
+        #
+        # ---- Building the data
+        #
         # - SELECT * FROM sa_api_place AS p
         #     JOIN sa_api_submittedthing AS t ON (p.submittedthing_ptr_id = t.id)
         #     JOIN sa_api_dataset AS ds ON (t.dataset_id = ds.id)
@@ -495,7 +504,7 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
         # - SELECT * FROM sa_api_datasetpermission as perm
         #    WHERE perm.dataset_id = <self.place.dataset.id>;
         #
-        with self.assertNumQueries(8):
+        with self.assertNumQueries(10):
             response = self.view(request, **self.request_kwargs)
             self.assertStatusCode(response, 200)
 
@@ -503,8 +512,77 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
         request = self.factory.get(path)
 
         # Check that this performs no more queries, since it's all cached
-        with self.assertNumQueries(0):
+        with self.assertNumQueries(2):
             response = self.view(request, **self.request_kwargs)
+            self.assertStatusCode(response, 200)
+
+    def test_GET_differently_from_cache_by_user_group(self):
+        user = User.objects.create_user(username='temp_user', password='lkjasdf')
+        group = Group.objects.create(dataset=self.dataset, name='mygroup')
+        group.submitters.add(user)
+
+        path = reverse('place-detail', kwargs=self.request_kwargs)
+        anon_request = self.factory.get(path)
+        anon_request.user = AnonymousUser()
+        auth_request = self.factory.get(path)
+        auth_request.user = user
+
+        # Check that we make a finite number of queries
+        #
+        # ---- Checking data access permissions:
+        #
+        # - SELECT requested dataset
+        # - SELECT dataset permissions
+        #
+        # ---- Building the data
+        #
+        # - SELECT * FROM sa_api_place AS p
+        #     JOIN sa_api_submittedthing AS t ON (p.submittedthing_ptr_id = t.id)
+        #     JOIN sa_api_dataset AS ds ON (t.dataset_id = ds.id)
+        #     JOIN auth_user as u1 ON (t.submitter_id = u1.id)
+        #     JOIN auth_user as u2 ON (ds.owner_id = u2.id)
+        #    WHERE t.id = <self.place.id>;
+        #
+        # - SELECT * FROM social_auth_usersocialauth
+        #    WHERE user_id IN (<self.owner.id>)
+        #
+        # - SELECT * FROM sa_api_submissionset AS ss
+        #    WHERE ss.place_id IN (<self.place.id>);
+        #
+        # - SELECT * FROM sa_api_submission AS s
+        #     JOIN sa_api_submittedthing AS t ON (s.submittedthing_ptr_id = t.id)
+        #    WHERE s.parent_id IN (<self.comments.id>, <self.likes.id>, <self.applause.id>);
+        #
+        # - SELECT * FROM sa_api_attachment AS a
+        #    WHERE a.thing_id IN (<[each submission id]>);
+        #
+        # - SELECT * FROM sa_api_attachment AS a
+        #    WHERE a.thing_id IN (<self.place.id>);
+        #
+        # - SELECT * FROM sa_api_group as g
+        #     JOIN sa_api_group_submitters as s ON (g.id = s.group_id)
+        #    WHERE gs.user_id IN (<[each submitter id]>);
+        #
+        # - SELECT * FROM sa_api_datasetpermission as perm
+        #    WHERE perm.dataset_id = <self.place.dataset.id>;
+        #
+        with self.assertNumQueries(21):
+            response = self.view(anon_request, **self.request_kwargs)
+            self.assertStatusCode(response, 200)
+            response = self.view(auth_request, **self.request_kwargs)
+            self.assertStatusCode(response, 200)
+
+        path = reverse('place-detail', kwargs=self.request_kwargs)
+        anon_request = self.factory.get(path)
+        anon_request.user = AnonymousUser()
+        auth_request = self.factory.get(path)
+        auth_request.user = user
+
+        # Check that this performs no more queries, since it's all cached
+        with self.assertNumQueries(5):
+            response = self.view(anon_request, **self.request_kwargs)
+            self.assertStatusCode(response, 200)
+            response = self.view(auth_request, **self.request_kwargs)
             self.assertStatusCode(response, 200)
 
     def test_DELETE_response(self):
@@ -1495,6 +1573,14 @@ class TestSubmissionInstanceView (APITestMixin, TestCase):
         request = self.factory.get(path)
 
         # Check that we make a finite number of queries
+        #
+        # ---- Checking data access permissions:
+        #
+        # - SELECT requested dataset and owner
+        # - SELECT dataset permissions
+        #
+        # ---- Build the data
+        #
         # - SELECT * FROM sa_api_submission AS s
         #     JOIN sa_api_submittedthing AS st ON (s.submittedthing_ptr_id = st.id)
         #     JOIN sa_api_dataset AS ds ON (st.dataset_id = ds.id)
@@ -1509,15 +1595,16 @@ class TestSubmissionInstanceView (APITestMixin, TestCase):
         # - SELECT * FROM sa_api_datasetpermissions AS perm
         #    WHERE perm.dataset_id IN (<self.submission.dataset.id>);
         #
-        with self.assertNumQueries(3):
+        with self.assertNumQueries(5):
             response = self.view(request, **self.request_kwargs)
             self.assertStatusCode(response, 200)
 
         path = reverse('submission-detail', kwargs=self.request_kwargs)
         request = self.factory.get(path)
 
-        # Check that this performs no more queries, since it's all cached
-        with self.assertNumQueries(0):
+        # Check that this performs no more queries than required for auth,
+        # since the data's all cached
+        with self.assertNumQueries(2):
             response = self.view(request, **self.request_kwargs)
             self.assertStatusCode(response, 200)
 
@@ -1926,6 +2013,27 @@ class TestSubmissionListView (APITestMixin, TestCase):
         # Check that we actually created a submission and set
         final_num_submissions = Submission.objects.all().count()
         self.assertEqual(final_num_submissions, start_num_submissions + 1)
+
+    def test_POST_response_without_data_permission(self):
+        submission_data = json.dumps({
+          'submitter_name': 'Andy',
+          'private-email': 'abc@example.com',
+          'foo': 'bar'
+        })
+        start_num_submissions = Submission.objects.all().count()
+
+        # Disable create permission
+        key_permission = self.apikey.permissions.all().get()
+        key_permission.can_create = False
+        key_permission.save()
+
+        #
+        # View should 401 when trying to create
+        #
+        request = self.factory.post(self.path, data=submission_data, content_type='application/json')
+        request.META[KEY_HEADER] = self.apikey.key
+        response = self.view(request, **self.request_kwargs)
+        self.assertStatusCode(response, 403)
 
     def test_POST_response_with_submitter(self):
         submission_data = json.dumps({
@@ -3779,7 +3887,7 @@ class TestActivityView(APITestMixin, TestCase):
         self.view(vis_param, **self.kwargs)
 
         # Both requests should be made without hitting the database...
-        with self.assertNumQueries(0):
+        with self.assertNumQueries(2):
             no_params_response = self.view(no_params, **self.kwargs)
             vis_param_response = self.view(vis_param, **self.kwargs)
 
@@ -3794,8 +3902,9 @@ class TestActivityView(APITestMixin, TestCase):
 
         self.view(request, **self.kwargs)
 
-        # Next requests should be made without hitting the database...
-        with self.assertNumQueries(0):
+        # Next requests should be made without hitting the database, except to
+        # get the dataset for authorization...
+        with self.assertNumQueries(1):
             response1 = self.view(request, **self.kwargs)
 
         # But cache should be invalidated after changing a place.

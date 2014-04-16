@@ -8,7 +8,7 @@ from django.core.urlresolvers import reverse
 # from mock import patch
 # from nose.tools import (istest, assert_equal, assert_not_equal, assert_in,
 #                         assert_raises)
-from ..models import DataSet, User, SubmittedThing, Action, Place, SubmissionSet, Submission, check_data_permission
+from ..models import DataSet, User, SubmittedThing, Action, Place, SubmissionSet, Submission, DataSetPermission, check_data_permission
 from ..apikey.models import ApiKey
 # from ..views import SubmissionCollectionView
 # from ..views import raise_error_if_not_authenticated
@@ -16,6 +16,7 @@ from ..apikey.models import ApiKey
 # from ..views import OwnerPasswordView
 # import json
 import mock
+from mock import patch
 
 
 class TestSubmittedThing (TestCase):
@@ -171,7 +172,7 @@ class MiscCacheClearingTests (TestCase):
         self.assertNotEqual(response1.content, response3.content)
 
 
-class PlacePermissionTests (TestCase):
+class DataPermissionTests (TestCase):
     def clear_objects(self):
         User.objects.all().delete()
         DataSet.objects.all().delete()
@@ -182,9 +183,108 @@ class PlacePermissionTests (TestCase):
         ApiKey.objects.all().delete()
         cache.clear()
 
-    def test_group_permissions_can_restrict_reading(self):
+    def setUp(self):
         self.clear_objects()
 
+    def tearDown(self):
+        self.clear_objects()
+
+    def test_default_dataset_permissions_allow_reading(self):
+        owner = User.objects.create(username='myowner')
+        user = User.objects.create(username='myuser')
+        dataset = DataSet.objects.create(slug='data', owner_id=owner.id)
+        place = Place.objects.create(dataset_id=dataset.id, geometry='POINT(0 0)')
+        comment_set = SubmissionSet.objects.create(place_id=place.id, name='comments')
+
+        # Make sure a permission objects were created
+        self.assertEqual(dataset.permissions.count(), 1)
+
+        # Make sure anonymous is allowed to read, not write.
+        self.assertEqual(check_data_permission(None, None, 'retrieve', dataset, 'comments'), True)
+        self.assertEqual(check_data_permission(None, None, 'update', dataset, 'comments'), False)
+        self.assertEqual(check_data_permission(None, None, 'create', dataset, 'comments'), False)
+        self.assertEqual(check_data_permission(None, None, 'destroy', dataset, 'comments'), False)
+
+        # Make sure authenticated is allowed to read.
+        self.assertEqual(check_data_permission(user, None, 'retrieve', dataset, 'comments'), True)
+        self.assertEqual(check_data_permission(user, None, 'update', dataset, 'comments'), False)
+        self.assertEqual(check_data_permission(user, None, 'create', dataset, 'comments'), False)
+        self.assertEqual(check_data_permission(user, None, 'destroy', dataset, 'comments'), False)
+
+        # Make sure owner is allowed to read.
+        self.assertEqual(check_data_permission(owner, None, 'retrieve', dataset, 'comments'), True)
+        self.assertEqual(check_data_permission(owner, None, 'update', dataset, 'comments'), True)
+        self.assertEqual(check_data_permission(owner, None, 'create', dataset, 'comments'), True)
+        self.assertEqual(check_data_permission(owner, None, 'destroy', dataset, 'comments'), True)
+
+    def test_dataset_permissions_can_restrict_reading(self):
+        owner = User.objects.create(username='myowner')
+        user = User.objects.create(username='myuser')
+        dataset = DataSet.objects.create(slug='data', owner_id=owner.id)
+        place = Place.objects.create(dataset_id=dataset.id, geometry='POINT(0 0)')
+        comment_set = SubmissionSet.objects.create(place_id=place.id, name='comments')
+
+        # Make sure a permission objects were created
+        self.assertEqual(dataset.permissions.count(), 1)
+
+        # Turn off read access
+        perm = dataset.permissions.all().get()
+        perm.can_retrieve = False
+        perm.save()
+
+        # Make sure anonymous is not allowed to read.
+        has_permission = check_data_permission(None, None, 'retrieve', dataset, 'comments')
+        self.assertEqual(has_permission, False)
+
+        # Make sure authenticated is not allowed to read.
+        has_permission = check_data_permission(user, None, 'retrieve', dataset, 'comments')
+        self.assertEqual(has_permission, False)
+
+        # Make sure owner is allowed to read.
+        has_permission = check_data_permission(owner, None, 'retrieve', dataset, 'comments')
+        self.assertEqual(has_permission, True)
+
+    def test_specific_dataset_permissions_can_allow_or_restrict_reading(self):
+        owner = User.objects.create(username='myowner')
+        user = User.objects.create(username='myuser')
+        dataset = DataSet.objects.create(slug='data', owner_id=owner.id)
+        place = Place.objects.create(dataset_id=dataset.id, geometry='POINT(0 0)')
+        comment_set = SubmissionSet.objects.create(place_id=place.id, name='comments')
+
+        # Make sure a permission objects were created
+        self.assertEqual(dataset.permissions.count(), 1)
+
+        # Turn on read access for comments, but off for places
+        comments_perm = dataset.permissions.all().get()
+        comments_perm.submission_set = 'comments'
+        comments_perm.save()
+
+        places_perm = DataSetPermission(submission_set='places')
+        places_perm.can_retrieve = False
+        dataset.permissions.add(places_perm)
+
+        # Make sure anonymous can read comments, but not places.
+        has_permission = check_data_permission(None, None, 'retrieve', dataset, 'comments')
+        self.assertEqual(has_permission, True)
+
+        has_permission = check_data_permission(None, None, 'retrieve', dataset, 'places')
+        self.assertEqual(has_permission, False)
+
+        # Make sure authenticated can read comments, but not places.
+        has_permission = check_data_permission(user, None, 'retrieve', dataset, 'comments')
+        self.assertEqual(has_permission, True)
+
+        has_permission = check_data_permission(user, None, 'retrieve', dataset, 'places')
+        self.assertEqual(has_permission, False)
+
+        # Make sure owner is allowed to read everything.
+        has_permission = check_data_permission(owner, None, 'retrieve', dataset, 'comments')
+        self.assertEqual(has_permission, True)
+
+        has_permission = check_data_permission(owner, None, 'retrieve', dataset, 'places')
+        self.assertEqual(has_permission, True)
+
+    def test_group_permissions_can_restrict_reading(self):
         owner = User.objects.create(username='myowner')
         user = User.objects.create(username='myuser')
         dataset = DataSet.objects.create(slug='data', owner_id=owner.id)
@@ -210,3 +310,37 @@ class PlacePermissionTests (TestCase):
         # Make sure we're not allowed to read.
         has_permission = check_data_permission(user, key, 'retrieve', dataset, 'comments')
         self.assertEqual(has_permission, False)
+
+    def test_fails_when_requesting_an_unknown_permission(self):
+        user = client = dataset = submission_set = None
+        with self.assertRaises(ValueError):
+            check_data_permission(user, client, 'obliterate', dataset, submission_set)
+
+    def test_accepts_submission_set_name(self):
+        owner = User.objects.create(username='myowner')
+        user = User.objects.create(username='myuser')
+        dataset = DataSet.objects.create(slug='data', owner_id=owner.id)
+        place = Place.objects.create(dataset_id=dataset.id, geometry='POINT(0 0)')
+        comment_set = SubmissionSet.objects.create(place_id=place.id, name='comments')
+
+        with patch('sa_api_v2.models.DataPermissionManager.any_allow') as any_allow:
+            check_data_permission(user, None, 'retrieve', dataset, 'comments')
+            self.assertEqual(any_allow.call_args[0][1], 'comments')
+
+    def test_accepts_submission_set_model_instancce(self):
+        owner = User.objects.create(username='myowner')
+        user = User.objects.create(username='myuser')
+        dataset = DataSet.objects.create(slug='data', owner_id=owner.id)
+        place = Place.objects.create(dataset_id=dataset.id, geometry='POINT(0 0)')
+        comment_set = SubmissionSet.objects.create(place_id=place.id, name='comments')
+
+        with patch('sa_api_v2.models.DataPermissionManager.any_allow') as any_allow:
+            check_data_permission(user, None, 'retrieve', dataset, comment_set)
+            self.assertEqual(any_allow.call_args[0][1], 'comments')
+
+
+# More permissions tests to write:
+# - General client permission allows reading and restricts writing
+# - Specific client permission allows/restricts reading and writing
+# - General group permission allows reading and restricts writing
+# - Specific group permission allows/restricts reading and writing

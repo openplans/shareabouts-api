@@ -274,6 +274,21 @@ class Group (models.Model):
         return '%s in %s' % (self.name, self.dataset.slug)
 
 
+class DataPermissionManager (models.Manager):
+    use_for_related_fields = True
+
+    def any_allow(self, do_action, submission_set):
+        """
+        Check whether any of the data permissions in the managed set allow the
+        action on a submission set with the given name.
+        """
+        for permission in self.all():
+            if (permission.submission_set in (submission_set, '*')
+                and getattr(permission, 'can_' + do_action, False)):
+                return True
+        return False
+
+
 class DataPermission (models.Model):
     """
     Rules for what permissions a given authentication method affords.
@@ -284,6 +299,8 @@ class DataPermission (models.Model):
     can_update = models.BooleanField(default=False)
     can_destroy = models.BooleanField(default=False)
     priority = models.PositiveIntegerField(blank=True)
+
+    objects = DataPermissionManager()
 
     class Meta:
         abstract = True
@@ -359,34 +376,31 @@ def check_data_permission(user, client, do_action, dataset, submission_set):
     Check whether the given user has permission on the submission_set in
     the context of the given client (e.g., an API key or an origin).
     """
-    if do_action not in ('retrieve', 'create', 'update', 'delete'):
+    if do_action not in ('retrieve', 'create', 'update', 'destroy'):
         raise ValueError
+
+    # Owner can do anything
+    if user and user.id == dataset.owner_id:
+        return True
 
     if isinstance(submission_set, SubmissionSet):
         submission_set = submission_set.name
 
-    def any_permissions_allow(obj, do_action, submission_set):
-        for permission in obj.permissions.all():
-            if (permission.submission_set in (submission_set, '*')
-                and getattr(permission, 'can_' + do_action, False)):
-                return True
-        return False
-
     # Start with the dataset permission
-    if any_permissions_allow(dataset, do_action, submission_set):
+    if dataset.permissions.any_allow(do_action, submission_set):
         return True
 
     # Then the client permission
     if client is not None:
         if (client.dataset == dataset and
-            any_permissions_allow(client, do_action, submission_set)):
+            client.permissions.any_allow(do_action, submission_set)):
             return True
 
     # Next, check the user's groups
     if user is not None:
         for group in user._groups.all():
-            if (group.dataset == dataset and
-                any_permissions_allow(group, do_action, submission_set)):
+            if (dataset and group.dataset_id == dataset.id and
+                group.permissions.any_allow(do_action, submission_set)):
                 return True
 
     return False

@@ -173,6 +173,45 @@ class IsLoggedInAdmin(permissions.BasePermission):
         return False
 
 
+class IsAllowedByDataPermissions(permissions.BasePermission):
+    def has_permission(self, request, view):
+        # Let the owner do whatever they want
+        if is_owner(request.user, request):
+            return True
+
+        # DataSets are protected by other means
+        if issubclass(view.model, models.DataSet):
+            return True
+
+        actions = {
+            'GET': 'retrieve',
+            'POST': 'create',
+            'PUT': 'update',
+            'PATCH': 'update',
+            'DELETE': 'destroy'
+        }
+
+        # We only protect the actions we know about
+        if request.method.upper() not in actions:
+            return True
+
+        do_action = actions[request.method.upper()]
+
+        # Submission instance or list, or attachments thereon
+        if hasattr(view, 'submission_set_name_kwarg') and view.submission_set_name_kwarg in view.kwargs:
+            data_type = view.kwargs[view.submission_set_name_kwarg]
+
+        # Place instance or list, or attachents thereon
+        else:
+            data_type = 'places'
+
+        user = request.user
+        client = request.client
+        dataset = request.get_dataset()
+
+        return models.check_data_permission(user, client, do_action, dataset, data_type)
+
+
 ###############################################################################
 #
 # View Mixins
@@ -399,7 +438,7 @@ class OwnedResourceMixin (ClientAuthenticationMixin, CorsEnabledMixin):
     """
     renderer_classes = (JSONRenderer, JSONPRenderer, BrowsableAPIRenderer, renderers.PaginatedCSVRenderer)
     parser_classes = (JSONParser, FormParser, MultiPartParser)
-    permission_classes = (IsOwnerOrReadOnly, IsLoggedInOwnerOrPublicDataOnly)
+    permission_classes = (IsOwnerOrReadOnly, IsLoggedInOwnerOrPublicDataOnly, IsAllowedByDataPermissions)
     authentication_classes = (authentication.BasicAuthentication, ShareaboutsSessionAuth)
     client_authentication_classes = (apikey.auth.ApiKeyAuthentication, cors.auth.OriginAuthentication)
     content_negotiation_class = JSONPCallbackNegotiation
@@ -421,17 +460,35 @@ class OwnedResourceMixin (ClientAuthenticationMixin, CorsEnabledMixin):
         user = self.request.user
         return user if user.is_authenticated() else None
 
-    def get_owner(self):
-        owner_username = self.kwargs[self.owner_username_kwarg]
-        owner = get_object_or_404(models.User, username=owner_username)
-        return owner
+    def get_owner(self, force=False):
+        if force or not hasattr(self, '_owner'):
+            if (hasattr(self, 'owner_username_kwarg') and
+                self.owner_username_kwarg in self.kwargs):
 
-    def get_dataset(self):
-        owner = self.get_owner()
+                owner_username = self.kwargs[self.owner_username_kwarg]
+                self._owner = get_object_or_404(models.User, username=owner_username)
+            else:
+                self._owner = None
+        return self._owner
 
-        dataset_slug = self.kwargs[self.dataset_slug_kwarg]
-        dataset = get_object_or_404(models.DataSet, slug=dataset_slug, owner=owner)
-        return dataset
+    def get_dataset(self, force=False):
+        if force or not hasattr(self, '_dataset'):
+            if (hasattr(self, 'owner_username_kwarg') and
+                hasattr(self, 'dataset_slug_kwarg') and
+                self.owner_username_kwarg in self.kwargs and
+                self.dataset_slug_kwarg in self.kwargs):
+
+                owner_username = self.kwargs[self.owner_username_kwarg]
+                dataset_slug = self.kwargs[self.dataset_slug_kwarg]
+
+                self._dataset = get_object_or_404(models.DataSet.objects.select_related('owner'),
+                    slug=dataset_slug, owner__username=owner_username)
+
+                # Cache the owner in case it's not already
+                self._owner = self._dataset.owner
+            else:
+                self._dataset = None
+        return self._dataset
 
     def is_verified_object(self, obj, ObjType=None):
         # Get the instance parameters from the cache
@@ -517,12 +574,31 @@ class CachedResourceMixin (object):
         querystring = request.META.get('QUERY_STRING', '')
         contenttype = request.META.get('HTTP_ACCEPT', '')
 
+        if not hasattr(request, 'user') or not request.user.is_authenticated():
+            groups = ''
+        else:
+            dataset = None
+            if hasattr(self, 'get_dataset'):
+                dataset = self.get_dataset()
+
+            if dataset:
+                if request.user.id == dataset.owner_id:
+                    groups = '__owners__'
+                else:
+                    group_set = []
+                    for group in request.user._groups.all():
+                        if group.dataset_id == dataset.id:
+                            group_set.append(group.name)
+                    groups = ','.join(group_set)
+            else:
+                groups = ''
+
         # TODO: Eliminate the jQuery cache busting parameter for now. Get
         # rid of this after the old API has been deprecated.
         cache_buster_pattern = re.compile(r'&?_=\d+')
         querystring = re.sub(cache_buster_pattern, '', querystring)
 
-        return ':'.join([self.cache_prefix, contenttype, querystring])
+        return ':'.join([self.cache_prefix, contenttype, querystring, groups])
 
     def respond_from_cache(self, cached_data):
         # Given some cached data, construct a response.
@@ -768,6 +844,7 @@ class SubmissionInstanceView (CachedResourceMixin, OwnedResourceMixin, generics.
 
     model = models.Submission
     serializer_class = serializers.SubmissionSerializer
+    submission_set_name_kwarg = 'submission_set_name' # Set here so that the data permission checker has access
 
     def get_object_or_404(self, pk):
         try:
@@ -1206,13 +1283,14 @@ class AttachmentListView (OwnedResourceMixin, FilteredResourceMixin, generics.Li
     serializer_class = serializers.AttachmentSerializer
 
     thing_id_kwarg = 'thing_id'
+    submission_set_name_kwarg = 'submission_set_name'
 
     def get_thing(self):
         thing_id = self.kwargs[self.thing_id_kwarg]
         dataset = self.get_dataset()
         thing = get_object_or_404(models.SubmittedThing, dataset=dataset, id=thing_id)
 
-        if 'submission_set_name' in self.kwargs:
+        if self.submission_set_name_kwarg in self.kwargs:
             obj = thing.submission
             ObjType = models.Submission
         else:
