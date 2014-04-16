@@ -365,6 +365,9 @@ def check_data_permission(user, client, do_action, dataset, submission_set):
     if do_action not in ('retrieve', 'create', 'update', 'delete'):
         raise ValueError
 
+    if isinstance(submission_set, SubmissionSet):
+        submission_set = submission_set.name
+
     # Start with the dataset permission
     for permission in dataset.permissions.all():
         if (permission.submission_set in (submission_set, '*')
