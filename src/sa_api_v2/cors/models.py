@@ -13,6 +13,7 @@ from django.db import models
 from django.db.models.signals import post_save
 from django.utils.timezone import now
 from ..models import DataSet, OriginPermission
+from .. import utils
 import re
 
 
@@ -72,6 +73,10 @@ class Origin(models.Model):
         else:
             pattern = pattern.replace('.', r'\.').replace('*', r'.*')
             return re.match(pattern, origin) is not None
+
+    @utils.memo
+    def get_permissions(self):
+        return self.permissions
 
 
 def create_data_permissions(sender, instance, created, **kwargs):

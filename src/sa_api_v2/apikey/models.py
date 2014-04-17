@@ -13,6 +13,7 @@ from django.db import models
 from django.db.models.signals import post_save
 from django.utils.timezone import now
 from ..models import DataSet, KeyPermission
+from .. import utils
 
 # Changing this would require a migration, ugh.
 KEY_SIZE = 32
@@ -56,6 +57,10 @@ class ApiKey(models.Model):
 
     def __unicode__(self):
         return self.key
+
+    @utils.memo
+    def get_permissions(self):
+        return self.permissions
 
 
 def generate_unique_api_key():

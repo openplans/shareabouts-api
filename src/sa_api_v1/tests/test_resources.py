@@ -1,4 +1,4 @@
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from django.test import TestCase
 import mock
 from nose.tools import istest
@@ -7,6 +7,8 @@ from nose.tools import assert_equal, assert_in, assert_not_in, ok_
 from ..resources import ModelResourceWithDataBlob
 from ..models import SubmittedThing, DataSet
 
+
+User = get_user_model()
 
 def make_model_mock(model, **kw):
     spec = [attr for attr in dir(model) if not attr.endswith('__')]
@@ -149,7 +151,6 @@ class TestPlaceResource(TestCase):
 
     def _cleanup(self):
         from sa_api_v1 import models
-        from django.contrib.auth.models import User
         from django.core.cache import cache
         models.Submission.objects.all().delete()
         models.SubmissionSet.objects.all().delete()
@@ -166,7 +167,6 @@ class TestPlaceResource(TestCase):
 
     def populate(self):
         from ..resources import models
-        from django.contrib.auth.models import User
         location = 'POINT (1.0 2.0)'
         owner = User.objects.create(username='user')
         ds = models.DataSet.objects.create(owner=owner, slug='dataset')
@@ -241,7 +241,6 @@ class TestPlaceResource(TestCase):
         from ..resources import models, PlaceResource
         # White-box test - we hook up the stuff we know it uses.
         resource = PlaceResource()
-        from django.contrib.auth.models import User
         user = User.objects.create(username='test-user')
         dataset = models.DataSet.objects.create(id=456, slug='test-set',
                                                 owner=user)
@@ -261,7 +260,7 @@ class TestPlaceResource(TestCase):
 
     @istest
     def serialize_with_submission_data(self):
-        from ..models import User, DataSet, Place, SubmissionSet, Submission
+        from ..models import DataSet, Place, SubmissionSet, Submission
         user = User.objects.create(username='user')
         ds = DataSet.objects.create(owner=user, slug='ds')
         place = Place.objects.create(location='POINT(0 0)', dataset=ds)

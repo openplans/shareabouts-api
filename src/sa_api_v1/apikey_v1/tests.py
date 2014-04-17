@@ -1,13 +1,16 @@
+from django.contrib.auth import get_user_model
 from django.core.exceptions import PermissionDenied
 import mock
 import django.test
+
+
+User = get_user_model()
 
 
 class TestApiKeyAuth(django.test.TestCase):
 
     def _cleanup(self):
         from .models import ApiKey
-        from django.contrib.auth.models import User
         User.objects.all().delete()
         ApiKey.objects.all().delete()
 
@@ -93,7 +96,6 @@ class TestApiKeyAuth(django.test.TestCase):
         from .auth import ApiKeyAuthentication
         from .models import generate_unique_api_key
         from .models import ApiKey
-        from django.contrib.auth.models import User
         ip = '1.2.3.4'
         user = User.objects.create(username='bob@bob.com')
         key = ApiKey.objects.create(key=generate_unique_api_key(), user=user)
@@ -119,7 +121,6 @@ class TestApiKeyAuth(django.test.TestCase):
         ip = '1.2.3.4'
         from .models import generate_unique_api_key
         from .models import ApiKey
-        from django.contrib.auth.models import User
         user = User.objects.create(username='bob@bob.com', is_active=False)
         key = ApiKey.objects.create(key=generate_unique_api_key(), user=user)
         get_request = mock.Mock(**{'user.is_authenticated.return_value': False,

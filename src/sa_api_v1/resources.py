@@ -4,7 +4,7 @@ DjangoRestFramework resources for the Shareabouts REST API.
 import ujson as json
 import apikey_v1.models
 from collections import defaultdict
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from django.core.urlresolvers import reverse
 from django.db.models import Count
 from djangorestframework import resources
@@ -12,6 +12,9 @@ from . import models
 from . import utils
 from . import forms
 from . import cache
+
+
+User = get_user_model()
 
 
 def simple_user(user):

@@ -3881,7 +3881,7 @@ class TestActivityView(APITestMixin, TestCase):
         self.view(vis_param, **self.kwargs)
 
         # Both requests should be made without hitting the database...
-        with self.assertNumQueries(4):
+        with self.assertNumQueries(2):
             no_params_response = self.view(no_params, **self.kwargs)
             vis_param_response = self.view(vis_param, **self.kwargs)
 
@@ -3898,7 +3898,7 @@ class TestActivityView(APITestMixin, TestCase):
 
         # Next requests should be made without hitting the database, except to
         # get the dataset for authorization...
-        with self.assertNumQueries(2):
+        with self.assertNumQueries(1):
             response1 = self.view(request, **self.kwargs)
 
         # But cache should be invalidated after changing a place.

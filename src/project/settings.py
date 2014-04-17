@@ -171,7 +171,8 @@ AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',
 )
 
-SOCIAL_AUTH_USER_MODEL = 'auth.User'
+AUTH_USER_MODEL = 'sa_api_v2.User'
+SOCIAL_AUTH_USER_MODEL = 'sa_api_v2.User'
 SOCIAL_AUTH_PROTECTED_USER_FIELDS = ['email',]
 
 SOCIAL_AUTH_FACEBOOK_EXTRA_DATA = ['name', 'picture', 'bio']
@@ -393,7 +394,7 @@ except ImportError:
 ##############################################################################
 # Debug Toolbar
 # ------------------------
-# Do this after all the settings files have been processed, in case the 
+# Do this after all the settings files have been processed, in case the
 # SHOW_DEBUG_TOOLBAR setting is set.
 
 if SHOW_DEBUG_TOOLBAR:

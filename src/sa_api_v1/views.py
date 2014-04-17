@@ -348,7 +348,7 @@ class DataSetCollectionView (Ignore_CacheBusterMixin, AuthMixin, AbsUrlMixin, Mo
     def get_instance_data(self, model, content, **kwargs):
         # Used by djangorestframework to make args to build an instance for POST
         kwargs.pop('owner__username', None)
-        content['owner'] = get_object_or_404(auth.models.User, username=self.allowed_username)
+        content['owner'] = get_object_or_404(auth.get_user_model(), username=self.allowed_username)
         return super(DataSetCollectionView, self).get_instance_data(model, content, **kwargs)
 
     def post(self, request, *args, **kwargs):
@@ -654,7 +654,7 @@ class OwnerPasswordView (Ignore_CacheBusterMixin, AuthMixin, AbsUrlMixin, views.
 
     def put(self, request, owner__username):
         new_password = self.DATA
-        owner = auth.models.User.objects.get(username=owner__username)
+        owner = auth.get_user_model().objects.get(username=owner__username)
         owner.set_password(new_password)
         owner.save()
         return Response(204)

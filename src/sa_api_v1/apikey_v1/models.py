@@ -9,8 +9,9 @@ http://jetfar.com/simple-api-key-generation-in-python/
 license unknown.
 """
 
+from django.conf import settings
 from django.db import models
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from django.utils.timezone import now
 
 # Changing this would require a migration, ugh.
@@ -18,7 +19,7 @@ KEY_SIZE = 32
 
 
 class ApiKey(models.Model):
-    user = models.ForeignKey(User, related_name='api_keys_v1')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='api_keys_v1')
     key = models.CharField(max_length=KEY_SIZE, unique=True)
     logged_ip = models.IPAddressField(blank=True, null=True)
     last_used = models.DateTimeField(blank=True, default=now)

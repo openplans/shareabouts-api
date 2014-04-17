@@ -1,8 +1,12 @@
+from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.test.client import Client
 from django.core.urlresolvers import reverse
 import mock
 import collections
+
+
+User = get_user_model()
 
 
 class TestSaManager(TestCase):
@@ -26,7 +30,6 @@ class TestSaManager(TestCase):
         self.mock_api = self.patcher.start()
         self.mock_api.return_value = self.mock_api
         # We need a user.
-        from django.contrib.auth.models import User
         self.user = User.objects.create_user('riley', password='pass')
 
         # Some mocking to ensure that we control what the API returns
@@ -231,7 +234,6 @@ class TestSaManager(TestCase):
 class TestDatasetDetailPostRequest (TestCase):
     def setUp(self):
         # We need a user.
-        from django.contrib.auth.models import User
         from sa_api_v2.models import DataSet
         self.user = User.objects.create_user('riley', password='pass')
         self.dataset = DataSet.objects.create(owner=self.user, slug='dataset1')

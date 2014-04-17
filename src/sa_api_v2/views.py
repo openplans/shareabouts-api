@@ -481,7 +481,7 @@ class OwnedResourceMixin (ClientAuthenticationMixin, CorsEnabledMixin):
                 owner_username = self.kwargs[self.owner_username_kwarg]
                 dataset_slug = self.kwargs[self.dataset_slug_kwarg]
 
-                self._dataset = get_object_or_404(models.DataSet.objects.select_related('owner').prefetch_related('permissions'),
+                self._dataset = get_object_or_404(models.DataSet.objects.select_related('owner'),
                     slug=dataset_slug, owner__username=owner_username)
 
                 # Cache the owner in case it's not already
@@ -1064,7 +1064,6 @@ class DataSetInstanceView (CachedResourceMixin, OwnedResourceMixin, generics.Ret
         try:
             return self.model.objects\
                 .filter(slug=dataset_slug, owner__username=owner_username)\
-                .prefetch_related('permissions')\
                 .get()
         except self.model.DoesNotExist:
             raise Http404
@@ -1232,7 +1231,7 @@ class DataSetListView (CachedResourceMixin, DataSetListMixin, OwnedResourceMixin
     def get_queryset(self):
         owner = self.get_owner()
         queryset = super(DataSetListView, self).get_queryset()
-        return queryset.filter(owner=owner).prefetch_related('permissions').order_by('id')
+        return queryset.filter(owner=owner).order_by('id')
 
 
 class AdminDataSetListView (CachedResourceMixin, DataSetListMixin, generics.ListAPIView):

@@ -1,7 +1,7 @@
 from django.test import TestCase
 from django.test.client import Client
 from django.test.client import RequestFactory
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from django.core.urlresolvers import reverse
 from django.core.cache import cache
 from djangorestframework.response import ErrorResponse
@@ -16,6 +16,9 @@ from ..views import ApiKeyCollectionView
 from ..views import OwnerPasswordView
 import json
 import mock
+
+
+User = get_user_model()
 
 
 class TestAuthFunctions(object):

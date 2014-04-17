@@ -1,4 +1,4 @@
-from django.contrib.auth.models import User
+from django.contrib.auth.models import AbstractUser, UserManager
 from django.contrib.gis.db import models
 from django.conf import settings
 from django.core.files.storage import get_storage_class
@@ -9,6 +9,21 @@ from django.utils.importlib import import_module
 from . import cache
 from . import utils
 import sa_api_v1.models
+
+
+class ShareaboutsUserManager (UserManager):
+    pass
+
+
+class User (AbstractUser):
+    objects = ShareaboutsUserManager()
+
+    @utils.memo
+    def get_groups(self):
+        return self._groups.all().prefetch_related('permissions')
+
+    class Meta:
+        db_table = 'auth_user'
 
 
 class TimeStampedModel (models.Model):
@@ -149,6 +164,10 @@ class DataSet (CacheClearingModel, models.Model):
             self._submissions = Submission.objects.filter(dataset=self)
         return self._submissions
 
+    @utils.memo
+    def get_permissions(self):
+        return self.permissions
+
 
 class Place (SubmittedThing):
     """
@@ -273,16 +292,24 @@ class Group (models.Model):
     def __unicode__(self):
         return '%s in %s' % (self.name, self.dataset.slug)
 
+    @utils.memo
+    def get_permissions(self):
+        return self.permissions
+
 
 class DataPermissionManager (models.Manager):
     use_for_related_fields = True
+
+    @utils.memo
+    def all_permissions(self):
+        return self.all()
 
     def any_allow(self, do_action, submission_set):
         """
         Check whether any of the data permissions in the managed set allow the
         action on a submission set with the given name.
         """
-        for permission in self.all():
+        for permission in self.all_permissions():
             if (permission.submission_set in (submission_set, '*')
                 and getattr(permission, 'can_' + do_action, False)):
                 return True
@@ -379,7 +406,7 @@ def check_data_permission(user, client, do_action, dataset, submission_set):
     if do_action not in ('retrieve', 'create', 'update', 'destroy'):
         raise ValueError
 
-    if user.is_superuser:
+    if user and user.is_superuser:
         return True
 
     # Owner can do anything
@@ -390,7 +417,7 @@ def check_data_permission(user, client, do_action, dataset, submission_set):
         submission_set = submission_set.name
 
     # Start with the dataset permission
-    if dataset and dataset.permissions.any_allow(do_action, submission_set):
+    if dataset and dataset.get_permissions().any_allow(do_action, submission_set):
         return True
 
     # Then the client permission
@@ -400,10 +427,10 @@ def check_data_permission(user, client, do_action, dataset, submission_set):
             return True
 
     # Next, check the user's groups
-    if user is not None:
-        for group in user._groups.all():
+    if user is not None and user.is_authenticated():
+        for group in user.get_groups():
             if (dataset and group.dataset_id == dataset.id and
-                group.permissions.any_allow(do_action, submission_set)):
+                group.get_permissions().any_allow(do_action, submission_set)):
                 return True
 
     return False

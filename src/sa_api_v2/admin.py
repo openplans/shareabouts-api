@@ -5,6 +5,8 @@ via django.contrib.admin.
 
 import models
 from django.contrib.admin import SimpleListFilter
+from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
+from django.contrib.auth.forms import UserChangeForm as BaseUserChangeForm
 from django.contrib.gis import admin
 from .apikey.models import ApiKey
 from .cors.models import Origin
@@ -199,6 +201,20 @@ class GroupAdmin(admin.ModelAdmin):
         )
 
 
+class UserChangeForm(BaseUserChangeForm):
+    class Meta(BaseUserChangeForm.Meta):
+        model = models.User
+
+
+class UserAdmin(BaseUserAdmin):
+    form = UserChangeForm
+
+    fieldsets = BaseUserAdmin.fieldsets + (
+            # (None, {'fields': ('some_extra_data',)}),
+    )
+
+
+admin.site.register(models.User, UserAdmin)
 admin.site.register(models.DataSet, DataSetAdmin)
 admin.site.register(models.Place, PlaceAdmin)
 admin.site.register(models.SubmissionSet, SubmissionSetAdmin)
