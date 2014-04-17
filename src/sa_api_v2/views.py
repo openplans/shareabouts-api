@@ -205,9 +205,9 @@ class IsAllowedByDataPermissions(permissions.BasePermission):
         else:
             data_type = 'places'
 
-        user = request.user
-        client = request.client
-        dataset = request.get_dataset()
+        user = getattr(request, 'user', None)
+        client = getattr(request, 'client', None)
+        dataset = getattr(request, 'get_dataset', lambda: None)()
 
         return models.check_data_permission(user, client, do_action, dataset, data_type)
 
