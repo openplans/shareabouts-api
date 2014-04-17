@@ -955,7 +955,14 @@ class SubmissionListView (CachedResourceMixin, OwnedResourceMixin, FilteredResou
             queryset = queryset.filter(visible=True)
 
         return queryset.filter(parent=submission_set)\
-            .select_related('dataset', 'dataset__owner', 'parent', 'parent__place', 'submitter')\
+            .select_related(
+                'dataset',
+                'dataset__owner',
+                'parent',
+                'parent__place',
+                'parent__place__dataset',
+                'parent__place__dataset__owner',
+                'submitter')\
             .prefetch_related('attachments', 'submitter__social_auth', 'submitter___groups')
 
 
