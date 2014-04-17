@@ -379,6 +379,9 @@ def check_data_permission(user, client, do_action, dataset, submission_set):
     if do_action not in ('retrieve', 'create', 'update', 'destroy'):
         raise ValueError
 
+    if user.is_superuser:
+        return True
+
     # Owner can do anything
     if user and dataset and user.id == dataset.owner_id:
         return True
