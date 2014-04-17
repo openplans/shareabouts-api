@@ -27,7 +27,7 @@ class OriginAuthentication(authentication.BaseAuthentication):
         return (client, auth)
 
     def check_origin_permission(self, origin, dataset):
-        for ds_origin in dataset.origins.all().prefetch_related('permissions'):
+        for ds_origin in dataset.origins.all().prefetch_related('datasets', 'permissions'):
             if Origin.match(ds_origin.pattern, origin):
                 return ds_origin, ds_origin
         raise PermissionDenied("None of the dataset's origin permission policies matched")

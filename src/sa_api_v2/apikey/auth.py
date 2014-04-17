@@ -41,7 +41,7 @@ class APIKeyBackend(object):
     def _get_client_and_key(self, request, key_string):
         dataset = request.get_dataset()
         try:
-            key = dataset.keys.filter(key=key_string).prefetch_related('permissions')[0]
+            key = dataset.keys.filter(key=key_string).prefetch_related('datasets', 'permissions')[0]
         except KeyError:
             return (None, None)
         client = key
