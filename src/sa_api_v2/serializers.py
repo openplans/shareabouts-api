@@ -450,7 +450,8 @@ class DataSetSubmissionSetSummarySerializer (serializers.HyperlinkedModelSeriali
             # Ensure the user has read permission on the submission set.
             user = getattr(request, 'user', None)
             client = getattr(request, 'client', None)
-            if not check_data_permission(user, client, 'retrieve', obj, set_name):
+            dataset = obj
+            if not check_data_permission(user, client, 'retrieve', dataset, set_name):
                 continue
 
             obj.submission_set_name = set_name
@@ -515,7 +516,8 @@ class PlaceSerializer (SubmittedThingSerializer, serializers.HyperlinkedModelSer
             # Ensure the user has read permission on the submission set.
             user = getattr(request, 'user', None)
             client = getattr(request, 'client', None)
-            if not check_data_permission(user, client, 'retrieve', place.dataset, submission_set):
+            dataset = getattr(request, 'get_dataset', lambda: None)()
+            if not check_data_permission(user, client, 'retrieve', dataset, submission_set):
                 continue
 
             submissions = submission_set.children.all()
@@ -545,7 +547,8 @@ class PlaceSerializer (SubmittedThingSerializer, serializers.HyperlinkedModelSer
             # Ensure the user has read permission on the submission set.
             user = getattr(request, 'user', None)
             client = getattr(request, 'client', None)
-            if not check_data_permission(user, client, 'retrieve', place.dataset, submission_set):
+            dataset = getattr(request, 'get_dataset', lambda: None)()
+            if not check_data_permission(user, client, 'retrieve', dataset, submission_set):
                 continue
 
             submissions = submission_set.children.all()

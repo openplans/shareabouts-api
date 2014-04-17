@@ -51,7 +51,7 @@ class TestActionSerializer (TestCase):
         place = Place.objects.create(dataset=dataset, geometry='POINT(2 3)')
         comments = SubmissionSet.objects.create(place=place, name='comments')
         comment = Submission.objects.create(dataset=dataset, parent=comments)
-        
+
         self.place_action = Action.objects.create(thing=place.submittedthing_ptr)
         self.comment_action = Action.objects.create(thing=comment.submittedthing_ptr)
 
@@ -123,13 +123,13 @@ class TestSocialUserSerializer (TestCase):
         self.twitter_user = User.objects.create_user(
             username='my_twitter_user', password='mypassword')
         self.twitter_social_auth = UserSocialAuth.objects.create(
-            user=self.twitter_user, provider='twitter', uid='1234', 
+            user=self.twitter_user, provider='twitter', uid='1234',
             extra_data=json.load(open(twitter_user_data_file)))
 
         self.facebook_user = User.objects.create_user(
             username='my_facebook_user', password='mypassword')
         self.facebook_social_auth = UserSocialAuth.objects.create(
-            user=self.facebook_user, provider='facebook', uid='1234', 
+            user=self.facebook_user, provider='facebook', uid='1234',
             extra_data=json.load(open(facebook_user_data_file)))
 
         self.no_social_user = User.objects.create_user(
@@ -223,19 +223,21 @@ class TestPlaceSerializer (TestCase):
         Submission.objects.create(dataset=self.dataset, parent=self.comments)
 
     def test_can_serlialize_a_null_instance(self):
+        request = RequestFactory().get('')
+        request.get_dataset = lambda: self.dataset
+
         serializer = PlaceSerializer(None)
-        serializer.context = {
-            'request': RequestFactory().get('')
-        }
+        serializer.context = {'request': request}
 
         data = serializer.data
         self.assertIsInstance(data, dict)
 
     def test_place_has_right_number_of_submissions(self):
+        request = RequestFactory().get('')
+        request.get_dataset = lambda: self.dataset
+
         serializer = PlaceSerializer(self.place)
-        serializer.context = {
-            'request': RequestFactory().get('')
-        }
+        serializer.context = {'request': request}
 
         self.assertEqual(serializer.data['submission_sets']['comments']['length'], 2)
 

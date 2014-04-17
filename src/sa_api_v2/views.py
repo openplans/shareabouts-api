@@ -481,7 +481,7 @@ class OwnedResourceMixin (ClientAuthenticationMixin, CorsEnabledMixin):
                 owner_username = self.kwargs[self.owner_username_kwarg]
                 dataset_slug = self.kwargs[self.dataset_slug_kwarg]
 
-                self._dataset = get_object_or_404(models.DataSet.objects.select_related('owner'),
+                self._dataset = get_object_or_404(models.DataSet.objects.select_related('owner').prefetch_related('permissions'),
                     slug=dataset_slug, owner__username=owner_username)
 
                 # Cache the owner in case it's not already
@@ -699,8 +699,7 @@ class PlaceInstanceView (CachedResourceMixin, LocatedResourceMixin, OwnedResourc
                 .prefetch_related('submitter__social_auth',
                                   'submission_sets__children',
                                   'submission_sets__children__attachments',
-                                  'attachments',
-                                  'dataset__permissions')\
+                                  'attachments')\
                 .get()
         except self.model.DoesNotExist:
             raise Http404
@@ -792,8 +791,7 @@ class PlaceListView (CachedResourceMixin, LocatedResourceMixin, OwnedResourceMix
                 'submitter___groups__dataset__owner',
                 'submission_sets',
                 'submission_sets__children',
-                'attachments',
-                'dataset__permissions')
+                'attachments')
 
         if INCLUDE_SUBMISSIONS_PARAM in self.request.GET:
             queryset = queryset.prefetch_related(
@@ -858,7 +856,7 @@ class SubmissionInstanceView (CachedResourceMixin, OwnedResourceMixin, generics.
                     'parent__place__dataset',
                     'parent__place__dataset__owner',
                     'submitter')\
-                .prefetch_related('attachments', 'submitter__social_auth', 'dataset__permissions')\
+                .prefetch_related('attachments', 'submitter__social_auth')\
                 .get()
         except self.model.DoesNotExist:
             raise Http404
@@ -958,7 +956,7 @@ class SubmissionListView (CachedResourceMixin, OwnedResourceMixin, FilteredResou
 
         return queryset.filter(parent=submission_set)\
             .select_related('dataset', 'dataset__owner', 'parent', 'parent__place', 'submitter')\
-            .prefetch_related('attachments', 'submitter__social_auth', 'submitter___groups', 'dataset__permissions')
+            .prefetch_related('attachments', 'submitter__social_auth', 'submitter___groups')
 
 
 class DataSetSubmissionListView (CachedResourceMixin, OwnedResourceMixin, FilteredResourceMixin, generics.ListAPIView):
@@ -1024,7 +1022,7 @@ class DataSetSubmissionListView (CachedResourceMixin, OwnedResourceMixin, Filter
                 'parent__place__dataset',
                 'parent__place__dataset__owner',
                 'submitter')\
-            .prefetch_related('attachments', 'submitter__social_auth', 'submitter___groups', 'dataset__permissions')
+            .prefetch_related('attachments', 'submitter__social_auth', 'submitter___groups')
 
 
 class DataSetInstanceView (CachedResourceMixin, OwnedResourceMixin, generics.RetrieveUpdateDestroyAPIView):
@@ -1351,8 +1349,7 @@ class ActionListView (CachedResourceMixin, OwnedResourceMixin, generics.ListAPIV
                 'thing__submission__attachments',
 
                 'thing__place__submission_sets',
-                'thing__place__submission_sets__children',
-                'thing__dataset__permissions')
+                'thing__place__submission_sets__children')
 
         if INCLUDE_INVISIBLE_PARAM not in self.request.GET:
             queryset = queryset.filter(thing__visible=True)\

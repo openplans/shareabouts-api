@@ -501,10 +501,7 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
         #     JOIN sa_api_group_submitters as s ON (g.id = s.group_id)
         #    WHERE gs.user_id IN (<[each submitter id]>);
         #
-        # - SELECT * FROM sa_api_datasetpermission as perm
-        #    WHERE perm.dataset_id = <self.place.dataset.id>;
-        #
-        with self.assertNumQueries(10):
+        with self.assertNumQueries(9):
             response = self.view(request, **self.request_kwargs)
             self.assertStatusCode(response, 200)
 
@@ -566,7 +563,7 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
         # - SELECT * FROM sa_api_datasetpermission as perm
         #    WHERE perm.dataset_id = <self.place.dataset.id>;
         #
-        with self.assertNumQueries(21):
+        with self.assertNumQueries(19):
             response = self.view(anon_request, **self.request_kwargs)
             self.assertStatusCode(response, 200)
             response = self.view(auth_request, **self.request_kwargs)
@@ -1592,10 +1589,7 @@ class TestSubmissionInstanceView (APITestMixin, TestCase):
         # - SELECT * FROM sa_api_attachment AS a
         #    WHERE a.thing_id IN (<self.submission.id>);
         #
-        # - SELECT * FROM sa_api_datasetpermissions AS perm
-        #    WHERE perm.dataset_id IN (<self.submission.dataset.id>);
-        #
-        with self.assertNumQueries(5):
+        with self.assertNumQueries(4):
             response = self.view(request, **self.request_kwargs)
             self.assertStatusCode(response, 200)
 
@@ -3887,7 +3881,7 @@ class TestActivityView(APITestMixin, TestCase):
         self.view(vis_param, **self.kwargs)
 
         # Both requests should be made without hitting the database...
-        with self.assertNumQueries(2):
+        with self.assertNumQueries(4):
             no_params_response = self.view(no_params, **self.kwargs)
             vis_param_response = self.view(vis_param, **self.kwargs)
 
@@ -3904,7 +3898,7 @@ class TestActivityView(APITestMixin, TestCase):
 
         # Next requests should be made without hitting the database, except to
         # get the dataset for authorization...
-        with self.assertNumQueries(1):
+        with self.assertNumQueries(2):
             response1 = self.view(request, **self.kwargs)
 
         # But cache should be invalidated after changing a place.

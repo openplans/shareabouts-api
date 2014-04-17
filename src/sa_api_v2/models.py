@@ -380,14 +380,14 @@ def check_data_permission(user, client, do_action, dataset, submission_set):
         raise ValueError
 
     # Owner can do anything
-    if user and user.id == dataset.owner_id:
+    if user and dataset and user.id == dataset.owner_id:
         return True
 
     if isinstance(submission_set, SubmissionSet):
         submission_set = submission_set.name
 
     # Start with the dataset permission
-    if dataset.permissions.any_allow(do_action, submission_set):
+    if dataset and dataset.permissions.any_allow(do_action, submission_set):
         return True
 
     # Then the client permission
