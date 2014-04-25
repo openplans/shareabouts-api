@@ -333,6 +333,17 @@ class DataPermission (models.Model):
         abstract = True
         ordering = ('priority',)
 
+    def parent():
+        def fget(self): return getattr(self, self.parent_attr)
+        def fset(self, value): setattr(self, self.parent_attr, value)
+        return locals()
+    parent = property(**parent())
+
+    def siblings():
+        def fget(self): return self.parent.permissions.all()
+        return locals()
+    siblings = property(**siblings())
+
     def abilities(self):
         abilities = []
         if self.can_create: abilities.append('create')
@@ -347,12 +358,9 @@ class DataPermission (models.Model):
             return 'can not create, retrieve, update, or destroy ' + (self.submission_set or 'anything') + ' at all'
 
     def save(self, *args, **kwargs):
-        # Use self.__class__ so that inherited models work.
-        ModelClass = self.__class__
-
         if self.priority is None:
             try:
-                lowest = ModelClass.objects.order_by('-priority')[0]
+                lowest = self.siblings.order_by('-priority')[0]
                 self.priority = lowest.priority + 1
             except IndexError:
                 self.priority = 0
@@ -362,6 +370,7 @@ class DataPermission (models.Model):
 
 class DataSetPermission (DataPermission):
     dataset = models.ForeignKey('DataSet', related_name='permissions')
+    parent_attr = 'dataset'
 
     def __unicode__(self):
         return '%s %s' % ('submitters', self.abilities())
@@ -369,6 +378,7 @@ class DataSetPermission (DataPermission):
 
 class GroupPermission (DataPermission):
     group = models.ForeignKey('Group', related_name='permissions')
+    parent_attr = 'group'
 
     def __unicode__(self):
         return '%s %s' % (self.group, self.abilities())
@@ -376,6 +386,7 @@ class GroupPermission (DataPermission):
 
 class KeyPermission (DataPermission):
     key = models.ForeignKey('apikey.ApiKey', related_name='permissions')
+    parent_attr = 'key'
 
     def __unicode__(self):
         return 'submitters %s' % (self.abilities(),)
