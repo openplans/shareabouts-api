@@ -36,6 +36,10 @@ urlpatterns = patterns('sa_api_v2',
         views.ApiKeyListView.as_view(),
         name='apikey-list'),
 
+    url(r'^(?P<owner_username>[^/]+)/datasets/(?P<dataset_slug>[^/]+)/origins$',
+        views.OriginListView.as_view(),
+        name='origin-list'),
+
     url(r'^(?P<owner_username>[^/]+)/datasets/(?P<dataset_slug>[^/]+)/(?P<submission_set_name>[^/]+)(?:/(?P<pk_list>(?:\d+,)+\d+))?$',
         views.DataSetSubmissionListView.as_view(),
         name='dataset-submission-list'),

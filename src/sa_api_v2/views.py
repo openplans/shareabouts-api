@@ -1386,17 +1386,45 @@ class ActionListView (CachedResourceMixin, OwnedResourceMixin, generics.ListAPIV
         return queryset
 
 
-class ApiKeyListView (OwnedResourceMixin, generics.ListAPIView):
-    model = apikey.models.ApiKey
+###############################################################################
+#
+# Client Authentication Views
+# ---------------------------
+#
+
+class ClientAuthListView (OwnedResourceMixin, generics.ListCreateAPIView):
     authentication_classes = (authentication.BasicAuthentication, ShareaboutsSessionAuth)
     client_authentication_classes = ()
     permission_classes = (IsLoggedInOwner,)
 
     def get_queryset(self):
-        qs = super(ApiKeyListView, self).get_queryset()
+        qs = super(ClientAuthListView, self).get_queryset()
         dataset = self.get_dataset()
         return qs.filter(dataset=dataset)
 
+    def get_serializer(self, instance=None, data=None,
+                       files=None, many=False, partial=False):
+        if isinstance(data, dict):
+            dataset = self.get_dataset()
+            data['dataset'] = dataset.id
+        return super(ClientAuthListView, self).get_serializer(
+            instance=instance, data=data, files=files, many=many,
+            partial=partial)
+
+
+class ApiKeyListView (ClientAuthListView):
+    model = apikey.models.ApiKey
+
+
+class OriginListView (ClientAuthListView):
+    model = cors.models.Origin
+
+
+###############################################################################
+#
+# User Session Views
+# ------------------
+#
 
 class UserInstanceView (OwnedResourceMixin, generics.RetrieveAPIView):
     model = models.User
