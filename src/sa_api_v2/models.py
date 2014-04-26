@@ -394,6 +394,7 @@ class KeyPermission (DataPermission):
 
 class OriginPermission (DataPermission):
     origin = models.ForeignKey('cors.Origin', related_name='permissions')
+    parent_attr = 'origin'
 
     def __unicode__(self):
         return 'submitters %s' % (self.abilities(),)

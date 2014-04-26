@@ -80,14 +80,14 @@ class SubmittedThingAdmin(admin.OSMGeoAdmin):
 
 
 class InlineApiKeyAdmin(admin.StackedInline):
-    model = ApiKey.datasets.through
-    raw_id_fields = ['apikey']
+    model = ApiKey
+    # raw_id_fields = ['apikey']
     extra = 0
 
 
 class InlineOriginAdmin(admin.StackedInline):
-    model = Origin.datasets.through
-    raw_id_fields = ['origin']
+    model = Origin
+    # raw_id_fields = ['origin']
     extra = 0
 
 

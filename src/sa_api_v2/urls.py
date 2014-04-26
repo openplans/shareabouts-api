@@ -33,7 +33,7 @@ urlpatterns = patterns('sa_api_v2',
         name='admin-dataset-list'),
 
     url(r'^(?P<owner_username>[^/]+)/datasets/(?P<dataset_slug>[^/]+)/keys$',
-        lambda *a, **k: None,
+        views.ApiKeyListView.as_view(),
         name='apikey-list'),
 
     url(r'^(?P<owner_username>[^/]+)/datasets/(?P<dataset_slug>[^/]+)/(?P<submission_set_name>[^/]+)(?:/(?P<pk_list>(?:\d+,)+\d+))?$',

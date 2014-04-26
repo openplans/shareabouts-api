@@ -18,6 +18,20 @@ from django.utils.timezone import now
 KEY_SIZE = 32
 
 
+class FakeDataSetManager (object):
+    def __init__(self, obj=None):
+        self.obj = obj
+
+    def all(self):
+        return self
+
+    def __iter__(self):
+        return iter([self.obj.dataset])
+
+    def __get__(self, instance, owner):
+        self.obj = instance
+        return self
+
 class ApiKey(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='api_keys_v1')
     key = models.CharField(max_length=KEY_SIZE, unique=True)
@@ -26,8 +40,10 @@ class ApiKey(models.Model):
 
     # I think we are going to only have one key per dataset,
     # but that could change on either end.
-    datasets = models.ManyToManyField('sa_api_v1.DataSet', blank=True,
+    dataset = models.ForeignKey('sa_api_v1.DataSet', blank=True,
                                       related_name='api_keys')
+
+    datasets = FakeDataSetManager()
 
     class Meta:
         db_table = 'apikey_apikey'

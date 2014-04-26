@@ -24,7 +24,7 @@ class OriginAdmin(ModelAdmin):
         qs = super(OriginAdmin, self).get_queryset(request)
         user = request.user
         if not user.is_superuser:
-            qs = qs.filter(datasets__owner=user)
+            qs = qs.filter(dataset__owner=user)
         return qs
 
     def save_model(self, request, obj, form, change):

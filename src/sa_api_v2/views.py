@@ -19,6 +19,8 @@ from rest_framework.request import Request
 from rest_framework.exceptions import APIException
 from social.apps.django_app import views as social_views
 from mock import patch
+from . import apikey
+from . import cors
 from . import models
 from . import serializers
 from . import utils
@@ -153,6 +155,25 @@ class IsLoggedInOwnerOrPublicDataOnly(permissions.BasePermission):
         if not any([flag in request.GET for flag in private_data_flags]):
             return True
 
+        if not is_really_logged_in(request.user, request):
+            return False
+
+        if is_owner(request.user, request) or request.user.is_superuser:
+            return True
+
+        return False
+
+
+class IsLoggedInOwner(permissions.BasePermission):
+    def has_permission(self, request, view):
+        """
+        Disallows any request for public data from a user authenticated
+        by API key.
+
+        For protecting views related to API keys that should require
+        'real' authentication, to avoid users abusing one API key to
+        obtain others.
+        """
         if not is_really_logged_in(request.user, request):
             return False
 
@@ -1363,6 +1384,18 @@ class ActionListView (CachedResourceMixin, OwnedResourceMixin, generics.ListAPIV
                         Q(thing__submission__parent__place__visible=True))
 
         return queryset
+
+
+class ApiKeyListView (OwnedResourceMixin, generics.ListAPIView):
+    model = apikey.models.ApiKey
+    authentication_classes = (authentication.BasicAuthentication, ShareaboutsSessionAuth)
+    client_authentication_classes = ()
+    permission_classes = (IsLoggedInOwner,)
+
+    def get_queryset(self):
+        qs = super(ApiKeyListView, self).get_queryset()
+        dataset = self.get_dataset()
+        return qs.filter(dataset=dataset)
 
 
 class UserInstanceView (OwnedResourceMixin, generics.RetrieveAPIView):

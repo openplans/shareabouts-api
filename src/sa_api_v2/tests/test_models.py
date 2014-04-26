@@ -292,8 +292,7 @@ class DataPermissionTests (TestCase):
         comment_set = SubmissionSet.objects.create(place_id=place.id, name='comments')
 
         # Create a key for the dataset
-        key = ApiKey.objects.create(key='abc')
-        key.datasets.add(dataset)
+        key = ApiKey.objects.create(key='abc', dataset=dataset)
 
         # Make sure a permission objects were created
         self.assertEqual(dataset.permissions.count(), 1)

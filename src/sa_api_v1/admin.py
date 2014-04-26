@@ -15,7 +15,7 @@ class SubmittedThingAdmin(admin.ModelAdmin):
 
 
 class InlineApiKeyAdmin(admin.StackedInline):
-    model = ApiKey.datasets.through
+    model = ApiKey
 
 
 class DataSetAdmin(admin.ModelAdmin):

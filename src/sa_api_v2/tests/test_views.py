@@ -70,11 +70,8 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
           }),
         )
 
-        self.apikey = ApiKey.objects.create(key='abc')
-        self.apikey.datasets.add(self.dataset)
-
-        self.ds_origin = Origin.objects.create(pattern='openplans.github.com')
-        self.ds_origin.datasets.add(self.dataset)
+        self.apikey = ApiKey.objects.create(key='abc', dataset=self.dataset)
+        self.ds_origin = Origin.objects.create(pattern='openplans.github.com', dataset=self.dataset)
 
         self.request_kwargs = {
           'owner_username': self.owner.username,
@@ -860,8 +857,7 @@ class TestPlaceListView (APITestMixin, TestCase):
           geometry='POINT(3 4)',
         )
 
-        self.apikey = ApiKey.objects.create(key='abc')
-        self.apikey.datasets.add(self.dataset)
+        self.apikey = ApiKey.objects.create(key='abc', dataset=self.dataset)
 
         self.request_kwargs = {
           'owner_username': self.owner.username,
@@ -1391,8 +1387,7 @@ class TestSubmissionInstanceView (APITestMixin, TestCase):
 
         self.submission = self.submissions[0]
 
-        self.apikey = ApiKey.objects.create(key='abc')
-        self.apikey.datasets.add(self.dataset)
+        self.apikey = ApiKey.objects.create(key='abc', dataset=self.dataset)
 
         self.request_kwargs = {
           'owner_username': self.owner.username,
@@ -1727,8 +1722,7 @@ class TestSubmissionListView (APITestMixin, TestCase):
           Submission.objects.create(parent=comments2, dataset=dataset2, data='{"foo": 3}', visible=False),
         ]
 
-        self.apikey = ApiKey.objects.create(key='abc')
-        self.apikey.datasets.add(self.dataset)
+        self.apikey = ApiKey.objects.create(key='abc', dataset=self.dataset)
 
         self.request_kwargs = {
           'owner_username': self.owner.username,
@@ -2319,8 +2313,7 @@ class TestDataSetSubmissionListView (APITestMixin, TestCase):
           Submission.objects.create(parent=comments3, dataset=dataset2, data='{"foo": 3}', visible=False),
         ]
 
-        self.apikey = ApiKey.objects.create(key='abc')
-        self.apikey.datasets.add(self.dataset)
+        self.apikey = ApiKey.objects.create(key='abc', dataset=self.dataset)
 
         self.request_kwargs = {
           'owner_username': self.owner.username,
@@ -2641,8 +2634,7 @@ class TestDataSetInstanceView (APITestMixin, TestCase):
           }),
         )
 
-        self.apikey = ApiKey.objects.create(key='abc')
-        self.apikey.datasets.add(self.dataset)
+        self.apikey = ApiKey.objects.create(key='abc', dataset=self.dataset)
 
         self.request_kwargs = {
           'owner_username': self.owner.username,
@@ -2946,8 +2938,7 @@ class TestDataSetListView (APITestMixin, TestCase):
             email='def@example.com')
         dataset3 = DataSet.objects.create(owner=other_owner, slug='slug', display_name="Display Name")
 
-        self.apikey = ApiKey.objects.create(key='abc')
-        self.apikey.datasets.add(self.dataset)
+        self.apikey = ApiKey.objects.create(key='abc', dataset=self.dataset)
 
         self.request_kwargs = {
           'owner_username': self.owner.username,
@@ -3163,8 +3154,7 @@ class TestPlaceAttachmentListView (APITestMixin, TestCase):
         # self.attachments = Attachment.objects.create(
         #     file=File(f, 'myfile.txt'), name='my_file_name', thing=self.place)
 
-        self.apikey = ApiKey.objects.create(key='abc')
-        self.apikey.datasets.add(self.dataset)
+        self.apikey = ApiKey.objects.create(key='abc', dataset=self.dataset)
 
         self.request_kwargs = {
           'owner_username': self.owner.username,
@@ -3474,8 +3464,7 @@ class TestSubmissionAttachmentListView (APITestMixin, TestCase):
         self.file.name = 'myfile.txt'
         self.file.size = 20
 
-        self.apikey = ApiKey.objects.create(key='abc')
-        self.apikey.datasets.add(self.dataset)
+        self.apikey = ApiKey.objects.create(key='abc', dataset=self.dataset)
 
         self.request_kwargs = {
           'owner_username': self.owner.username,
@@ -3783,8 +3772,7 @@ class TestActivityView(APITestMixin, TestCase):
             Action.objects.create(thing=self.visible_place.submittedthing_ptr, action='delete'),
         ]
 
-        self.apikey = ApiKey.objects.create(key='abc')
-        self.apikey.datasets.add(self.dataset)
+        self.apikey = ApiKey.objects.create(key='abc', dataset=self.dataset)
 
         self.kwargs = {
             'owner_username': self.owner.username,

@@ -37,10 +37,8 @@ class TestOriginClientAuth (TestCase):
 
         self.user = User.objects.create_user(username='user', password='password')
         self.dataset = DataSet.objects.create(owner=self.user, slug='dataset')
-        self.permission1 = Origin.objects.create(pattern='github.com')
-        self.permission1.datasets.add(self.dataset)
-        self.permission2 = Origin.objects.create(pattern='localhost:*')
-        self.permission2.datasets.add(self.dataset)
+        self.permission1 = Origin.objects.create(pattern='github.com', dataset=self.dataset)
+        self.permission2 = Origin.objects.create(pattern='localhost:*', dataset=self.dataset)
 
     def test_simple_origin_matching_on_first_origin(self):
         checker = OriginAuthentication()
