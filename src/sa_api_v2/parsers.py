@@ -11,9 +11,12 @@ class GeoJSONParser (JSONParser):
         if isinstance(data, dict):
             data = self.process_object(data)
         elif isinstance(data, list):
-            data = [self.process_object(obj) for obj in data]
+            data = self.process_array(data)
 
         return data
+
+    def process_array(self, data):
+        return [self.process_object(obj) for obj in data]
 
     def process_object(self, data):
         try:
@@ -27,6 +30,8 @@ class GeoJSONParser (JSONParser):
 
         if obj_type == 'Feature':
             data = self.process_feature(data)
+        elif obj_type == 'FeatureCollection':
+            data = self.process_array(data.get('features', []))
 
         return data
 
@@ -36,6 +41,6 @@ class GeoJSONParser (JSONParser):
 
         if not isinstance(properties, dict):
             raise ParseError('GeoJSON parse error - Feature "properties" must be an object (dict) not %s - %s' % (type(data), data))
-        
+
         data.update(properties)
         return data
