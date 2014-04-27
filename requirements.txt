@@ -15,6 +15,7 @@ newrelic==2.16.0.12
 
 # DB Settings and Management
 psycopg2==2.5.1
+psycogreen==1.0
 south==0.8.4
 dj-database-url==0.2.2
 
