@@ -148,6 +148,7 @@ INSTALLED_APPS = (
     'storages',
     'social.apps.django_app.default',
     'raven.contrib.django.raven_compat',
+    'django_ace',
 
     # Project apps
     'beta_signup',

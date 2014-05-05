@@ -47,6 +47,9 @@ markdown  # For browsable API docs
 python-dateutil==2.2
 ujson==1.33
 
+# The Django admin interface
+django-ace==1.0.1
+
 # The manager interface
 requests>=1.2.0
 

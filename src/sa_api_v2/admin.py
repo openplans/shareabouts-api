@@ -3,11 +3,14 @@ Basic behind-the-scenes maintenance for superusers,
 via django.contrib.admin.
 """
 
+import json
 import models
 from django.contrib.admin import SimpleListFilter
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.forms import UserChangeForm as BaseUserChangeForm
 from django.contrib.gis import admin
+from django.forms import ValidationError
+from django_ace import AceWidget
 from .apikey.models import ApiKey
 from .cors.models import Origin
 
@@ -55,6 +58,18 @@ class InlineAttachmentAdmin(admin.StackedInline):
     extra = 0
 
 
+class PrettyAceWidget (AceWidget):
+    def render(self, name, value, attrs=None):
+        if value:
+            try:
+                # If we can prettify the JSON, we should
+                value = json.dumps(json.loads(value), indent=2)
+            except ValueError:
+                # If we cannot, then we should still display the value
+                pass
+        return super(PrettyAceWidget, self).render(name, value, attrs=attrs)
+
+
 class SubmittedThingAdmin(admin.OSMGeoAdmin):
     date_hierarchy = 'created_datetime'
     inlines = (InlineAttachmentAdmin,)
@@ -74,6 +89,24 @@ class SubmittedThingAdmin(admin.OSMGeoAdmin):
         if not user.is_superuser:
             qs = qs.filter(dataset__owner=user)
         return qs
+
+    def get_form(self, request, obj=None, **kwargs):
+        BaseForm = super(SubmittedThingAdmin, self).get_form(request, obj=obj, **kwargs)
+
+        class JSONForm (BaseForm):
+            def __init__(self, *args, **kwargs):
+                super(JSONForm, self).__init__(*args, **kwargs)
+                self.fields['data'].widget = PrettyAceWidget(mode='json', width='100%')
+
+            def clean_data(self):
+                data = self.cleaned_data['data']
+                try:
+                    json.loads(data)
+                except ValueError as e:
+                    raise ValidationError(e)
+                return data
+
+        return JSONForm
 
     def save_model(self, request, obj, form, change):
         # Make changes through the admin silently.
