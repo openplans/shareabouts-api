@@ -61,6 +61,7 @@ django-nose
 mock
 mock_django
 django-debug-toolbar==0.11.0
+raven==4.2.1  # For Sentry error logging
 
 
 # - - - - - - - - - - - - - - - -

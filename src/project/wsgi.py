@@ -29,6 +29,6 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "project.settings")
 from django.core.wsgi import get_wsgi_application
 application = get_wsgi_application()
 
-# Apply WSGI middleware here.
-# from helloworld.wsgi import HelloWorldApplication
-# application = HelloWorldApplication(application)
+# Send errors to Sentry
+from raven.contrib.django.raven_compat.middleware.wsgi import Sentry
+application = Sentry(application)
