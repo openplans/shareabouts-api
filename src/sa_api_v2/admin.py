@@ -96,7 +96,7 @@ class SubmittedThingAdmin(admin.OSMGeoAdmin):
         class JSONForm (BaseForm):
             def __init__(self, *args, **kwargs):
                 super(JSONForm, self).__init__(*args, **kwargs)
-                self.fields['data'].widget = PrettyAceWidget(mode='json', width='100%')
+                self.fields['data'].widget = PrettyAceWidget(mode='json', width='100%', wordwrap=True, theme='jsoneditor')
 
             def clean_data(self):
                 data = self.cleaned_data['data']
