@@ -91,22 +91,19 @@ class SubmittedThingAdmin(admin.OSMGeoAdmin):
         return qs
 
     def get_form(self, request, obj=None, **kwargs):
-        BaseForm = super(SubmittedThingAdmin, self).get_form(request, obj=obj, **kwargs)
+        FormWithJSONCleaning = super(SubmittedThingAdmin, self).get_form(request, obj=obj, **kwargs)
 
-        class JSONForm (BaseForm):
-            def __init__(self, *args, **kwargs):
-                super(JSONForm, self).__init__(*args, **kwargs)
-                self.fields['data'].widget = PrettyAceWidget(mode='json', width='100%', wordwrap=True, theme='jsoneditor')
+        def clean_json_blob(form):
+            data = form.cleaned_data['data']
+            try:
+                json.loads(data)
+            except ValueError as e:
+                raise ValidationError(e)
+            return data
 
-            def clean_data(self):
-                data = self.cleaned_data['data']
-                try:
-                    json.loads(data)
-                except ValueError as e:
-                    raise ValidationError(e)
-                return data
-
-        return JSONForm
+        FormWithJSONCleaning.clean_data = clean_json_blob
+        FormWithJSONCleaning.base_fields['data'].widget = PrettyAceWidget(mode='json', width='100%', wordwrap=True, theme='jsoneditor')
+        return FormWithJSONCleaning
 
     def save_model(self, request, obj, form, change):
         # Make changes through the admin silently.
