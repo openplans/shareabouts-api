@@ -19,6 +19,11 @@ KEY_SIZE = 32
 
 
 class FakeDataSetManager (object):
+    '''
+    ApiKey <-> DataSet used to be a many-to-many relationship. It is now many-
+    to-one, but for backwards compatibility we are keeping around the datasets
+    member for now. This class is used to emulate a RelatedManager.
+    '''
     def __init__(self, obj=None):
         self.obj = obj
 
@@ -38,11 +43,10 @@ class ApiKey(models.Model):
     logged_ip = models.IPAddressField(blank=True, null=True)
     last_used = models.DateTimeField(blank=True, default=now)
 
-    # I think we are going to only have one key per dataset,
-    # but that could change on either end.
     dataset = models.ForeignKey('sa_api_v1.DataSet', blank=True,
                                       related_name='api_keys')
 
+    # A fake related manager for backwards compatibility
     datasets = FakeDataSetManager()
 
     class Meta:

@@ -37,13 +37,6 @@ class ApiKey(models.Model):
         self.logged_ip = None
         self.save()
 
-    # @property
-    # def dataset(self):
-    #     try:
-    #         return self.datasets.all()[0]
-    #     except IndexError:
-    #         return None
-
     @property
     def owner(self):
         try:
