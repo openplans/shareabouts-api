@@ -74,6 +74,11 @@ class Origin(models.Model):
     def get_permissions(self):
         return self.permissions
 
+    def save(self, *args, **kwargs):
+        if self.logged_ip == '':
+            self.logged_ip = None
+        return super(Origin, self).save(*args, **kwargs)
+
 
 def create_data_permissions(sender, instance, created, **kwargs):
     """
