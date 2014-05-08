@@ -65,6 +65,7 @@ urlpatterns = patterns('sa_api_v2',
 
     # authentication / association
 
+    url(r'^users/login/error/$', views.remote_social_login_error, name='remote-social-login-error'),
     url(r'^users/login/(?P<backend>[^/]+)/$', views.remote_social_login, name='remote-social-login'),
     url(r'^users/logout/$', views.remote_logout, name='remote-logout'),
 

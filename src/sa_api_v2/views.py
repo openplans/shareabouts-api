@@ -1500,15 +1500,20 @@ def capture_referer(view_func):
     @wraps(view_func)
     def wrapper(request, *args, **kwargs):
         client_next = request.GET.get('next', '')
+        client_error_next = request.GET.get('error_next', client_next)
         referer = request.META.get('HTTP_REFERER')
 
         if referer:
             client_next = build_relative_url(referer, client_next)
+            client_error_next = build_relative_url(referer, client_error_next)
         else:
             return HttpResponseBadRequest('Referer header must be set.')
 
         request.GET = request.GET.copy()
         request.GET['next'] = reverse('redirector') + '?' + urlencode({'target': client_next})
+
+        request.session['client_next'] = client_next
+        request.session['client_error_next'] = client_error_next
 
         return view_func(request, *args, **kwargs)
 
@@ -1517,15 +1522,19 @@ def capture_referer(view_func):
 remote_social_login = capture_referer(social_views.auth)
 remote_logout = capture_referer(auth_views.logout)
 
+def remote_social_login_error(request):
+    error_redirect_url = request.session.get('client_error_next')
+    return redirector(request, target=error_redirect_url)
+
 # social_auth_login = use_social_auth_headers(social_views.auth)
 # social_auth_complete = use_social_auth_headers(social_views.complete)
 
-def redirector(request):
+def redirector(request, target=None):
     """
     Simple view to redirect to external URL.
     """
     try:
-        target = request.GET['target']
+        target = target if target is not None else request.GET['target']
     except KeyError:
         return HttpResponseBadRequest('No target specified to redirect to.')
 
