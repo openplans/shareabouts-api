@@ -9,6 +9,7 @@ from django.contrib.admin import SimpleListFilter
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.forms import UserChangeForm as BaseUserChangeForm
 from django.contrib.gis import admin
+from django.core.urlresolvers import reverse
 from django.forms import ValidationError
 from django_ace import AceWidget
 from .apikey.models import ApiKey
@@ -114,12 +115,28 @@ class InlineApiKeyAdmin(admin.StackedInline):
     model = ApiKey
     # raw_id_fields = ['apikey']
     extra = 0
+    readonly_fields = ('edit_url',)
+
+    def edit_url(self, instance):
+        if instance.pk is None:
+            return '(You must save your dataset before you can edit the permissions on your API key.)'
+        else:
+            return '<a href="%s"><strong>Edit permissions</strong></a>' % (reverse('admin:apikey_apikey_change', args=[instance.pk]))
+    edit_url.allow_tags = True
 
 
 class InlineOriginAdmin(admin.StackedInline):
     model = Origin
     # raw_id_fields = ['origin']
     extra = 0
+    readonly_fields = ('edit_url',)
+
+    def edit_url(self, instance):
+        if instance.pk is None:
+            return '(You must save your dataset before you can edit the permissions on your origin.)'
+        else:
+            return '<a href="%s"><strong>Edit permissions</strong></a>' % (reverse('admin:cors_origin_change', args=[instance.pk]))
+    edit_url.allow_tags = True
 
 
 class InlineGroupAdmin(admin.StackedInline):
