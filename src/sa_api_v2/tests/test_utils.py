@@ -5,11 +5,24 @@
 # Replace this with more appropriate tests for your application.
 # """
 
-# from django.test import TestCase
+from django.test import TestCase
+from django.contrib.gis.measure import D
 # from nose.tools import istest
-# from nose.tools import assert_equal, assert_false, assert_true, assert_raises
-# from .. import utils
+from nose.tools import assert_equal, assert_false, assert_true, assert_raises
+from .. import utils
 
+
+class TestToDistance (TestCase):
+    def test_no_units_assumes_meters(self):
+        d = utils.to_distance('123.45')
+        assert_equal(d, D(m=123.45))
+
+    def test_units_are_respected(self):
+        d = utils.to_distance('123.45 km')
+        assert_equal(d, D(km=123.45))
+
+        d = utils.to_distance('123.45mi')
+        assert_equal(d, D(mi=123.45))
 
 # class TestToWkt (object):
 

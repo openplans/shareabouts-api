@@ -31,8 +31,8 @@ from . import cors
 from . import utils
 from .cache import cache_buffer
 from .params import (INCLUDE_INVISIBLE_PARAM, INCLUDE_PRIVATE_PARAM,
-    INCLUDE_SUBMISSIONS_PARAM, NEAR_PARAM, FORMAT_PARAM, PAGE_PARAM,
-    PAGE_SIZE_PARAM, CALLBACK_PARAM)
+    INCLUDE_SUBMISSIONS_PARAM, NEAR_PARAM, DISTANCE_PARAM, FORMAT_PARAM,
+    PAGE_PARAM, PAGE_SIZE_PARAM, CALLBACK_PARAM)
 from functools import wraps
 from itertools import groupby
 from collections import defaultdict
@@ -407,7 +407,8 @@ class FilteredResourceMixin (object):
         # These filters will have been applied when constructing the queryset
         special_filters = set([FORMAT_PARAM, PAGE_PARAM, PAGE_SIZE_PARAM(),
             INCLUDE_SUBMISSIONS_PARAM, INCLUDE_PRIVATE_PARAM,
-            INCLUDE_INVISIBLE_PARAM, NEAR_PARAM, CALLBACK_PARAM(self)])
+            INCLUDE_INVISIBLE_PARAM, NEAR_PARAM, DISTANCE_PARAM,
+            CALLBACK_PARAM(self)])
 
         for key, values in self.request.GET.iterlists():
             if key not in special_filters:
@@ -441,6 +442,18 @@ class LocatedResourceMixin (object):
             except ValueError:
                 raise QueryError(detail='Invalid parameter for "%s": %r' % (NEAR_PARAM, self.request.GET[NEAR_PARAM]))
             queryset = queryset.distance(reference).order_by('distance')
+
+        if DISTANCE_PARAM in self.request.GET:
+            if NEAR_PARAM not in self.request.GET:
+                raise QueryError(detail='You must specify a "%s" parameter when using "%s"' % (NEAR_PARAM, DISTANCE_PARAM))
+
+            try:
+                max_dist = utils.to_distance(self.request.GET[DISTANCE_PARAM])
+            except ValueError:
+                raise QueryError(detail='Invalid parameter for "%s": %r' % (DISTANCE_PARAM, self.request.GET[DISTANCE_PARAM]))
+            # Since the NEAR_PARAM is already in the query parameters, we can
+            # use the `reference` geometry here.
+            queryset = queryset.filter(geometry__distance_lt=(reference, max_dist))
 
         return queryset
 
@@ -768,6 +781,15 @@ class PlaceListView (CachedResourceMixin, LocatedResourceMixin, OwnedResourceMix
         [GeoJSON](http://www.geojson.org/geojson-spec.html) or
         [WKT](http://en.wikipedia.org/wiki/Well-known_text), or as a
         comma-separated latitude and longitude, if it is a point.
+
+      * `distance_lt=<distance>`
+
+        When used in conjunction with the `near` parameter, can filter the
+        places returned to only those within the given distance of the
+        reference geometry. The distance may just be a number, or a number
+        with a unit string -- e.g., `123`, `123.45`, `123 km`, `123.45 mi`.
+        If only a number is specified, the unit meters (m) is assumed. For all
+        available units, see [the GeoDjango docs](https://docs.djangoproject.com/en/dev/ref/contrib/gis/measure/#supported-units).
 
       * `<attr>=<value>`
 

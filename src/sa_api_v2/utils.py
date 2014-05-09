@@ -1,5 +1,7 @@
+import re
 import time
 from django.contrib.gis.geos import GEOSGeometry, Point
+from django.contrib.gis.measure import D
 from functools import wraps
 
 def isiterable(obj):
@@ -9,6 +11,19 @@ def isiterable(obj):
         return False
     else:
         return True
+
+def to_distance(string):
+    try:
+        number = float(string)
+        units = 'm'
+    except ValueError:
+        match = re.match(r'([+-]?\d*\.?\d+)\s*([A-Za-z_]+)', string)
+        if not match:
+            raise ValueError('%r is not a valid distance.')
+        number = float(match.group(1))
+        units = match.group(2)
+
+    return D(**{units: number})
 
 def to_geom(string):
     """
@@ -33,14 +48,14 @@ def memo(f):
     """
     A memoization decorator. Borrowed and modified from
     http://code.activestate.com/recipes/576563-cached-property/
-    
+
     You can create a memoized property like:
-    
+
         @property
         @memo
         def attr(self):
             ...
-    
+
     """
     @wraps(f)
     def get(self, *args, **kwargs):
