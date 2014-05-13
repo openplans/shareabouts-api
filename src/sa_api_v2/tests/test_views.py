@@ -71,7 +71,7 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
         )
 
         self.apikey = ApiKey.objects.create(key='abc', dataset=self.dataset)
-        self.ds_origin = Origin.objects.create(pattern='openplans.github.com', dataset=self.dataset)
+        self.ds_origin = Origin.objects.create(pattern='http://openplans.github.com', dataset=self.dataset)
 
         self.request_kwargs = {
           'owner_username': self.owner.username,
