@@ -64,6 +64,30 @@ class JSONPCallbackNegotiation (DefaultContentNegotiation):
         return super(JSONPCallbackNegotiation, self).select_renderer(request, renderers, format_suffix)
 
 
+class XDomainRequestCompatNegotiation (DefaultContentNegotiation):
+    """
+    In IE 8 and 9 CORS is supported with the XDomainRequest object. However,
+    POST requests will only be sent with a content-type header of text/plain.
+    In this case, we just want to "correct" this to be JSON.
+    """
+
+    def select_parser(self, request, parsers):
+        # For cross-origin requests (with an Origin header), if we get a plain
+        # text content type (or no content type at all), then assume we are
+        # dealing with an XDomainRequest and the content should be JSON.
+        if 'HTTP_ORIGIN' in request.META and request.META.get('CONTENT_TYPE', '') in ('text/plain', ''):
+            request.META['CONTENT_TYPE'] = 'application/json'
+
+            # Also set this semi-hidden variable on the request, as it has
+            # already been set and needs to be calculated again.
+            request._content_type = 'application/json'
+        return super(XDomainRequestCompatNegotiation, self).select_parser(request, parsers)
+
+
+class ShareaboutsContentNegotiation (JSONPCallbackNegotiation, XDomainRequestCompatNegotiation):
+    pass
+
+
 ###############################################################################
 #
 # Authentication (that doesn't require an extra model)
@@ -475,7 +499,7 @@ class OwnedResourceMixin (ClientAuthenticationMixin, CorsEnabledMixin):
     permission_classes = (IsOwnerOrReadOnly, IsLoggedInOwnerOrPublicDataOnly, IsAllowedByDataPermissions)
     authentication_classes = (authentication.BasicAuthentication, ShareaboutsSessionAuth)
     client_authentication_classes = (apikey.auth.ApiKeyAuthentication, cors.auth.OriginAuthentication)
-    content_negotiation_class = JSONPCallbackNegotiation
+    content_negotiation_class = ShareaboutsContentNegotiation
 
     owner_username_kwarg = 'owner_username'
     dataset_slug_kwarg = 'dataset_slug'
@@ -1304,7 +1328,7 @@ class AdminDataSetListView (CachedResourceMixin, DataSetListMixin, generics.List
     """
 
     permission_classes = (IsLoggedInAdmin,)
-    content_negotiation_class = JSONPCallbackNegotiation
+    content_negotiation_class = ShareaboutsContentNegotiation
 
 
 class AttachmentListView (OwnedResourceMixin, FilteredResourceMixin, generics.ListCreateAPIView):
@@ -1464,7 +1488,7 @@ class UserInstanceView (OwnedResourceMixin, generics.RetrieveAPIView):
 
 class CurrentUserInstanceView (CorsEnabledMixin, views.APIView):
     renderer_classes = (JSONRenderer, JSONPRenderer, BrowsableAPIRenderer, renderers.PaginatedCSVRenderer)
-    content_negotiation_class = JSONPCallbackNegotiation
+    content_negotiation_class = ShareaboutsContentNegotiation
 
     def get(self, request):
         if request.user.is_authenticated():
@@ -1476,7 +1500,7 @@ class CurrentUserInstanceView (CorsEnabledMixin, views.APIView):
 
 class SessionKeyView (CorsEnabledMixin, views.APIView):
     renderer_classes = (JSONRenderer, JSONPRenderer, BrowsableAPIRenderer)
-    content_negotiation_class = JSONPCallbackNegotiation
+    content_negotiation_class = ShareaboutsContentNegotiation
 
     def get(self, request):
         return Response({

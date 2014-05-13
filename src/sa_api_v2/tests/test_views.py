@@ -851,6 +851,8 @@ class TestPlaceListView (APITestMixin, TestCase):
           Submission.objects.create(parent=self.likes, dataset=self.dataset, data='{}'),
         ]
 
+        self.ds_origin = Origin.objects.create(pattern='http://openplans.github.com', dataset=self.dataset)
+
         dataset2 = DataSet.objects.create(slug='ds2', owner=self.owner)
         place2 = Place.objects.create(
           dataset=dataset2,
@@ -1349,6 +1351,28 @@ class TestPlaceListView (APITestMixin, TestCase):
 
         # Check that visible is false
         self.assertEqual(data.get('properties').get('visible'), False)
+
+    def test_POST_response_like_XDomainRequest(self):
+        place_data = json.dumps({
+            'properties': {
+                'submitter_name': 'Andy',
+                'type': 'Park Bench',
+                'private-secrets': 'The mayor loves this bench',
+            },
+            'type': 'Feature',
+            'geometry': {"type": "Point", "coordinates": [-73.99, 40.75]}
+        })
+
+        #
+        # View should create the place when origin is supplied, even without a
+        # content type.
+        #
+        request = self.factory.post(self.path, data=place_data, content_type='')
+        request.META['HTTP_ORIGIN'] = self.ds_origin.pattern
+        response = self.view(request, **self.request_kwargs)
+
+        # Check that the request was successful
+        self.assertStatusCode(response, 201)
 
 
 class TestSubmissionInstanceView (APITestMixin, TestCase):
