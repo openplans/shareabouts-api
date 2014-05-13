@@ -61,8 +61,12 @@ class Origin(models.Model):
         if pattern == '*':
             return True
 
+        # No scheme specified; assume all HTTP[S]
+        if '://' not in pattern:
+            pattern = 'http*://' + pattern
+
         # No wild-cards; literal
-        elif '*' not in pattern:
+        if '*' not in pattern:
             return pattern == origin
 
         # Wildcards; convert to regex
