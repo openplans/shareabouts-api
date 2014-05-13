@@ -351,11 +351,13 @@ class DataPermission (models.Model):
         if self.can_update: abilities.append('update')
         if self.can_destroy: abilities.append('destroy')
 
+        things = self.submission_set if self.submission_set.strip() not in ('', '*') else 'anything'
+
         if abilities:
             if len(abilities) > 1: abilities[-1] = 'or ' + abilities[-1]
-            return 'can ' + ', '.join(abilities) + ' ' + (self.submission_set or 'anything')
+            return 'can ' + ', '.join(abilities) + ' ' + things
         else:
-            return 'can not create, retrieve, update, or destroy ' + (self.submission_set or 'anything') + ' at all'
+            return 'can not create, retrieve, update, or destroy ' + things + ' at all'
 
     def save(self, *args, **kwargs):
         if self.priority is None:
