@@ -1,5 +1,5 @@
-Authenticatingn Users with Facebook or Twitter
-==============================================
+Authenticating Users with Facebook or Twitter
+=============================================
 
 Users do not log in to your specific app with Facebook or Twitter; instead they log in to the Shareabouts API server. The API server takes care of handling the communication between Facebook and Twitter. Just point your users at `http://data.shareabouts.org/api/v2/users/login/facebook/` or `http://data.shareabouts.org/api/v2/users/login/twitter/`, respectively.
 
@@ -35,4 +35,4 @@ This endpoint provides:
   * `id`
   * `username`
 
-CORS is enabled on this endpointn as well, so you can also access the information via AJAX.
+CORS is enabled on this endpoint as well, so you can also access the information via AJAX.
