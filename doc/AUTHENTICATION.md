@@ -17,7 +17,7 @@ Accessing the Current User
 
 You can access the current user's information at `http://data.shareabouts.org/api/v2/users/current`. If no user is logged in this will simply return `null`. It may be useful to use this through JSON-P if you require user information when your page loads. For example:
 
-   <script>
+    <script>
       var setUser = function(data) {
         if (data) {
           $('#user-info').html(
