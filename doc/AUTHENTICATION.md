@@ -35,4 +35,17 @@ This endpoint provides:
   * `id`
   * `username`
 
-CORS is enabled on this endpoint as well, so you can also access the information via AJAX.
+CORS is enabled on this endpoint as well, so you can also access the information via AJAX. For AJAX requests, be sure to include the `withCredentials` XHR flag, e.g.:
+
+    function initUser() {
+      $.ajax({
+        url: 'http://data.shareabouts.org/api/v2/users/current',
+        xhrFields: {
+          withCredentials: true
+        },
+        success: function(userData) {
+          if (userData) console.log(userData);
+          else console.log('No user data');
+        }
+      });
+    };
