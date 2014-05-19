@@ -8,7 +8,8 @@ from django.core.urlresolvers import reverse
 # from mock import patch
 # from nose.tools import (istest, assert_equal, assert_not_equal, assert_in,
 #                         assert_raises)
-from ..models import DataSet, User, SubmittedThing, Action, Place, SubmissionSet, Submission, DataSetPermission, check_data_permission
+from ..models import (DataSet, User, SubmittedThing, Action, Place, SubmissionSet, Submission,
+    DataSetPermission, check_data_permission, DataIndex, IndexedValue)
 from ..apikey.models import ApiKey
 # from ..views import SubmissionCollectionView
 # from ..views import raise_error_if_not_authenticated
@@ -58,6 +59,99 @@ class TestSubmittedThing (TestCase):
         st.save(silent=True)
         qs = Action.objects.all()
         self.assertEqual(qs.count(), 1)
+
+
+class TestDataIndexes (TestCase):
+    def setUp(self):
+        User.objects.all().delete()
+
+        self.owner = User.objects.create(username='myuser')
+        self.dataset = DataSet.objects.create(slug='data',
+                                              owner_id=self.owner.id)
+
+    def tearDown(self):
+        User.objects.all().delete()  # Everything should cascade from owner
+
+    def test_indexed_values_are_indexed_when_thing_is_saved(self):
+        self.dataset.indexes.add(DataIndex(attr_name='index1'))
+        self.dataset.indexes.add(DataIndex(attr_name='index2'))
+
+        st1 = SubmittedThing(dataset=self.dataset)
+        st1.data = '{"index1": "value1", "index2": 2, "freetext": "This is an unindexed value."}'
+        st1.save()
+
+        indexed_values = IndexedValue.objects.filter(index__dataset=self.dataset)
+        self.assertEqual(indexed_values.count(), 2)
+        self.assertEqual(set([value.value for value in indexed_values]), set(['value1', '2']))
+
+    def test_indexed_values_are_indexed_when_index_is_saved(self):
+        st1 = SubmittedThing(dataset=self.dataset)
+        st1.data = '{"index1": "value1", "index2": 2, "freetext": "This is an unindexed value."}'
+        st1.save()
+
+        self.dataset.indexes.add(DataIndex(attr_name='index1'))
+        self.dataset.indexes.add(DataIndex(attr_name='index2'))
+
+        indexed_values = IndexedValue.objects.filter(index__dataset=self.dataset)
+        self.assertEqual(indexed_values.count(), 2)
+        self.assertEqual(set([value.value for value in indexed_values]), set(['value1', '2']))
+
+    def test_get_returns_the_true_value_of_an_indexed_value(self):
+        st1 = SubmittedThing(dataset=self.dataset)
+        st1.data = '{"index1": "value1", "index2": 2, "freetext": "This is an unindexed value."}'
+        st1.save(reindex=False)
+
+        index1 = DataIndex(attr_name='index1', dataset=self.dataset)
+        index1.save(reindex=False)
+
+        index2 = DataIndex(attr_name='index2', dataset=self.dataset)
+        index2.save(reindex=False)
+
+        IndexedValue.objects.create(value='value1', thing=st1, index=index1)
+        IndexedValue.objects.create(value=2, thing=st1, index=index2)
+
+        indexed_values = IndexedValue.objects.filter(index__dataset=self.dataset)
+        self.assertEqual(indexed_values.count(), 2)
+        self.assertEqual(set([value.get() for value in indexed_values]), set(['value1', 2]))
+
+    def test_indexed_value_get_raises_KeyError_if_value_is_not_found(self):
+        st = SubmittedThing(dataset=self.dataset)
+        st.data = '{"index1": "value1", "freetext": "This is an unindexed value."}'
+        st.save(reindex=False)
+
+        index = DataIndex(attr_name='index2', dataset=self.dataset)
+        index.save(reindex=False)
+
+        indexed_value = IndexedValue.objects.create(value=2, thing=st, index=index)
+
+        with self.assertRaises(KeyError):
+            indexed_value.get()
+
+    def test_data_values_are_updated_when_saved(self):
+        self.dataset.indexes.add(DataIndex(attr_name='index'))
+
+        st1 = SubmittedThing(dataset=self.dataset)
+        st1.data = '{"index": "value1", "freetext": "This is an unindexed value."}'
+        st1.save()
+        st1.data = '{"index": "value2", "freetext": "This is an unindexed value."}'
+        st1.save()
+
+        indexed_values = IndexedValue.objects.filter(index__dataset=self.dataset)
+        self.assertEqual(indexed_values.count(), 1)
+        self.assertEqual(set([value.value for value in indexed_values]), set(['value2']))
+
+    def test_data_values_are_deleted_when_removed(self):
+        self.dataset.indexes.add(DataIndex(attr_name='index1'))
+        self.dataset.indexes.add(DataIndex(attr_name='index2'))
+
+        st1 = SubmittedThing(dataset=self.dataset)
+        st1.data = '{"index1": "value1", "index2": 2, "freetext": "This is an unindexed value."}'
+        st1.save()
+        st1.data = '{"index2": 2, "freetext": "This is an unindexed value."}'
+        st1.save()
+
+        indexed_values = IndexedValue.objects.filter(index__dataset=self.dataset)
+        self.assertEqual(indexed_values.count(), 1)
 
 
 class TestCacheClearingModel (TestCase):
