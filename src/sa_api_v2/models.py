@@ -320,6 +320,9 @@ class DataIndex (models.Model):
     attr_name = models.CharField(max_length=100, db_index=True, verbose_name='Attribute name')
     attr_type = models.CharField(max_length=10, choices=ATTR_TYPE_CHOICES, default='string', verbose_name='Attribute type')
 
+    def __unicode__(self):
+        return self.attr_name
+
     def index_things(self):
         things = self.dataset.things.all()
         for thing in things:
