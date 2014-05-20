@@ -1,3 +1,4 @@
+import json
 from django.test import TestCase
 # from django.test.client import Client
 from django.test.client import RequestFactory
@@ -95,6 +96,32 @@ class TestDataIndexes (TestCase):
         indexed_values = IndexedValue.objects.filter(index__dataset=self.dataset)
         self.assertEqual(indexed_values.count(), 2)
         self.assertEqual(set([value.value for value in indexed_values]), set(['value1', '2']))
+
+    def test_user_can_query_by_indexed_value(self):
+        st1 = SubmittedThing(dataset=self.dataset)
+        st1.data = '{"index1": "value1", "index2": 2, "somefreetext": "This is an unindexed value."}'
+        st1.save()
+
+        st2 = SubmittedThing(dataset=self.dataset)
+        st2.data = '{"index1": "value_not1", "index2": "2", "morefreetext": "This is an unindexed value."}'
+        st2.save()
+
+        st3 = SubmittedThing(dataset=DataSet.objects.create(slug='temp-dataset', owner=self.owner))
+        st3.data = '{"index1": "value1", "index2": 2}'
+        st3.save()
+
+        self.dataset.indexes.add(DataIndex(attr_name='index1'))
+        self.dataset.indexes.add(DataIndex(attr_name='index2'))
+
+        # index1 only has one value matching 'value1' in self.dataset
+        qs = self.dataset.things.filter_by_index('index1', 'value1')
+        self.assertEqual(qs.count(), 1)
+        self.assertEqual(json.loads(qs[0].data)['index1'], 'value1')
+
+        # index2 has two values matching 2 in self.dataset, even though one's
+        # a string and one's a number
+        qs = self.dataset.things.filter_by_index('index1', 'value2')
+        self.assertEqual(qs.count(), 2)
 
     def test_get_returns_the_true_value_of_an_indexed_value(self):
         st1 = SubmittedThing(dataset=self.dataset)
