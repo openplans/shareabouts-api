@@ -17,6 +17,7 @@ from rest_framework.response import Response
 from rest_framework.renderers import JSONRenderer, JSONPRenderer, BrowsableAPIRenderer
 from rest_framework.request import Request
 from rest_framework.exceptions import APIException
+from rest_framework_bulk import generics as bulk_generics
 from social.apps.django_app import views as social_views
 from mock import patch
 from . import apikey
@@ -769,7 +770,7 @@ class PlaceInstanceView (CachedResourceMixin, LocatedResourceMixin, OwnedResourc
         return obj
 
 
-class PlaceListView (CachedResourceMixin, LocatedResourceMixin, OwnedResourceMixin, FilteredResourceMixin, generics.ListCreateAPIView):
+class PlaceListView (CachedResourceMixin, LocatedResourceMixin, OwnedResourceMixin, FilteredResourceMixin, bulk_generics.ListCreateBulkUpdateAPIView):
     """
 
     GET
@@ -849,6 +850,13 @@ class PlaceListView (CachedResourceMixin, LocatedResourceMixin, OwnedResourceMix
         if INCLUDE_INVISIBLE_PARAM not in self.request.GET:
             queryset = queryset.filter(visible=True)
 
+        # If we're updating, limit the queryset to the items that are being
+        # updated.
+        if self.request.method.upper() == 'PUT':
+            data = self.request.DATA
+            ids = [obj['id'] for obj in data if 'id' in obj]
+            queryset = queryset.filter(pk__in=ids)
+
         queryset = queryset.filter(dataset=dataset)\
             .select_related('dataset', 'dataset__owner', 'submitter')\
             .prefetch_related(
@@ -869,6 +877,18 @@ class PlaceListView (CachedResourceMixin, LocatedResourceMixin, OwnedResourceMix
                 'submission_sets__children__attachments')
 
         return queryset
+
+    def get_serializer(self, instance=None, data=None,
+                       files=None, many=False, partial=False):
+        """
+        Override GenericAPIView.get_serializer to pass in allow_add_remove
+        """
+        serializer_class = self.get_serializer_class()
+        context = self.get_serializer_context()
+        kwargs = {'allow_add_remove': True} if many else {}
+        return serializer_class(instance, data=data, files=files,
+                                many=many, partial=partial, context=context,
+                                **kwargs)
 
 
 class SubmissionInstanceView (CachedResourceMixin, OwnedResourceMixin, generics.RetrieveUpdateDestroyAPIView):

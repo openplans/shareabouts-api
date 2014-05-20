@@ -1203,6 +1203,153 @@ class TestPlaceListView (APITestMixin, TestCase):
         final_num_places = Place.objects.all().count()
         self.assertEqual(final_num_places, start_num_places + 1)
 
+    def test_PUT_creates_in_bulk(self):
+        # Create a couple bogus places so that we can be sure we're not
+        # inadvertantly deleting them
+        Place.objects.create(dataset=self.dataset, geometry='POINT(0 0)')
+        Place.objects.create(dataset=self.dataset, geometry='POINT(0 0)')
+
+        # Make some data that will update the place, and create another
+        place_data = json.dumps([
+            {
+                'properties': {
+                    'submitter_name': 'Andy',
+                    'type': 'Park Bench',
+                    'private-secrets': 'The mayor loves this bench',
+                },
+                'type': 'Feature',
+                'geometry': {"type": "Point", "coordinates": [-73.99, 40.75]}
+            },
+            {
+                'properties': {
+                    'submitter_name': 'Mjumbe',
+                    'type': 'Street Light',
+                    'private-secrets': 'Helps with street safety, but not as much as storefronts do.',
+                },
+                'type': 'Feature',
+                'geometry': {"type": "Point", "coordinates": [-73.98, 40.76]}
+            },
+        ])
+        start_num_places = Place.objects.all().count()
+
+        #
+        # View should 401 when trying to update when not authenticated
+        #
+        request = self.factory.put(self.path, data=place_data, content_type='application/json')
+        response = self.view(request, **self.request_kwargs)
+        self.assertStatusCode(response, 401)
+
+        #
+        # View should update the places when owner is authenticated
+        #
+        request = self.factory.put(self.path, data=place_data, content_type='application/json')
+        request.META[KEY_HEADER] = self.apikey.key
+
+        response = self.view(request, **self.request_kwargs)
+
+        data_list = json.loads(response.rendered_content)['features']
+
+        # Check that the request was successful
+        self.assertStatusCode(response, 200)
+        self.assertEqual(len(data_list), 2)
+
+        ### Check that we actually created the places
+        final_num_places = Place.objects.all().count()
+        self.assertEqual(final_num_places, start_num_places + 2)
+
+    def test_PUT_response_creates_and_updates_at_once(self):
+        # Create a couple bogus places so that we can be sure we're not
+        # inadvertantly deleting them
+        Place.objects.create(dataset=self.dataset, geometry='POINT(0 0)')
+        Place.objects.create(dataset=self.dataset, geometry='POINT(0 0)')
+
+        # Create a place
+        place = Place.objects.create(dataset=self.dataset, geometry='POINT(0 0)')
+
+        # Make some data that will update the place, and create another
+        place_data = json.dumps([
+            {
+                'properties': {
+                    'submitter_name': 'Andy',
+                    'type': 'Park Bench',
+                    'private-secrets': 'The mayor loves this bench',
+                    'id': place.id,
+                    'url': 'http://testserver/api/v2/aaron/datasets/ds/places/%s' % (place.id,)
+                },
+                'type': 'Feature',
+                'id': place.id,
+                'geometry': {"type": "Point", "coordinates": [-73.99, 40.75]}
+            },
+            {
+                'properties': {
+                    'submitter_name': 'Mjumbe',
+                    'type': 'Street Light',
+                    'private-secrets': 'Helps with street safety, but not as much as storefronts do.',
+                },
+                'type': 'Feature',
+                'geometry': {"type": "Point", "coordinates": [-73.98, 40.76]}
+            },
+        ])
+        start_num_places = Place.objects.all().count()
+
+        #
+        # View should 401 when trying to update when not authenticated
+        #
+        request = self.factory.put(self.path, data=place_data, content_type='application/json')
+        response = self.view(request, **self.request_kwargs)
+        self.assertStatusCode(response, 401)
+
+        #
+        # View should update the places when owner is authenticated
+        #
+        request = self.factory.put(self.path, data=place_data, content_type='application/json')
+        request.META[KEY_HEADER] = self.apikey.key
+
+        response = self.view(request, **self.request_kwargs)
+
+        data_list = json.loads(response.rendered_content)['features']
+
+        # Check that the request was successful
+        self.assertStatusCode(response, 200)
+        self.assertEqual(len(data_list), 2)
+
+        ### Check the updated item
+        data = [item for item in data_list if item['id'] == place.id][0]
+
+        # Check that the data attributes have been incorporated into the
+        # properties
+        self.assertEqual(data['properties'].get('type'), 'Park Bench')
+        self.assertEqual(data['properties'].get('submitter_name'), 'Andy')
+
+        self.assertIn('submitter', data['properties'])
+        self.assertIsNone(data['properties']['submitter'])
+
+        # visible should be true by default
+        self.assert_(data['properties'].get('visible'))
+
+        # Check that geometry exists
+        self.assertIn('geometry', data)
+
+        # private-secrets is not special, but is private, so should not come
+        # back down
+        self.assertNotIn('private-secrets', data['properties'])
+
+        # Check that we actually created a place
+        final_num_places = Place.objects.all().count()
+        self.assertEqual(final_num_places, start_num_places + 1)
+
+        ### Check the created item
+        data = [item for item in data_list if item['id'] != place.id][0]
+
+        # Check that the data attributes have been incorporated into the
+        # properties
+        self.assertEqual(data['properties'].get('type'), 'Street Light')
+        self.assertEqual(data['properties'].get('submitter_name'), 'Mjumbe')
+
+        ### Check that we actually created the places
+        final_num_places = Place.objects.all().count()
+        self.assertEqual(final_num_places, start_num_places + 1)
+
     def test_POST_response_with_submitter(self):
         place_data = json.dumps({
             'properties': {
