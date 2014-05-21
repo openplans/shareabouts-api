@@ -955,7 +955,7 @@ class SubmissionInstanceView (CachedResourceMixin, OwnedResourceMixin, generics.
         return obj
 
 
-class SubmissionListView (CachedResourceMixin, OwnedResourceMixin, FilteredResourceMixin, generics.ListCreateAPIView):
+class SubmissionListView (CachedResourceMixin, OwnedResourceMixin, FilteredResourceMixin, bulk_generics.ListCreateBulkUpdateAPIView):
     """
 
     GET
@@ -1041,6 +1041,13 @@ class SubmissionListView (CachedResourceMixin, OwnedResourceMixin, FilteredResou
         if INCLUDE_INVISIBLE_PARAM not in self.request.GET:
             queryset = queryset.filter(visible=True)
 
+        # If we're updating, limit the queryset to the items that are being
+        # updated.
+        if self.request.method.upper() == 'PUT':
+            data = self.request.DATA
+            ids = [obj['id'] for obj in data if 'id' in obj]
+            queryset = queryset.filter(pk__in=ids)
+
         return queryset.filter(parent=submission_set)\
             .select_related(
                 'dataset',
@@ -1051,6 +1058,18 @@ class SubmissionListView (CachedResourceMixin, OwnedResourceMixin, FilteredResou
                 'parent__place__dataset__owner',
                 'submitter')\
             .prefetch_related('attachments', 'submitter__social_auth', 'submitter___groups')
+
+    def get_serializer(self, instance=None, data=None,
+                       files=None, many=False, partial=False):
+        """
+        Override GenericAPIView.get_serializer to pass in allow_add_remove
+        """
+        serializer_class = self.get_serializer_class()
+        context = self.get_serializer_context()
+        kwargs = {'allow_add_remove': True} if many else {}
+        return serializer_class(instance, data=data, files=files,
+                                many=many, partial=partial, context=context,
+                                **kwargs)
 
 
 class DataSetSubmissionListView (CachedResourceMixin, OwnedResourceMixin, FilteredResourceMixin, generics.ListAPIView):

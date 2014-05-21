@@ -684,7 +684,6 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
         # back down
         self.assertNotIn('private-secrets', data['properties'])
 
-
     def test_PUT_response_as_submitter(self):
         pass
         ## TODO: Use the SubmittedThingSerializer to implement the following
@@ -1979,7 +1978,6 @@ class TestSubmissionListView (APITestMixin, TestCase):
             set([s.pk for s in submissions[::2]])
         )
 
-
     def test_GET_csv_response(self):
         request = self.factory.get(self.path + '?format=csv')
         response = self.view(request, **self.request_kwargs)
@@ -2239,6 +2237,126 @@ class TestSubmissionListView (APITestMixin, TestCase):
         self.assertNotIn('private-email', data)
 
         # Check that we actually created a submission and set
+        final_num_submissions = Submission.objects.all().count()
+        self.assertEqual(final_num_submissions, start_num_submissions + 1)
+
+    def test_PUT_creates_in_bulk(self):
+        # Create a couple bogus places so that we can be sure we're not
+        # inadvertantly deleting them
+        Submission.objects.create(dataset=self.dataset, parent=self.comments)
+        Submission.objects.create(dataset=self.dataset, parent=self.comments)
+
+        # Make some data that will update the place, and create another
+        submission_data = json.dumps([
+            {
+                'submitter_name': 'Andy',
+                'private-email': 'abc@example.com',
+                'foo': 'bar'
+            },
+            {
+                'submitter_name': 'Mjumbe',
+                'private-email': 'def@example.com',
+                'foo': 'baz'
+            }
+        ])
+        start_num_submissions = Submission.objects.all().count()
+
+        #
+        # View should 401 when trying to update when not authenticated
+        #
+        request = self.factory.put(self.path, data=submission_data, content_type='application/json')
+        response = self.view(request, **self.request_kwargs)
+        self.assertStatusCode(response, 401)
+
+        #
+        # View should update the places when owner is authenticated
+        #
+        request = self.factory.put(self.path, data=submission_data, content_type='application/json')
+        request.META[KEY_HEADER] = self.apikey.key
+
+        response = self.view(request, **self.request_kwargs)
+
+        # Check that the request was successful
+        self.assertStatusCode(response, 200)
+        data_list = json.loads(response.rendered_content)
+
+        self.assertEqual(len(data_list), 2)
+
+        ### Check that we actually created the places
+        final_num_submissions = Submission.objects.all().count()
+        self.assertEqual(final_num_submissions, start_num_submissions + 2)
+
+    def test_PUT_response_creates_and_updates_at_once(self):
+        # Create a couple bogus places so that we can be sure we're not
+        # inadvertantly deleting them
+        Submission.objects.create(dataset=self.dataset, parent=self.comments)
+        Submission.objects.create(dataset=self.dataset, parent=self.comments)
+
+        # Create a submission
+        submission = Submission.objects.create(dataset=self.dataset, parent=self.comments)
+
+        # Make some data that will update the submission, and create another
+        submission_data = json.dumps([
+            {
+                'submitter_name': 'Andy',
+                'private-email': 'abc@example.com',
+                'foo': 'bar',
+                'id': submission.id,
+                'url': 'http://testserver/api/v2/aaron/datasets/ds/places/%s/comments/%s' % (self.place.id, submission.id)
+            },
+            {
+                'submitter_name': 'Mjumbe',
+                'private-email': 'def@example.com',
+                'foo': 'baz'
+            }
+        ])
+        start_num_submissions = Submission.objects.all().count()
+
+        #
+        # View should 401 when trying to update when not authenticated
+        #
+        request = self.factory.put(self.path, data=submission_data, content_type='application/json')
+        response = self.view(request, **self.request_kwargs)
+        self.assertStatusCode(response, 401)
+
+        #
+        # View should update the places when owner is authenticated
+        #
+        request = self.factory.put(self.path, data=submission_data, content_type='application/json')
+        request.META[KEY_HEADER] = self.apikey.key
+
+        response = self.view(request, **self.request_kwargs)
+
+        # Check that the request was successful
+        self.assertStatusCode(response, 200)
+        data_list = json.loads(response.rendered_content)
+
+        self.assertEqual(len(data_list), 2)
+
+        ### Check the updated item
+        data = [item for item in data_list if item['id'] == submission.id][0]
+
+        # Check that the data attributes have been incorporated into the
+        # properties
+        self.assertEqual(data.get('foo'), 'bar')
+        self.assertEqual(data.get('submitter_name'), 'Andy')
+
+        # visible should be true by default
+        self.assert_(data.get('visible'))
+
+        # private-secrets is not special, but is private, so should not come
+        # back down
+        self.assertNotIn('private-email', data)
+
+        ### Check the created item
+        data = [item for item in data_list if item['id'] != submission.id][0]
+
+        # Check that the data attributes have been incorporated into the
+        # properties
+        self.assertEqual(data.get('foo'), 'baz')
+        self.assertEqual(data.get('submitter_name'), 'Mjumbe')
+
+        ### Check that we actually created the places
         final_num_submissions = Submission.objects.all().count()
         self.assertEqual(final_num_submissions, start_num_submissions + 1)
 
