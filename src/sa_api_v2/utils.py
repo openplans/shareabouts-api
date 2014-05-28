@@ -3,6 +3,7 @@ import time
 from django.contrib.gis.geos import GEOSGeometry, Point
 from django.contrib.gis.measure import D
 from functools import wraps
+from urlparse import urlparse, urljoin
 
 def isiterable(obj):
     try:
@@ -93,3 +94,27 @@ def to_base(num, base):
         digits.insert(0, alphabet[remainder])
 
     return ''.join(digits)
+
+
+def build_relative_url(original_url, relative_path):
+    """
+    Given a source URL, create a full URL for the relative path. For example:
+
+    ('http://ex.co/pictures/silly/abc.png', '/home') --> 'http://ex.co/home'
+    ('http://ex.co/p/index.html', 'about.html') --> 'http://ex.co/p/about.html'
+    """
+    parsed_url = urlparse(original_url)
+
+    if relative_path.startswith('/'):
+        path_prefix = ''
+    elif parsed_url.path.endswith('/') or relative_path == '':
+        path_prefix = parsed_url.path
+    else:
+        path_prefix = parsed_url.path.rsplit('/', 1)[0] + '/'
+
+    if path_prefix:
+        full_path = path_prefix + relative_path
+    else:
+        full_path = relative_path
+
+    return urljoin(parsed_url.scheme + '://' + parsed_url.netloc, full_path)

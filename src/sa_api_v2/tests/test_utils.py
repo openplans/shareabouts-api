@@ -24,6 +24,33 @@ class TestToDistance (TestCase):
         d = utils.to_distance('123.45mi')
         assert_equal(d, D(mi=123.45))
 
+
+class TestBuildRelativeURL (TestCase):
+    def test_relative_path_with_leading_slash(self):
+        url = utils.build_relative_url('http://ex.co/pictures/silly/abc.png', '/home')
+        assert_equal(url, 'http://ex.co/home')
+
+    def test_relative_path_without_leading_slash(self):
+        url = utils.build_relative_url('http://ex.co/p/index.html', 'about.html')
+        assert_equal(url, 'http://ex.co/p/about.html')
+
+    def test_relative_path_empty(self):
+        url = utils.build_relative_url('http://ex.co/p/index.html', '')
+        assert_equal(url, 'http://ex.co/p/index.html')
+
+    def test_original_path_ends_with_slash(self):
+        url = utils.build_relative_url('http://ex.co/p/', 'about.html')
+        assert_equal(url, 'http://ex.co/p/about.html')
+
+    def test_leading_slash_beats_trailing_slash(self):
+        url = utils.build_relative_url('http://ex.co/pictures/silly/', '/home')
+        assert_equal(url, 'http://ex.co/home')
+
+    def test_original_path_empty(self):
+        url = utils.build_relative_url('', 'about.html')
+        assert_equal(url, '/about.html')
+
+
 # class TestToWkt (object):
 
 #     @istest

@@ -37,7 +37,6 @@ from .params import (INCLUDE_INVISIBLE_PARAM, INCLUDE_PRIVATE_PARAM,
 from functools import wraps
 from itertools import groupby
 from collections import defaultdict
-from urlparse import urlparse, urljoin
 from urllib import urlencode
 import re
 import ujson as json
@@ -1553,29 +1552,6 @@ class SessionKeyView (CorsEnabledMixin, views.APIView):
 # ---------------------------
 #
 
-def build_relative_url(original_url, relative_path):
-    """
-    Given a source URL, create a full URL for the relative path. For example:
-
-    ('http://ex.co/pictures/silly/abc.png', '/home') --> 'http://ex.co/home'
-    ('http://ex.co/p/index.html', 'about.html') --> 'http://ex.co/p/about.html'
-    """
-    parsed_url = urlparse(original_url)
-
-    if relative_path.startswith('/'):
-        path_prefix = ''
-    elif parsed_url.path.endswith('/') or relative_path == '':
-        path_prefix = parsed_url.path
-    else:
-        path_prefix = parsed_url.path.rsplit('/', 1)[:-1] + '/'
-
-    if path_prefix:
-        full_path = path_prefix + relative_path
-    else:
-        full_path = relative_path
-
-    return urljoin(parsed_url.scheme + '://' + parsed_url.netloc, full_path)
-
 def capture_referer(view_func):
     """
     A wrapper for views that redirect with a 'next' parameter to any
@@ -1589,8 +1565,8 @@ def capture_referer(view_func):
         referer = request.META.get('HTTP_REFERER')
 
         if referer:
-            client_next = build_relative_url(referer, client_next)
-            client_error_next = build_relative_url(referer, client_error_next)
+            client_next = utils.build_relative_url(referer, client_next)
+            client_error_next = utils.build_relative_url(referer, client_error_next)
         else:
             return HttpResponseBadRequest('Referer header must be set.')
 
