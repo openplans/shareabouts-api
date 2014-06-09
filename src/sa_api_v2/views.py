@@ -408,7 +408,7 @@ class CorsEnabledMixin (object):
             response['Access-Control-Allow-Origin'] = ''
 
         response['Access-Control-Allow-Methods'] = ', '.join(self.allowed_methods)
-        response['Access-Control-Allow-Headers'] = 'content-type, *'
+        response['Access-Control-Allow-Headers'] = 'content-type, x-requested-with'
         response['Access-Control-Allow-Credentials'] = 'true'
 
         return response
