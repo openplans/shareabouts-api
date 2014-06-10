@@ -388,7 +388,7 @@ class CorsEnabledMixin (object):
     """
     A view that puts Access-Control headers on the response.
     """
-    allways_allow_options = False
+    always_allow_options = False
 
     def finalize_response(self, request, response, *args, **kwargs):
         response = super(CorsEnabledMixin, self).finalize_response(request, response, *args, **kwargs)
