@@ -388,6 +388,7 @@ class CorsEnabledMixin (object):
     """
     A view that puts Access-Control headers on the response.
     """
+    allways_allow_options = False
 
     def finalize_response(self, request, response, *args, **kwargs):
         response = super(CorsEnabledMixin, self).finalize_response(request, response, *args, **kwargs)
@@ -400,6 +401,12 @@ class CorsEnabledMixin (object):
         if request.method in ('GET', 'HEAD', 'TRACE'):
             response['Access-Control-Allow-Origin'] = request.META.get('HTTP_ORIGIN')
 
+        # Some views don't do client authentication, but still need to allow
+        # OPTIONS requests to return favorably (like the user authentication
+        # view).
+        elif self.always_allow_options and request.method == 'OPTIONS':
+            response['Access-Control-Allow-Origin'] = request.META.get('HTTP_ORIGIN')
+
         # Allow AJAX requests only from trusted domains for unsafe methods.
         elif isinstance(request.client, cors.models.Origin):
             response['Access-Control-Allow-Origin'] = request.META.get('HTTP_ORIGIN')
@@ -408,7 +415,7 @@ class CorsEnabledMixin (object):
             response['Access-Control-Allow-Origin'] = ''
 
         response['Access-Control-Allow-Methods'] = ', '.join(self.allowed_methods)
-        response['Access-Control-Allow-Headers'] = 'accept, content-type, x-csrftoken, x-requested-with'
+        response['Access-Control-Allow-Headers'] = request.META.get('HTTP_ACCESS_CONTROL_REQUEST_HEADERS', '')
         response['Access-Control-Allow-Credentials'] = 'true'
 
         return response
@@ -1512,6 +1519,8 @@ class OriginListView (ClientAuthListView):
 
 class UserInstanceView (OwnedResourceMixin, generics.RetrieveAPIView):
     model = models.User
+    client_authentication_classes = ()
+    always_allow_options = True
     serializer_class = serializers.UserSerializer
 
     def get_queryset(self):
