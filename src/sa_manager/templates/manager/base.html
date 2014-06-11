@@ -4,7 +4,7 @@
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    <title>Shareabouts Manager</title>
+    <title>Shareabouts Data Server</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="">
     <meta name="author" content="">
@@ -36,25 +36,6 @@
   </head>
 
   <body>
-
-    {% block navbar %}
-    <div class="navbar navbar-fixed-top">
-      <div class="navbar-inner">
-        <div class="container">
-          <a class="brand" href="{% url 'manager_index' %}">Shareabouts Manager</a>
-
-          <div class="navbar-text pull-right">
-            {% if request.user.is_authenticated %}
-              Logged in as {{ request.user.username }}.
-              <a href="{% url 'manager_logout' %}?next={{ request.get_full_path }}">Log out</a> /
-              <a href="{% url 'manager_password' %}?next={{ request.get_full_path }}">Change Password</a>
-           {% endif %}
-         </div>
-
-        </div>
-      </div>
-    </div>
-    {% endblock navbar %}
 
     <div class="container">
 
