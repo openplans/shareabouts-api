@@ -776,6 +776,21 @@ class PlaceInstanceView (CachedResourceMixin, LocatedResourceMixin, OwnedResourc
         return obj
 
 
+class CompletePlaceListRequestView (OwnedResourceMixin, generics.RetrieveAPIView):
+    def get(self, request, *args, **kwargs):
+        dataset = self.get_dataset()
+        cache_key = dataset.cache.get_bulk_data_cache_key(dataset.pk, 'places',
+            include_submissions=(INCLUDE_SUBMISSIONS_PARAM in request.GET),
+            include_private=(INCLUDE_PRIVATE_PARAM in request.GET),
+            include_invisible=(INCLUDE_INVISIBLE_PARAM in request.GET))
+        result = super(CompletePlaceListRequestView, self).get(request, *args, **kwargs)
+        return result
+
+
+class PlaceListMixin (object):
+    pass
+
+
 class PlaceListView (CachedResourceMixin, LocatedResourceMixin, OwnedResourceMixin, FilteredResourceMixin, bulk_generics.ListCreateBulkUpdateAPIView):
     """
 

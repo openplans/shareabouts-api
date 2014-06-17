@@ -154,7 +154,7 @@ class CacheBuffer (object):
 
         if self.delete_queue:
             django_cache.cache.delete_many(self.delete_queue)
-        
+
         self.reset()
 
     def reset(self):
@@ -307,6 +307,11 @@ class Cache (object):
 
 
 class DataSetCache (Cache):
+    def get_bulk_data_cache_key(self, dataset_id, submission_set_name, format, **flags):
+        return 'bulk_data:%s:%s:%s:%s' % (
+            dataset_id, submission_set_name, format,
+            ':'.join(k for k, v in flags.items() if v))
+
     def get_instance_params(self, dataset_obj):
         params = {
             'owner_username': dataset_obj.owner.username,
@@ -349,7 +354,7 @@ class PlaceCache (Cache):
         dataset_instance_path = reverse('dataset-detail', args=[owner, dataset])
         dataset_collection_path = reverse('dataset-list', args=[owner])
         action_collection_path = reverse('action-list', args=[owner, dataset])
-        prefixes.update([instance_path, collection_path, dataset_instance_path, 
+        prefixes.update([instance_path, collection_path, dataset_instance_path,
                          dataset_collection_path, action_collection_path])
 
         return prefixes
