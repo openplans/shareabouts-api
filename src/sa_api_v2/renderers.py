@@ -79,3 +79,20 @@ class GeoJSONPRenderer(JSONPRenderer, GeoJSONRenderer):
     (JSONPRenderer will call GeoJSONRenderer before JSONRenderer)
     """
     pass
+
+
+class NullJSONRenderer(JSONRenderer):
+    """
+    Renderer JSON with a simple None value as null
+    """
+    def render(self, data, media_type=None, renderer_context=None):
+        if data is None:
+            return bytes('null'.encode('utf-8'))
+        return super(NullJSONRenderer, self).render(data, media_type, renderer_context)
+
+
+class NullJSONPRenderer(JSONPRenderer, NullJSONRenderer):
+    """
+    (JSONPRenderer will call NullJSONRenderer before JSONRenderer)
+    """
+    pass

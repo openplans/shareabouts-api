@@ -1534,7 +1534,7 @@ class UserInstanceView (OwnedResourceMixin, generics.RetrieveAPIView):
 
 
 class CurrentUserInstanceView (CorsEnabledMixin, views.APIView):
-    renderer_classes = (JSONRenderer, JSONPRenderer, BrowsableAPIRenderer, renderers.PaginatedCSVRenderer)
+    renderer_classes = (renderers.NullJSONRenderer, renderers.NullJSONPRenderer, BrowsableAPIRenderer, renderers.PaginatedCSVRenderer)
     content_negotiation_class = ShareaboutsContentNegotiation
 
     def get(self, request):
@@ -1542,7 +1542,7 @@ class CurrentUserInstanceView (CorsEnabledMixin, views.APIView):
             user_url = reverse('user-detail', args=[request.user.username])
             return HttpResponseRedirect(user_url + '?' + request.GET.urlencode())
         else:
-            return HttpResponse(status=204)
+            return Response(None)
 
 
 class SessionKeyView (CorsEnabledMixin, views.APIView):
