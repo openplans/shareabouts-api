@@ -104,6 +104,13 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
         cache_buffer.reset()
         django_cache.clear()
 
+    def test_OPTIONS_response(self):
+        request = self.factory.options(self.path)
+        response = self.view(request, **self.request_kwargs)
+
+        # Check that the request was successful
+        self.assertStatusCode(response, 200)
+
     def test_GET_response(self):
         request = self.factory.get(self.path)
         response = self.view(request, **self.request_kwargs)
@@ -879,6 +886,21 @@ class TestPlaceListView (APITestMixin, TestCase):
 
         cache_buffer.reset()
         django_cache.clear()
+
+    def test_OPTIONS_response(self):
+        request = self.factory.options(self.path)
+        response = self.view(request, **self.request_kwargs)
+
+        # Check that the request was successful
+        self.assertStatusCode(response, 200)
+
+    def test_OPTIONS_response_as_owner(self):
+        request = self.factory.options(self.path)
+        request.user = self.owner
+        response = self.view(request, **self.request_kwargs)
+
+        # Check that the request was successful
+        self.assertStatusCode(response, 200)
 
     def test_GET_response(self):
         request = self.factory.get(self.path)
@@ -1915,6 +1937,21 @@ class TestSubmissionListView (APITestMixin, TestCase):
 
         cache_buffer.reset()
         django_cache.clear()
+
+    def test_OPTIONS_response(self):
+        request = self.factory.options(self.path)
+        response = self.view(request, **self.request_kwargs)
+
+        # Check that the request was successful
+        self.assertStatusCode(response, 200)
+
+    def test_OPTIONS_response_as_owner(self):
+        request = self.factory.options(self.path)
+        request.user = self.owner
+        response = self.view(request, **self.request_kwargs)
+
+        # Check that the request was successful
+        self.assertStatusCode(response, 200)
 
     def test_GET_response(self):
         request = self.factory.get(self.path)
