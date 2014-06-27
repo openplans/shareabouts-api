@@ -710,6 +710,7 @@ class PaginationMetadataSerializer (serializers.Serializer):
     next = pagination.NextPageField(source='*')
     previous = pagination.PreviousPageField(source='*')
     page = serializers.Field(source='number')
+    num_pages = serializers.Field(source='paginator.num_pages')
 
 
 class PaginatedResultsSerializer (pagination.BasePaginationSerializer):
