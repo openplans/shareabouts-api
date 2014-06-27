@@ -504,7 +504,7 @@ class OwnedResourceMixin (ClientAuthenticationMixin, CorsEnabledMixin):
     renderer_classes = (JSONRenderer, JSONPRenderer, BrowsableAPIRenderer, renderers.PaginatedCSVRenderer)
     parser_classes = (JSONParser, FormParser, MultiPartParser)
     permission_classes = (IsOwnerOrReadOnly, IsLoggedInOwnerOrPublicDataOnly, IsAllowedByDataPermissions)
-    authentication_classes = (authentication.BasicAuthentication, ShareaboutsSessionAuth)
+    authentication_classes = (authentication.BasicAuthentication, authentication.OAuth2Authentication, ShareaboutsSessionAuth)
     client_authentication_classes = (apikey.auth.ApiKeyAuthentication, cors.auth.OriginAuthentication)
     content_negotiation_class = ShareaboutsContentNegotiation
 
@@ -1176,7 +1176,7 @@ class DataSetInstanceView (CachedResourceMixin, OwnedResourceMixin, generics.Ret
 
     model = models.DataSet
     serializer_class = serializers.DataSetSerializer
-    authentication_classes = (authentication.BasicAuthentication, ShareaboutsSessionAuth)
+    authentication_classes = (authentication.BasicAuthentication, authentication.OAuth2Authentication, ShareaboutsSessionAuth)
     client_authentication_classes = ()
 
     def get_object_or_404(self, owner_username, dataset_slug):
@@ -1255,7 +1255,7 @@ class DataSetListMixin (object):
     model = models.DataSet
     serializer_class = serializers.DataSetSerializer
     pagination_serializer_class = serializers.PaginatedResultsSerializer
-    authentication_classes = (authentication.BasicAuthentication, ShareaboutsSessionAuth)
+    authentication_classes = (authentication.BasicAuthentication, authentication.OAuth2Authentication, ShareaboutsSessionAuth)
     client_authentication_classes = ()
 
     @utils.memo
@@ -1484,7 +1484,7 @@ class ActionListView (CachedResourceMixin, OwnedResourceMixin, generics.ListAPIV
 #
 
 class ClientAuthListView (OwnedResourceMixin, generics.ListCreateAPIView):
-    authentication_classes = (authentication.BasicAuthentication, ShareaboutsSessionAuth)
+    authentication_classes = (authentication.BasicAuthentication, authentication.OAuth2Authentication, ShareaboutsSessionAuth)
     client_authentication_classes = ()
     permission_classes = (IsLoggedInOwner,)
 

@@ -149,6 +149,8 @@ INSTALLED_APPS = (
     'social.apps.django_app.default',
     'raven.contrib.django.raven_compat',
     'django_ace',
+    'provider',
+    'provider.oauth2',
 
     # Project apps
     'beta_signup',
