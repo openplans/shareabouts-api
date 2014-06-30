@@ -124,7 +124,7 @@ MIDDLEWARE_CLASSES = (
 
 # We only use the CORS Headers app for oauth. The Shareabouts API resources
 # have their own base view that handles CORS headers.
-CORS_URLS_REGEX = r'^/oauth2/.*$'
+CORS_URLS_REGEX = r'^/api/v\d+/users/oauth2/.*$'
 CORS_ORIGIN_ALLOW_ALL = True
 CORS_ALLOW_CREDENTIALS = True
 

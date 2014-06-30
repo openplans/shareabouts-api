@@ -69,7 +69,9 @@ urlpatterns = patterns('sa_api_v2',
     url(r'^users/login/(?P<backend>[^/]+)/$', views.remote_social_login, name='remote-social-login'),
     url(r'^users/logout/$', views.remote_logout, name='remote-logout'),
 
+    url(r'^users/oauth2/', include('provider.oauth2.urls', namespace='oauth2')),
     url(r'^users/', include('social.apps.django_app.urls', namespace='social')),
+
 
     # Utility routes
 
