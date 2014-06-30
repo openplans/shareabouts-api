@@ -107,6 +107,7 @@ WSGI_APPLICATION = 'project.wsgi.application'
 ROOT_URLCONF = 'project.urls'
 
 MIDDLEWARE_CLASSES = (
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.gzip.GZipMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -120,6 +121,12 @@ MIDDLEWARE_CLASSES = (
     'sa_api_v2.middleware.RequestTimeLogger',
     'sa_api_v2.middleware.UniversalP3PHeader',
 )
+
+# We only use the CORS Headers app for oauth. The Shareabouts API resources
+# have their own base view that handles CORS headers.
+CORS_URLS_REGEX = r'^/oauth2/.*$'
+CORS_ORIGIN_ALLOW_ALL = True
+CORS_ALLOW_CREDENTIALS = True
 
 
 ###############################################################################
@@ -140,7 +147,9 @@ INSTALLED_APPS = (
     # 'django.contrib.admindocs',
     'django.contrib.gis',
 
+    # =================================
     # 3rd-party reusaple apps
+    # =================================
     'djangorestframework',
     'rest_framework',
     'south',
@@ -149,10 +158,15 @@ INSTALLED_APPS = (
     'social.apps.django_app.default',
     'raven.contrib.django.raven_compat',
     'django_ace',
+
+    # OAuth
     'provider',
     'provider.oauth2',
+    'corsheaders',
 
+    # =================================
     # Project apps
+    # =================================
     'beta_signup',
     'sa_api_v2',
     'sa_api_v2.apikey',

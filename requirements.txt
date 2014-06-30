@@ -34,6 +34,7 @@ django-storages==1.1.8
 
 python-social-auth==0.1.23
 django-oauth2-provider==0.2.6.1
+django-cors-headers==0.12
 
 
 
