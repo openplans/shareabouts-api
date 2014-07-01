@@ -1551,16 +1551,19 @@ class CurrentUserInstanceView (CorsEnabledMixin, views.APIView):
     def post(self, request):
         from django.contrib.auth import authenticate, login
 
+        field_errors = {}
         if 'username' not in request.DATA:
-            return Response('You must supply a "username" parameter.', status=400)
+            field_errors['username'] = 'You must supply a "username" parameter.'
         if 'password' not in request.DATA:
-            return Response('You must supply a "password" parameter.', status=400)
+            field_errors['password'] = 'You must supply a "password" parameter.'
+        if field_errors:
+            return Response({'errors': field_errors}, status=400)
 
         username, password = request.DATA['username'], request.DATA['password']
         user = authenticate(username=username, password=password)
 
         if user is None:
-            return Response('Invalid username or password.', status=401)
+            return Response({'errors': {'__all__': 'Invalid username or password.'}}, status=401)
 
         login(request, user)
         user_url = reverse('user-detail', args=[user.username])
