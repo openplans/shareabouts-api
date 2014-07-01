@@ -1537,7 +1537,7 @@ class UserInstanceView (OwnedResourceMixin, generics.RetrieveAPIView):
 class CurrentUserInstanceView (CorsEnabledMixin, views.APIView):
     renderer_classes = (renderers.NullJSONRenderer, renderers.NullJSONPRenderer, BrowsableAPIRenderer, renderers.PaginatedCSVRenderer)
     content_negotiation_class = ShareaboutsContentNegotiation
-    SAFE_CORS_METHODS = ('GET', 'HEAD', 'TRACE', 'POST')
+    SAFE_CORS_METHODS = ('GET', 'HEAD', 'TRACE', 'OPTIONS', 'POST')
 
     def get(self, request):
         if request.user.is_authenticated():
