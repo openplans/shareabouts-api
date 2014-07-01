@@ -389,6 +389,7 @@ class CorsEnabledMixin (object):
     A view that puts Access-Control headers on the response.
     """
     always_allow_options = False
+    SAFE_CORS_METHODS = ('GET', 'HEAD', 'TRACE')
 
     def finalize_response(self, request, response, *args, **kwargs):
         response = super(CorsEnabledMixin, self).finalize_response(request, response, *args, **kwargs)
@@ -398,7 +399,7 @@ class CorsEnabledMixin (object):
         # it is used in preflight requests to determine whether a client is
         # allowed to make unsafe requests. So, we omit OPTIONS from the safe
         # methods so that clients get an honest answer.
-        if request.method in ('GET', 'HEAD', 'TRACE'):
+        if request.method in self.SAFE_CORS_METHODS:
             response['Access-Control-Allow-Origin'] = request.META.get('HTTP_ORIGIN')
 
         # Some views don't do client authentication, but still need to allow
@@ -1536,13 +1537,32 @@ class UserInstanceView (OwnedResourceMixin, generics.RetrieveAPIView):
 class CurrentUserInstanceView (CorsEnabledMixin, views.APIView):
     renderer_classes = (renderers.NullJSONRenderer, renderers.NullJSONPRenderer, BrowsableAPIRenderer, renderers.PaginatedCSVRenderer)
     content_negotiation_class = ShareaboutsContentNegotiation
+    SAFE_CORS_METHODS = ('GET', 'HEAD', 'TRACE', 'POST')
 
     def get(self, request):
         if request.user.is_authenticated():
             user_url = reverse('user-detail', args=[request.user.username])
-            return HttpResponseRedirect(user_url + '?' + request.GET.urlencode())
+            return HttpResponseRedirect(user_url + '?' + request.GET.urlencode(), status=303)
         else:
             return Response(None)
+
+    def post(self, request):
+        from django.contrib.auth import authenticate, login
+
+        if 'username' not in request.DATA:
+            return Response('You must supply a "username" parameter.', status=400)
+        if 'password' not in request.DATA:
+            return Response('You must supply a "password" parameter.', status=400)
+
+        username, password = request.DATA['username'], request.DATA['password']
+        user = authenticate(username=username, password=password)
+
+        if user is None:
+            return Response('Invalid username or password.', status=401)
+
+        login(request, user)
+        user_url = reverse('user-detail', args=[user.username])
+        return HttpResponseRedirect(user_url, status=303)
 
 
 class SessionKeyView (CorsEnabledMixin, views.APIView):
