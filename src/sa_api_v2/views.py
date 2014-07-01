@@ -1523,6 +1523,7 @@ class UserInstanceView (OwnedResourceMixin, generics.RetrieveAPIView):
     client_authentication_classes = ()
     always_allow_options = True
     serializer_class = serializers.UserSerializer
+    SAFE_CORS_METHODS = ('GET', 'HEAD', 'TRACE', 'OPTIONS')
 
     def get_queryset(self):
         return models.User.objects.all()\
@@ -1537,6 +1538,7 @@ class UserInstanceView (OwnedResourceMixin, generics.RetrieveAPIView):
 class CurrentUserInstanceView (CorsEnabledMixin, views.APIView):
     renderer_classes = (renderers.NullJSONRenderer, renderers.NullJSONPRenderer, BrowsableAPIRenderer, renderers.PaginatedCSVRenderer)
     content_negotiation_class = ShareaboutsContentNegotiation
+    authentication_classes = (ShareaboutsSessionAuth,)
     SAFE_CORS_METHODS = ('GET', 'HEAD', 'TRACE', 'OPTIONS', 'POST')
 
     def get(self, request):
@@ -1562,7 +1564,13 @@ class CurrentUserInstanceView (CorsEnabledMixin, views.APIView):
 
         login(request, user)
         user_url = reverse('user-detail', args=[user.username])
-        return HttpResponseRedirect(user_url, status=303)
+        user_url = request.build_absolute_uri(user_url)
+
+        # Is cross-origin?
+        if 'HTTP_ORIGIN' in request.META:
+            return HttpResponse(content=user_url, status=200, content_type='text/plain')
+        else:
+            return HttpResponseRedirect(user_url, status=303)
 
 
 class SessionKeyView (CorsEnabledMixin, views.APIView):

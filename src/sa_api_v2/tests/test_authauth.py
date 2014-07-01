@@ -19,9 +19,6 @@ class APITestMixin (object):
 
 
 class CurrentUserViewTests (APITestMixin, TestCase):
-    def setUp(self):
-        self.factory = RequestFactory()
-
     def tearDown(self):
         User.objects.all().delete()
 
@@ -31,7 +28,7 @@ class CurrentUserViewTests (APITestMixin, TestCase):
 
         response = self.client.get('/api/v2/users/current?param=value')
 
-        self.assertStatusCode(response, 303)
+        self.assertStatusCode(response, 302, 303)
         self.assertEqual(response['Location'], 'http://testserver/api/v2/mjumbewu?param=value')
 
     def test_POST_authenticates_user(self):
@@ -39,5 +36,50 @@ class CurrentUserViewTests (APITestMixin, TestCase):
 
         response = self.client.post('/api/v2/users/current', data={'username': 'mjumbewu', 'password': 'abc123'})
 
-        self.assertStatusCode(response, 303)
+        self.assertStatusCode(response, 302, 303)
         self.assertEqual(response['Location'], 'http://testserver/api/v2/mjumbewu')
+
+    def test_OPTIONS_is_allowed(self):
+        User.objects.create_user(username='mjumbewu', password='abc123')
+
+        response = self.client.options('/api/v2/users/current', data={'username': 'mjumbewu', 'password': 'abc123'})
+
+        self.assertStatusCode(response, 200)
+
+    def test_preflight_OPTIONS_is_allowed(self):
+        User.objects.create_user(username='mjumbewu', password='abc123')
+
+        response = self.client.options('/api/v2/users/current', data={'username': 'mjumbewu', 'password': 'abc123'}, HTTP_ORIGIN='http://www.example.com')
+
+        self.assertStatusCode(response, 200)
+        self.assertEqual(response['Access-Control-Allow-Origin'], 'http://www.example.com')
+        self.assertEqual(response['Access-Control-Allow-Methods'], 'GET, POST, HEAD, OPTIONS')
+
+
+class UserInstanceViewTests (APITestMixin, TestCase):
+    def tearDown(self):
+        User.objects.all().delete()
+
+    def test_GET(self):
+        User.objects.create_user(username='mjumbewu', password='abc123')
+        self.client.login(username='mjumbewu', password='abc123')
+
+        response = self.client.get('/api/v2/mjumbewu')
+
+        self.assertStatusCode(response, 200)
+
+    def test_OPTIONS_is_allowed(self):
+        User.objects.create_user(username='mjumbewu', password='abc123')
+
+        response = self.client.options('/api/v2/mjumbewu')
+
+        self.assertStatusCode(response, 200)
+
+    def test_preflight_OPTIONS_is_allowed(self):
+        User.objects.create_user(username='mjumbewu', password='abc123')
+
+        response = self.client.options('/api/v2/mjumbewu', HTTP_ORIGIN='http://www.example.com')
+
+        self.assertStatusCode(response, 200)
+        self.assertEqual(response['Access-Control-Allow-Origin'], 'http://www.example.com')
+        self.assertEqual(response['Access-Control-Allow-Methods'], 'GET, HEAD, OPTIONS')
