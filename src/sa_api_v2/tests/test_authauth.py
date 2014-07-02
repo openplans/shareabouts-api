@@ -76,7 +76,7 @@ class CurrentUserViewTests (APITestMixin, TestCase):
 
         self.assertStatusCode(response, 200)
         self.assertEqual(response['Access-Control-Allow-Origin'], 'http://www.example.com')
-        self.assertEqual(response['Access-Control-Allow-Methods'], 'GET, POST, HEAD, OPTIONS')
+        self.assertEqual(response['Access-Control-Allow-Methods'], 'GET, POST, DELETE, HEAD, OPTIONS')
 
 
 class UserInstanceViewTests (APITestMixin, TestCase):
