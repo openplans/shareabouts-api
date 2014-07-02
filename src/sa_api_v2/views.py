@@ -1539,7 +1539,10 @@ class CurrentUserInstanceView (CorsEnabledMixin, views.APIView):
     renderer_classes = (renderers.NullJSONRenderer, renderers.NullJSONPRenderer, BrowsableAPIRenderer, renderers.PaginatedCSVRenderer)
     content_negotiation_class = ShareaboutsContentNegotiation
     authentication_classes = (ShareaboutsSessionAuth,)
-    SAFE_CORS_METHODS = ('GET', 'HEAD', 'TRACE', 'OPTIONS', 'POST')
+
+    # Since this view only affects the local session, make it always safe for
+    # CORS requests.
+    SAFE_CORS_METHODS = ('GET', 'HEAD', 'TRACE', 'OPTIONS', 'POST', 'DELETE')
 
     def get(self, request):
         if request.user.is_authenticated():
@@ -1574,6 +1577,12 @@ class CurrentUserInstanceView (CorsEnabledMixin, views.APIView):
             return HttpResponse(content=user_url, status=200, content_type='text/plain')
         else:
             return HttpResponseRedirect(user_url, status=303)
+
+    def delete(self, request):
+        from django.contrib.auth import logout
+
+        logout(request)
+        return HttpResponse(status=204)
 
 
 class SessionKeyView (CorsEnabledMixin, views.APIView):
