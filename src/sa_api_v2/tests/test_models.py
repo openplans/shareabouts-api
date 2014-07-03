@@ -168,17 +168,33 @@ class TestDataIndexes (TestCase):
         self.assertEqual(set([value.value for value in indexed_values]), set(['value2']))
 
     def test_data_values_are_deleted_when_removed(self):
-        self.dataset.indexes.add(DataIndex(attr_name='index1'))
-        self.dataset.indexes.add(DataIndex(attr_name='index2'))
-
         st1 = SubmittedThing(dataset=self.dataset)
-        st1.data = '{"index1": "value1", "index2": 2, "freetext": "This is an unindexed value."}'
-        st1.save()
-        st1.data = '{"index2": 2, "freetext": "This is an unindexed value."}'
+        st1.data = '{"index": "value1", "somefreetext": "This is an unindexed value."}'
         st1.save()
 
-        indexed_values = IndexedValue.objects.filter(index__dataset=self.dataset)
-        self.assertEqual(indexed_values.count(), 1)
+        st2 = SubmittedThing(dataset=self.dataset)
+        st2.data = '{"index": "value_not1", "morefreetext": "This is an unindexed value."}'
+        st2.save()
+
+        st3 = SubmittedThing(dataset=self.dataset)
+        st3.data = '{"index": "value1"}'
+        st3.save()
+
+        self.dataset.indexes.add(DataIndex(attr_name='index'))
+        num_indexed_values = IndexedValue.objects.all().count()
+
+        # At first, index with 'value1' should match two things.
+        qs = self.dataset.things.filter_by_index('index', 'value1')
+        self.assertEqual(qs.count(), 2)
+
+        st1.delete()
+
+        # Now, index with 'value1' should only match one things.
+        qs = self.dataset.things.filter_by_index('index', 'value1')
+        self.assertEqual(qs.count(), 1)
+
+        # Delete should have cascaded to indexed values.
+        self.assertEqual(IndexedValue.objects.all().count(), num_indexed_values - 1)
 
 
 class TestCacheClearingModel (TestCase):
