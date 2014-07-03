@@ -183,12 +183,12 @@ class DataSet (CacheClearingModel, models.Model):
         return self.permissions
 
 
-class PlaceQuerySet (query.GeoQuerySet, SubmittedThingQuerySet):
+class GeoSubmittedThingQuerySet (query.GeoQuerySet, SubmittedThingQuerySet):
     pass
 
-class PlaceManager (models.GeoManager, SubmittedThingManager):
+class GeoSubmittedThingManager (models.GeoManager, SubmittedThingManager):
     def get_queryset(self):
-        return PlaceQuerySet(self.model, using=self._db)
+        return GeoSubmittedThingQuerySet(self.model, using=self._db)
 
 
 class Place (SubmittedThing):
@@ -199,7 +199,7 @@ class Place (SubmittedThing):
     """
     geometry = models.GeometryField()
 
-    objects = PlaceManager()
+    objects = GeoSubmittedThingManager()
     cache = cache.PlaceCache()
     previous_version = 'sa_api_v1.models.Place'
 
@@ -249,6 +249,7 @@ class Submission (SubmittedThing):
     def set_name(self):
         return self.parent.name
 
+    objects = SubmittedThingManager()
     cache = cache.SubmissionCache()
     previous_version = 'sa_api_v1.models.Submission'
 
