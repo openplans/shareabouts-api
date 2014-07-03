@@ -53,8 +53,18 @@ class IndexedValueManager (models.Manager):
 
 class IndexedValue (models.Model):
     index = models.ForeignKey('DataIndex', related_name='values')
-    value = models.CharField(max_length=100, null=True, db_index=True)
     thing = models.ForeignKey('SubmittedThing')
+
+    value = models.CharField(max_length=100, null=True, db_index=True)
+    # TODO: This might be better as:
+    #
+    #   * string_value
+    #   * number_value
+    #   * boolean_value
+    #   * datetime_value
+    #
+    #   So that we can use the appropriate comparisons for each (i.e., less
+    #   than operates differently on strings than on numbers)
 
     objects = IndexedValueManager()
 
