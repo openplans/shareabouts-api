@@ -53,7 +53,7 @@ class IndexedValueManager (models.Manager):
 
 class IndexedValue (models.Model):
     index = models.ForeignKey('DataIndex', related_name='values')
-    thing = models.ForeignKey('SubmittedThing')
+    thing = models.ForeignKey('SubmittedThing', related_name='indexed_values')
 
     value = models.CharField(max_length=100, null=True, db_index=True)
     # TODO: This might be better as:
