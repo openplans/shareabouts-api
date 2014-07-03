@@ -1,6 +1,7 @@
 import operator
 import ujson as json
 from django.contrib.gis.db import models
+from django.contrib.gis.db.models import query
 from django.conf import settings
 from django.core.files.storage import get_storage_class
 from django.core.exceptions import ObjectDoesNotExist
@@ -78,9 +79,7 @@ class ModelWithDataBlob (models.Model):
         abstract = True
 
 
-class SubmittedThingManager (models.Manager):
-    use_for_related_fields = True
-
+class FilterByIndexMixin (object):
     def filter_by_index(self, key, *values):
         matches_any_values_clause = reduce(
             operator.or_,
@@ -88,6 +87,17 @@ class SubmittedThingManager (models.Manager):
         return self\
             .filter(indexed_values__index__attr_name=key)\
             .filter(matches_any_values_clause)
+
+
+class SubmittedThingQuerySet (FilterByIndexMixin, query.QuerySet):
+    pass
+
+
+class SubmittedThingManager (FilterByIndexMixin, models.Manager):
+    use_for_related_fields = True
+
+    def get_queryset(self):
+        return SubmittedThingQuerySet(self.model, using=self._db)
 
 
 class SubmittedThing (CacheClearingModel, ModelWithDataBlob, TimeStampedModel):
@@ -173,6 +183,14 @@ class DataSet (CacheClearingModel, models.Model):
         return self.permissions
 
 
+class PlaceQuerySet (query.GeoQuerySet, SubmittedThingQuerySet):
+    pass
+
+class PlaceManager (models.GeoManager, SubmittedThingManager):
+    def get_queryset(self):
+        return PlaceQuerySet(self.model, using=self._db)
+
+
 class Place (SubmittedThing):
     """
     A Place is a submitted thing with some geographic information, to which
@@ -181,7 +199,7 @@ class Place (SubmittedThing):
     """
     geometry = models.GeometryField()
 
-    objects = models.GeoManager()
+    objects = PlaceManager()
     cache = cache.PlaceCache()
     previous_version = 'sa_api_v1.models.Place'
 

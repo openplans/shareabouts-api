@@ -444,18 +444,24 @@ class FilteredResourceMixin (object):
 
         for key, values in self.request.GET.iterlists():
             if key not in special_filters:
-                # Filter!
-                excluded = []
-                for obj in queryset:
-                    if hasattr(obj, key):
-                        if getattr(obj, key) not in values:
-                            queryset = queryset.exclude(pk=obj.pk)
-                    else:
-                        # Is it in the data blob?
-                        data = json.loads(obj.data)
-                        if key not in data or data[key] not in values:
-                            excluded.append(obj.pk)
-                queryset = queryset.exclude(pk__in=excluded)
+                # Filter quickly for indexed values
+                if self.get_dataset().indexes.filter(attr_name=key).exists():
+                    queryset = queryset.filter_by_index(key, *values)
+
+                # Filter slowly for other values
+                else:
+                    excluded = []
+                    for obj in queryset:
+                        if hasattr(obj, key):
+                            if getattr(obj, key) not in values:
+                                queryset = queryset.exclude(pk=obj.pk)
+                        else:
+                            # Is it in the data blob?
+                            data = json.loads(obj.data)
+                            if key not in data or data[key] not in values:
+                                excluded.append(obj.pk)
+                    queryset = queryset.exclude(pk__in=excluded)
+
 
         return queryset
 
@@ -826,7 +832,7 @@ class PlaceListView (CachedResourceMixin, LocatedResourceMixin, OwnedResourceMix
       * `<attr>=<value>`
 
         Filter the place list to only return the places where the attribute is
-        equal to the given value.
+        equal to the given value. *The attribute should be indexed.*
 
     POST
     ----
@@ -989,7 +995,7 @@ class SubmissionListView (CachedResourceMixin, OwnedResourceMixin, FilteredResou
       * `<attr>=<value>`
 
         Filter the place list to only return the places where the attribute is
-        equal to the given value.
+        equal to the given value. *The attribute should be indexed.*
 
     POST
     ----
@@ -1106,7 +1112,7 @@ class DataSetSubmissionListView (CachedResourceMixin, OwnedResourceMixin, Filter
       * `<attr>=<value>`
 
         Filter the place list to only return the places where the attribute is
-        equal to the given value.
+        equal to the given value. *The attribute should be indexed.*
 
     ------------------------------------------------------------
     """
