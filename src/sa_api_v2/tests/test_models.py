@@ -120,7 +120,7 @@ class TestDataIndexes (TestCase):
 
         # index2 has two values matching 2 in self.dataset, even though one's
         # a string and one's a number
-        qs = self.dataset.things.filter_by_index('index1', 'value2')
+        qs = self.dataset.things.filter_by_index('index2', '2')
         self.assertEqual(qs.count(), 2)
 
     def test_get_returns_the_true_value_of_an_indexed_value(self):

@@ -1,3 +1,4 @@
+import operator
 import ujson as json
 from django.contrib.gis.db import models
 from django.conf import settings
@@ -77,6 +78,18 @@ class ModelWithDataBlob (models.Model):
         abstract = True
 
 
+class SubmittedThingManager (models.Manager):
+    use_for_related_fields = True
+
+    def filter_by_index(self, key, *values):
+        matches_any_values_clause = reduce(
+            operator.or_,
+            [models.Q(indexed_values__value=value) for value in values])
+        return self\
+            .filter(indexed_values__index__attr_name=key)\
+            .filter(matches_any_values_clause)
+
+
 class SubmittedThing (CacheClearingModel, ModelWithDataBlob, TimeStampedModel):
     """
     A SubmittedThing generally comes from the end-user.  It may be a place, a
@@ -86,6 +99,8 @@ class SubmittedThing (CacheClearingModel, ModelWithDataBlob, TimeStampedModel):
     submitter = models.ForeignKey(User, related_name='things', null=True, blank=True)
     dataset = models.ForeignKey('DataSet', related_name='things', blank=True)
     visible = models.BooleanField(default=True, blank=True, db_index=True)
+
+    objects = SubmittedThingManager()
 
     class Meta:
         app_label = 'sa_api_v2'
