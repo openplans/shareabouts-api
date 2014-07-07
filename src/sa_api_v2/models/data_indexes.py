@@ -1,3 +1,4 @@
+import operator
 import ujson as json
 from django.contrib.gis.db import models
 
@@ -77,5 +78,18 @@ class IndexedValue (models.Model):
             return data[self.index.attr_name]
         except KeyError:
             raise KeyError('The thing %s has no data attribute %s' % (self.thing, self.index.attr_name))
+
+
+class FilterByIndexMixin (object):
+    """
+    Mixin for model managers of indexed models.
+    """
+    def filter_by_index(self, key, *values):
+        matches_any_values_clause = reduce(
+            operator.or_,
+            [models.Q(indexed_values__value=value) for value in values])
+        return self\
+            .filter(indexed_values__index__attr_name=key)\
+            .filter(matches_any_values_clause)
 
 

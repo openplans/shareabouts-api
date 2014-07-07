@@ -1,4 +1,3 @@
-import operator
 import ujson as json
 from django.contrib.gis.db import models
 from django.contrib.gis.db.models import query
@@ -9,7 +8,7 @@ from django.utils.timezone import now
 from django.utils.importlib import import_module
 from .. import cache
 from .. import utils
-from .data_indexes import IndexedValue
+from .data_indexes import IndexedValue, FilterByIndexMixin
 from .profiles import User
 import sa_api_v1.models
 
@@ -79,16 +78,6 @@ class ModelWithDataBlob (models.Model):
         abstract = True
 
 
-class FilterByIndexMixin (object):
-    def filter_by_index(self, key, *values):
-        matches_any_values_clause = reduce(
-            operator.or_,
-            [models.Q(indexed_values__value=value) for value in values])
-        return self\
-            .filter(indexed_values__index__attr_name=key)\
-            .filter(matches_any_values_clause)
-
-
 class SubmittedThingQuerySet (FilterByIndexMixin, query.QuerySet):
     pass
 
@@ -116,8 +105,9 @@ class SubmittedThing (CacheClearingModel, ModelWithDataBlob, TimeStampedModel):
         app_label = 'sa_api_v2'
         db_table = 'sa_api_submittedthing'
 
-    def index_values(self):
-        indexes = self.dataset.indexes.all()
+    def index_values(self, indexes=None):
+        if indexes is None:
+            indexes = self.dataset.indexes.all()
 
         if len(indexes) == 0:
             return
@@ -181,6 +171,13 @@ class DataSet (CacheClearingModel, models.Model):
     @utils.memo
     def get_permissions(self):
         return self.permissions
+
+    def reindex(self):
+        things = self.things.all()
+        indexes = self.indexes.all()
+
+        for thing in things:
+            thing.index_values(indexes)
 
 
 class GeoSubmittedThingQuerySet (query.GeoQuerySet, SubmittedThingQuerySet):
