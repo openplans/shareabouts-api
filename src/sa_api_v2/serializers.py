@@ -468,9 +468,15 @@ class SubmittedThingSerializer (ActivityGenerator, DataBlobProcessor):
         result = super(SubmittedThingSerializer, self).restore_fields(data, files)
 
         if 'submitter' not in data:
-            request = self.context.get('request')
-            if request and request.user.is_authenticated():
-                result['submitter'] = request.user
+            # If the thing exists already, use the existing submitter
+            if hasattr(self, 'object') and self.object is not None:
+                result['submitter'] = self.object.submitter
+
+            # Otherwise, set the submitter to the current user
+            else:
+                request = self.context.get('request')
+                if request and request.user.is_authenticated():
+                    result['submitter'] = request.user
 
         return result
 

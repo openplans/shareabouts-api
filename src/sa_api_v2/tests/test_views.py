@@ -627,7 +627,8 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
           'type': 'Feature',
           'properties': {
             'type': 'Park Bench',
-            'private-secrets': 'The mayor loves this bench'
+            'private-secrets': 'The mayor loves this bench',
+            'submitter': None
           },
           'geometry': {"type": "Point", "coordinates": [-73.99, 40.75]},
         })
@@ -680,8 +681,6 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
         # Check that the data attributes have been incorporated into the
         # properties
         self.assertEqual(data['properties'].get('type'), 'Park Bench')
-
-        # submitter is special, and so should be present and None
         self.assertIsNone(data['properties']['submitter'])
 
         # name is not special (lives in the data blob), so should just be unset
@@ -691,79 +690,25 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
         # back down
         self.assertNotIn('private-secrets', data['properties'])
 
-    def test_PUT_response_as_submitter(self):
-        pass
-        ## TODO: Use the SubmittedThingSerializer to implement the following
-        ##       permission structure.
-        ##
+    def test_PUT_response_as_owner_doesnt_change_submitter(self):
+        place_data = json.dumps({
+          'type': 'Feature',
+          'properties': {
+            'type': 'Park Bench',
+            'private-secrets': 'The mayor loves this bench'
+          },
+          'geometry': {"type": "Point", "coordinates": [-73.99, 40.75]},
+        })
 
-        # place_data = json.dumps({
-        #   'type': 'Feature',
-        #   'properties': {
-        #     'type': 'Park Bench',
-        #     'private-secrets': 'The mayor loves this bench'
-        #   },
-        #   'geometry': {"type": "Point", "coordinates": [-73.99, 40.75]},
-        #   'submitter': {'id': self.submitter.id}
-        # })
-        # other_user_place_data = json.dumps({
-        #   'type': 'Feature',
-        #   'properties': {
-        #     'type': 'Park Bench',
-        #     'private-secrets': 'The mayor loves this bench'
-        #   },
-        #   'geometry': {"type": "Point", "coordinates": [-73.99, 40.75]},
-        #   'submitter': {'id': self.other_user.id}
-        # })
+        request = self.factory.put(self.path, data=place_data, content_type='application/json')
+        request.user = self.owner
+        response = self.view(request, **self.request_kwargs)
 
-        # #
-        # # View should 403 when client not provided
-        # #
-        # request = self.factory.put(self.path, data=place_data, content_type='application/json')
-        # request.user = self.submitter
-        # response = self.view(request, **self.request_kwargs)
-        # self.assertStatusCode(response, 403)
+        self.assertStatusCode(response, 200)
+        data = json.loads(response.rendered_content)
 
-        # #
-        # # View should 403 when authenticated as different user
-        # #
-        # request = self.factory.put(self.path, data=other_user_place_data, content_type='application/json')
-        # request.META[KEY_HEADER] = self.apikey.key
-        # request.user = self.other_user
-        # response = self.view(request, **self.request_kwargs)
-        # self.assertStatusCode(response, 403)
-
-        # #
-        # # View should 400 when setting a different submitter
-        # #
-        # request = self.factory.put(self.path, data=other_user_place_data, content_type='application/json')
-        # request.META[KEY_HEADER] = self.apikey.key
-        # request.user = self.submitter
-        # response = self.view(request, **self.request_kwargs)
-        # self.assertStatusCode(response, 400)
-
-        # #
-        # # View should update the place when submitter is authenticated and
-        # # owner is authenticated through client
-        # #
-        # request = self.factory.put(self.path, data=place_data, content_type='application/json')
-        # request.META[KEY_HEADER] = self.apikey.key
-        # request.user = self.submitter
-
-        # response = self.view(request, **self.request_kwargs)
-
-        # data = json.loads(response.rendered_content)
-
-        # # Check that the request was successful
-        # self.assertStatusCode(response, 200)
-
-        # # Check that the data attributes have been incorporated into the
-        # # properties
-        # self.assertEqual(data['properties'].get('type'), 'Park Bench')
-
-        # # private-secrets is not special, but is private, so should not come
-        # # back down
-        # self.assertNotIn('private-secrets', data['properties'])
+        # Check that the submitter is still the original
+        self.assertEqual(data['properties'].get('submitter', {}).get('id'), self.submitter.id)
 
     def test_PUT_to_invisible_place(self):
         place_data = json.dumps({
