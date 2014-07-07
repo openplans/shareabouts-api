@@ -8,8 +8,9 @@ from django.contrib.gis import geos
 import base64
 import csv
 import json
+import mock
 from StringIO import StringIO
-from ..models import User, DataSet, Place, SubmissionSet, Submission, Attachment, Action, Group
+from ..models import User, DataSet, Place, SubmissionSet, Submission, Attachment, Action, Group, DataIndex
 from ..cache import cache_buffer
 from ..apikey.models import ApiKey
 from ..apikey.auth import KEY_HEADER
@@ -1023,6 +1024,34 @@ class TestPlaceListView (APITestMixin, TestCase):
         # Check that the request was successful
         self.assertStatusCode(response, 200)
         self.assertEqual(len(data['features']), 0)
+
+    def test_GET_indexed_response(self):
+        Place.objects.create(dataset=self.dataset, geometry='POINT(0 0)', data=json.dumps({'foo': 'bar', 'name': 1})),
+        Place.objects.create(dataset=self.dataset, geometry='POINT(1 0)', data=json.dumps({'foo': 'bar', 'name': 2})),
+        Place.objects.create(dataset=self.dataset, geometry='POINT(2 0)', data=json.dumps({'foo': 'baz', 'name': 3})),
+        Place.objects.create(dataset=self.dataset, geometry='POINT(3 0)', data=json.dumps({'name': 4})),
+
+        self.dataset.indexes.add(DataIndex(attr_name='foo'))
+
+        from  sa_api_v2.models.core import GeoSubmittedThingQuerySet
+        with mock.patch.object(GeoSubmittedThingQuerySet, 'filter_by_index') as patched_filter:
+            request = self.factory.get(self.path + '?foo=bar')
+            self.view(request, **self.request_kwargs)
+            self.assertEqual(patched_filter.call_count, 1)
+
+    def test_GET_unindexed_response(self):
+        Place.objects.create(dataset=self.dataset, geometry='POINT(0 0)', data=json.dumps({'foo': 'bar', 'name': 1})),
+        Place.objects.create(dataset=self.dataset, geometry='POINT(1 0)', data=json.dumps({'foo': 'bar', 'name': 2})),
+        Place.objects.create(dataset=self.dataset, geometry='POINT(2 0)', data=json.dumps({'foo': 'baz', 'name': 3})),
+        Place.objects.create(dataset=self.dataset, geometry='POINT(3 0)', data=json.dumps({'name': 4})),
+
+        self.dataset.indexes.add(DataIndex(attr_name='foo'))
+
+        from  sa_api_v2.models.core import GeoSubmittedThingQuerySet
+        with mock.patch.object(GeoSubmittedThingQuerySet, 'filter_by_index') as patched_filter:
+            request = self.factory.get(self.path + '?name=1')
+            self.view(request, **self.request_kwargs)
+            self.assertEqual(patched_filter.call_count, 0)
 
     def test_GET_paginated_response(self):
         # Create a view with pagination configuration set, for consistency
