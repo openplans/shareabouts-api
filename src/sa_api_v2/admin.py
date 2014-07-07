@@ -169,13 +169,18 @@ class InlineDataSetPermissionAdmin(admin.TabularInline):
     extra = 0
 
 
+class InlineDataIndexAdmin(admin.TabularInline):
+    model = models.DataIndex
+    extra = 0
+
+
 class DataSetAdmin(admin.ModelAdmin):
     list_display = ('display_name', 'slug', 'owner')
     prepopulated_fields = {'slug': ['display_name']}
     search_fields = ('display_name', 'slug', 'owner__username')
 
     raw_id_fields = ('owner',)
-    inlines = [InlineDataSetPermissionAdmin, InlineApiKeyAdmin, InlineOriginAdmin, InlineGroupAdmin]
+    inlines = [InlineDataIndexAdmin, InlineDataSetPermissionAdmin, InlineApiKeyAdmin, InlineOriginAdmin, InlineGroupAdmin]
 
     def get_queryset(self, request):
         qs = super(DataSetAdmin, self).get_queryset(request)
