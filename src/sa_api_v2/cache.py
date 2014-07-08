@@ -154,7 +154,7 @@ class CacheBuffer (object):
 
         if self.delete_queue:
             django_cache.cache.delete_many(self.delete_queue)
-        
+
         self.reset()
 
     def reset(self):
@@ -349,7 +349,7 @@ class PlaceCache (Cache):
         dataset_instance_path = reverse('dataset-detail', args=[owner, dataset])
         dataset_collection_path = reverse('dataset-list', args=[owner])
         action_collection_path = reverse('action-list', args=[owner, dataset])
-        prefixes.update([instance_path, collection_path, dataset_instance_path, 
+        prefixes.update([instance_path, collection_path, dataset_instance_path,
                          dataset_collection_path, action_collection_path])
 
         return prefixes
