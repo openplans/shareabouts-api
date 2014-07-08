@@ -1516,6 +1516,54 @@ class TestPlaceListView (APITestMixin, TestCase):
         # Check that the request was successful
         self.assertStatusCode(response, 201)
 
+    def test_model_update_clears_GET_cache_for_multiple_specific_objects(self):
+        places = []
+        for _ in range(10):
+            places.append(Place.objects.create(
+              dataset=self.dataset,
+              geometry='POINT(2 3)',
+              submitter=self.submitter,
+              data=json.dumps({
+                'type': 'ATM',
+                'name': 'K-Mart',
+                'private-secrets': 42
+              }),
+            ))
+        cache_buffer.flush()
+
+        request_kwargs = {
+          'owner_username': self.owner.username,
+          'dataset_slug': self.dataset.slug,
+          'pk_list': ','.join([str(p.pk) for p in places[::2]])
+        }
+
+        factory = RequestFactory()
+        path = reverse('place-list', kwargs=request_kwargs)
+        view = PlaceListView.as_view()
+
+        # First call should run queries
+        request = factory.get(path)
+        with self.assertNumQueries(8):
+            view(request, **request_kwargs)
+
+        # Second call should hardly hit the database, except maybe for user/permissions stuff
+        request = factory.get(path)
+        with self.assertNumQueries(2):
+            view(request, **request_kwargs)
+
+        # After we modify one of the places, cache should be invalidated
+        places[0].data = json.dumps({
+            'type': 'ATM',
+            'name': 'K-Mart',
+            'private-secrets': 43
+        })
+        places[0].save()
+        cache_buffer.flush()
+
+        request = factory.get(path)
+        with self.assertNumQueries(8):
+            view(request, **request_kwargs)
+
 
 class TestSubmissionInstanceView (APITestMixin, TestCase):
     def setUp(self):

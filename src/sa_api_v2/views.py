@@ -687,7 +687,7 @@ class CachedResourceMixin (object):
         django_cache.cache.set(key, (data, status, headers), settings.API_CACHE_TIMEOUT)
 
         # Also, add the key to the set of pages cached from this view.
-        meta_key = self.cache_prefix + '_keys'
+        meta_key = self.get_cache_metakey()
         keys = django_cache.cache.get(meta_key) or set()
         keys.add(key)
         django_cache.cache.set(meta_key, keys, settings.API_CACHE_TIMEOUT)
@@ -849,6 +849,12 @@ class PlaceListView (CachedResourceMixin, LocatedResourceMixin, OwnedResourceMix
     pagination_serializer_class = serializers.FeatureCollectionSerializer
     renderer_classes = (renderers.GeoJSONRenderer, renderers.GeoJSONPRenderer) + OwnedResourceMixin.renderer_classes[2:]
     parser_classes = (parsers.GeoJSONParser,) + OwnedResourceMixin.parser_classes[1:]
+
+    def get_cache_metakey(self):
+        metakey_kwargs = self.kwargs.copy()
+        metakey_kwargs.pop('pk_list', None)
+        prefix = reverse('place-list', kwargs=metakey_kwargs)
+        return prefix + '_keys'
 
     def pre_save(self, obj):
         super(PlaceListView, self).pre_save(obj)
@@ -1014,6 +1020,12 @@ class SubmissionListView (CachedResourceMixin, OwnedResourceMixin, FilteredResou
     place_id_kwarg = 'place_id'
     submission_set_name_kwarg = 'submission_set_name'
 
+    def get_cache_metakey(self):
+        metakey_kwargs = self.kwargs.copy()
+        metakey_kwargs.pop('pk_list', None)
+        prefix = reverse('submission-list', kwargs=metakey_kwargs)
+        return prefix + '_keys'
+
     def get_place(self, dataset):
         place_id = self.kwargs[self.place_id_kwarg]
         place = get_object_or_404(models.Place, dataset=dataset, id=place_id)
@@ -1122,6 +1134,12 @@ class DataSetSubmissionListView (CachedResourceMixin, OwnedResourceMixin, Filter
     pagination_serializer_class = serializers.PaginatedResultsSerializer
 
     submission_set_name_kwarg = 'submission_set_name'
+
+    def get_cache_metakey(self):
+        metakey_kwargs = self.kwargs.copy()
+        metakey_kwargs.pop('pk_list', None)
+        prefix = reverse('dataset-submission-list', kwargs=metakey_kwargs)
+        return prefix + '_keys'
 
     def get_submission_sets(self, dataset):
         submission_set_name = self.kwargs[self.submission_set_name_kwarg]
