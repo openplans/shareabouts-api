@@ -180,7 +180,7 @@ class DataSet (CacheClearingModel, models.Model):
             thing.index_values(indexes)
 
 
-class Webhook (CacheClearingModel, TimeStampedModel):
+class Webhook (TimeStampedModel):
     """
     A Webhook is a user-defined HTTP callback for POSTing place or submitted
     thing as JSON to a specified URL after a specified event.
