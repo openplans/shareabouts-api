@@ -181,6 +181,7 @@ class InlineWebhookAdmin(admin.StackedInline):
 
 class WebhookAdmin(admin.ModelAdmin):
     list_display = ('id', 'dataset', 'submission_set', 'event', 'url',)
+    raw_id_fields = ('dataset',)
     # list_filter = ('name',)
 
 
