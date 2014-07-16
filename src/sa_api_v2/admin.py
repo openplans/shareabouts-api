@@ -174,13 +174,24 @@ class InlineDataIndexAdmin(admin.TabularInline):
     extra = 0
 
 
+class InlineWebhookAdmin(admin.StackedInline):
+    model = models.Webhook
+    extra = 0
+
+
+class WebhookAdmin(admin.ModelAdmin):
+    list_display = ('id', 'dataset', 'submission_set', 'event', 'url',)
+    raw_id_fields = ('dataset',)
+    # list_filter = ('name',)
+
+
 class DataSetAdmin(admin.ModelAdmin):
     list_display = ('display_name', 'slug', 'owner')
     prepopulated_fields = {'slug': ['display_name']}
     search_fields = ('display_name', 'slug', 'owner__username')
 
     raw_id_fields = ('owner',)
-    inlines = [InlineDataIndexAdmin, InlineDataSetPermissionAdmin, InlineApiKeyAdmin, InlineOriginAdmin, InlineGroupAdmin]
+    inlines = [InlineDataIndexAdmin, InlineDataSetPermissionAdmin, InlineApiKeyAdmin, InlineOriginAdmin, InlineGroupAdmin, InlineWebhookAdmin]
 
     def get_queryset(self, request):
         qs = super(DataSetAdmin, self).get_queryset(request)
@@ -294,3 +305,4 @@ admin.site.register(models.SubmissionSet, SubmissionSetAdmin)
 admin.site.register(models.Submission, SubmissionAdmin)
 admin.site.register(models.Action, ActionAdmin)
 admin.site.register(models.Group, GroupAdmin)
+admin.site.register(models.Webhook, WebhookAdmin)

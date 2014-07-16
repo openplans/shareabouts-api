@@ -39,6 +39,7 @@ from itertools import groupby
 from collections import defaultdict
 from urllib import urlencode
 import re
+import requests
 import ujson as json
 import logging
 
@@ -860,6 +861,18 @@ class PlaceListView (CachedResourceMixin, LocatedResourceMixin, OwnedResourceMix
         super(PlaceListView, self).pre_save(obj)
         obj.dataset = self.get_dataset()
 
+    def post_save(self, obj, created):
+        super(PlaceListView, self).post_save(obj)
+
+        # Get all place/add webhooks since we just added a place.
+        if not created:
+            return
+
+        webhooks = obj.dataset.webhooks.filter(submission_set='places').filter(event='add')
+
+        if len(webhooks):
+            self.trigger_webhooks(webhooks, obj)
+
     def get_queryset(self):
         dataset = self.get_dataset()
         queryset = super(PlaceListView, self).get_queryset()
@@ -908,6 +921,36 @@ class PlaceListView (CachedResourceMixin, LocatedResourceMixin, OwnedResourceMix
         return serializer_class(instance, data=data, files=files,
                                 many=many, partial=partial, context=context,
                                 **kwargs)
+
+    def trigger_webhooks(self, webhooks, obj):
+        """
+        Serializes the place object to GeoJSON and POSTs it to each webhook
+        """
+        serializer = serializers.PlaceSerializer(obj)
+        # Update request to include private data. We need everything since
+        # we can't PATCH on the API yet.
+        temp_get = self.request.GET.copy()
+        temp_get['include_private'] = True
+        self.request.GET = temp_get
+        serializer.context = {'request': self.request}
+
+        # Render the place as GeoJSON
+        renderer = renderers.GeoJSONRenderer()
+        data = renderer.render(serializer.data)
+
+        # POST to each webhoo
+        for webhook in webhooks:
+            status_code = 'None'
+            try:
+                response = requests.post(webhook.url, data=data)
+                status_code = str(response.status_code)
+                response.raise_for_status()
+                logger.info('[WEBHOOK] Place %d added and POSTed to %s. Status: %s', obj.id,
+                    webhook.url, status_code)
+            except requests.exceptions.RequestException as e:
+                logger.error('[WEBHOOK] Place %d added but could not be POSTed to %s. Status: %s',
+                    obj.id, webhook.url, status_code)
+                logger.error(e)
 
 
 class SubmissionInstanceView (CachedResourceMixin, OwnedResourceMixin, generics.RetrieveUpdateDestroyAPIView):

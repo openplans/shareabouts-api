@@ -180,8 +180,32 @@ class DataSet (CacheClearingModel, models.Model):
             thing.index_values(indexes)
 
 
+class Webhook (TimeStampedModel):
+    """
+    A Webhook is a user-defined HTTP callback for POSTing place or submitted
+    thing as JSON to a specified URL after a specified event.
+
+    """
+    EVENT_CHOICES = (
+        ('add', 'On add'),
+    )
+
+    dataset = models.ForeignKey('DataSet', related_name='webhooks')
+    submission_set = models.CharField(max_length=128)
+    event = models.CharField(max_length=128, choices=EVENT_CHOICES, default='add')
+    url = models.URLField(max_length=2048)
+
+    class Meta:
+        app_label = 'sa_api_v2'
+        db_table = 'sa_api_webhook'
+
+    def __unicode__(self):
+        return 'On %s data in %s' % (self.event, self.submission_set)
+
+
 class GeoSubmittedThingQuerySet (query.GeoQuerySet, SubmittedThingQuerySet):
     pass
+
 
 class GeoSubmittedThingManager (models.GeoManager, SubmittedThingManager):
     def get_queryset(self):
