@@ -199,6 +199,9 @@ class Webhook (TimeStampedModel):
         app_label = 'sa_api_v2'
         db_table = 'sa_api_webhook'
 
+    def __unicode__(self):
+        return 'On %s data in %s' % (self.event, self.submission_set)
+
 
 class GeoSubmittedThingQuerySet (query.GeoQuerySet, SubmittedThingQuerySet):
     pass
