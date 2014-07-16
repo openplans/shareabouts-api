@@ -868,7 +868,7 @@ class PlaceListView (CachedResourceMixin, LocatedResourceMixin, OwnedResourceMix
         if not created:
             return
 
-        webhooks = obj.dataset.webhooks.filter(submission_set='place').filter(event='add')
+        webhooks = obj.dataset.webhooks.filter(submission_set='places').filter(event='add')
 
         if len(webhooks):
             self.trigger_webhooks(webhooks, obj)
