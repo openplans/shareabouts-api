@@ -186,9 +186,13 @@ class Webhook (TimeStampedModel):
     thing as JSON to a specified URL after a specified event.
 
     """
+    EVENT_CHOICES = (
+        ('add', 'On add'),
+    )
+
     dataset = models.ForeignKey('DataSet', related_name='webhooks')
     submission_set = models.CharField(max_length=128)
-    event = models.CharField(max_length=128)
+    event = models.CharField(max_length=128, choices=EVENT_CHOICES, default='add')
     url = models.URLField(max_length=2048)
 
     class Meta:
