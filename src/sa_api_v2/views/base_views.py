@@ -20,18 +20,18 @@ from rest_framework.exceptions import APIException
 from rest_framework_bulk import generics as bulk_generics
 from social.apps.django_app import views as social_views
 from mock import patch
-from . import apikey
-from . import cors
-from . import models
-from . import serializers
-from . import utils
-from . import renderers
-from . import parsers
-from . import apikey
-from . import cors
-from . import utils
-from .cache import cache_buffer
-from .params import (INCLUDE_INVISIBLE_PARAM, INCLUDE_PRIVATE_PARAM,
+from .. import apikey
+from .. import cors
+from .. import models
+from .. import serializers
+from .. import utils
+from .. import renderers
+from .. import parsers
+from .. import apikey
+from .. import cors
+from .. import utils
+from ..cache import cache_buffer
+from ..params import (INCLUDE_INVISIBLE_PARAM, INCLUDE_PRIVATE_PARAM,
     INCLUDE_SUBMISSIONS_PARAM, NEAR_PARAM, DISTANCE_PARAM, FORMAT_PARAM,
     PAGE_PARAM, PAGE_SIZE_PARAM, CALLBACK_PARAM)
 from functools import wraps
