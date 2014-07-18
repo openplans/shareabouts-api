@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-import datetime
+from south.utils import datetime_utils as datetime
 from south.db import db
 from south.v2 import SchemaMigration
 from django.db import models
@@ -7,32 +7,40 @@ from django.db import models
 
 class Migration(SchemaMigration):
 
-    needed_by = (
-        ("oauth2", "0001_initial"),
-    )
-
     def forwards(self, orm):
-        db.send_create_signal(u'sa_api_v2', ['User'])
+        # Adding model 'DataIndex'
+        db.create_table(u'sa_api_v2_dataindex', (
+            (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('dataset', self.gf('django.db.models.fields.related.ForeignKey')(related_name='indexes', to=orm['sa_api_v2.DataSet'])),
+            ('attr_name', self.gf('django.db.models.fields.CharField')(max_length=100, db_index=True)),
+            ('attr_type', self.gf('django.db.models.fields.CharField')(default='string', max_length=10)),
+        ))
+        db.send_create_signal(u'sa_api_v2', ['DataIndex'])
 
-        # Changing field 'DataSet.owner'
-        db.alter_column('sa_api_dataset', 'owner_id', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['sa_api_v2.User']))
+        # Adding model 'IndexedValue'
+        db.create_table(u'sa_api_v2_indexedvalue', (
+            (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('index', self.gf('django.db.models.fields.related.ForeignKey')(related_name='values', to=orm['sa_api_v2.DataIndex'])),
+            ('value', self.gf('django.db.models.fields.CharField')(max_length=100, null=True, db_index=True)),
+            ('thing', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['sa_api_v2.SubmittedThing'])),
+        ))
+        db.send_create_signal(u'sa_api_v2', ['IndexedValue'])
 
-        # Changing field 'SubmittedThing.submitter'
-        db.alter_column('sa_api_submittedthing', 'submitter_id', self.gf('django.db.models.fields.related.ForeignKey')(null=True, to=orm['sa_api_v2.User']))
 
     def backwards(self, orm):
-        # Changing field 'DataSet.owner'
-        db.alter_column('sa_api_dataset', 'owner_id', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['auth.User']))
+        # Deleting model 'DataIndex'
+        db.delete_table(u'sa_api_v2_dataindex')
 
-        # Changing field 'SubmittedThing.submitter'
-        db.alter_column('sa_api_submittedthing', 'submitter_id', self.gf('django.db.models.fields.related.ForeignKey')(null=True, to=orm['auth.User']))
+        # Deleting model 'IndexedValue'
+        db.delete_table(u'sa_api_v2_indexedvalue')
+
 
     models = {
         u'apikey.apikey': {
             'Meta': {'object_name': 'ApiKey'},
-            'datasets': ('django.db.models.fields.related.ManyToManyField', [], {'symmetrical': 'False', 'related_name': "'keys'", 'blank': 'True', 'to': u"orm['sa_api_v2.DataSet']"}),
+            'dataset': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'keys'", 'blank': 'True', 'to': u"orm['sa_api_v2.DataSet']"}),
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'key': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '32'}),
+            'key': ('django.db.models.fields.CharField', [], {'default': "'MDQ3M2JiOGY5MmZmYWRjMzg4MGQzMzY1'", 'unique': 'True', 'max_length': '32'}),
             'last_used': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'blank': 'True'}),
             'logged_ip': ('django.db.models.fields.IPAddressField', [], {'max_length': '15', 'null': 'True', 'blank': 'True'})
         },
@@ -58,7 +66,7 @@ class Migration(SchemaMigration):
         },
         u'cors.origin': {
             'Meta': {'object_name': 'Origin'},
-            'datasets': ('django.db.models.fields.related.ManyToManyField', [], {'symmetrical': 'False', 'related_name': "'origins'", 'blank': 'True', 'to': u"orm['sa_api_v2.DataSet']"}),
+            'dataset': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'origins'", 'blank': 'True', 'to': u"orm['sa_api_v2.DataSet']"}),
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'last_used': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'blank': 'True'}),
             'logged_ip': ('django.db.models.fields.IPAddressField', [], {'max_length': '15', 'null': 'True', 'blank': 'True'}),
@@ -81,6 +89,13 @@ class Migration(SchemaMigration):
             'name': ('django.db.models.fields.CharField', [], {'max_length': '128', 'null': 'True', 'blank': 'True'}),
             'thing': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'attachments'", 'to': u"orm['sa_api_v2.SubmittedThing']"}),
             'updated_datetime': ('django.db.models.fields.DateTimeField', [], {'auto_now': 'True', 'db_index': 'True', 'blank': 'True'})
+        },
+        u'sa_api_v2.dataindex': {
+            'Meta': {'object_name': 'DataIndex'},
+            'attr_name': ('django.db.models.fields.CharField', [], {'max_length': '100', 'db_index': 'True'}),
+            'attr_type': ('django.db.models.fields.CharField', [], {'default': "'string'", 'max_length': '10'}),
+            'dataset': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'indexes'", 'to': u"orm['sa_api_v2.DataSet']"}),
+            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'})
         },
         u'sa_api_v2.dataset': {
             'Meta': {'unique_together': "(('owner', 'slug'),)", 'object_name': 'DataSet', 'db_table': "'sa_api_dataset'"},
@@ -117,6 +132,13 @@ class Migration(SchemaMigration):
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'priority': ('django.db.models.fields.PositiveIntegerField', [], {'blank': 'True'}),
             'submission_set': ('django.db.models.fields.CharField', [], {'max_length': '128', 'blank': 'True'})
+        },
+        u'sa_api_v2.indexedvalue': {
+            'Meta': {'object_name': 'IndexedValue'},
+            u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'index': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'values'", 'to': u"orm['sa_api_v2.DataIndex']"}),
+            'thing': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['sa_api_v2.SubmittedThing']"}),
+            'value': ('django.db.models.fields.CharField', [], {'max_length': '100', 'null': 'True', 'db_index': 'True'})
         },
         u'sa_api_v2.keypermission': {
             'Meta': {'ordering': "('priority',)", 'object_name': 'KeyPermission'},
@@ -171,7 +193,7 @@ class Migration(SchemaMigration):
             'date_joined': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now'}),
             'email': ('django.db.models.fields.EmailField', [], {'max_length': '75', 'blank': 'True'}),
             'first_name': ('django.db.models.fields.CharField', [], {'max_length': '30', 'blank': 'True'}),
-            'groups': ('django.db.models.fields.related.ManyToManyField', [], {'to': u"orm['auth.Group']", 'symmetrical': 'False', 'blank': 'True'}),
+            'groups': ('django.db.models.fields.related.ManyToManyField', [], {'symmetrical': 'False', 'related_name': "u'user_set'", 'blank': 'True', 'to': u"orm['auth.Group']"}),
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'is_active': ('django.db.models.fields.BooleanField', [], {'default': 'True'}),
             'is_staff': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
@@ -179,7 +201,7 @@ class Migration(SchemaMigration):
             'last_login': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now'}),
             'last_name': ('django.db.models.fields.CharField', [], {'max_length': '30', 'blank': 'True'}),
             'password': ('django.db.models.fields.CharField', [], {'max_length': '128'}),
-            'user_permissions': ('django.db.models.fields.related.ManyToManyField', [], {'to': u"orm['auth.Permission']", 'symmetrical': 'False', 'blank': 'True'}),
+            'user_permissions': ('django.db.models.fields.related.ManyToManyField', [], {'symmetrical': 'False', 'related_name': "u'user_set'", 'blank': 'True', 'to': u"orm['auth.Permission']"}),
             'username': ('django.db.models.fields.CharField', [], {'unique': 'True', 'max_length': '30'})
         }
     }

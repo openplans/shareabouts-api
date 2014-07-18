@@ -39,6 +39,7 @@ from itertools import groupby
 from collections import defaultdict
 from urllib import urlencode
 import re
+import requests
 import ujson as json
 import logging
 
@@ -389,6 +390,7 @@ class CorsEnabledMixin (object):
     A view that puts Access-Control headers on the response.
     """
     always_allow_options = False
+    SAFE_CORS_METHODS = ('GET', 'HEAD', 'TRACE')
 
     def finalize_response(self, request, response, *args, **kwargs):
         response = super(CorsEnabledMixin, self).finalize_response(request, response, *args, **kwargs)
@@ -398,7 +400,7 @@ class CorsEnabledMixin (object):
         # it is used in preflight requests to determine whether a client is
         # allowed to make unsafe requests. So, we omit OPTIONS from the safe
         # methods so that clients get an honest answer.
-        if request.method in ('GET', 'HEAD', 'TRACE'):
+        if request.method in self.SAFE_CORS_METHODS:
             response['Access-Control-Allow-Origin'] = request.META.get('HTTP_ORIGIN')
 
         # Some views don't do client authentication, but still need to allow
@@ -443,18 +445,24 @@ class FilteredResourceMixin (object):
 
         for key, values in self.request.GET.iterlists():
             if key not in special_filters:
-                # Filter!
-                excluded = []
-                for obj in queryset:
-                    if hasattr(obj, key):
-                        if getattr(obj, key) not in values:
-                            queryset = queryset.exclude(pk=obj.pk)
-                    else:
-                        # Is it in the data blob?
-                        data = json.loads(obj.data)
-                        if key not in data or data[key] not in values:
-                            excluded.append(obj.pk)
-                queryset = queryset.exclude(pk__in=excluded)
+                # Filter quickly for indexed values
+                if self.get_dataset().indexes.filter(attr_name=key).exists():
+                    queryset = queryset.filter_by_index(key, *values)
+
+                # Filter slowly for other values
+                else:
+                    excluded = []
+                    for obj in queryset:
+                        if hasattr(obj, key):
+                            if getattr(obj, key) not in values:
+                                queryset = queryset.exclude(pk=obj.pk)
+                        else:
+                            # Is it in the data blob?
+                            data = json.loads(obj.data)
+                            if key not in data or data[key] not in values:
+                                excluded.append(obj.pk)
+                    queryset = queryset.exclude(pk__in=excluded)
+
 
         return queryset
 
@@ -504,7 +512,7 @@ class OwnedResourceMixin (ClientAuthenticationMixin, CorsEnabledMixin):
     renderer_classes = (JSONRenderer, JSONPRenderer, BrowsableAPIRenderer, renderers.PaginatedCSVRenderer)
     parser_classes = (JSONParser, FormParser, MultiPartParser)
     permission_classes = (IsOwnerOrReadOnly, IsLoggedInOwnerOrPublicDataOnly, IsAllowedByDataPermissions)
-    authentication_classes = (authentication.BasicAuthentication, ShareaboutsSessionAuth)
+    authentication_classes = (authentication.BasicAuthentication, authentication.OAuth2Authentication, ShareaboutsSessionAuth)
     client_authentication_classes = (apikey.auth.ApiKeyAuthentication, cors.auth.OriginAuthentication)
     content_negotiation_class = ShareaboutsContentNegotiation
 
@@ -680,7 +688,7 @@ class CachedResourceMixin (object):
         django_cache.cache.set(key, (data, status, headers), settings.API_CACHE_TIMEOUT)
 
         # Also, add the key to the set of pages cached from this view.
-        meta_key = self.cache_prefix + '_keys'
+        meta_key = self.get_cache_metakey()
         keys = django_cache.cache.get(meta_key) or set()
         keys.add(key)
         django_cache.cache.set(meta_key, keys, settings.API_CACHE_TIMEOUT)
@@ -840,7 +848,7 @@ class PlaceListView (CachedResourceMixin, LocatedResourceMixin, OwnedResourceMix
       * `<attr>=<value>`
 
         Filter the place list to only return the places where the attribute is
-        equal to the given value.
+        equal to the given value. *The attribute should be indexed.*
 
     POST
     ----
@@ -858,9 +866,27 @@ class PlaceListView (CachedResourceMixin, LocatedResourceMixin, OwnedResourceMix
     renderer_classes = (renderers.GeoJSONRenderer, renderers.GeoJSONPRenderer) + OwnedResourceMixin.renderer_classes[2:]
     parser_classes = (parsers.GeoJSONParser,) + OwnedResourceMixin.parser_classes[1:]
 
+    def get_cache_metakey(self):
+        metakey_kwargs = self.kwargs.copy()
+        metakey_kwargs.pop('pk_list', None)
+        prefix = reverse('place-list', kwargs=metakey_kwargs)
+        return prefix + '_keys'
+
     def pre_save(self, obj):
         super(PlaceListView, self).pre_save(obj)
         obj.dataset = self.get_dataset()
+
+    def post_save(self, obj, created):
+        super(PlaceListView, self).post_save(obj)
+
+        # Get all place/add webhooks since we just added a place.
+        if not created:
+            return
+
+        webhooks = obj.dataset.webhooks.filter(submission_set='places').filter(event='add')
+
+        if len(webhooks):
+            self.trigger_webhooks(webhooks, obj)
 
     def get_queryset(self):
         dataset = self.get_dataset()
@@ -910,6 +936,36 @@ class PlaceListView (CachedResourceMixin, LocatedResourceMixin, OwnedResourceMix
         return serializer_class(instance, data=data, files=files,
                                 many=many, partial=partial, context=context,
                                 **kwargs)
+
+    def trigger_webhooks(self, webhooks, obj):
+        """
+        Serializes the place object to GeoJSON and POSTs it to each webhook
+        """
+        serializer = serializers.PlaceSerializer(obj)
+        # Update request to include private data. We need everything since
+        # we can't PATCH on the API yet.
+        temp_get = self.request.GET.copy()
+        temp_get['include_private'] = True
+        self.request.GET = temp_get
+        serializer.context = {'request': self.request}
+
+        # Render the place as GeoJSON
+        renderer = renderers.GeoJSONRenderer()
+        data = renderer.render(serializer.data)
+
+        # POST to each webhoo
+        for webhook in webhooks:
+            status_code = 'None'
+            try:
+                response = requests.post(webhook.url, data=data)
+                status_code = str(response.status_code)
+                response.raise_for_status()
+                logger.info('[WEBHOOK] Place %d added and POSTed to %s. Status: %s', obj.id,
+                    webhook.url, status_code)
+            except requests.exceptions.RequestException as e:
+                logger.error('[WEBHOOK] Place %d added but could not be POSTed to %s. Status: %s',
+                    obj.id, webhook.url, status_code)
+                logger.error(e)
 
 
 class SubmissionInstanceView (CachedResourceMixin, OwnedResourceMixin, generics.RetrieveUpdateDestroyAPIView):
@@ -1003,7 +1059,7 @@ class SubmissionListView (CachedResourceMixin, OwnedResourceMixin, FilteredResou
       * `<attr>=<value>`
 
         Filter the place list to only return the places where the attribute is
-        equal to the given value.
+        equal to the given value. *The attribute should be indexed.*
 
     POST
     ----
@@ -1021,6 +1077,12 @@ class SubmissionListView (CachedResourceMixin, OwnedResourceMixin, FilteredResou
 
     place_id_kwarg = 'place_id'
     submission_set_name_kwarg = 'submission_set_name'
+
+    def get_cache_metakey(self):
+        metakey_kwargs = self.kwargs.copy()
+        metakey_kwargs.pop('pk_list', None)
+        prefix = reverse('submission-list', kwargs=metakey_kwargs)
+        return prefix + '_keys'
 
     def get_place(self, dataset):
         place_id = self.kwargs[self.place_id_kwarg]
@@ -1120,7 +1182,7 @@ class DataSetSubmissionListView (CachedResourceMixin, OwnedResourceMixin, Filter
       * `<attr>=<value>`
 
         Filter the place list to only return the places where the attribute is
-        equal to the given value.
+        equal to the given value. *The attribute should be indexed.*
 
     ------------------------------------------------------------
     """
@@ -1130,6 +1192,12 @@ class DataSetSubmissionListView (CachedResourceMixin, OwnedResourceMixin, Filter
     pagination_serializer_class = serializers.PaginatedResultsSerializer
 
     submission_set_name_kwarg = 'submission_set_name'
+
+    def get_cache_metakey(self):
+        metakey_kwargs = self.kwargs.copy()
+        metakey_kwargs.pop('pk_list', None)
+        prefix = reverse('dataset-submission-list', kwargs=metakey_kwargs)
+        return prefix + '_keys'
 
     def get_submission_sets(self, dataset):
         submission_set_name = self.kwargs[self.submission_set_name_kwarg]
@@ -1191,7 +1259,7 @@ class DataSetInstanceView (CachedResourceMixin, OwnedResourceMixin, generics.Ret
 
     model = models.DataSet
     serializer_class = serializers.DataSetSerializer
-    authentication_classes = (authentication.BasicAuthentication, ShareaboutsSessionAuth)
+    authentication_classes = (authentication.BasicAuthentication, authentication.OAuth2Authentication, ShareaboutsSessionAuth)
     client_authentication_classes = ()
 
     def get_object_or_404(self, owner_username, dataset_slug):
@@ -1270,7 +1338,7 @@ class DataSetListMixin (object):
     model = models.DataSet
     serializer_class = serializers.DataSetSerializer
     pagination_serializer_class = serializers.PaginatedResultsSerializer
-    authentication_classes = (authentication.BasicAuthentication, ShareaboutsSessionAuth)
+    authentication_classes = (authentication.BasicAuthentication, authentication.OAuth2Authentication, ShareaboutsSessionAuth)
     client_authentication_classes = ()
 
     @utils.memo
@@ -1499,7 +1567,7 @@ class ActionListView (CachedResourceMixin, OwnedResourceMixin, generics.ListAPIV
 #
 
 class ClientAuthListView (OwnedResourceMixin, generics.ListCreateAPIView):
-    authentication_classes = (authentication.BasicAuthentication, ShareaboutsSessionAuth)
+    authentication_classes = (authentication.BasicAuthentication, authentication.OAuth2Authentication, ShareaboutsSessionAuth)
     client_authentication_classes = ()
     permission_classes = (IsLoggedInOwner,)
 
@@ -1537,6 +1605,7 @@ class UserInstanceView (OwnedResourceMixin, generics.RetrieveAPIView):
     client_authentication_classes = ()
     always_allow_options = True
     serializer_class = serializers.UserSerializer
+    SAFE_CORS_METHODS = ('GET', 'HEAD', 'TRACE', 'OPTIONS')
 
     def get_queryset(self):
         return models.User.objects.all()\
@@ -1549,15 +1618,53 @@ class UserInstanceView (OwnedResourceMixin, generics.RetrieveAPIView):
 
 
 class CurrentUserInstanceView (CorsEnabledMixin, views.APIView):
-    renderer_classes = (JSONRenderer, JSONPRenderer, BrowsableAPIRenderer, renderers.PaginatedCSVRenderer)
+    renderer_classes = (renderers.NullJSONRenderer, renderers.NullJSONPRenderer, BrowsableAPIRenderer, renderers.PaginatedCSVRenderer)
     content_negotiation_class = ShareaboutsContentNegotiation
+    authentication_classes = (ShareaboutsSessionAuth,)
+
+    # Since this view only affects the local session, make it always safe for
+    # CORS requests.
+    SAFE_CORS_METHODS = ('GET', 'HEAD', 'TRACE', 'OPTIONS', 'POST', 'DELETE')
 
     def get(self, request):
         if request.user.is_authenticated():
             user_url = reverse('user-detail', args=[request.user.username])
-            return HttpResponseRedirect(user_url + '?' + request.GET.urlencode())
+            return HttpResponseRedirect(user_url + '?' + request.GET.urlencode(), status=303)
         else:
-            return HttpResponse(status=204)
+            return Response(None)
+
+    def post(self, request):
+        from django.contrib.auth import authenticate, login
+
+        field_errors = {}
+        if 'username' not in request.DATA:
+            field_errors['username'] = 'You must supply a "username" parameter.'
+        if 'password' not in request.DATA:
+            field_errors['password'] = 'You must supply a "password" parameter.'
+        if field_errors:
+            return Response({'errors': field_errors}, status=400)
+
+        username, password = request.DATA['username'], request.DATA['password']
+        user = authenticate(username=username, password=password)
+
+        if user is None:
+            return Response({'errors': {'__all__': 'Invalid username or password.'}}, status=401)
+
+        login(request, user)
+        user_url = reverse('user-detail', args=[user.username])
+        user_url = request.build_absolute_uri(user_url)
+
+        # Is cross-origin?
+        if 'HTTP_ORIGIN' in request.META:
+            return HttpResponse(content=user_url, status=200, content_type='text/plain')
+        else:
+            return HttpResponseRedirect(user_url, status=303)
+
+    def delete(self, request):
+        from django.contrib.auth import logout
+
+        logout(request)
+        return HttpResponse(status=204)
 
 
 class SessionKeyView (CorsEnabledMixin, views.APIView):
