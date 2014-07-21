@@ -7,10 +7,6 @@ from django.db import models
 
 class Migration(SchemaMigration):
 
-    needed_by = (
-        ("oauth2", "0001_initial"),
-    )
-
     def forwards(self, orm):
         db.send_create_signal(u'sa_api_v2', ['User'])
 

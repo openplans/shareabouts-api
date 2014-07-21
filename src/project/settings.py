@@ -210,6 +210,9 @@ SOCIAL_AUTH_LOGIN_ERROR_URL = 'remote-social-login-error'
 # Tests (nose)
 TEST_RUNNER = 'django_nose.NoseTestSuiteRunner'
 SOUTH_TESTS_MIGRATE = True
+SOUTH_MIGRATION_MODULES = {
+    'oauth2': 'ignore',
+}
 
 # Debug toolbar
 def custom_show_toolbar(request):
