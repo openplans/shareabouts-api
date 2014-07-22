@@ -158,6 +158,7 @@ INSTALLED_APPS = (
     'social.apps.django_app.default',
     'raven.contrib.django.raven_compat',
     'django_ace',
+    'djcelery',
 
     # OAuth
     'provider',
@@ -175,6 +176,15 @@ INSTALLED_APPS = (
     'sa_api_v1.apikey_v1',
     'sa_manager',
 )
+
+
+###############################################################################
+#
+# Background task processing
+#
+
+CELERY_RESULT_BACKEND='djcelery.backends.database:DatabaseBackend'
+
 
 ###############################################################################
 #
@@ -212,6 +222,7 @@ TEST_RUNNER = 'django_nose.NoseTestSuiteRunner'
 SOUTH_TESTS_MIGRATE = True
 SOUTH_MIGRATION_MODULES = {
     'oauth2': 'ignore',
+    'djcelery': 'ignore',
 }
 
 # Debug toolbar
@@ -358,7 +369,11 @@ if 'REDIS_URL' in environ:
         }
     }
 
+    # Django sessions
     SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+
+    # Celery broker
+    BROKER_URL = environ['REDIS_URL'] + '/1'
 
 if all([key in environ for key in ('SHAREABOUTS_AWS_KEY',
                                    'SHAREABOUTS_AWS_SECRET',
@@ -413,6 +428,14 @@ try:
     from .local_settings import *
 except ImportError:
     pass
+
+
+##############################################################################
+# More background processing
+#
+
+if BROKER_URL == 'django://':
+    INSTALLED_APPS += ('kombu.transport.django', )
 
 
 ##############################################################################
