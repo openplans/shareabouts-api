@@ -373,7 +373,7 @@ if 'REDIS_URL' in environ:
     SESSION_ENGINE = "django.contrib.sessions.backends.cache"
 
     # Celery broker
-    BROKER_URL = environ['REDIS_URL'] + '/1'
+    BROKER_URL = environ['REDIS_URL'].strip('/') + '/1'
 
 if all([key in environ for key in ('SHAREABOUTS_AWS_KEY',
                                    'SHAREABOUTS_AWS_SECRET',
