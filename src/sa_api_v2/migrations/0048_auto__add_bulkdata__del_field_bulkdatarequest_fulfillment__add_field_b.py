@@ -39,13 +39,9 @@ class Migration(SchemaMigration):
         # Deleting model 'BulkData'
         db.delete_table('sa_api_bulkdata')
 
-
-        # User chose to not deal with backwards NULL issues for 'BulkDataRequest.fulfillment'
-        raise RuntimeError("Cannot reverse this migration. 'BulkDataRequest.fulfillment' and its values cannot be restored.")
-        
-        # The following code is provided here to aid in writing a correct migration        # Adding field 'BulkDataRequest.fulfillment'
+        # Adding field 'BulkDataRequest.fulfillment'
         db.add_column('sa_api_bulkdatarequest', 'fulfillment',
-                      self.gf('django.db.models.fields.TextField')(),
+                      self.gf('django.db.models.fields.TextField')(default=''),
                       keep_default=False)
 
         # Deleting field 'BulkDataRequest.include_private'
