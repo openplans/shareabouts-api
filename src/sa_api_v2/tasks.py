@@ -1,14 +1,11 @@
 from __future__ import unicode_literals
 
 from celery import shared_task
+from django.test.client import RequestFactory
 from django.utils.timezone import now
-from django.core.exceptions import ObjectDoesNotExist
-from django.core.files.base import ContentFile
-from django.core.files.storage import DefaultStorage
-from .models import DataSet
+from .models import BulkDataRequest, BulkData
 from .serializers import PlaceSerializer, SubmissionSerializer
 from .renderers import CSVRenderer, JSONRenderer, GeoJSONRenderer
-from .cache import DataSetCache
 
 
 def feature_collection_wrapper(features):
@@ -20,14 +17,12 @@ def feature_collection_wrapper(features):
 def identity(results):
     return results
 
-def generate_bulk_content(dataset_id, submission_set_name, format, **flags):
+def generate_bulk_content(dataset, submission_set_name, format, **flags):
     renderer_classes = {
         'csv': CSVRenderer,
         'json': JSONRenderer,
         'geojson': GeoJSONRenderer
     }
-
-    dataset = DataSet.objects.get(pk=dataset_id)
 
     if submission_set_name == 'places':
         submissions = dataset.places.all()
@@ -36,9 +31,14 @@ def generate_bulk_content(dataset_id, submission_set_name, format, **flags):
         if format == 'json': format = 'geojson'
     else:
         submissions = dataset.submissions.filter(parent__name=submission_set_name)
-        serializer = SubmissionSerializer()
+        serializer = SubmissionSerializer(submissions)
         finalize = identity
 
+    r = RequestFactory().get('')
+    for flag_attr, flag_val in flags.iteritems:
+        if flag_val: r.GET[flag_attr] = 'true'
+
+    serializer.context['request'] = r
     data = serializer.data
     data = finalize(data)
     renderer = renderer_classes.get(format)()
@@ -46,13 +46,23 @@ def generate_bulk_content(dataset_id, submission_set_name, format, **flags):
     return content
 
 @shared_task
-def get_bulk_data(dataset_id, submission_set_name, format, **flags):
-    # Generate the content
-    content = generate_bulk_content(dataset_id, submission_set_name, format, **flags)
+def get_bulk_data(request_id):
+    request = BulkDataRequest(pk=request_id)
 
-    # Cache the information
-    ds_cache = DataSetCache()
-    cache_key = ds_cache.get_cache_key(dataset_id, submission_set_name, format, **flags)
-    cache.set(cache_key, {
-        'content': content,
-        'generated': })
+    # Generate the content
+    content = generate_bulk_content(
+        request.dataset,
+        request.submission_set,
+        request.format,
+        include_submissions=request.include_submissions,
+        include_private=request.include_private,
+        include_invisible=request.include_invisible)
+
+    # Store the information
+    bulk_data = BulkData(
+        request=request,
+        content=content)
+    bulk_data.save()
+
+    request.fulfilled_at = now()
+    request.save()
