@@ -109,6 +109,10 @@ class DataSetBulkDataRequestView (OwnedResourceMixin, views.APIView):
         return datarequest
 
     def get_characteristic_params(self, request, owner_username, dataset_slug, submission_set_name):
+        """
+        Get the parameters that should identify all snapshots formed off of
+        this query.
+        """
         params = request.GET if request.method.upper() == 'GET' else request.DATA
         return {
             'dataset': self.get_dataset(),
@@ -124,20 +128,23 @@ class DataSetBulkDataRequestView (OwnedResourceMixin, views.APIView):
 
         try:
             datarequest = self.get_most_recent_request(characteristic_params)
-            log.info('Duplicate reqest for a new %s snapshot' % characteristic_params['format'])
         except BulkDataRequest.DoesNotExist:
             log.info('Initiating a new %s snapshot' % characteristic_params['format'])
             datarequest = self.initiate_data_request(characteristic_params)
+        else:
+            log.info('Duplicate reqest for a new %s snapshot' % characteristic_params['format'])
 
         return Response(self.get_data_url(datarequest), status=202)
 
     def get(self, request, owner_username, dataset_slug, submission_set_name):
+        # Copy the query parameters, since we want to modify them
         request.GET = request.GET.copy()
 
         # Treat GET requests with a 'new' parameter like POST requests.
         if request.GET.pop('new', None) is not None:
             return self.post(request, owner_username, dataset_slug, submission_set_name)
 
+        # Other requests get passed through
         characteristic_params = self.get_characteristic_params(request, owner_username, dataset_slug, submission_set_name)
         datarequests = self.get_recent_requests(characteristic_params)
         default_message = self.response_messages['pending']
