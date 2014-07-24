@@ -157,6 +157,9 @@ class IsOwnerOrReadOnly(permissions.BasePermission):
 
         (If the view has no such attribute, assumes not allowed)
         """
+        if request.method == 'OPTIONS':
+            return True
+
         if (request.method in permissions.SAFE_METHODS or
             is_owner(request.user, request) or request.user.is_superuser
             or (hasattr(request, 'client') and
@@ -176,6 +179,9 @@ class IsLoggedInOwnerOrPublicDataOnly(permissions.BasePermission):
         'real' authentication, to avoid users abusing one API key to
         obtain others.
         """
+        if request.method == 'OPTIONS':
+            return True
+
         private_data_flags = [INCLUDE_PRIVATE_PARAM, INCLUDE_INVISIBLE_PARAM]
         if not any([flag in request.GET for flag in private_data_flags]):
             return True
@@ -199,6 +205,9 @@ class IsLoggedInOwner(permissions.BasePermission):
         'real' authentication, to avoid users abusing one API key to
         obtain others.
         """
+        if request.method == 'OPTIONS':
+            return True
+
         if not is_really_logged_in(request.user, request):
             return False
 
@@ -210,6 +219,9 @@ class IsLoggedInOwner(permissions.BasePermission):
 
 class IsLoggedInAdmin(permissions.BasePermission):
     def has_permission(self, request, view):
+        if request.method == 'OPTIONS':
+            return True
+
         if not is_really_logged_in(request.user, request):
             return False
 
@@ -221,6 +233,9 @@ class IsLoggedInAdmin(permissions.BasePermission):
 
 class IsAllowedByDataPermissions(permissions.BasePermission):
     def has_permission(self, request, view):
+        if request.method == 'OPTIONS':
+            return True
+
         # Let the owner do whatever they want
         if is_owner(request.user, request):
             return True
