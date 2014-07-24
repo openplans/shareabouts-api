@@ -17,11 +17,11 @@ urlpatterns = patterns('sa_api_v2',
     # bulk data snapshots
 
     url(r'^(?P<owner_username>[^/]+)/datasets/(?P<dataset_slug>[^/]+)/(?P<submission_set_name>[^/]+)/snapshots$',
-        views.DataSetBulkDataRequestView.as_view(),
-        name='dataset-bulkdata-request'),
+        views.DataSetDataSnapshotRequestView.as_view(),
+        name='dataset-snapshot-request'),
     url(r'^(?P<owner_username>[^/]+)/datasets/(?P<dataset_slug>[^/]+)/(?P<submission_set_name>[^/]+)/snapshots/(?P<data_guid>[^/]+)$',
-        views.DataSetBulkDataView.as_view(),
-        name='dataset-bulkdata-list'),
+        views.DataSetDataSnapshotView.as_view(),
+        name='dataset-snapshot-list'),
 
     # ad-hoc data
 

@@ -14,7 +14,7 @@ from social.apps.django_app import views as social_views
 from ..params import (INCLUDE_INVISIBLE_PARAM, INCLUDE_PRIVATE_PARAM,
     INCLUDE_SUBMISSIONS_PARAM, NEAR_PARAM, DISTANCE_PARAM, FORMAT_PARAM,
     PAGE_PARAM, PAGE_SIZE_PARAM, CALLBACK_PARAM)
-from ..models import BulkDataRequest, BulkData, DataSet
+from ..models import DataSnapshotRequest, DataSnapshot, DataSet
 from ..tasks import store_bulk_data, bulk_data_status_update
 from .base_views import OwnedResourceMixin
 import logging
@@ -38,7 +38,7 @@ class SimpleContentNegotiation (DefaultContentNegotiation):
 # --------------
 #
 
-class DataSetBulkDataRequestView (OwnedResourceMixin, views.APIView):
+class DataSetDataSnapshotRequestView (OwnedResourceMixin, views.APIView):
     """
 
     GET
@@ -76,12 +76,12 @@ class DataSetBulkDataRequestView (OwnedResourceMixin, views.APIView):
     def get_data_url(self, datarequest):
         data_url_kwargs = self.kwargs.copy()
         data_url_kwargs['data_guid'] = datarequest.guid
-        path = reverse('dataset-bulkdata-list', kwargs=data_url_kwargs)
+        path = reverse('dataset-snapshot-list', kwargs=data_url_kwargs)
         url = self.request.build_absolute_uri(path)
         return url
 
     def get_recent_requests(self, characteristic_params):
-        return BulkDataRequest.objects\
+        return DataSnapshotRequest.objects\
             .all().order_by('-requested_at')\
             .filter(**characteristic_params)
 
@@ -89,11 +89,11 @@ class DataSetBulkDataRequestView (OwnedResourceMixin, views.APIView):
         try:
             return self.get_recent_requests(characteristic_params).filter(status='pending')[0]
         except IndexError:
-            raise BulkDataRequest.DoesNotExist()
+            raise DataSnapshotRequest.DoesNotExist()
 
     def initiate_data_request(self, characteristic_params):
         # Create a new data request
-        datarequest = BulkDataRequest(**characteristic_params)
+        datarequest = DataSnapshotRequest(**characteristic_params)
         datarequest.requester = self.request.user if self.request.user.is_authenticated() else None
         datarequest.status = 'pending'
         datarequest.save()
@@ -128,7 +128,7 @@ class DataSetBulkDataRequestView (OwnedResourceMixin, views.APIView):
 
         try:
             datarequest = self.get_most_recent_request(characteristic_params)
-        except BulkDataRequest.DoesNotExist:
+        except DataSnapshotRequest.DoesNotExist:
             log.info('Initiating a new %s snapshot' % characteristic_params['format'])
             datarequest = self.initiate_data_request(characteristic_params)
         else:
@@ -157,7 +157,7 @@ class DataSetBulkDataRequestView (OwnedResourceMixin, views.APIView):
         } for datarequest in datarequests], status=200)
 
 
-class DataSetBulkDataView (OwnedResourceMixin, views.APIView):
+class DataSetDataSnapshotView (OwnedResourceMixin, views.APIView):
     """
 
     GET
@@ -178,13 +178,13 @@ class DataSetBulkDataView (OwnedResourceMixin, views.APIView):
 
     def get(self, request, owner_username, dataset_slug, submission_set_name, data_guid):
         try:
-            datarequest = BulkDataRequest.objects.get(guid=data_guid)
-        except BulkDataRequest.DoesNotExist:
+            datarequest = DataSnapshotRequest.objects.get(guid=data_guid)
+        except DataSnapshotRequest.DoesNotExist:
             return Response({'status': 'not found', 'message': 'This data is no longer available'}, status=404)
 
         try:
             datarequest.fulfillment
-        except BulkData.DoesNotExist:
+        except DataSnapshot.DoesNotExist:
             return Response({
                 'message': 'Data generation is not yet complete. Please try again in 30 seconds.'
             }, status=503)
@@ -193,8 +193,8 @@ class DataSetBulkDataView (OwnedResourceMixin, views.APIView):
 
     def delete(self, request, owner_username, dataset_slug, submission_set_name, data_guid):
         try:
-            datarequest = BulkDataRequest.objects.get(guid=data_guid)
-        except BulkDataRequest.DoesNotExist:
+            datarequest = DataSnapshotRequest.objects.get(guid=data_guid)
+        except DataSnapshotRequest.DoesNotExist:
             return Response(status=404)
 
         self.verify_object(datarequest.dataset, DataSet)

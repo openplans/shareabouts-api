@@ -1,6 +1,6 @@
 from django.core.management.base import BaseCommand, CommandError
 from django.utils.timezone import now, timedelta
-from sa_api_v2.models import BulkDataRequest
+from sa_api_v2.models import DataSnapshotRequest
 
 import logging
 log = logging.getLogger(__name__)
@@ -13,4 +13,4 @@ class Command(BaseCommand):
 
         # Delete requests. Should cascade to snapshots.
         cutoff = now() - timedelta(days=1)
-        BulkDataRequest.objects.filter(requested_at__lt=cutoff).delete()
+        DataSnapshotRequest.objects.filter(requested_at__lt=cutoff).delete()

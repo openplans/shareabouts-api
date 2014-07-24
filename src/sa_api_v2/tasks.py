@@ -4,7 +4,7 @@ from celery import shared_task
 from celery.result import AsyncResult
 from django.test.client import RequestFactory
 from django.utils.timezone import now
-from .models import BulkDataRequest, BulkData
+from .models import DataSnapshotRequest, DataSnapshot
 from .serializers import PlaceSerializer, SubmissionSerializer
 from .renderers import CSVRenderer, JSONRenderer, GeoJSONRenderer
 
@@ -42,7 +42,7 @@ def store_bulk_data(request_id):
     task_id = store_bulk_data.request.id
     log.info('Creating a snapshot request with task id %s' % (task_id,))
 
-    datarequest = BulkDataRequest.objects.get(pk=request_id)
+    datarequest = DataSnapshotRequest.objects.get(pk=request_id)
     datarequest.guid = task_id
     datarequest.save()
 
@@ -56,7 +56,7 @@ def store_bulk_data(request_id):
         include_invisible=datarequest.include_invisible)
 
     # Store the information
-    bulk_data = BulkData(
+    bulk_data = DataSnapshot(
         request=datarequest,
         content=content)
     bulk_data.save()
@@ -73,6 +73,6 @@ def bulk_data_status_update(uuid):
     successful or not.
     """
     taskresult = AsyncResult(uuid)
-    datarequest = BulkDataRequest.objects.get(guid=uuid)
+    datarequest = DataSnapshotRequest.objects.get(guid=uuid)
     datarequest.status = taskresult.status.lower()
     datarequest.save()

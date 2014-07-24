@@ -3,7 +3,7 @@ import uuid
 from django.contrib.gis.db import models
 
 
-class BulkDataRequest (models.Model):
+class DataSnapshotRequest (models.Model):
     FORMAT_CHOICES = (
         ('json', 'JSON/GeoJSON'),
         ('csv', 'CSV'),
@@ -26,7 +26,7 @@ class BulkDataRequest (models.Model):
 
     class Meta:
         app_label = 'sa_api_v2'
-        db_table = 'sa_api_bulkdatarequest'
+        db_table = 'sa_api_datasnapshotrequest'
 
     def __unicode__(self):
         return 'Bulk request for %s %s' % (self.dataset, self.submission_set)
@@ -37,10 +37,10 @@ class BulkDataRequest (models.Model):
         return timestamp - (timestamp % 60)  # Each minute
 
 
-class BulkData (models.Model):
-    request = models.OneToOneField('BulkDataRequest', related_name='fulfillment')
+class DataSnapshot (models.Model):
+    request = models.OneToOneField('DataSnapshotRequest', related_name='fulfillment')
     content = models.TextField()
 
     class Meta:
         app_label = 'sa_api_v2'
-        db_table = 'sa_api_bulkdata'
+        db_table = 'sa_api_datasnapshot'
