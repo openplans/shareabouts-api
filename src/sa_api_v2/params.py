@@ -6,6 +6,7 @@ INCLUDE_PRIVATE_PARAM = 'include_private'
 INCLUDE_SUBMISSIONS_PARAM = 'include_submissions'
 NEAR_PARAM = 'near'
 DISTANCE_PARAM = 'distance_lt'
+BBOX_PARAM = 'bounds'
 FORMAT_PARAM = 'format'
 
 PAGE_PARAM = 'page'

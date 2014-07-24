@@ -1,6 +1,6 @@
 from django.conf import settings
 from django.contrib.auth import views as auth_views
-from django.contrib.gis.geos import GEOSGeometry, Point
+from django.contrib.gis.geos import GEOSGeometry, Point, Polygon
 from django.core import cache as django_cache
 from django.core.urlresolvers import reverse
 from django.db.models import Count, Q
@@ -32,8 +32,8 @@ from .. import cors
 from .. import utils
 from ..cache import cache_buffer
 from ..params import (INCLUDE_INVISIBLE_PARAM, INCLUDE_PRIVATE_PARAM,
-    INCLUDE_SUBMISSIONS_PARAM, NEAR_PARAM, DISTANCE_PARAM, FORMAT_PARAM,
-    PAGE_PARAM, PAGE_SIZE_PARAM, CALLBACK_PARAM)
+    INCLUDE_SUBMISSIONS_PARAM, NEAR_PARAM, DISTANCE_PARAM, BBOX_PARAM,
+    FORMAT_PARAM, PAGE_PARAM, PAGE_SIZE_PARAM, CALLBACK_PARAM)
 from functools import wraps
 from itertools import groupby
 from collections import defaultdict
@@ -444,7 +444,7 @@ class FilteredResourceMixin (object):
         special_filters = set([FORMAT_PARAM, PAGE_PARAM, PAGE_SIZE_PARAM(),
             INCLUDE_SUBMISSIONS_PARAM, INCLUDE_PRIVATE_PARAM,
             INCLUDE_INVISIBLE_PARAM, NEAR_PARAM, DISTANCE_PARAM,
-            CALLBACK_PARAM(self)])
+            BBOX_PARAM, CALLBACK_PARAM(self)])
 
         for key, values in self.request.GET.iterlists():
             if key not in special_filters:
@@ -496,6 +496,14 @@ class LocatedResourceMixin (object):
             # Since the NEAR_PARAM is already in the query parameters, we can
             # use the `reference` geometry here.
             queryset = queryset.filter(geometry__distance_lt=(reference, max_dist))
+
+        if BBOX_PARAM in self.request.GET:
+            bounds = self.request.GET[BBOX_PARAM].split(',')
+            if len(bounds) != 4:
+                raise QueryError(detail='Invalid parameter for "%s": %r' % (BBOX_PARAM, self.request.GET[BBOX_PARAM]))
+
+            boundingbox = Polygon.from_bbox(bounds)
+            queryset = queryset.filter(geometry__within=boundingbox)
 
         return queryset
 
@@ -847,6 +855,12 @@ class PlaceListView (CachedResourceMixin, LocatedResourceMixin, OwnedResourceMix
         with a unit string -- e.g., `123`, `123.45`, `123 km`, `123.45 mi`.
         If only a number is specified, the unit meters (m) is assumed. For all
         available units, see [the GeoDjango docs](https://docs.djangoproject.com/en/dev/ref/contrib/gis/measure/#supported-units).
+
+      * `bounds=<left>,<top>,<right>,<bottom>`
+
+        Restrict the places to those within the given bounding box. This is a
+        comma-separated list of 4 numeric values: western longitude, northern
+        latitude, eastern longitude, southern latitude.
 
       * `<attr>=<value>`
 
