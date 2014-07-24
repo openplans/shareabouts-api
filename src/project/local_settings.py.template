@@ -17,6 +17,8 @@ REST_FRAMEWORK = {
     'PAGINATE_BY_PARAM': 'page_size'
 }
 
+BROKER_URL = 'django://'
+
 # Set the attachment storage class to the file storage class that should
 # manage storing and retriving of place and submission attachments.
 #

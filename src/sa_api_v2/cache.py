@@ -307,6 +307,11 @@ class Cache (object):
 
 
 class DataSetCache (Cache):
+    def get_bulk_data_cache_key(self, dataset_id, submission_set_name, format, **flags):
+        return 'bulk_data:%s:%s:%s:%s' % (
+            dataset_id, submission_set_name, format,
+            ':'.join(k for k, v in flags.items() if v))
+
     def get_instance_params(self, dataset_obj):
         params = {
             'owner_username': dataset_obj.owner.username,

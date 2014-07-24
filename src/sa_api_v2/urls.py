@@ -14,6 +14,17 @@ urlpatterns = patterns('sa_api_v2',
         views.ActionListView.as_view(),
         name='action-list'),
 
+    # bulk data snapshots
+
+    url(r'^(?P<owner_username>[^/]+)/datasets/(?P<dataset_slug>[^/]+)/(?P<submission_set_name>[^/]+)/snapshots$',
+        views.DataSetDataSnapshotRequestView.as_view(),
+        name='dataset-snapshot-request'),
+    url(r'^(?P<owner_username>[^/]+)/datasets/(?P<dataset_slug>[^/]+)/(?P<submission_set_name>[^/]+)/snapshots/(?P<data_guid>[^/]+)$',
+        views.DataSetDataSnapshotView.as_view(),
+        name='dataset-snapshot-list'),
+
+    # ad-hoc data
+
     url(r'^(?P<owner_username>[^/]+)/datasets/(?P<dataset_slug>[^/]+)/places/(?P<place_id>\d+)/(?P<submission_set_name>[^/]+)/(?P<submission_id>\d+)$',
         views.SubmissionInstanceView.as_view(),
         name='submission-detail'),
@@ -50,6 +61,8 @@ urlpatterns = patterns('sa_api_v2',
     url(r'^(?P<owner_username>[^/]+)/datasets$',
         views.DataSetListView.as_view(),
         name='dataset-list'),
+
+    # profiles and user info
 
     url(r'^(?P<owner_username>[^/]+)$',
         views.UserInstanceView.as_view(),
