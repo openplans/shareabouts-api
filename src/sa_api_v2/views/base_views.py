@@ -226,16 +226,19 @@ class IsAllowedByDataPermissions(permissions.BasePermission):
             return True
 
         # DataSets are protected by other means
-        if issubclass(view.model, models.DataSet):
+        if hasattr(view, 'model') and issubclass(view.model, models.DataSet):
             return True
 
-        actions = {
-            'GET': 'retrieve',
-            'POST': 'create',
-            'PUT': 'update',
-            'PATCH': 'update',
-            'DELETE': 'destroy'
-        }
+        if hasattr(view, 'get_method_actions'):
+            actions = view.get_method_actions()
+        else:
+            actions = {
+                'GET': 'retrieve',
+                'POST': 'create',
+                'PUT': 'update',
+                'PATCH': 'update',
+                'DELETE': 'destroy'
+            }
 
         # We only protect the actions we know about
         if request.method.upper() not in actions:
