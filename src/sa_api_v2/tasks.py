@@ -27,9 +27,12 @@ def generate_bulk_content(dataset, submission_set_name, format, **flags):
         submissions = dataset.submissions.filter(parent__name=submission_set_name)
         serializer = SubmissionSerializer(submissions)
 
-    r = RequestFactory().get('')
+    # Construct a request for the serializer context
+    r_data = {}
     for flag_attr, flag_val in flags.iteritems():
-        if flag_val: r.GET[flag_attr] = 'true'
+        if flag_val: r_data[flag_attr] = 'true'
+    r = RequestFactory().get('', data=r_data)
+    r.get_dataset = lambda: dataset
 
     serializer.context['request'] = r
     data = serializer.data

@@ -249,6 +249,9 @@ class SubmissionSet (CacheClearingModel, models.Model):
         unique_together = (('place', 'name'),
                            )
 
+    def __unicode__(self):
+        return self.name
+
 
 class Submission (SubmittedThing):
     """
