@@ -196,7 +196,7 @@ AUTHENTICATION_BACKENDS = (
     # for list of available backends.
     'social.backends.twitter.TwitterOAuth',
     'social.backends.facebook.FacebookOAuth2',
-    'django.contrib.auth.backends.ModelBackend',
+    'sa_api_v2.auth_backends.CachedModelBackend',
 )
 
 AUTH_USER_MODEL = 'sa_api_v2.User'

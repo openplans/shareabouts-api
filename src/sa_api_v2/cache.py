@@ -306,6 +306,35 @@ class Cache (object):
         self.clear_keys(*(prefixed_keys | data_keys | other_keys))
 
 
+class UserCache (Cache):
+    # == Raw query caching
+    @classmethod
+    def get_instance_key(cls, **params):
+        return ':'.join(['user-instance', str(params['user_id'])])
+
+    @classmethod
+    def get_instance(cls, **params):
+        """
+        Get a full cached user instance.
+        """
+        key = cls.get_instance_key(**params)
+        return cache_buffer.get(key)
+
+    @classmethod
+    def set_instance(cls, instance, **params):
+        key = cls.get_instance_key(**params)
+        cache_buffer.set(key, instance)
+
+    # == Cache invalidation
+    @classmethod
+    def get_request_prefixes(cls, **params):
+        return set()
+
+    @classmethod
+    def get_other_keys(cls, **params):
+        return set([cls.get_instance_key(**params)])
+
+
 class DataSetCache (Cache):
     # == Raw query caching
     def get_instance_key(self, **params):
