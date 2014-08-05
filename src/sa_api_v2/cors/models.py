@@ -74,10 +74,6 @@ class Origin(models.Model):
             pattern = pattern.replace('.', r'\.').replace('*', r'.*')
             return re.match(pattern, origin) is not None
 
-    @utils.memo
-    def get_permissions(self):
-        return self.permissions
-
     def save(self, *args, **kwargs):
         if self.logged_ip == '':
             self.logged_ip = None

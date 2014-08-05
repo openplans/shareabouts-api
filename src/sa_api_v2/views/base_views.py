@@ -565,10 +565,40 @@ class OwnedResourceMixin (ClientAuthenticationMixin, CorsEnabledMixin):
                 self.owner_username_kwarg in self.kwargs):
 
                 owner_username = self.kwargs[self.owner_username_kwarg]
-                self._owner = get_object_or_404(models.User, username=owner_username)
+                self._owner = get_object_or_404(models.User.objects.all().prefetch_related('_groups', '_groups__permissions'), username=owner_username)
             else:
                 self._owner = None
         return self._owner
+
+    @classmethod
+    def _get_dataset_from_db(cls, owner_username, dataset_slug):
+        return get_object_or_404(
+            models.DataSet.objects.all()\
+                .select_related('owner')\
+                .prefetch_related('permissions')\
+                .prefetch_related('keys')\
+                .prefetch_related('keys__permissions')\
+                .prefetch_related('origins')\
+                .prefetch_related('origins__permissions')
+            , slug=dataset_slug, owner__username=owner_username)
+
+    @classmethod
+    def _get_dataset_from_cache(cls, owner_username, dataset_slug):
+        from ..cache import DataSetCache
+        ds_cache = DataSetCache()
+
+        return ds_cache.get_instance(
+            owner_username=owner_username,
+            dataset_slug=dataset_slug)
+
+    @classmethod
+    def _save_dataset_in_cache(cls, dataset, owner_username, dataset_slug):
+        from ..cache import DataSetCache
+        ds_cache = DataSetCache()
+
+        ds_cache.set_instance(dataset,
+            owner_username=owner_username,
+            dataset_slug=dataset_slug)
 
     def get_dataset(self, force=False):
         if force or not hasattr(self, '_dataset'):
@@ -580,11 +610,15 @@ class OwnedResourceMixin (ClientAuthenticationMixin, CorsEnabledMixin):
                 owner_username = self.kwargs[self.owner_username_kwarg]
                 dataset_slug = self.kwargs[self.dataset_slug_kwarg]
 
-                self._dataset = get_object_or_404(models.DataSet.objects.select_related('owner'),
-                    slug=dataset_slug, owner__username=owner_username)
+                self._dataset = (
+                    self._get_dataset_from_cache(owner_username, dataset_slug) or
+                    self._get_dataset_from_db(owner_username, dataset_slug)
+                )
 
-                # Cache the owner in case it's not already
+                # Remember the owner in case we don't already
                 self._owner = self._dataset.owner
+
+                self._save_dataset_in_cache(self._dataset, owner_username, dataset_slug)
             else:
                 self._dataset = None
         return self._dataset

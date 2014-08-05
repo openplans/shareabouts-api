@@ -40,12 +40,11 @@ class APIKeyBackend(object):
 
     def _get_client_and_key(self, request, key_string):
         dataset = request.get_dataset()
-        try:
-            key = dataset.keys.filter(key=key_string).prefetch_related('permissions')[0]
-        except IndexError:
+        ds_key = dataset.get_key(key_string)
+        if ds_key is None:
             return (None, None)
-        client = key
-        return client, key
+        client = ds_key
+        return client, ds_key
 
 
 def check_api_authorization(request):

@@ -169,8 +169,18 @@ class DataSet (CacheClearingModel, models.Model):
         return self._submissions
 
     @utils.memo
-    def get_permissions(self):
-        return self.permissions
+    def get_key(self, key_string):
+        for ds_key in self.keys.all():
+            if ds_key.key == key_string:
+                return ds_key
+        return None
+
+    @utils.memo
+    def get_origin(self, origin_header):
+        for ds_origin in self.origins.all():
+            if ds_origin.match(ds_origin.pattern, origin_header):
+                return ds_origin
+        return None
 
     def reindex(self):
         things = self.things.all()

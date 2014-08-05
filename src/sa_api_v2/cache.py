@@ -147,7 +147,7 @@ class CacheBuffer (object):
                 if timeout is not Undefined:
                     django_cache.cache.set_many(queue, timeout)
                 else:
-                    django_cache.cache.set_many(queue, None)
+                    django_cache.cache.set_many(queue, settings.API_CACHE_TIMEOUT)
 
         # if self.sadd_queue:
         #     for key, value in self.sadd_queue.iteritems():
@@ -307,6 +307,33 @@ class Cache (object):
 
 
 class DataSetCache (Cache):
+    # == Raw query caching
+    def get_instance_key(self, **params):
+        return ':'.join(['dataset-instance', params['owner_username'], params['dataset_slug']])
+
+    def get_instance(self, **params):
+        """
+        Get a full cached dataset instance.
+        """
+        key = self.get_instance_key(**params)
+        return cache_buffer.get(key)
+
+    def set_instance(self, instance, **params):
+        key = self.get_instance_key(**params)
+        cache_buffer.set(key, instance)
+
+    def get_permissions_key(self, **params):
+        return ':'.join(['dataset-permissions', params['owner_username'], params['dataset_slug']])
+
+    def get_permissions(self, **params):
+        key = self.get_permissions_key(**params)
+        return cache_buffer.get(key)
+
+    def save_permissions(self, permissions, **params):
+        key = self.get_permissions_key(**params)
+        cache_buffer.set(key, permissions)
+
+    # == Serialized data caching
     def get_bulk_data_cache_key(self, dataset_id, submission_set_name, format, **flags):
         return 'bulk_data:%s:%s:%s:%s' % (
             dataset_id, submission_set_name, format,
@@ -321,6 +348,7 @@ class DataSetCache (Cache):
         }
         return params
 
+    # == Cache invalidation
     def get_request_prefixes(self, **params):
         owner, dataset = map(params.get, ('owner_username', 'dataset_slug'))
         prefixes = super(DataSetCache, self).get_request_prefixes(**params)
@@ -330,6 +358,9 @@ class DataSetCache (Cache):
         prefixes.update([instance_path, collection_path])
 
         return prefixes
+
+    def get_other_keys(self, **params):
+        return set([self.get_instance_key(**params), self.get_permissions_key(**params)])
 
 
 class PlaceCache (Cache):

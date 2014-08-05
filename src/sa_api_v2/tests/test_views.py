@@ -476,6 +476,10 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
         #
         # - SELECT requested dataset and owner
         # - SELECT dataset permissions
+        # - SELECT keys
+        # - SELECT key permissions
+        # - SELECT origins
+        # - SELECT origin permissions
         #
         # ---- Building the data
         #
@@ -506,7 +510,7 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
         #     JOIN sa_api_group_submitters as s ON (g.id = s.group_id)
         #    WHERE gs.user_id IN (<[each submitter id]>);
         #
-        with self.assertNumQueries(9):
+        with self.assertNumQueries(13):
             response = self.view(request, **self.request_kwargs)
             self.assertStatusCode(response, 200)
 
@@ -514,7 +518,75 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
         request = self.factory.get(path)
 
         # Check that this performs no more queries, since it's all cached
-        with self.assertNumQueries(2):
+        with self.assertNumQueries(0):
+            response = self.view(request, **self.request_kwargs)
+            self.assertStatusCode(response, 200)
+
+    def test_GET_from_cache_with_api_key(self):
+        # Modify the dataset permissions
+        ds_perm = self.dataset.permissions.all()[0]
+        ds_perm.can_retrieve = False
+        ds_perm.save()
+
+        key_perm = self.apikey.permissions.all()[0]
+        key_perm.can_retrieve = True
+        key_perm.save()
+
+        # Set up the initial request
+        path = reverse('place-detail', kwargs=self.request_kwargs)
+        request = self.factory.get(path)
+        request.META[KEY_HEADER] = self.apikey.key
+
+        # Check that we make a finite number of queries
+        #
+        # ---- Checking data access permissions:
+        #
+        # - SELECT requested dataset and owner
+        # - SELECT dataset permissions
+        # - SELECT keys
+        # - SELECT key permissions
+        # - SELECT origins
+        # - SELECT origin permissions
+        #
+        # ---- Building the data
+        #
+        # - SELECT * FROM sa_api_place AS p
+        #     JOIN sa_api_submittedthing AS t ON (p.submittedthing_ptr_id = t.id)
+        #     JOIN sa_api_dataset AS ds ON (t.dataset_id = ds.id)
+        #     JOIN auth_user as u1 ON (t.submitter_id = u1.id)
+        #     JOIN auth_user as u2 ON (ds.owner_id = u2.id)
+        #    WHERE t.id = <self.place.id>;
+        #
+        # - SELECT * FROM social_auth_usersocialauth
+        #    WHERE user_id IN (<self.owner.id>)
+        #
+        # - SELECT * FROM sa_api_submissionset AS ss
+        #    WHERE ss.place_id IN (<self.place.id>);
+        #
+        # - SELECT * FROM sa_api_submission AS s
+        #     JOIN sa_api_submittedthing AS t ON (s.submittedthing_ptr_id = t.id)
+        #    WHERE s.parent_id IN (<self.comments.id>, <self.likes.id>, <self.applause.id>);
+        #
+        # - SELECT * FROM sa_api_attachment AS a
+        #    WHERE a.thing_id IN (<[each submission id]>);
+        #
+        # - SELECT * FROM sa_api_attachment AS a
+        #    WHERE a.thing_id IN (<self.place.id>);
+        #
+        # - SELECT * FROM sa_api_group as g
+        #     JOIN sa_api_group_submitters as s ON (g.id = s.group_id)
+        #    WHERE gs.user_id IN (<[each submitter id]>);
+        #
+        with self.assertNumQueries(13):
+            response = self.view(request, **self.request_kwargs)
+            self.assertStatusCode(response, 200)
+
+        path = reverse('place-detail', kwargs=self.request_kwargs)
+        request = self.factory.get(path)
+        request.META[KEY_HEADER] = self.apikey.key
+
+        # Check that this performs no more queries, since it's all cached
+        with self.assertNumQueries(0):
             response = self.view(request, **self.request_kwargs)
             self.assertStatusCode(response, 200)
 
@@ -527,7 +599,7 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
         anon_request = self.factory.get(path)
         anon_request.user = AnonymousUser()
         auth_request = self.factory.get(path)
-        auth_request.user = user
+        auth_request.user = User.objects.get(username=user.username)
 
         # Check that we make a finite number of queries
         #
@@ -535,6 +607,10 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
         #
         # - SELECT requested dataset
         # - SELECT dataset permissions
+        # - SELECT keys
+        # - SELECT key permissions
+        # - SELECT origins
+        # - SELECT origin permissions
         #
         # ---- Building the data
         #
@@ -561,14 +637,7 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
         # - SELECT * FROM sa_api_attachment AS a
         #    WHERE a.thing_id IN (<self.place.id>);
         #
-        # - SELECT * FROM sa_api_group as g
-        #     JOIN sa_api_group_submitters as s ON (g.id = s.group_id)
-        #    WHERE gs.user_id IN (<[each submitter id]>);
-        #
-        # - SELECT * FROM sa_api_datasetpermission as perm
-        #    WHERE perm.dataset_id = <self.place.dataset.id>;
-        #
-        with self.assertNumQueries(19):
+        with self.assertNumQueries(20):
             response = self.view(anon_request, **self.request_kwargs)
             self.assertStatusCode(response, 200)
             response = self.view(auth_request, **self.request_kwargs)
@@ -578,10 +647,10 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
         anon_request = self.factory.get(path)
         anon_request.user = AnonymousUser()
         auth_request = self.factory.get(path)
-        auth_request.user = user
+        auth_request.user = User.objects.get(username=user.username)
 
         # Check that this performs no more queries, since it's all cached
-        with self.assertNumQueries(5):
+        with self.assertNumQueries(0):
             response = self.view(anon_request, **self.request_kwargs)
             self.assertStatusCode(response, 200)
             response = self.view(auth_request, **self.request_kwargs)
@@ -1542,13 +1611,32 @@ class TestPlaceListView (APITestMixin, TestCase):
         view = PlaceListView.as_view()
 
         # First call should run queries
+        #
+        # ---- Check (and cache) permissions
+        #
+        # - SELECT dataset
+        # - SELECT dataset permissions
+        # - SELECT keys
+        # - SELECT key permissions
+        # - SELECT origins
+        # - SELECT origin permissions
+        #
+        # ---- Load the data
+        #
+        # SELECT COUNT(*) FROM place WHERE (id IN <place ids> AND visible = true AND dataset )
+        # SELECT * FROM place INNER JOIN ds ON ( dataset ) LEFT OUTER JOIN user ON ( submitter ) INNER JOIN user ON ( owner ) WHERE (id IN <place ids> AND visible = true AND dataset ) LIMIT 5
+        # SELECT * FROM social WHERE user_id IN <place submitters>
+        # SELECT * FROM group for users <place submitters>
+        # SELECT * FROM sset WHERE place_id IN <place ids>
+        # SELECT * FROM att WHERE thing_id IN <place ids>
+        #
         request = factory.get(path)
-        with self.assertNumQueries(8):
+        with self.assertNumQueries(12):
             view(request, **request_kwargs)
 
-        # Second call should hardly hit the database, except maybe for user/permissions stuff
+        # Second call should hardly hit the database
         request = factory.get(path)
-        with self.assertNumQueries(2):
+        with self.assertNumQueries(0):
             view(request, **request_kwargs)
 
         # After we modify one of the places, cache should be invalidated
@@ -1560,8 +1648,9 @@ class TestPlaceListView (APITestMixin, TestCase):
         places[0].save()
         cache_buffer.flush()
 
+        # Run same queries as above (except for permissions)
         request = factory.get(path)
-        with self.assertNumQueries(8):
+        with self.assertNumQueries(6):
             view(request, **request_kwargs)
 
 
@@ -1784,6 +1873,9 @@ class TestSubmissionInstanceView (APITestMixin, TestCase):
         #
         # - SELECT requested dataset and owner
         # - SELECT dataset permissions
+        # - SELECT keys
+        # - SELECT key permissions
+        # - SELECT origins
         #
         # ---- Build the data
         #
@@ -1798,7 +1890,7 @@ class TestSubmissionInstanceView (APITestMixin, TestCase):
         # - SELECT * FROM sa_api_attachment AS a
         #    WHERE a.thing_id IN (<self.submission.id>);
         #
-        with self.assertNumQueries(4):
+        with self.assertNumQueries(7):
             response = self.view(request, **self.request_kwargs)
             self.assertStatusCode(response, 200)
 
@@ -1807,7 +1899,7 @@ class TestSubmissionInstanceView (APITestMixin, TestCase):
 
         # Check that this performs no more queries than required for auth,
         # since the data's all cached
-        with self.assertNumQueries(2):
+        with self.assertNumQueries(0):
             response = self.view(request, **self.request_kwargs)
             self.assertStatusCode(response, 200)
 
@@ -3057,7 +3149,7 @@ class TestDataSetInstanceView (APITestMixin, TestCase):
         #       INNER JOIN sa_api_submissionset ON (parent_id = sa_api_submissionset.id)
         #       WHERE dataset_id = <dataset_id>
         #       GROUP BY dataset_id, sa_api_submissionset.name;
-        with self.assertNumQueries(5):
+        with self.assertNumQueries(6):
             response = self.view(request, **self.request_kwargs)
             self.assertStatusCode(response, 200)
 
@@ -4217,7 +4309,7 @@ class TestActivityView(APITestMixin, TestCase):
         self.view(vis_param, **self.kwargs)
 
         # Both requests should be made without hitting the database...
-        with self.assertNumQueries(2):
+        with self.assertNumQueries(0):
             no_params_response = self.view(no_params, **self.kwargs)
             vis_param_response = self.view(vis_param, **self.kwargs)
 
@@ -4232,9 +4324,8 @@ class TestActivityView(APITestMixin, TestCase):
 
         self.view(request, **self.kwargs)
 
-        # Next requests should be made without hitting the database, except to
-        # get the dataset for authorization...
-        with self.assertNumQueries(1):
+        # Next requests should be made without hitting the database...
+        with self.assertNumQueries(0):
             response1 = self.view(request, **self.kwargs)
 
         # But cache should be invalidated after changing a place.

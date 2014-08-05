@@ -68,10 +68,6 @@ class ApiKey(models.Model):
     def __unicode__(self):
         return self.key
 
-    @utils.memo
-    def get_permissions(self):
-        return self.permissions
-
     def save(self, *args, **kwargs):
         if self.logged_ip == '':
             self.logged_ip = None

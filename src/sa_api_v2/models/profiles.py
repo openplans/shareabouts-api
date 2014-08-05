@@ -4,7 +4,8 @@ from .. import utils
 
 
 class ShareaboutsUserManager (UserManager):
-    pass
+    def get_queryset(self):
+        return super(ShareaboutsUserManager, self).get_queryset().prefetch_related('_groups')
 
 
 class User (AbstractUser):
@@ -34,9 +35,5 @@ class Group (models.Model):
 
     def __unicode__(self):
         return '%s in %s' % (self.name, self.dataset.slug)
-
-    @utils.memo
-    def get_permissions(self):
-        return self.permissions
 
 

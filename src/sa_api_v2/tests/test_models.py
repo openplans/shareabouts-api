@@ -459,9 +459,9 @@ class DataPermissionTests (TestCase):
         place = Place.objects.create(dataset_id=dataset.id, geometry='POINT(0 0)')
         comment_set = SubmissionSet.objects.create(place_id=place.id, name='comments')
 
-        with patch('sa_api_v2.models.DataPermissionManager.any_allow') as any_allow:
+        with patch('sa_api_v2.models.data_permissions.any_allow') as any_allow:
             check_data_permission(user, None, 'retrieve', dataset, 'comments')
-            self.assertEqual(any_allow.call_args[0][1], 'comments')
+            self.assertEqual(any_allow.call_args[0][2], 'comments')
 
     def test_accepts_submission_set_model_instancce(self):
         owner = User.objects.create(username='myowner')
@@ -470,9 +470,9 @@ class DataPermissionTests (TestCase):
         place = Place.objects.create(dataset_id=dataset.id, geometry='POINT(0 0)')
         comment_set = SubmissionSet.objects.create(place_id=place.id, name='comments')
 
-        with patch('sa_api_v2.models.DataPermissionManager.any_allow') as any_allow:
+        with patch('sa_api_v2.models.data_permissions.any_allow') as any_allow:
             check_data_permission(user, None, 'retrieve', dataset, comment_set)
-            self.assertEqual(any_allow.call_args[0][1], 'comments')
+            self.assertEqual(any_allow.call_args[0][2], 'comments')
 
 
 # More permissions tests to write:
