@@ -4,6 +4,7 @@ from django.contrib.gis.db.models import query
 from django.conf import settings
 from django.core.files.storage import get_storage_class
 from django.core.exceptions import ObjectDoesNotExist
+from django.db.models.signals import post_save
 from django.utils.timezone import now
 from django.utils.importlib import import_module
 from .. import cache
@@ -188,6 +189,21 @@ class DataSet (CacheClearingModel, models.Model):
 
         for thing in things:
             thing.index_values(indexes)
+
+
+def after_create_dataset(sender, instance, created, **kwargs):
+    """
+    Add planbox as an allowed origin on all datasets.
+    """
+    if created:
+        from sa_api_v2.cors.models import Origin
+        # openplans.org domains
+        origin = Origin.objects.create(dataset=instance, pattern='(?:www.)?openplans.org')
+        origin.permissions.all().update(can_update=False, can_destroy=False)
+        # openplans github domain
+        origin = Origin.objects.create(dataset=instance, pattern='openplans.github.io')
+        origin.permissions.all().update(can_update=False, can_destroy=False)
+post_save.connect(after_create_dataset, sender=DataSet, dispatch_uid="dataset-create")
 
 
 class Webhook (TimeStampedModel):
