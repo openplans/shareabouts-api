@@ -60,7 +60,7 @@ def memo(f):
     """
     @wraps(f)
     def get(self, *args, **kwargs):
-        key = (f, args, tuple(kwargs.items()))
+        key = (f.__name__, args, tuple(kwargs.items()))
         try:
             return self._method_memos[key]
         except AttributeError:
