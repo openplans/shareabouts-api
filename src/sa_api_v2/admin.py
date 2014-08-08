@@ -297,6 +297,14 @@ class UserAdmin(BaseUserAdmin):
             # (None, {'fields': ('some_extra_data',)}),
     )
 
+    def get_queryset(self, request):
+        qs = super(UserAdmin, self).get_queryset(request)
+        user = request.user
+        if not user.is_superuser:
+            # Only show users that have contributed to the owner's datasets
+            qs = qs.filter(things__dataset__owner=user)
+        return qs
+
 
 admin.site.register(models.User, UserAdmin)
 admin.site.register(models.DataSet, DataSetAdmin)
