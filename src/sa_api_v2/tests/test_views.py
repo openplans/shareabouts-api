@@ -1876,6 +1876,7 @@ class TestSubmissionInstanceView (APITestMixin, TestCase):
         # - SELECT keys
         # - SELECT key permissions
         # - SELECT origins
+        # - SELECT origin permissions
         #
         # ---- Build the data
         #
@@ -1890,7 +1891,7 @@ class TestSubmissionInstanceView (APITestMixin, TestCase):
         # - SELECT * FROM sa_api_attachment AS a
         #    WHERE a.thing_id IN (<self.submission.id>);
         #
-        with self.assertNumQueries(7):
+        with self.assertNumQueries(8):
             response = self.view(request, **self.request_kwargs)
             self.assertStatusCode(response, 200)
 
