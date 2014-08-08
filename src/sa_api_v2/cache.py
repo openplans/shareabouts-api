@@ -307,6 +307,10 @@ class Cache (object):
 
 
 class UserCache (Cache):
+    def get_instance_params(self, user_obj):
+        params = {'user_id': user_obj.id}
+        return params
+
     # == Raw query caching
     @classmethod
     def get_instance_key(cls, **params):

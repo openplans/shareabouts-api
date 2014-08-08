@@ -1,5 +1,7 @@
 from django.contrib.gis.db import models
 from django.contrib.auth.models import AbstractUser, UserManager
+from .caching import CacheClearingModel
+from .. import cache
 from .. import utils
 
 
@@ -8,8 +10,9 @@ class ShareaboutsUserManager (UserManager):
         return super(ShareaboutsUserManager, self).get_queryset().prefetch_related('_groups')
 
 
-class User (AbstractUser):
+class User (CacheClearingModel, AbstractUser):
     objects = ShareaboutsUserManager()
+    cache = cache.UserCache()
 
     @utils.memo
     def get_groups(self):

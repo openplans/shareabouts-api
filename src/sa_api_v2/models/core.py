@@ -3,12 +3,11 @@ from django.contrib.gis.db import models
 from django.contrib.gis.db.models import query
 from django.conf import settings
 from django.core.files.storage import get_storage_class
-from django.core.exceptions import ObjectDoesNotExist
 from django.db.models.signals import post_save
 from django.utils.timezone import now
-from django.utils.importlib import import_module
 from .. import cache
 from .. import utils
+from .caching import CacheClearingModel
 from .data_indexes import IndexedValue, FilterByIndexMixin
 from .profiles import User
 import sa_api_v1.models
@@ -20,56 +19,6 @@ class TimeStampedModel (models.Model):
 
     class Meta:
         abstract = True
-
-
-class CacheClearingModel (object):
-    @classmethod
-    def resolve_attr(cls, attr):
-        if hasattr(cls, attr):
-            value = getattr(cls, attr)
-            if isinstance(value, str):
-                module_name, class_name = value.rsplit('.', 1)
-                value = getattr(import_module(module_name), class_name)
-            return value
-        else:
-            return None
-
-    def get_previous_version(self):
-        model = self.resolve_attr('previous_version')
-        if model:
-            return model.objects.get(pk=self.pk)
-
-    def get_next_version(self):
-        model = self.resolve_attr('next_version')
-        if model:
-            return model.objects.get(pk=self.pk)
-
-    def clear_instance_cache(self):
-        if hasattr(self, 'cache'):
-            self.cache.clear_instance(self)
-
-        try:
-            previous_version = self.get_previous_version()
-            if previous_version:
-                previous_version.cache.clear_instance(previous_version)
-        except ObjectDoesNotExist:
-            pass
-
-        try:
-            next_version = self.get_next_version()
-            if next_version:
-                next_version.cache.clear_instance(next_version)
-        except ObjectDoesNotExist:
-            pass
-
-    def save(self, *args, **kwargs):
-        result = super(CacheClearingModel, self).save(*args, **kwargs)
-        self.clear_instance_cache()
-        return result
-
-    def delete(self, *args, **kwargs):
-        self.clear_instance_cache()
-        return super(CacheClearingModel, self).delete(*args, **kwargs)
 
 
 class ModelWithDataBlob (models.Model):
