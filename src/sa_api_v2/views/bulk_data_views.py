@@ -23,6 +23,10 @@ log = logging.getLogger('sa_api_v2.views')
 
 
 class SimpleContentNegotiation (DefaultContentNegotiation):
+    """
+    A Django REST Framework content negotiator that essentially disables the
+    url format query parameter.
+    """
     def __init__(self, *args, **kwargs):
         defaults = self.settings.defaults.copy()
         defaults['URL_FORMAT_OVERRIDE'] = 'oldformatparam'
@@ -80,6 +84,15 @@ class DataSetDataSnapshotRequestView (OwnedResourceMixin, views.APIView):
         url = self.request.build_absolute_uri(path)
         return url
 
+    def get_data_description(self, datarequest):
+        default_message = self.response_messages['pending']
+        return {
+            'status': datarequest.status,
+            'message': self.response_messages.get(datarequest.status, default_message),
+            'requested_at': datarequest.requested_at.isoformat(),
+            'url': self.get_data_url(datarequest)
+        }
+
     def get_recent_requests(self, characteristic_params):
         return DataSnapshotRequest.objects\
             .all().order_by('-requested_at')\
@@ -123,7 +136,7 @@ class DataSetDataSnapshotRequestView (OwnedResourceMixin, views.APIView):
             'include_submissions': params.get('include_submissions', 'false').lower() not in ('f', 'false', 'off'),
         }
 
-    def post(self, request, owner_username, dataset_slug, submission_set_name):
+    def get_or_create_datarequest(self, request, owner_username, dataset_slug, submission_set_name):
         characteristic_params = self.get_characteristic_params(request, owner_username, dataset_slug, submission_set_name)
 
         try:
@@ -134,7 +147,11 @@ class DataSetDataSnapshotRequestView (OwnedResourceMixin, views.APIView):
         else:
             log.info('Duplicate reqest for a new %s snapshot' % characteristic_params['format'])
 
-        return Response(self.get_data_url(datarequest), status=202)
+        return datarequest
+
+    def post(self, request, owner_username, dataset_slug, submission_set_name):
+        datarequest = self.get_or_create_datarequest(request, owner_username, dataset_slug, submission_set_name)
+        return Response(self.get_data_description(datarequest), status=202)
 
     def get(self, request, owner_username, dataset_slug, submission_set_name):
         # Copy the query parameters, since we want to modify them
@@ -142,19 +159,16 @@ class DataSetDataSnapshotRequestView (OwnedResourceMixin, views.APIView):
 
         # Treat GET requests with a 'new' parameter like POST requests.
         if request.GET.pop('new', None) is not None:
-            return self.post(request, owner_username, dataset_slug, submission_set_name)
+            datarequest = self.get_or_create_datarequest(request, owner_username, dataset_slug, submission_set_name)
+            return Response(self.get_data_url(datarequest), status=202)
 
         # Other requests get passed through
         characteristic_params = self.get_characteristic_params(request, owner_username, dataset_slug, submission_set_name)
         datarequests = self.get_recent_requests(characteristic_params)
-        default_message = self.response_messages['pending']
 
-        return Response([{
-            'status': datarequest.status,
-            'message': self.response_messages.get(datarequest.status, default_message),
-            'requested_at': datarequest.requested_at.isoformat(),
-            'url': self.get_data_url(datarequest)
-        } for datarequest in datarequests], status=200)
+        return Response([
+            self.get_data_description(datarequest)
+            for datarequest in datarequests], status=200)
 
 
 class DataSetDataSnapshotView (OwnedResourceMixin, views.APIView):
