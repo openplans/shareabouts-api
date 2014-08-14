@@ -4,15 +4,9 @@ from django.contrib.gis.db import models
 
 
 class DataSnapshotRequest (models.Model):
-    FORMAT_CHOICES = (
-        ('json', 'JSON/GeoJSON'),
-        ('csv', 'CSV'),
-    )
-
     # Describe the data requested
     dataset = models.ForeignKey('DataSet')
     submission_set = models.CharField(max_length=128)
-    format = models.CharField(max_length=16, choices=FORMAT_CHOICES)
     include_private = models.BooleanField()
     include_invisible = models.BooleanField()
     include_submissions = models.BooleanField()
@@ -39,7 +33,16 @@ class DataSnapshotRequest (models.Model):
 
 class DataSnapshot (models.Model):
     request = models.OneToOneField('DataSnapshotRequest', related_name='fulfillment')
-    content = models.TextField()
+    json = models.TextField()
+    csv = models.TextField()
+
+    @property
+    def geojson(self):
+        return self.json
+
+    @geojson.setter
+    def geojson(self, value):
+        self.json = value
 
     class Meta:
         app_label = 'sa_api_v2'

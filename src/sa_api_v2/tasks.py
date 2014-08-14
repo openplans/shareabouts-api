@@ -12,17 +12,15 @@ import logging
 log = logging.getLogger(__name__)
 
 
-def generate_bulk_content(dataset, submission_set_name, format, **flags):
+def generate_bulk_content(dataset, submission_set_name, **flags):
     renderer_classes = {
         'csv': CSVRenderer,
-        'json': JSONRenderer,
-        'geojson': GeoJSONRenderer
+        'json': GeoJSONRenderer if submission_set_name == 'places' else JSONRenderer
     }
 
     if submission_set_name == 'places':
         submissions = dataset.places.all()
         serializer = PlaceSerializer(submissions)
-        if format == 'json': format = 'geojson'
     else:
         submissions = dataset.submissions.filter(parent__name=submission_set_name)
         serializer = SubmissionSerializer(submissions)
@@ -34,10 +32,13 @@ def generate_bulk_content(dataset, submission_set_name, format, **flags):
     r = RequestFactory().get('', data=r_data)
     r.get_dataset = lambda: dataset
 
+    # Render the data in each format
     serializer.context['request'] = r
     data = serializer.data
-    renderer = renderer_classes.get(format)()
-    content = renderer.render(data)
+    content = {}
+    for format, renderer_class in renderer_classes.items():
+        renderer = renderer_class()
+        content[format] = renderer.render(data)
     return content
 
 @shared_task
@@ -53,7 +54,6 @@ def store_bulk_data(request_id):
     content = generate_bulk_content(
         datarequest.dataset,
         datarequest.submission_set,
-        datarequest.format,
         include_submissions=datarequest.include_submissions,
         include_private=datarequest.include_private,
         include_invisible=datarequest.include_invisible)
@@ -61,7 +61,8 @@ def store_bulk_data(request_id):
     # Store the information
     bulk_data = DataSnapshot(
         request=datarequest,
-        content=content)
+        csv=content['csv'],
+        json=content['json'])
     bulk_data.save()
 
     datarequest.fulfilled_at = now()

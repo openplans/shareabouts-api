@@ -18,10 +18,10 @@ urlpatterns = patterns('sa_api_v2',
 
     url(r'^(?P<owner_username>[^/]+)/datasets/(?P<dataset_slug>[^/]+)/(?P<submission_set_name>[^/]+)/snapshots$',
         views.DataSetDataSnapshotRequestView.as_view(),
-        name='dataset-snapshot-request'),
-    url(r'^(?P<owner_username>[^/]+)/datasets/(?P<dataset_slug>[^/]+)/(?P<submission_set_name>[^/]+)/snapshots/(?P<data_guid>[^/]+)$',
-        views.DataSetDataSnapshotView.as_view(),
         name='dataset-snapshot-list'),
+    url(r'^(?P<owner_username>[^/]+)/datasets/(?P<dataset_slug>[^/]+)/(?P<submission_set_name>[^/]+)/snapshots/(?P<data_guid>[^/.]+)(:?\.(?P<format>[^/]+))?$',
+        views.DataSetDataSnapshotView.as_view(),
+        name='dataset-snapshot-instance'),
 
     # ad-hoc data
 
