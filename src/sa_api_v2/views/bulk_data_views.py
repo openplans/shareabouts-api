@@ -28,7 +28,7 @@ log = logging.getLogger('sa_api_v2.views')
 # --------------
 #
 
-class DataSetDataSnapshotMixin (object):
+class DataSnapshotMixin (object):
     response_messages = {
         'pending': 'You can download the data at the given URL when it is done being generated.',
         'success': 'You can download the data at the given URL.',
@@ -53,7 +53,7 @@ class DataSetDataSnapshotMixin (object):
         }
 
 
-class DataSetDataSnapshotRequestView (DataSetDataSnapshotMixin, OwnedResourceMixin, views.APIView):
+class DataSnapshotRequestListView (DataSnapshotMixin, OwnedResourceMixin, views.APIView):
     """
 
     GET
@@ -159,7 +159,7 @@ class DataSetDataSnapshotRequestView (DataSetDataSnapshotMixin, OwnedResourceMix
             for datarequest in datarequests], status=200)
 
 
-class DataSetDataSnapshotView (DataSetDataSnapshotMixin, OwnedResourceMixin, views.APIView):
+class DataSnapshotInstanceView (DataSnapshotMixin, OwnedResourceMixin, views.APIView):
     """
 
     GET
