@@ -102,7 +102,12 @@ def build_relative_url(original_url, relative_path):
 
     ('http://ex.co/pictures/silly/abc.png', '/home') --> 'http://ex.co/home'
     ('http://ex.co/p/index.html', 'about.html') --> 'http://ex.co/p/about.html'
+    ('http://ex.co/', 'https://google.com/') --> 'https://google.com/'
     """
+    # If we actually have a full URL, just return it.
+    if (re.match('^[A-Za-z][A-Za-z0-9+-.]*://', relative_path)):
+        return relative_path
+
     parsed_url = urlparse(original_url)
 
     if relative_path.startswith('/'):

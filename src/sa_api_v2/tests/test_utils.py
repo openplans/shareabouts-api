@@ -50,6 +50,10 @@ class TestBuildRelativeURL (TestCase):
         url = utils.build_relative_url('', 'about.html')
         assert_equal(url, '/about.html')
 
+    def test_relative_path_is_actually_full_url(self):
+        url = utils.build_relative_url('http://ex.co/', 'https://google.com/')
+        assert_equal(url, 'https://google.com/')
+
 
 # class TestToWkt (object):
 
