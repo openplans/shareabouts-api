@@ -188,6 +188,24 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
         # --------------------------------------------------
 
         #
+        # View should not include submissions when explicitly false
+        #
+        request = self.factory.get(self.path + '?include_submissions=false')
+        response = self.view(request, **self.request_kwargs)
+        data = json.loads(response.rendered_content)
+
+        # Check that the submission_sets are in the properties
+        self.assertIn('submission_sets', data['properties'])
+
+        # Check that the submission sets look right
+        comments_set = data['properties']['submission_sets'].get('comments')
+        self.assertIsInstance(comments_set, dict)
+        self.assertIn('length', comments_set)
+        self.assertEqual(comments_set['length'], 2)
+
+        # --------------------------------------------------
+
+        #
         # View should include invisible submissions when requested and allowed
         #
 

@@ -273,7 +273,7 @@ class DataBlobProcessor (EmptyModelSerializer):
         request = self.context['request']
 
         # Did the user not ask for private data? Remove it!
-        if INCLUDE_PRIVATE_PARAM not in request.GET:
+        if not self.is_flag_on(INCLUDE_PRIVATE_PARAM):
             for key in blob_data.keys():
                 if key.startswith('private'):
                     del blob_data[key]
@@ -461,6 +461,11 @@ class DataSetSubmissionSetSummarySerializer (serializers.HyperlinkedModelSeriali
 
 
 class SubmittedThingSerializer (ActivityGenerator, DataBlobProcessor):
+    def is_flag_on(self, flagname):
+        request = self.context['request']
+        param = request.GET.get(flagname, 'false')
+        return param.lower() not in ('false', 'no', 'off')
+
     def restore_fields(self, data, files):
         """
         Converts a dictionary of data into a dictionary of deserialized fields.
@@ -515,7 +520,7 @@ class PlaceSerializer (SubmittedThingSerializer, serializers.HyperlinkedModelSer
         Get this for the entire dataset at once.
         """
         request = self.context['request']
-        include_invisible = INCLUDE_INVISIBLE_PARAM in request.GET
+        include_invisible = self.is_flag_on(INCLUDE_INVISIBLE_PARAM)
 
         summaries = {}
         for submission_set in place.submission_sets.all():
@@ -546,7 +551,7 @@ class PlaceSerializer (SubmittedThingSerializer, serializers.HyperlinkedModelSer
         Get this for the entire dataset at once.
         """
         request = self.context['request']
-        include_invisible = INCLUDE_INVISIBLE_PARAM in request.GET
+        include_invisible = self.is_flag_on(INCLUDE_INVISIBLE_PARAM)
 
         details = {}
         for submission_set in place.submission_sets.all():
@@ -595,11 +600,10 @@ class PlaceSerializer (SubmittedThingSerializer, serializers.HyperlinkedModelSer
         data = self.explode_data_blob(data)
 
         # data = super(PlaceSerializer, self).to_native(obj)
-        request = self.context['request']
 
         # TODO: Put this flag value directly in to the serializer context,
         #       instead of relying on the request query parameters.
-        if INCLUDE_SUBMISSIONS_PARAM not in request.GET:
+        if not self.is_flag_on(INCLUDE_SUBMISSIONS_PARAM):
             submission_sets_getter = self.get_submission_set_summaries
         else:
             submission_sets_getter = self.get_detailed_submission_sets
