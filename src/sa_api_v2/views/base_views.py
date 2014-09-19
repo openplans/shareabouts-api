@@ -1011,7 +1011,7 @@ class PlaceListView (CachedResourceMixin, LocatedResourceMixin, OwnedResourceMix
         # Update request to include private data. We need everything since
         # we can't PATCH on the API yet.
         temp_get = self.request.GET.copy()
-        temp_get['include_private'] = True
+        temp_get['include_private'] = 'on'
         self.request.GET = temp_get
         serializer.context = {'request': self.request}
 
