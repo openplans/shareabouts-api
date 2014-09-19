@@ -75,6 +75,7 @@ nose
 django-nose
 mock
 mock_django
+responses==0.2.2
 django-debug-toolbar==1.2.1
 raven==4.2.1  # For Sentry error logging
 
