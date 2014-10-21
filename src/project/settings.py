@@ -175,6 +175,7 @@ INSTALLED_APPS = (
     'sa_api_v1',
     'sa_api_v1.apikey_v1',
     'sa_manager',
+    'remote_client_user',
 )
 
 
