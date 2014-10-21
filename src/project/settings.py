@@ -111,6 +111,7 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.gzip.GZipMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'remote_client_user.middleware.RemoteClientMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
@@ -175,6 +176,7 @@ INSTALLED_APPS = (
     'sa_api_v1',
     'sa_api_v1.apikey_v1',
     'sa_manager',
+    'remote_client_user',
 )
 
 
