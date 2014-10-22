@@ -1,4 +1,5 @@
 from django.conf.urls import patterns, url, include
+from django.http import HttpResponse
 from . import views
 
 
@@ -90,6 +91,7 @@ urlpatterns = patterns('sa_api_v2',
 
     url(r'^utils/send-away', views.redirector, name='redirector'),
     url(r'^utils/session-key', views.SessionKeyView.as_view(), name='session-key'),
+    url(r'^utils/noop/?$', lambda request: HttpResponse(''), name='noop-route'),
 
 )
 
