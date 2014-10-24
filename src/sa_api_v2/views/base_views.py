@@ -1327,6 +1327,7 @@ class DataSetInstanceView (CachedResourceMixin, OwnedResourceMixin, generics.Ret
     serializer_class = serializers.DataSetSerializer
     authentication_classes = (authentication.BasicAuthentication, authentication.OAuth2Authentication, ShareaboutsSessionAuth)
     client_authentication_classes = ()
+    always_allow_options = True
 
     def get_object_or_404(self, owner_username, dataset_slug):
         try:
@@ -1406,6 +1407,7 @@ class DataSetListMixin (object):
     pagination_serializer_class = serializers.PaginatedResultsSerializer
     authentication_classes = (authentication.BasicAuthentication, authentication.OAuth2Authentication, ShareaboutsSessionAuth)
     client_authentication_classes = ()
+    always_allow_options = True
 
     @utils.memo
     def get_place_counts(self):
