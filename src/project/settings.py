@@ -3,6 +3,7 @@ from os import environ
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 SHOW_DEBUG_TOOLBAR = DEBUG
+DEBUG_TOOLBAR_PATCH_SETTINGS = False
 
 ADMINS = (
     # ('Your Name', 'your_email@example.com'),
@@ -448,4 +449,8 @@ if BROKER_URL == 'django://':
 
 if SHOW_DEBUG_TOOLBAR:
     INSTALLED_APPS += ('debug_toolbar',)
-    MIDDLEWARE_CLASSES += ('debug_toolbar.middleware.DebugToolbarMiddleware',)
+    MIDDLEWARE_CLASSES = (
+        MIDDLEWARE_CLASSES[:2] +
+        ('debug_toolbar.middleware.DebugToolbarMiddleware',) +
+        MIDDLEWARE_CLASSES[2:]
+    )
