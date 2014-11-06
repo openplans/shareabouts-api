@@ -236,7 +236,7 @@ class DataBlobProcessor (EmptyModelSerializer):
         Converts a dictionary of data into a dictionary of deserialized fields.
         """
         model = self.opts.model
-        blob = {}
+        blob = json.loads(self.object.data) if self.partial else {}
         data_copy = {}
 
         # Pull off any fields that the model doesn't know about directly
@@ -251,6 +251,8 @@ class DataBlobProcessor (EmptyModelSerializer):
         # data blob get in the way).
         known_fields.remove('data')
 
+        # Split the incoming data into stuff that will be set straight onto
+        # preexisting fields, and stuff that will go into the data blob.
         for key in data:
             if key in known_fields:
                 data_copy[key] = data[key]

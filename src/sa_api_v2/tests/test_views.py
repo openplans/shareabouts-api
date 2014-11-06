@@ -778,6 +778,41 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
         # back down
         self.assertNotIn('private-secrets', data['properties'])
 
+    def test_PATCH_response_as_owner(self):
+        place_data = json.dumps({
+          'type': 'Feature',
+          'properties': {
+            'type': 'Park Bench',
+            'meal-preference': 'vegan',
+            'private-email': 'test@example.com',
+          },
+          'geometry': {"type": "Point", "coordinates": [-80, 40]},
+        })
+
+        #
+        # View should update the place when client is authenticated (apikey)
+        #
+        request = self.factory.patch(self.path, data=place_data, content_type='application/json')
+        request.META[KEY_HEADER] = self.apikey.key
+        response = self.view(request, **self.request_kwargs)
+        self.assertStatusCode(response, 200)
+
+        data = json.loads(response.rendered_content)
+
+        # Check that the data attributes have been incorporated into the
+        # properties
+        self.assertEqual(data['properties'].get('type'), 'Park Bench')
+        self.assertEqual(data['properties'].get('meal-preference'), 'vegan')
+        self.assertEqual(data['geometry'], {"type": "Point", "coordinates": [-80, 40]})
+
+        # Check that previous data is all still there
+        self.assertEqual(data['properties'].get('name'), 'K-Mart')
+
+        # private-secrets is not special, but is private, so should not come
+        # back down
+        self.assertNotIn('private-secrets', data['properties'])
+        self.assertNotIn('private-email', data['properties'])
+
     def test_PUT_response_as_owner_doesnt_change_submitter(self):
         place_data = json.dumps({
           'type': 'Feature',
