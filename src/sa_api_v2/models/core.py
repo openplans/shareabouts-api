@@ -10,7 +10,6 @@ from .. import utils
 from .caching import CacheClearingModel
 from .data_indexes import IndexedValue, FilterByIndexMixin
 from .profiles import User
-import sa_api_v1.models
 
 
 class TimeStampedModel (models.Model):
@@ -95,7 +94,7 @@ class DataSet (CacheClearingModel, models.Model):
     slug = models.SlugField(max_length=128, default=u'')
 
     cache = cache.DataSetCache()
-    previous_version = 'sa_api_v1.models.DataSet'
+    # previous_version = 'sa_api_v1.models.DataSet'
 
     def __unicode__(self):
         return self.slug
@@ -197,7 +196,7 @@ class Place (SubmittedThing):
 
     objects = GeoSubmittedThingManager()
     cache = cache.PlaceCache()
-    previous_version = 'sa_api_v1.models.Place'
+    # previous_version = 'sa_api_v1.models.Place'
 
     class Meta:
         app_label = 'sa_api_v2'
@@ -205,52 +204,18 @@ class Place (SubmittedThing):
         ordering = ['-updated_datetime']
 
 
-class SubmissionSet (CacheClearingModel, models.Model):
-    """
-    A submission set is a collection of user Submissions attached to a place.
-    For example, comments will be a submission set with a submission_type of
-    'comment'.
-
-    """
-    place = models.ForeignKey(Place, related_name='submission_sets')
-    name = models.CharField(max_length=128)
-
-    cache = cache.SubmissionSetCache()
-    previous_version = 'sa_api_v1.models.SubmissionSet'
-
-    class Meta(object):
-        app_label = 'sa_api_v2'
-        db_table = 'sa_api_submissionset'
-        unique_together = (('place', 'name'),
-                           )
-
-    def __unicode__(self):
-        return self.name
-
-
 class Submission (SubmittedThing):
     """
     A Submission is the simplest flavor of SubmittedThing.
-    It belongs to a SubmissionSet, and thus indirectly to a Place.
+    It belongs to a Place.
     Used for representing eg. comments, votes, ...
     """
-    parent = models.ForeignKey(SubmissionSet, related_name='children')
-
-    @property
-    def place(self):
-        return self.parent.place
-
-    @property
-    def place_id(self):
-        return self.parent.place_id
-
-    @property
-    def set_name(self):
-        return self.parent.name
+    place = models.ForeignKey(Place, related_name='submissions')
+    set_name = models.TextField(db_index=True)
 
     objects = SubmittedThingManager()
     cache = cache.SubmissionCache()
-    previous_version = 'sa_api_v1.models.Submission'
+    # previous_version = 'sa_api_v1.models.Submission'
 
     class Meta:
         app_label = 'sa_api_v2'
@@ -268,7 +233,7 @@ class Action (CacheClearingModel, TimeStampedModel):
     source = models.TextField(blank=True, null=True)
 
     cache = cache.ActionCache()
-    previous_version = 'sa_api_v1.models.Activity'
+    # previous_version = 'sa_api_v1.models.Activity'
 
     class Meta:
         app_label = 'sa_api_v2'
@@ -297,7 +262,7 @@ class Attachment (CacheClearingModel, TimeStampedModel):
     thing = models.ForeignKey('SubmittedThing', related_name='attachments')
 
     cache = cache.AttachmentCache()
-    previous_version = 'sa_api_v1.models.Attachment'
+    # previous_version = 'sa_api_v1.models.Attachment'
 
     class Meta:
         app_label = 'sa_api_v2'

@@ -6,7 +6,7 @@ from django.core.files.base import ContentFile
 from django.core.urlresolvers import reverse
 from nose.tools import istest
 from sa_api_v2.cache import cache_buffer
-from sa_api_v2.models import Attachment, Action, User, DataSet, Place, SubmissionSet, Submission, Group
+from sa_api_v2.models import Attachment, Action, User, DataSet, Place, Submission, Group
 from sa_api_v2.serializers import AttachmentSerializer, ActionSerializer, UserSerializer, PlaceSerializer, DataSetSerializer, SubmissionSerializer
 from social.apps.django_app.default.models import UserSocialAuth
 import json
@@ -49,8 +49,7 @@ class TestActionSerializer (TestCase):
         dataset = DataSet.objects.create(slug='data',
                                          owner_id=owner.id)
         place = Place.objects.create(dataset=dataset, geometry='POINT(2 3)')
-        comments = SubmissionSet.objects.create(place=place, name='comments')
-        comment = Submission.objects.create(dataset=dataset, parent=comments)
+        comment = Submission.objects.create(dataset=dataset, place=place, set_name='comments')
 
         self.place_action = Action.objects.create(thing=place.submittedthing_ptr)
         self.comment_action = Action.objects.create(thing=comment.submittedthing_ptr)
@@ -210,7 +209,6 @@ class TestPlaceSerializer (TestCase):
         User.objects.all().delete()
         DataSet.objects.all().delete()
         Place.objects.all().delete()
-        SubmissionSet.objects.all().delete()
         Submission.objects.all().delete()
         cache_buffer.reset()
 
@@ -218,9 +216,8 @@ class TestPlaceSerializer (TestCase):
         self.dataset = DataSet.objects.create(slug='data',
                                               owner_id=self.owner.id)
         self.place = Place.objects.create(dataset=self.dataset, geometry='POINT(2 3)')
-        self.comments = SubmissionSet.objects.create(place=self.place, name='comments')
-        Submission.objects.create(dataset=self.dataset, parent=self.comments)
-        Submission.objects.create(dataset=self.dataset, parent=self.comments)
+        Submission.objects.create(dataset=self.dataset, place=self.place, set_name='comments')
+        Submission.objects.create(dataset=self.dataset, place=self.place, set_name='comments')
 
     def test_can_serlialize_a_null_instance(self):
         request = RequestFactory().get('')
@@ -248,7 +245,6 @@ class TestSubmissionSerializer (TestCase):
         User.objects.all().delete()
         DataSet.objects.all().delete()
         Place.objects.all().delete()
-        SubmissionSet.objects.all().delete()
         Submission.objects.all().delete()
         cache_buffer.reset()
 
@@ -268,7 +264,6 @@ class TestDataSetSerializer (TestCase):
         User.objects.all().delete()
         DataSet.objects.all().delete()
         Place.objects.all().delete()
-        SubmissionSet.objects.all().delete()
         Submission.objects.all().delete()
         cache_buffer.reset()
 
@@ -276,9 +271,8 @@ class TestDataSetSerializer (TestCase):
         self.dataset = DataSet.objects.create(slug='data',
                                               owner_id=self.owner.id)
         self.place = Place.objects.create(dataset=self.dataset, geometry='POINT(2 3)')
-        self.comments = SubmissionSet.objects.create(place=self.place, name='comments')
-        Submission.objects.create(dataset=self.dataset, parent=self.comments)
-        Submission.objects.create(dataset=self.dataset, parent=self.comments)
+        Submission.objects.create(dataset=self.dataset, place=self.place, set_name='comments')
+        Submission.objects.create(dataset=self.dataset, place=self.place, set_name='comments')
 
     def test_can_serlialize_a_null_instance(self):
         serializer = DataSetSerializer(None)

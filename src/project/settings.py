@@ -174,8 +174,6 @@ INSTALLED_APPS = (
     'sa_api_v2',
     'sa_api_v2.apikey',
     'sa_api_v2.cors',
-    'sa_api_v1',
-    'sa_api_v1.apikey_v1',
     'sa_manager',
     'remote_client_user',
 )
@@ -298,11 +296,6 @@ LOGGING = {
             'propagate': True,
         },
         'sa_api_v2': {
-            'handlers': ['console'],
-            'level': 'INFO',
-            'propagate': True,
-        },
-        'sa_api_v1': {
             'handlers': ['console'],
             'level': 'INFO',
             'propagate': True,

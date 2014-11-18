@@ -830,8 +830,8 @@ class PlaceInstanceView (CachedResourceMixin, LocatedResourceMixin, OwnedResourc
                 .filter(pk=pk)\
                 .select_related('dataset', 'dataset__owner', 'submitter')\
                 .prefetch_related('submitter__social_auth',
-                                  'submission_sets__children',
-                                  'submission_sets__children__attachments',
+                                  'submissions',
+                                  'submissions__attachments',
                                   'attachments')\
                 .get()
         except self.model.DoesNotExist:
@@ -977,17 +977,16 @@ class PlaceListView (CachedResourceMixin, LocatedResourceMixin, OwnedResourceMix
                 'submitter___groups',
                 'submitter___groups__dataset',
                 'submitter___groups__dataset__owner',
-                'submission_sets',
-                'submission_sets__children',
+                'submissions',
                 'attachments')
 
         if INCLUDE_SUBMISSIONS_PARAM in self.request.GET:
             queryset = queryset.prefetch_related(
-                'submission_sets__children',
-                'submission_sets__children__submitter',
-                'submission_sets__children__submitter__social_auth',
-                'submission_sets__children__submitter___groups',
-                'submission_sets__children__attachments')
+                'submissions',
+                'submissions__submitter',
+                'submissions__submitter__social_auth',
+                'submissions__submitter___groups',
+                'submissions__attachments')
 
         return queryset
 
@@ -1081,10 +1080,9 @@ class SubmissionInstanceView (CachedResourceMixin, OwnedResourceMixin, generics.
                 .select_related(
                     'dataset',
                     'dataset__owner',
-                    'parent',
-                    'parent__place',
-                    'parent__place__dataset',
-                    'parent__place__dataset__owner',
+                    'place',
+                    'place__dataset',
+                    'place__dataset__owner',
                     'submitter')\
                 .prefetch_related('attachments', 'submitter__social_auth')\
                 .get()
@@ -1155,35 +1153,20 @@ class SubmissionListView (CachedResourceMixin, OwnedResourceMixin, FilteredResou
         place = get_object_or_404(models.Place, dataset=dataset, id=place_id)
         return place
 
-    def get_submission_set(self, dataset, place):
-        submission_set_name = self.kwargs[self.submission_set_name_kwarg]
-
-        try:
-            submission_set = models.SubmissionSet.objects.get(name=submission_set_name, place=place)
-        except models.SubmissionSet.DoesNotExist:
-            submission_set = models.SubmissionSet(name=submission_set_name, place=place)
-
-        return submission_set
-
     def pre_save(self, obj):
         super(SubmissionListView, self).pre_save(obj)
-        dataset = self.get_dataset()
-        place = self.get_place(dataset)
-
-        # Before we save the submission, we need a submission set as the parent.
-        # Check that we have one that exists, and save it if it is not saved.
-        parent = self.get_submission_set(dataset, place)
-        if parent.pk is None:
-            parent.save()
-        obj.dataset = dataset
-        obj.parent = parent
+        obj.dataset = self.get_dataset()
+        obj.place = self.get_place(obj.dataset)
+        obj.set_name = self.kwargs[self.submission_set_name_kwarg]
 
     def get_queryset(self):
         dataset = self.get_dataset()
         place = self.get_place(dataset)
-        submission_set = self.get_submission_set(dataset, place)
-
+        submission_set_name = self.kwargs[self.submission_set_name_kwarg]
         queryset = super(SubmissionListView, self).get_queryset()
+
+        if submission_set_name != 'submissions':
+            queryset = queryset.filter(set_name=submission_set_name)
 
         # If the user is not allowed to request invisible data then we won't
         # be here in the first place -- auth or permissions woulda got us.
@@ -1197,14 +1180,13 @@ class SubmissionListView (CachedResourceMixin, OwnedResourceMixin, FilteredResou
             ids = [obj['id'] for obj in data if 'id' in obj]
             queryset = queryset.filter(pk__in=ids)
 
-        return queryset.filter(parent=submission_set)\
+        return queryset.filter(place=place)\
             .select_related(
                 'dataset',
                 'dataset__owner',
-                'parent',
-                'parent__place',
-                'parent__place__dataset',
-                'parent__place__dataset__owner',
+                'place',
+                'place__dataset',
+                'place__dataset__owner',
                 'submitter')\
             .prefetch_related('attachments', 'submitter__social_auth', 'submitter___groups')
 
@@ -1265,30 +1247,26 @@ class DataSetSubmissionListView (CachedResourceMixin, OwnedResourceMixin, Filter
         prefix = reverse('dataset-submission-list', kwargs=metakey_kwargs)
         return prefix + '_keys'
 
-    def get_submission_sets(self, dataset):
-        submission_set_name = self.kwargs[self.submission_set_name_kwarg]
-        submission_sets = models.SubmissionSet.objects.filter(name=submission_set_name, place__dataset=dataset)
-        return submission_sets
-
     def get_queryset(self):
         dataset = self.get_dataset()
-        submission_sets = self.get_submission_sets(dataset)
-
+        submission_set_name = self.kwargs[self.submission_set_name_kwarg]
         queryset = super(DataSetSubmissionListView, self).get_queryset()
+
+        if submission_set_name != 'submissions':
+            queryset = queryset.filter(set_name=submission_set_name)
 
         # If the user is not allowed to request invisible data then we won't
         # be here in the first place -- auth or permissions woulda got us.
         if INCLUDE_INVISIBLE_PARAM not in self.request.GET:
             queryset = queryset.filter(visible=True)
 
-        return queryset.filter(parent__in=submission_sets)\
+        return queryset.filter(dataset=dataset)\
             .select_related(
                 'dataset',
                 'dataset__owner',
-                'parent',
-                'parent__place',
-                'parent__place__dataset',
-                'parent__place__dataset__owner',
+                'place',
+                'place__dataset',
+                'place__dataset__owner',
                 'submitter')\
             .prefetch_related('attachments', 'submitter__social_auth', 'submitter___groups')
 
@@ -1354,14 +1332,14 @@ class DataSetInstanceView (CachedResourceMixin, OwnedResourceMixin, generics.Ret
         Get a list of submission set summary data for this dataset.
         """
         include_invisible = INCLUDE_INVISIBLE_PARAM in self.request.GET
-        submissions = self.object.submissions.select_related('parent')
+        submissions = self.object.submissions.all()
         if not include_invisible:
             submissions = submissions.filter(visible=True)
 
         # Unset any default ordering
         submissions = submissions.order_by()
 
-        submissions = submissions.values('dataset', 'parent__name').annotate(length=Count('dataset'))
+        submissions = submissions.values('dataset', 'set_name').annotate(length=Count('dataset'))
         return submissions
 
     def get_serializer_context(self):
@@ -1434,14 +1412,14 @@ class DataSetListMixin (object):
         submisisons on that dataset's places.
         """
         include_invisible = INCLUDE_INVISIBLE_PARAM in self.request.GET
-        summaries = models.Submission.objects.filter(dataset__in=self.get_queryset()).select_related('parent')
+        summaries = models.Submission.objects.filter(dataset__in=self.get_queryset())
         if not include_invisible:
             summaries = summaries.filter(visible=True)
 
         # Unset any default ordering
         summaries = summaries.order_by()
 
-        summaries = summaries.values('dataset', 'parent__name').annotate(length=Count('dataset'))
+        summaries = summaries.values('dataset', 'set_name').annotate(length=Count('dataset'))
 
         sets = defaultdict(list)
         for summary in summaries:
@@ -1602,10 +1580,9 @@ class ActionListView (CachedResourceMixin, OwnedResourceMixin, generics.ListAPIV
                 'thing',
                 'thing__place',       # It will have this if it's a place
                 'thing__submission',  # It will have this if it's a submission
-                'thing__submission__parent',
-                'thing__submission__parent__place',
-                'thing__submission__parent__place__dataset',
-                'thing__submission__parent__place__dataset__owner',
+                'thing__submission__place',
+                'thing__submission__place__dataset',
+                'thing__submission__place__dataset__owner',
 
                 'thing__submitter',
                 'thing__dataset',
@@ -1617,13 +1594,12 @@ class ActionListView (CachedResourceMixin, OwnedResourceMixin, generics.ListAPIV
                 'thing__place__attachments',
                 'thing__submission__attachments',
 
-                'thing__place__submission_sets',
-                'thing__place__submission_sets__children')
+                'thing__place__submissions')
 
         if INCLUDE_INVISIBLE_PARAM not in self.request.GET:
             queryset = queryset.filter(thing__visible=True)\
                 .filter(Q(thing__place__isnull=False) |
-                        Q(thing__submission__parent__place__visible=True))
+                        Q(thing__submission__place__visible=True))
 
         return queryset
 

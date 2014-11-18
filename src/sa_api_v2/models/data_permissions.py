@@ -3,7 +3,6 @@ from django.db.models.signals import post_save
 from .. import utils
 from .core import CacheClearingModel
 from .core import DataSet
-from .core import SubmissionSet
 
 class DataPermissionManager (models.Manager):
     use_for_related_fields = True
@@ -154,9 +153,6 @@ def check_data_permission(user, client, do_action, dataset, submission_set):
     # Owner can do anything
     if user and dataset and user.id == dataset.owner_id:
         return True
-
-    if isinstance(submission_set, SubmissionSet):
-        submission_set = submission_set.name
 
     # Start with the dataset permission
     if dataset and any_allow(dataset.permissions.all(), do_action, submission_set):

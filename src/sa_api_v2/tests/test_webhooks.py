@@ -9,7 +9,7 @@ import json
 import mock
 import responses
 from StringIO import StringIO
-from ..models import User, DataSet, Place, SubmissionSet, Submission, Attachment, Group, Webhook
+from ..models import User, DataSet, Place, Submission, Attachment, Group, Webhook
 from ..cache import cache_buffer
 from ..apikey.models import ApiKey
 from ..apikey.auth import KEY_HEADER
@@ -54,15 +54,12 @@ class TestPlaceListView (APITestMixin, TestCase):
             'name': 'Walmart',
           }),
         )
-        self.comments = SubmissionSet.objects.create(place=self.place, name='comments')
-        self.likes = SubmissionSet.objects.create(place=self.place, name='likes')
-        self.applause = SubmissionSet.objects.create(place=self.place, name='applause')
         self.submissions = [
-          Submission.objects.create(parent=self.comments, dataset=self.dataset, data='{}'),
-          Submission.objects.create(parent=self.comments, dataset=self.dataset, data='{}'),
-          Submission.objects.create(parent=self.likes, dataset=self.dataset, data='{}'),
-          Submission.objects.create(parent=self.likes, dataset=self.dataset, data='{}'),
-          Submission.objects.create(parent=self.likes, dataset=self.dataset, data='{}'),
+          Submission.objects.create(place=self.place, set_name='comments', dataset=self.dataset, data='{}'),
+          Submission.objects.create(place=self.place, set_name='comments', dataset=self.dataset, data='{}'),
+          Submission.objects.create(place=self.place, set_name='likes', dataset=self.dataset, data='{}'),
+          Submission.objects.create(place=self.place, set_name='likes', dataset=self.dataset, data='{}'),
+          Submission.objects.create(place=self.place, set_name='likes', dataset=self.dataset, data='{}'),
         ]
 
         self.ds_origin = Origin.objects.create(pattern='http://openplans.github.com', dataset=self.dataset)
@@ -88,7 +85,6 @@ class TestPlaceListView (APITestMixin, TestCase):
         User.objects.all().delete()
         DataSet.objects.all().delete()
         Place.objects.all().delete()
-        SubmissionSet.objects.all().delete()
         Submission.objects.all().delete()
         ApiKey.objects.all().delete()
 

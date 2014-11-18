@@ -3,6 +3,7 @@ DjangoRestFramework resources for the Shareabouts REST API.
 """
 import ujson as json
 import re
+from collections import defaultdict
 from itertools import chain
 from django.contrib.gis.geos import GEOSGeometry
 from django.core.exceptions import ValidationError
@@ -402,22 +403,6 @@ class UserSerializer (serializers.ModelSerializer):
         return strategy.extract_avatar_url(user_data)
 
 
-class SubmissionSetSummarySerializer (EmptyModelSerializer, serializers.HyperlinkedModelSerializer):
-    length = serializers.IntegerField()
-    url = SubmissionSetIdentityField()
-
-    class Meta:
-        model = models.SubmissionSet
-        fields = ('length', 'url')
-
-    def to_native(self, obj):
-        obj = self.ensure_obj(obj)
-        return {
-            'length': obj.length,
-            'url': self.fields['url'].field_to_native(obj, 'url')
-        }
-
-
 class DataSetPlaceSetSummarySerializer (serializers.HyperlinkedModelSerializer):
     length = serializers.IntegerField(source='places_length')
     url = DataSetPlaceSetIdentityField()
@@ -441,13 +426,22 @@ class DataSetSubmissionSetSummarySerializer (serializers.HyperlinkedModelSeriali
         model = models.DataSet
         fields = ('length', 'url')
 
+    def get_submission_sets(self, dataset):
+        include_invisible = self.is_flag_on(INCLUDE_INVISIBLE_PARAM)
+        submission_sets = defaultdict(list)
+        for submission in dataset.submissions.all():
+            if include_invisible or submission.visible:
+                set_name = submission.set_name
+                submission_sets[set_name].append(submission)
+        return submission_sets
+
     def to_native(self, obj):
         request = self.context['request']
         submission_sets_map = self.context['submission_sets_map_getter']()
         sets = submission_sets_map.get(obj.id, {})
         summaries = {}
         for submission_set in sets:
-            set_name = submission_set['parent__name']
+            set_name = submission_set['set_name']
 
             # Ensure the user has read permission on the submission set.
             user = getattr(request, 'user', None)
@@ -516,34 +510,41 @@ class PlaceSerializer (SubmittedThingSerializer, serializers.HyperlinkedModelSer
     class Meta:
         model = models.Place
 
+    def get_submission_sets(self, place):
+        include_invisible = self.is_flag_on(INCLUDE_INVISIBLE_PARAM)
+        submission_sets = defaultdict(list)
+        for submission in place.submissions.all():
+            if include_invisible or submission.visible:
+                set_name = submission.set_name
+                submission_sets[set_name].append(submission)
+        return submission_sets
+
     def get_submission_set_summaries(self, place):
         """
         Get a mapping from place id to a submission set summary dictionary.
         Get this for the entire dataset at once.
         """
         request = self.context['request']
-        include_invisible = self.is_flag_on(INCLUDE_INVISIBLE_PARAM)
 
+        submission_sets = self.get_submission_sets(place)
         summaries = {}
-        for submission_set in place.submission_sets.all():
+        for set_name, submissions in submission_sets.iteritems():
             # Ensure the user has read permission on the submission set.
             user = getattr(request, 'user', None)
             client = getattr(request, 'client', None)
             dataset = getattr(request, 'get_dataset', lambda: None)()
-            if not check_data_permission(user, client, 'retrieve', dataset, submission_set):
+            if not check_data_permission(user, client, 'retrieve', dataset, set_name):
                 continue
 
-            submissions = submission_set.children.all()
-            if not include_invisible:
-                submissions = filter(lambda s: s.visible, submissions)
-            submission_set.length = len(submissions)
+            url_field = SubmissionSetIdentityField()
+            url_field.initialize(parent=self, field_name=None)
+            set_url = url_field.field_to_native(submissions[0], None)
 
-            if submission_set.length == 0:
-                continue
-
-            serializer = SubmissionSetSummarySerializer(submission_set, context=self.context)
-            serializer.parent = self
-            summaries[submission_set.name] = serializer.data
+            summaries[set_name] = {
+                'name': set_name,
+                'length': len(submissions),
+                'url': set_url,
+            }
 
         return summaries
 
@@ -553,22 +554,15 @@ class PlaceSerializer (SubmittedThingSerializer, serializers.HyperlinkedModelSer
         Get this for the entire dataset at once.
         """
         request = self.context['request']
-        include_invisible = self.is_flag_on(INCLUDE_INVISIBLE_PARAM)
 
+        submission_sets = self.get_submission_sets(place)
         details = {}
-        for submission_set in place.submission_sets.all():
+        for set_name, submissions in submission_sets.iteritems():
             # Ensure the user has read permission on the submission set.
             user = getattr(request, 'user', None)
             client = getattr(request, 'client', None)
             dataset = getattr(request, 'get_dataset', lambda: None)()
-            if not check_data_permission(user, client, 'retrieve', dataset, submission_set):
-                continue
-
-            submissions = submission_set.children.all()
-            if not include_invisible:
-                submissions = filter(lambda s: s.visible, submissions)
-
-            if len(submissions) == 0:
+            if not check_data_permission(user, client, 'retrieve', dataset, set_name):
                 continue
 
             # We know that the submission datasets will be the same as the place
@@ -576,9 +570,9 @@ class PlaceSerializer (SubmittedThingSerializer, serializers.HyperlinkedModelSer
             for submission in submissions:
                 submission.dataset = place.dataset
 
-            serializer = SubmissionSerializer(submissions, context=self.context, many=True)
-            serializer.parent = self
-            details[submission_set.name] = serializer.data
+            serializer = SubmissionSerializer(submissions, many=True)
+            serializer.initialize(parent=self, field_name=None)
+            details[set_name] = serializer.data
 
         return details
 
@@ -622,14 +616,14 @@ class SubmissionSerializer (SubmittedThingSerializer, serializers.HyperlinkedMod
     url = SubmissionIdentityField()
     id = serializers.PrimaryKeyRelatedField(read_only=True)
     dataset = DataSetRelatedField()
-    set = SubmissionSetRelatedField(source='parent')
-    place = PlaceRelatedField(source='parent.place')
+    set = SubmissionSetRelatedField(source='*')
+    place = PlaceRelatedField()
     attachments = AttachmentSerializer(read_only=True, many=True)
     submitter = UserSerializer()
 
     class Meta:
         model = models.Submission
-        exclude = ('parent',)
+        exclude = ('set_name',)
 
 
 class AttachmentSerializer (EmptyModelSerializer, serializers.ModelSerializer):
@@ -696,7 +690,7 @@ class ActionSerializer (EmptyModelSerializer, serializers.ModelSerializer):
         except models.Place.DoesNotExist:
             pass
 
-        return obj.thing.submission.parent.name
+        return obj.thing.submission.set_name
 
     def get_target(self, obj):
         try:

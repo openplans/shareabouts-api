@@ -10,7 +10,7 @@ import csv
 import json
 import mock
 from StringIO import StringIO
-from ..models import User, DataSet, Place, SubmissionSet, Submission, Attachment, Action, Group, DataIndex
+from ..models import User, DataSet, Place, Submission, Attachment, Action, Group, DataIndex
 from ..cache import cache_buffer
 from ..apikey.models import ApiKey
 from ..apikey.auth import KEY_HEADER
@@ -47,17 +47,14 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
         f.size = 20
         self.attachments = Attachment.objects.create(
             file=File(f, 'myfile.txt'), name='my_file_name', thing=self.place)
-        self.comments = SubmissionSet.objects.create(place=self.place, name='comments')
-        self.likes = SubmissionSet.objects.create(place=self.place, name='likes')
-        self.applause = SubmissionSet.objects.create(place=self.place, name='applause')
         self.submissions = [
-          Submission.objects.create(parent=self.comments, dataset=self.dataset, data='{"foo": 3}'),
-          Submission.objects.create(parent=self.comments, dataset=self.dataset, data='{"foo": 3}'),
-          Submission.objects.create(parent=self.comments, dataset=self.dataset, data='{"foo": 3}', visible=False),
-          Submission.objects.create(parent=self.likes, dataset=self.dataset, data='{"bar": 3}'),
-          Submission.objects.create(parent=self.likes, dataset=self.dataset, data='{"bar": 3}'),
-          Submission.objects.create(parent=self.likes, dataset=self.dataset, data='{"bar": 3}'),
-          Submission.objects.create(parent=self.likes, dataset=self.dataset, data='{"bar": 3}', visible=False),
+          Submission.objects.create(place=self.place, set_name='comments', dataset=self.dataset, data='{"foo": 3}'),
+          Submission.objects.create(place=self.place, set_name='comments', dataset=self.dataset, data='{"foo": 3}'),
+          Submission.objects.create(place=self.place, set_name='comments', dataset=self.dataset, data='{"foo": 3}', visible=False),
+          Submission.objects.create(place=self.place, set_name='likes', dataset=self.dataset, data='{"bar": 3}'),
+          Submission.objects.create(place=self.place, set_name='likes', dataset=self.dataset, data='{"bar": 3}'),
+          Submission.objects.create(place=self.place, set_name='likes', dataset=self.dataset, data='{"bar": 3}'),
+          Submission.objects.create(place=self.place, set_name='likes', dataset=self.dataset, data='{"bar": 3}', visible=False),
         ]
 
         self.invisible_place = Place.objects.create(
@@ -98,7 +95,6 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
         User.objects.all().delete()
         DataSet.objects.all().delete()
         Place.objects.all().delete()
-        SubmissionSet.objects.all().delete()
         Submission.objects.all().delete()
         ApiKey.objects.all().delete()
 
@@ -511,9 +507,6 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
         # - SELECT * FROM social_auth_usersocialauth
         #    WHERE user_id IN (<self.owner.id>)
         #
-        # - SELECT * FROM sa_api_submissionset AS ss
-        #    WHERE ss.place_id IN (<self.place.id>);
-        #
         # - SELECT * FROM sa_api_submission AS s
         #     JOIN sa_api_submittedthing AS t ON (s.submittedthing_ptr_id = t.id)
         #    WHERE s.parent_id IN (<self.comments.id>, <self.likes.id>, <self.applause.id>);
@@ -528,7 +521,7 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
         #     JOIN sa_api_group_submitters as s ON (g.id = s.group_id)
         #    WHERE gs.user_id IN (<[each submitter id]>);
         #
-        with self.assertNumQueries(13):
+        with self.assertNumQueries(12):
             response = self.view(request, **self.request_kwargs)
             self.assertStatusCode(response, 200)
 
@@ -578,9 +571,6 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
         # - SELECT * FROM social_auth_usersocialauth
         #    WHERE user_id IN (<self.owner.id>)
         #
-        # - SELECT * FROM sa_api_submissionset AS ss
-        #    WHERE ss.place_id IN (<self.place.id>);
-        #
         # - SELECT * FROM sa_api_submission AS s
         #     JOIN sa_api_submittedthing AS t ON (s.submittedthing_ptr_id = t.id)
         #    WHERE s.parent_id IN (<self.comments.id>, <self.likes.id>, <self.applause.id>);
@@ -595,7 +585,7 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
         #     JOIN sa_api_group_submitters as s ON (g.id = s.group_id)
         #    WHERE gs.user_id IN (<[each submitter id]>);
         #
-        with self.assertNumQueries(13):
+        with self.assertNumQueries(12):
             response = self.view(request, **self.request_kwargs)
             self.assertStatusCode(response, 200)
 
@@ -642,9 +632,6 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
         # - SELECT * FROM social_auth_usersocialauth
         #    WHERE user_id IN (<self.owner.id>)
         #
-        # - SELECT * FROM sa_api_submissionset AS ss
-        #    WHERE ss.place_id IN (<self.place.id>);
-        #
         # - SELECT * FROM sa_api_submission AS s
         #     JOIN sa_api_submittedthing AS t ON (s.submittedthing_ptr_id = t.id)
         #    WHERE s.parent_id IN (<self.comments.id>, <self.likes.id>, <self.applause.id>);
@@ -655,7 +642,7 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
         # - SELECT * FROM sa_api_attachment AS a
         #    WHERE a.thing_id IN (<self.place.id>);
         #
-        with self.assertNumQueries(20):
+        with self.assertNumQueries(18):
             response = self.view(anon_request, **self.request_kwargs)
             self.assertStatusCode(response, 200)
             response = self.view(auth_request, **self.request_kwargs)
@@ -914,15 +901,12 @@ class TestPlaceListView (APITestMixin, TestCase):
             'name': 'Walmart',
           }),
         )
-        self.comments = SubmissionSet.objects.create(place=self.place, name='comments')
-        self.likes = SubmissionSet.objects.create(place=self.place, name='likes')
-        self.applause = SubmissionSet.objects.create(place=self.place, name='applause')
         self.submissions = [
-          Submission.objects.create(parent=self.comments, dataset=self.dataset, data='{}'),
-          Submission.objects.create(parent=self.comments, dataset=self.dataset, data='{}'),
-          Submission.objects.create(parent=self.likes, dataset=self.dataset, data='{}'),
-          Submission.objects.create(parent=self.likes, dataset=self.dataset, data='{}'),
-          Submission.objects.create(parent=self.likes, dataset=self.dataset, data='{}'),
+          Submission.objects.create(place=self.place, set_name='comments', dataset=self.dataset, data='{}'),
+          Submission.objects.create(place=self.place, set_name='comments', dataset=self.dataset, data='{}'),
+          Submission.objects.create(place=self.place, set_name='likes', dataset=self.dataset, data='{}'),
+          Submission.objects.create(place=self.place, set_name='likes', dataset=self.dataset, data='{}'),
+          Submission.objects.create(place=self.place, set_name='likes', dataset=self.dataset, data='{}'),
         ]
 
         self.ds_origin = Origin.objects.create(pattern='http://openplans.github.com', dataset=self.dataset)
@@ -948,7 +932,6 @@ class TestPlaceListView (APITestMixin, TestCase):
         User.objects.all().delete()
         DataSet.objects.all().delete()
         Place.objects.all().delete()
-        SubmissionSet.objects.all().delete()
         Submission.objects.all().delete()
         ApiKey.objects.all().delete()
 
@@ -1722,17 +1705,14 @@ class TestSubmissionInstanceView (APITestMixin, TestCase):
             'private-secrets': 42
           }),
         )
-        self.comments = SubmissionSet.objects.create(place=self.place, name='comments')
-        self.likes = SubmissionSet.objects.create(place=self.place, name='likes')
-        self.applause = SubmissionSet.objects.create(place=self.place, name='applause')
         self.submissions = [
-          Submission.objects.create(parent=self.comments, dataset=self.dataset, data='{"comment": "Wow!", "private-email": "abc@example.com", "foo": 3}'),
-          Submission.objects.create(parent=self.comments, dataset=self.dataset, data='{"foo": 3}'),
-          Submission.objects.create(parent=self.comments, dataset=self.dataset, data='{"foo": 3}', visible=False),
-          Submission.objects.create(parent=self.likes, dataset=self.dataset, data='{"bar": 3}'),
-          Submission.objects.create(parent=self.likes, dataset=self.dataset, data='{"bar": 3}'),
-          Submission.objects.create(parent=self.likes, dataset=self.dataset, data='{"bar": 3}'),
-          Submission.objects.create(parent=self.likes, dataset=self.dataset, data='{"bar": 3}', visible=False),
+          Submission.objects.create(place=self.place, set_name='comments', dataset=self.dataset, data='{"comment": "Wow!", "private-email": "abc@example.com", "foo": 3}'),
+          Submission.objects.create(place=self.place, set_name='comments', dataset=self.dataset, data='{"foo": 3}'),
+          Submission.objects.create(place=self.place, set_name='comments', dataset=self.dataset, data='{"foo": 3}', visible=False),
+          Submission.objects.create(place=self.place, set_name='likes', dataset=self.dataset, data='{"bar": 3}'),
+          Submission.objects.create(place=self.place, set_name='likes', dataset=self.dataset, data='{"bar": 3}'),
+          Submission.objects.create(place=self.place, set_name='likes', dataset=self.dataset, data='{"bar": 3}'),
+          Submission.objects.create(place=self.place, set_name='likes', dataset=self.dataset, data='{"bar": 3}', visible=False),
         ]
 
         f = StringIO('This is test content in a "file"')
@@ -1749,7 +1729,7 @@ class TestSubmissionInstanceView (APITestMixin, TestCase):
           'owner_username': self.owner.username,
           'dataset_slug': self.dataset.slug,
           'place_id': self.place.id,
-          'submission_set_name': self.comments.name,
+          'submission_set_name': 'comments',
           'submission_id': self.submission.id
         }
 
@@ -1764,7 +1744,6 @@ class TestSubmissionInstanceView (APITestMixin, TestCase):
         User.objects.all().delete()
         DataSet.objects.all().delete()
         Place.objects.all().delete()
-        SubmissionSet.objects.all().delete()
         Submission.objects.all().delete()
         ApiKey.objects.all().delete()
 
@@ -1906,7 +1885,7 @@ class TestSubmissionInstanceView (APITestMixin, TestCase):
           'owner_username': 'mischevious_owner',
           'dataset_slug': self.dataset.slug,
           'place_id': self.place.id,
-          'submission_set_name': self.comments.name,
+          'submission_set_name': 'comments',
           'submission_id': self.submission.id
         }
 
@@ -2054,17 +2033,14 @@ class TestSubmissionListView (APITestMixin, TestCase):
             'name': 'Walmart',
           }),
         )
-        self.comments = SubmissionSet.objects.create(place=self.place, name='comments')
-        self.likes = SubmissionSet.objects.create(place=self.place, name='likes')
-        self.applause = SubmissionSet.objects.create(place=self.place, name='applause')
         self.submissions = [
-          Submission.objects.create(parent=self.comments, dataset=self.dataset, data='{"comment": "Wow!", "private-email": "abc@example.com", "foo": 3}'),
-          Submission.objects.create(parent=self.comments, dataset=self.dataset, data='{"foo": 3}'),
-          Submission.objects.create(parent=self.comments, dataset=self.dataset, data='{"foo": 3}', visible=False),
-          Submission.objects.create(parent=self.likes, dataset=self.dataset, data='{"bar": 3}'),
-          Submission.objects.create(parent=self.likes, dataset=self.dataset, data='{"bar": 3}'),
-          Submission.objects.create(parent=self.likes, dataset=self.dataset, data='{"bar": 3}'),
-          Submission.objects.create(parent=self.likes, dataset=self.dataset, data='{"bar": 3}', visible=False),
+          Submission.objects.create(place=self.place, set_name='comments', dataset=self.dataset, data='{"comment": "Wow!", "private-email": "abc@example.com", "foo": 3}'),
+          Submission.objects.create(place=self.place, set_name='comments', dataset=self.dataset, data='{"foo": 3}'),
+          Submission.objects.create(place=self.place, set_name='comments', dataset=self.dataset, data='{"foo": 3}', visible=False),
+          Submission.objects.create(place=self.place, set_name='likes', dataset=self.dataset, data='{"bar": 3}'),
+          Submission.objects.create(place=self.place, set_name='likes', dataset=self.dataset, data='{"bar": 3}'),
+          Submission.objects.create(place=self.place, set_name='likes', dataset=self.dataset, data='{"bar": 3}'),
+          Submission.objects.create(place=self.place, set_name='likes', dataset=self.dataset, data='{"bar": 3}', visible=False),
         ]
         self.submission = self.submissions[0]
 
@@ -2075,11 +2051,10 @@ class TestSubmissionListView (APITestMixin, TestCase):
           dataset=dataset2,
           geometry='POINT(3 4)',
         )
-        comments2 = SubmissionSet.objects.create(place=place2, name='comments')
         submissions2 = [
-          Submission.objects.create(parent=comments2, dataset=dataset2, data='{"comment": "Wow!", "private-email": "abc@example.com", "foo": 3}'),
-          Submission.objects.create(parent=comments2, dataset=dataset2, data='{"foo": 3}'),
-          Submission.objects.create(parent=comments2, dataset=dataset2, data='{"foo": 3}', visible=False),
+          Submission.objects.create(place=place2, set_name='comments', dataset=dataset2, data='{"comment": "Wow!", "private-email": "abc@example.com", "foo": 3}'),
+          Submission.objects.create(place=place2, set_name='comments', dataset=dataset2, data='{"foo": 3}'),
+          Submission.objects.create(place=place2, set_name='comments', dataset=dataset2, data='{"foo": 3}', visible=False),
         ]
 
         self.apikey = ApiKey.objects.create(key='abc', dataset=self.dataset)
@@ -2099,7 +2074,6 @@ class TestSubmissionListView (APITestMixin, TestCase):
         User.objects.all().delete()
         DataSet.objects.all().delete()
         Place.objects.all().delete()
-        SubmissionSet.objects.all().delete()
         Submission.objects.all().delete()
         ApiKey.objects.all().delete()
 
@@ -2150,7 +2124,7 @@ class TestSubmissionListView (APITestMixin, TestCase):
     def test_GET_response_for_multiple_specific_objects(self):
         submissions = []
         for _ in range(10):
-            submissions.append(Submission.objects.create(parent=self.comments, dataset=self.dataset, data='{"comment": "Wow!", "private-email": "abc@example.com", "foo": 3}'))
+            submissions.append(Submission.objects.create(place=self.place, set_name='comments', dataset=self.dataset, data='{"comment": "Wow!", "private-email": "abc@example.com", "foo": 3}'))
 
         request_kwargs = {
           'owner_username': self.owner.username,
@@ -2202,10 +2176,10 @@ class TestSubmissionListView (APITestMixin, TestCase):
         self.assertEqual(len(rows), 3)
 
     def test_GET_filtered_response(self):
-        Submission.objects.create(dataset=self.dataset, parent=self.comments, data=json.dumps({'baz': 'bar', 'name': 1})),
-        Submission.objects.create(dataset=self.dataset, parent=self.comments, data=json.dumps({'baz': 'bar', 'name': 2})),
-        Submission.objects.create(dataset=self.dataset, parent=self.comments, data=json.dumps({'baz': 'bam', 'name': 3})),
-        Submission.objects.create(dataset=self.dataset, parent=self.comments, data=json.dumps({'name': 4})),
+        Submission.objects.create(dataset=self.dataset, place=self.place, set_name='comments', data=json.dumps({'baz': 'bar', 'name': 1})),
+        Submission.objects.create(dataset=self.dataset, place=self.place, set_name='comments', data=json.dumps({'baz': 'bar', 'name': 2})),
+        Submission.objects.create(dataset=self.dataset, place=self.place, set_name='comments', data=json.dumps({'baz': 'bam', 'name': 3})),
+        Submission.objects.create(dataset=self.dataset, place=self.place, set_name='comments', data=json.dumps({'name': 4})),
 
         request = self.factory.get(self.path + '?baz=bar')
         response = self.view(request, **self.request_kwargs)
@@ -2448,8 +2422,8 @@ class TestSubmissionListView (APITestMixin, TestCase):
     def test_PUT_creates_in_bulk(self):
         # Create a couple bogus places so that we can be sure we're not
         # inadvertantly deleting them
-        Submission.objects.create(dataset=self.dataset, parent=self.comments)
-        Submission.objects.create(dataset=self.dataset, parent=self.comments)
+        Submission.objects.create(dataset=self.dataset, place=self.place, set_name='comments')
+        Submission.objects.create(dataset=self.dataset, place=self.place, set_name='comments')
 
         # Make some data that will update the place, and create another
         submission_data = json.dumps([
@@ -2494,11 +2468,11 @@ class TestSubmissionListView (APITestMixin, TestCase):
     def test_PUT_response_creates_and_updates_at_once(self):
         # Create a couple bogus places so that we can be sure we're not
         # inadvertantly deleting them
-        Submission.objects.create(dataset=self.dataset, parent=self.comments)
-        Submission.objects.create(dataset=self.dataset, parent=self.comments)
+        Submission.objects.create(dataset=self.dataset, place=self.place, set_name='comments')
+        Submission.objects.create(dataset=self.dataset, place=self.place, set_name='comments')
 
         # Create a submission
-        submission = Submission.objects.create(dataset=self.dataset, parent=self.comments)
+        submission = Submission.objects.create(dataset=self.dataset, place=self.place, set_name='comments')
 
         # Make some data that will update the submission, and create another
         submission_data = json.dumps([
@@ -2679,7 +2653,6 @@ class TestSubmissionListView (APITestMixin, TestCase):
           'foo': 'bar'
         })
         start_num_submissions = Submission.objects.all().count()
-        start_num_sets = SubmissionSet.objects.all().count()
 
         #
         # View should 401 when trying to create when not authenticated
@@ -2716,8 +2689,6 @@ class TestSubmissionListView (APITestMixin, TestCase):
         # Check that we actually created a submission and set
         final_num_submissions = Submission.objects.all().count()
         self.assertEqual(final_num_submissions, start_num_submissions + 1)
-        final_num_sets = SubmissionSet.objects.all().count()
-        self.assertEqual(final_num_sets, start_num_sets + 1)
 
 
 class TestDataSetSubmissionListView (APITestMixin, TestCase):
@@ -2755,17 +2726,14 @@ class TestDataSetSubmissionListView (APITestMixin, TestCase):
             'name': 'Walmart',
           }),
         )
-        self.comments1 = SubmissionSet.objects.create(place=self.place1, name='comments')
-        self.likes1 = SubmissionSet.objects.create(place=self.place1, name='likes')
-        self.applause1 = SubmissionSet.objects.create(place=self.place1, name='applause')
         self.submissions1 = [
-          Submission.objects.create(parent=self.comments1, dataset=self.dataset, data='{"comment": "Wow!", "private-email": "abc@example.com", "foo": 3}'),
-          Submission.objects.create(parent=self.comments1, dataset=self.dataset, data='{"foo": 3}'),
-          Submission.objects.create(parent=self.comments1, dataset=self.dataset, data='{"foo": 3}', visible=False),
-          Submission.objects.create(parent=self.likes1, dataset=self.dataset, data='{"bar": 3}'),
-          Submission.objects.create(parent=self.likes1, dataset=self.dataset, data='{"bar": 3}'),
-          Submission.objects.create(parent=self.likes1, dataset=self.dataset, data='{"bar": 3}'),
-          Submission.objects.create(parent=self.likes1, dataset=self.dataset, data='{"bar": 3}', visible=False),
+          Submission.objects.create(place=self.place1, set_name='comments', dataset=self.dataset, data='{"comment": "Wow!", "private-email": "abc@example.com", "foo": 3}'),
+          Submission.objects.create(place=self.place1, set_name='comments', dataset=self.dataset, data='{"foo": 3}'),
+          Submission.objects.create(place=self.place1, set_name='comments', dataset=self.dataset, data='{"foo": 3}', visible=False),
+          Submission.objects.create(place=self.place1, set_name='likes', dataset=self.dataset, data='{"bar": 3}'),
+          Submission.objects.create(place=self.place1, set_name='likes', dataset=self.dataset, data='{"bar": 3}'),
+          Submission.objects.create(place=self.place1, set_name='likes', dataset=self.dataset, data='{"bar": 3}'),
+          Submission.objects.create(place=self.place1, set_name='likes', dataset=self.dataset, data='{"bar": 3}', visible=False),
         ]
         self.submission1 = self.submissions1[0]
 
@@ -2779,17 +2747,14 @@ class TestDataSetSubmissionListView (APITestMixin, TestCase):
             'private-secrets': 42
           }),
         )
-        self.comments2 = SubmissionSet.objects.create(place=self.place2, name='comments')
-        self.likes2 = SubmissionSet.objects.create(place=self.place2, name='likes')
-        self.applause2 = SubmissionSet.objects.create(place=self.place2, name='applause')
         self.submissions2 = [
-          Submission.objects.create(parent=self.comments2, dataset=self.dataset, data='{"comment": "Wow!", "private-email": "abc@example.com", "foo": 3}'),
-          Submission.objects.create(parent=self.comments2, dataset=self.dataset, data='{"foo": 3}'),
-          Submission.objects.create(parent=self.comments2, dataset=self.dataset, data='{"foo": 3}', visible=False),
-          Submission.objects.create(parent=self.likes2, dataset=self.dataset, data='{"bar": 3}'),
-          Submission.objects.create(parent=self.likes2, dataset=self.dataset, data='{"bar": 3}'),
-          Submission.objects.create(parent=self.likes2, dataset=self.dataset, data='{"bar": 3}'),
-          Submission.objects.create(parent=self.likes2, dataset=self.dataset, data='{"bar": 3}', visible=False),
+          Submission.objects.create(place=self.place2, set_name='comments', dataset=self.dataset, data='{"comment": "Wow!", "private-email": "abc@example.com", "foo": 3}'),
+          Submission.objects.create(place=self.place2, set_name='comments', dataset=self.dataset, data='{"foo": 3}'),
+          Submission.objects.create(place=self.place2, set_name='comments', dataset=self.dataset, data='{"foo": 3}', visible=False),
+          Submission.objects.create(place=self.place2, set_name='likes', dataset=self.dataset, data='{"bar": 3}'),
+          Submission.objects.create(place=self.place2, set_name='likes', dataset=self.dataset, data='{"bar": 3}'),
+          Submission.objects.create(place=self.place2, set_name='likes', dataset=self.dataset, data='{"bar": 3}'),
+          Submission.objects.create(place=self.place2, set_name='likes', dataset=self.dataset, data='{"bar": 3}', visible=False),
         ]
         self.submission2 = self.submissions2[0]
 
@@ -2800,11 +2765,10 @@ class TestDataSetSubmissionListView (APITestMixin, TestCase):
           dataset=dataset2,
           geometry='POINT(3 4)',
         )
-        comments3 = SubmissionSet.objects.create(place=place3, name='comments')
         submissions3 = [
-          Submission.objects.create(parent=comments3, dataset=dataset2, data='{"comment": "Wow!", "private-email": "abc@example.com", "foo": 3}'),
-          Submission.objects.create(parent=comments3, dataset=dataset2, data='{"foo": 3}'),
-          Submission.objects.create(parent=comments3, dataset=dataset2, data='{"foo": 3}', visible=False),
+          Submission.objects.create(place=place3, set_name='comments', dataset=dataset2, data='{"comment": "Wow!", "private-email": "abc@example.com", "foo": 3}'),
+          Submission.objects.create(place=place3, set_name='comments', dataset=dataset2, data='{"foo": 3}'),
+          Submission.objects.create(place=place3, set_name='comments', dataset=dataset2, data='{"foo": 3}', visible=False),
         ]
 
         self.apikey = ApiKey.objects.create(key='abc', dataset=self.dataset)
@@ -2812,7 +2776,7 @@ class TestDataSetSubmissionListView (APITestMixin, TestCase):
         self.request_kwargs = {
           'owner_username': self.owner.username,
           'dataset_slug': self.dataset.slug,
-          'submission_set_name': self.comments1.name
+          'submission_set_name': 'comments'
         }
 
         self.factory = RequestFactory()
@@ -2823,7 +2787,6 @@ class TestDataSetSubmissionListView (APITestMixin, TestCase):
         User.objects.all().delete()
         DataSet.objects.all().delete()
         Place.objects.all().delete()
-        SubmissionSet.objects.all().delete()
         Submission.objects.all().delete()
         ApiKey.objects.all().delete()
 
@@ -2877,10 +2840,10 @@ class TestDataSetSubmissionListView (APITestMixin, TestCase):
         self.assertEqual(len(rows), 5)
 
     def test_GET_filtered_response(self):
-        Submission.objects.create(dataset=self.dataset, parent=self.comments1, data=json.dumps({'baz': 'bar', 'name': 1})),
-        Submission.objects.create(dataset=self.dataset, parent=self.comments2, data=json.dumps({'baz': 'bar', 'name': 2})),
-        Submission.objects.create(dataset=self.dataset, parent=self.comments1, data=json.dumps({'baz': 'bam', 'name': 3})),
-        Submission.objects.create(dataset=self.dataset, parent=self.comments2, data=json.dumps({'name': 4})),
+        Submission.objects.create(dataset=self.dataset, place=self.place1, set_name='comments', data=json.dumps({'baz': 'bar', 'name': 1})),
+        Submission.objects.create(dataset=self.dataset, place=self.place2, set_name='comments', data=json.dumps({'baz': 'bar', 'name': 2})),
+        Submission.objects.create(dataset=self.dataset, place=self.place1, set_name='comments', data=json.dumps({'baz': 'bam', 'name': 3})),
+        Submission.objects.create(dataset=self.dataset, place=self.place2, set_name='comments', data=json.dumps({'name': 4})),
 
         request = self.factory.get(self.path + '?baz=bar')
         response = self.view(request, **self.request_kwargs)
@@ -2999,7 +2962,7 @@ class TestDataSetSubmissionListView (APITestMixin, TestCase):
         request_kwargs = {
           'owner_username': 'mischevious_owner',
           'dataset_slug': self.dataset.slug,
-          'submission_set_name': self.comments1.name
+          'submission_set_name': 'comments'
         }
 
         path = reverse('dataset-submission-list', kwargs=request_kwargs)
@@ -3102,17 +3065,14 @@ class TestDataSetInstanceView (APITestMixin, TestCase):
             'private-secrets': 42
           }),
         )
-        self.comments = SubmissionSet.objects.create(place=self.place, name='comments')
-        self.likes = SubmissionSet.objects.create(place=self.place, name='likes')
-        self.applause = SubmissionSet.objects.create(place=self.place, name='applause')
         self.submissions = [
-          Submission.objects.create(parent=self.comments, dataset=self.dataset, data='{"comment": "Wow!", "private-email": "abc@example.com", "foo": 3}'),
-          Submission.objects.create(parent=self.comments, dataset=self.dataset, data='{"foo": 3}'),
-          Submission.objects.create(parent=self.comments, dataset=self.dataset, data='{"foo": 3}', visible=False),
-          Submission.objects.create(parent=self.likes, dataset=self.dataset, data='{"bar": 3}'),
-          Submission.objects.create(parent=self.likes, dataset=self.dataset, data='{"bar": 3}'),
-          Submission.objects.create(parent=self.likes, dataset=self.dataset, data='{"bar": 3}'),
-          Submission.objects.create(parent=self.likes, dataset=self.dataset, data='{"bar": 3}', visible=False),
+          Submission.objects.create(place=self.place, set_name='comments', dataset=self.dataset, data='{"comment": "Wow!", "private-email": "abc@example.com", "foo": 3}'),
+          Submission.objects.create(place=self.place, set_name='comments', dataset=self.dataset, data='{"foo": 3}'),
+          Submission.objects.create(place=self.place, set_name='comments', dataset=self.dataset, data='{"foo": 3}', visible=False),
+          Submission.objects.create(place=self.place, set_name='likes', dataset=self.dataset, data='{"bar": 3}'),
+          Submission.objects.create(place=self.place, set_name='likes', dataset=self.dataset, data='{"bar": 3}'),
+          Submission.objects.create(place=self.place, set_name='likes', dataset=self.dataset, data='{"bar": 3}'),
+          Submission.objects.create(place=self.place, set_name='likes', dataset=self.dataset, data='{"bar": 3}', visible=False),
         ]
         self.submission = self.submissions[0]
 
@@ -3146,7 +3106,6 @@ class TestDataSetInstanceView (APITestMixin, TestCase):
         User.objects.all().delete()
         DataSet.objects.all().delete()
         Place.objects.all().delete()
-        SubmissionSet.objects.all().delete()
         Submission.objects.all().delete()
         ApiKey.objects.all().delete()
 
@@ -3398,17 +3357,14 @@ class TestDataSetListView (APITestMixin, TestCase):
             'name': 'Walmart',
           }),
         )
-        self.comments = SubmissionSet.objects.create(place=self.place, name='comments')
-        self.likes = SubmissionSet.objects.create(place=self.place, name='likes')
-        self.applause = SubmissionSet.objects.create(place=self.place, name='applause')
         self.submissions = [
-          Submission.objects.create(parent=self.comments, dataset=self.dataset, data='{"comment": "Wow!", "private-email": "abc@example.com", "foo": 3}'),
-          Submission.objects.create(parent=self.comments, dataset=self.dataset, data='{"foo": 3}'),
-          Submission.objects.create(parent=self.comments, dataset=self.dataset, data='{"foo": 3}', visible=False),
-          Submission.objects.create(parent=self.likes, dataset=self.dataset, data='{"bar": 3}'),
-          Submission.objects.create(parent=self.likes, dataset=self.dataset, data='{"bar": 3}'),
-          Submission.objects.create(parent=self.likes, dataset=self.dataset, data='{"bar": 3}'),
-          Submission.objects.create(parent=self.likes, dataset=self.dataset, data='{"bar": 3}', visible=False),
+          Submission.objects.create(place=self.place, set_name='comments', dataset=self.dataset, data='{"comment": "Wow!", "private-email": "abc@example.com", "foo": 3}'),
+          Submission.objects.create(place=self.place, set_name='comments', dataset=self.dataset, data='{"foo": 3}'),
+          Submission.objects.create(place=self.place, set_name='comments', dataset=self.dataset, data='{"foo": 3}', visible=False),
+          Submission.objects.create(place=self.place, set_name='likes', dataset=self.dataset, data='{"bar": 3}'),
+          Submission.objects.create(place=self.place, set_name='likes', dataset=self.dataset, data='{"bar": 3}'),
+          Submission.objects.create(place=self.place, set_name='likes', dataset=self.dataset, data='{"bar": 3}'),
+          Submission.objects.create(place=self.place, set_name='likes', dataset=self.dataset, data='{"bar": 3}', visible=False),
         ]
         self.submission = self.submissions[0]
 
@@ -3419,11 +3375,10 @@ class TestDataSetListView (APITestMixin, TestCase):
           dataset=dataset2,
           geometry='POINT(3 4)',
         )
-        comments2 = SubmissionSet.objects.create(place=place2, name='comments')
         submissions2 = [
-          Submission.objects.create(parent=comments2, dataset=dataset2, data='{"comment": "Wow!", "private-email": "abc@example.com", "foo": 3}'),
-          Submission.objects.create(parent=comments2, dataset=dataset2, data='{"foo": 3}'),
-          Submission.objects.create(parent=comments2, dataset=dataset2, data='{"foo": 3}', visible=False),
+          Submission.objects.create(place=place2, set_name='comments', dataset=dataset2, data='{"comment": "Wow!", "private-email": "abc@example.com", "foo": 3}'),
+          Submission.objects.create(place=place2, set_name='comments', dataset=dataset2, data='{"foo": 3}'),
+          Submission.objects.create(place=place2, set_name='comments', dataset=dataset2, data='{"foo": 3}', visible=False),
         ]
 
         other_owner = User.objects.create_user(
@@ -3446,7 +3401,6 @@ class TestDataSetListView (APITestMixin, TestCase):
         User.objects.all().delete()
         DataSet.objects.all().delete()
         Place.objects.all().delete()
-        SubmissionSet.objects.all().delete()
         Submission.objects.all().delete()
         ApiKey.objects.all().delete()
 
@@ -3528,7 +3482,7 @@ class TestDataSetListView (APITestMixin, TestCase):
         view.kwargs = self.request_kwargs
 
         sets = view.get_all_submission_sets()
-        self.assertIn('likes', [s['parent__name'] for s in sets[self.dataset.pk]])
+        self.assertIn('likes', [s['set_name'] for s in sets[self.dataset.pk]])
 
     def test_GET_response_with_invisible_data(self):
         #
@@ -3671,7 +3625,6 @@ class TestPlaceAttachmentListView (APITestMixin, TestCase):
         User.objects.all().delete()
         DataSet.objects.all().delete()
         Place.objects.all().delete()
-        SubmissionSet.objects.all().delete()
         Submission.objects.all().delete()
         ApiKey.objects.all().delete()
 
@@ -3948,10 +3901,9 @@ class TestSubmissionAttachmentListView (APITestMixin, TestCase):
           }),
         )
 
-        self.comments = SubmissionSet.objects.create(place=self.place, name='comments')
         self.submissions = [
-          Submission.objects.create(parent=self.comments, dataset=self.dataset, data='{"foo": 3}'),
-          Submission.objects.create(parent=self.comments, dataset=self.dataset, data='{"foo": 3}', visible=False),
+          Submission.objects.create(place=self.place, set_name='comments', dataset=self.dataset, data='{"foo": 3}'),
+          Submission.objects.create(place=self.place, set_name='comments', dataset=self.dataset, data='{"foo": 3}', visible=False),
         ]
 
         self.file = StringIO('This is test content in a "file"')
@@ -3964,7 +3916,7 @@ class TestSubmissionAttachmentListView (APITestMixin, TestCase):
           'owner_username': self.owner.username,
           'dataset_slug': self.dataset.slug,
           'place_id': self.place.id,
-          'submission_set_name': self.comments.name,
+          'submission_set_name': 'comments',
           'thing_id': str(self.submissions[0].id)
         }
 
@@ -3972,7 +3924,7 @@ class TestSubmissionAttachmentListView (APITestMixin, TestCase):
           'owner_username': self.owner.username,
           'dataset_slug': self.dataset.slug,
           'place_id': self.place.id,
-          'submission_set_name': self.comments.name,
+          'submission_set_name': 'comments',
           'thing_id': str(self.submissions[1].id)
         }
 
@@ -3985,7 +3937,6 @@ class TestSubmissionAttachmentListView (APITestMixin, TestCase):
         User.objects.all().delete()
         DataSet.objects.all().delete()
         Place.objects.all().delete()
-        SubmissionSet.objects.all().delete()
         Submission.objects.all().delete()
         ApiKey.objects.all().delete()
 
@@ -4249,12 +4200,9 @@ class TestActivityView(APITestMixin, TestCase):
         self.visible_place = Place.objects.create(dataset=self.dataset, geometry='POINT (0 0)', visible=True)
         self.invisible_place = Place.objects.create(dataset=self.dataset, geometry='POINT (0 0)', visible=False)
 
-        self.visible_set = SubmissionSet.objects.create(place=self.visible_place, name='vis')
-        self.invisible_set = SubmissionSet.objects.create(place=self.invisible_place, name='invis')
-
-        self.visible_submission = Submission.objects.create(dataset=self.dataset, parent=self.visible_set)
-        self.invisible_submission = Submission.objects.create(dataset=self.dataset, parent=self.invisible_set)
-        self.invisible_submission2 = Submission.objects.create(dataset=self.dataset, parent=self.visible_set, visible=False)
+        self.visible_submission = Submission.objects.create(dataset=self.dataset, place=self.visible_place, set_name='vis')
+        self.invisible_submission = Submission.objects.create(dataset=self.dataset, place=self.invisible_place, set_name='invis')
+        self.invisible_submission2 = Submission.objects.create(dataset=self.dataset, place=self.visible_place, set_name='vis', visible=False)
 
         self.actions = [
             # Get existing activity for visible things that have been created

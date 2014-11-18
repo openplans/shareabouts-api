@@ -26,13 +26,13 @@ class SubmissionSetFilter (SimpleListFilter):
 
     def lookups(self, request, model_admin):
         qs = model_admin.get_queryset(request)
-        qs = qs.order_by('parent__name').distinct('parent__name').values('parent__name')
-        return [(elem['parent__name'], elem['parent__name']) for elem in qs]
+        qs = qs.order_by('set_name').distinct('set_name').values('set_name')
+        return [(elem['set_name'], elem['set_name']) for elem in qs]
 
     def queryset(self, request, qs):
-        parent__name = self.value()
-        if parent__name:
-            qs = qs.filter(parent__name=parent__name)
+        set_name = self.value()
+        if set_name:
+            qs = qs.filter(set_name=set_name)
         return qs
 
 
@@ -221,26 +221,21 @@ class PlaceAdmin(SubmittedThingAdmin):
     model = models.Place
 
 
-class SubmissionSetAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name',)
-    list_filter = ('name',)
-
-
 class SubmissionAdmin(SubmittedThingAdmin):
     model = models.Submission
 
     list_display = SubmittedThingAdmin.list_display + ('place', 'set_',)
     list_filter = (SubmissionSetFilter,) + SubmittedThingAdmin.list_filter
-    search_fields = ('parent__name',) + SubmittedThingAdmin.search_fields
+    search_fields = ('set_name',) + SubmittedThingAdmin.search_fields
 
     def set_(self, obj):
-        return obj.parent.name
+        return obj.set_name
     set_.short_description = 'Set'
-    set_.admin_order_field = 'parent__name'
+    set_.admin_order_field = 'set_name'
 
     def place(self, obj):
-        return obj.parent.place_id
-    place.admin_order_field = 'parent__place'
+        return obj.place_id
+    place.admin_order_field = 'place'
 
 
 class ActionAdmin(admin.ModelAdmin):
@@ -309,7 +304,6 @@ class UserAdmin(BaseUserAdmin):
 admin.site.register(models.User, UserAdmin)
 admin.site.register(models.DataSet, DataSetAdmin)
 admin.site.register(models.Place, PlaceAdmin)
-admin.site.register(models.SubmissionSet, SubmissionSetAdmin)
 admin.site.register(models.Submission, SubmissionAdmin)
 admin.site.register(models.Action, ActionAdmin)
 admin.site.register(models.Group, GroupAdmin)
