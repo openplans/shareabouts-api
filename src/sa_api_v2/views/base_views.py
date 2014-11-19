@@ -37,7 +37,7 @@ from ..params import (INCLUDE_INVISIBLE_PARAM, INCLUDE_PRIVATE_PARAM,
     INCLUDE_SUBMISSIONS_PARAM, NEAR_PARAM, DISTANCE_PARAM, BBOX_PARAM,
     FORMAT_PARAM, PAGE_PARAM, PAGE_SIZE_PARAM, CALLBACK_PARAM)
 from functools import wraps
-from itertools import groupby
+from itertools import groupby, count
 from collections import defaultdict
 from urllib import urlencode
 import re
@@ -1482,6 +1482,9 @@ class DataSetListView (CachedResourceMixin, DataSetListMixin, OwnedResourceMixin
     To clone a dataset, the authenticated user must have enough permission on
     the cloned object to read private and invisible data.
 
+    By default, the API will automatically find a unique slug by appending an
+    integer to the end of a non-unique slug.
+
     **Authentication**: Basic or session auth *(required)*
 
     ------------------------------------------------------------
@@ -1562,13 +1565,21 @@ class DataSetListView (CachedResourceMixin, DataSetListMixin, OwnedResourceMixin
             if field in request.DATA: overrides[field] = request.DATA[field]
 
         # - - Make sure slug is unique.
-        slug = overrides.get('slug', original.slug)
-        try:
-            queryset.get(slug=slug)
-        except models.DataSet.DoesNotExist:
-            pass
+        if 'slug' in overrides:
+            slug = overrides['slug']
+            try:
+                queryset.get(slug=slug)
+            except models.DataSet.DoesNotExist:
+                pass
+            else:
+                return Response({'errors': {'slug': 'DataSet with this slug already exists'}}, status=409)
         else:
-            return Response({'errors': {'slug': 'DataSet with this slug already exists'}}, status=409)
+            slugs = set([ds.slug for ds in queryset])
+            unique_slug = original.slug
+            for uniquifier in count(2):
+                if unique_slug not in slugs: break
+                unique_slug = '-'.join([original.slug, str(uniquifier)])
+            overrides['slug'] = unique_slug
 
         clone = original.clone(overrides=overrides, commit=False)
         self.pre_save(clone)

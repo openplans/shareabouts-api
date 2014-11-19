@@ -3562,6 +3562,34 @@ class TestDataSetListView (APITestMixin, TestCase):
         final_num_datasets = DataSet.objects.all().count()
         self.assertEqual(final_num_datasets, start_num_datasets + 1)
 
+    def test_POST_cloning_dataset_without_specifying_slug(self):
+        dataset_data = json.dumps({})
+        start_num_datasets = DataSet.objects.all().count()
+
+        #
+        # View should create the submission and set when owner is authenticated
+        #
+        request = self.factory.post(self.path, data=dataset_data, content_type='application/json')
+        request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(':'.join([self.owner.username, '123']))
+        request.META['HTTP_X_SHAREABOUTS_CLONE'] = str(self.dataset.id)
+
+        response = self.view(request, **self.request_kwargs)
+
+        data = json.loads(response.rendered_content)
+
+        # Check that the request was successful
+        self.assertStatusCode(response, 202)
+
+        # Check that the dataset has the same name as the original
+        # self.assertEqual(data['places']['length'], 0)
+        # self.assertEqual(data['submission_sets'], {})
+        self.assertEqual(data['display_name'], self.dataset.display_name)
+        self.assert_(data['slug'].startswith(self.dataset.slug))
+
+        # Check that we actually created a dataset
+        final_num_datasets = DataSet.objects.all().count()
+        self.assertEqual(final_num_datasets, start_num_datasets + 1)
+
     def test_get_all_submission_sets(self):
         request = self.factory.get(self.path)
         view = DataSetListView()
