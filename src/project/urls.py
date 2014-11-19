@@ -31,7 +31,7 @@ urlpatterns = patterns('',
 
     # For now, the API and the management console are hosted together.
     url(r'^api/v2/', include('sa_api_v2.urls')),
-    url(r'^api/v1/', lambda x: HttpResponse('Version 1 of the API is no longer available.', status=410)),
+    url(r'^api/v1/', lambda x: HttpResponse(status=410)),
     # NOTE: Redirect all manager urls until the manager is fixed.
     url(r'^manage/', lambda x: HttpResponseRedirect('http://openplans.org/shareabouts/')),
 
