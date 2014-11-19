@@ -13,6 +13,7 @@ from django.db import models
 from django.db.models.signals import post_save
 from django.utils.timezone import now
 from ..models import DataSet, KeyPermission
+from ..models.mixins import CloneableModelMixin
 from .. import utils
 
 # Changing this would require a migration, ugh.
@@ -40,7 +41,7 @@ def generate_unique_api_key():
     return api_key
 
 
-class ApiKey(models.Model):
+class ApiKey(CloneableModelMixin, models.Model):
     key = models.CharField(max_length=KEY_SIZE, unique=True, default=generate_unique_api_key)
     logged_ip = models.IPAddressField(blank=True, null=True)
     last_used = models.DateTimeField(blank=True, default=now)
@@ -67,6 +68,10 @@ class ApiKey(models.Model):
 
     def __unicode__(self):
         return self.key
+
+    def clone_related(self, onto):
+        for permission in self.permissions.all():
+            permission.clone(overrides={'key': onto})
 
     def save(self, *args, **kwargs):
         if self.logged_ip == '':

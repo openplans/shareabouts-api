@@ -3,6 +3,7 @@ from django.contrib.auth.models import AbstractUser, UserManager
 from .caching import CacheClearingModel
 from .. import cache
 from .. import utils
+from ..models.mixins import CloneableModelMixin
 
 
 class ShareaboutsUserManager (UserManager):
@@ -23,7 +24,7 @@ class User (CacheClearingModel, AbstractUser):
         db_table = 'auth_user'
 
 
-class Group (models.Model):
+class Group (CloneableModelMixin, models.Model):
     """
     A group of submitters within a dataset.
     """
@@ -39,4 +40,9 @@ class Group (models.Model):
     def __unicode__(self):
         return '%s in %s' % (self.name, self.dataset.slug)
 
+    def clone_related(self, onto):
+        for permission in self.permissions.all():
+            permission.clone(overrides={'group': onto})
 
+        for submitter in self.submitters.all():
+            onto.submitters.add(submitter)

@@ -13,11 +13,12 @@ from django.db import models
 from django.db.models.signals import post_save
 from django.utils.timezone import now
 from ..models import DataSet, OriginPermission
+from ..models.mixins import CloneableModelMixin
 from .. import utils
 import re
 
 
-class Origin(models.Model):
+class Origin(CloneableModelMixin, models.Model):
     pattern = models.CharField(max_length=100, help_text='The origin pattern, e.g., https://*.github.io, http://localhost:*, http*://map.phila.gov')
     logged_ip = models.IPAddressField(blank=True, null=True)
     last_used = models.DateTimeField(blank=True, default=now)
@@ -73,6 +74,10 @@ class Origin(models.Model):
         else:
             pattern = pattern.replace('.', r'\.').replace('*', r'.*')
             return re.match(pattern, origin) is not None
+
+    def clone_related(self, onto):
+        for permission in self.permissions.all():
+            permission.clone(overrides={'origin': onto})
 
     def save(self, *args, **kwargs):
         if self.logged_ip == '':

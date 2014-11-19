@@ -1,9 +1,10 @@
 import operator
 import ujson as json
 from django.contrib.gis.db import models
+from .mixins import CloneableModelMixin
 
 
-class DataIndex (models.Model):
+class DataIndex (CloneableModelMixin, models.Model):
     ATTR_TYPE_CHOICES = (
         ('string', 'String'),
     )

@@ -9,7 +9,7 @@ from django.core.urlresolvers import reverse
 # from mock import patch
 # from nose.tools import (istest, assert_equal, assert_not_equal, assert_in,
 #                         assert_raises)
-from ..models import (DataSet, User, SubmittedThing, Action, Place, Submission,
+from ..models import (DataSet, User, Group, SubmittedThing, Action, Place, Submission,
     DataSetPermission, check_data_permission, DataIndex, IndexedValue)
 from ..apikey.models import ApiKey
 # from ..views import SubmissionCollectionView
@@ -317,6 +317,27 @@ class CloningTests (TestCase):
         clone_place_ids = set([s.id for s in clone_places])
         orgnl_place_ids = set([s.id for s in orgnl_places])
         self.assertEqual(clone_place_ids & orgnl_place_ids, set())
+
+    def test_group_can_be_cloned(self):
+        dataset = DataSet.objects.create(owner=self.owner, slug='dataset')
+        user1 = User.objects.create(username='user1')
+        user2 = User.objects.create(username='user2')
+        group = Group.objects.create(dataset=dataset, name='users')
+        group.submitters.add(user1)
+        group.submitters.add(user2)
+
+        # Clone the object and make sure the clone's values are initialized
+        # correctly.
+        clone = group.clone(overrides={'name': 'users-2'})
+        self.assertEqual(clone.dataset, group.dataset)
+        self.assertNotEqual(clone.id, group.id)
+
+        clone_submitters = clone.submitters.all()
+        group_submitters = group.submitters.all()
+
+        clone_submitter_ids = set([s.id for s in clone_submitters])
+        group_submitter_ids = set([s.id for s in group_submitters])
+        self.assertEqual(clone_submitter_ids, group_submitter_ids)
 
 
 class DataPermissionTests (TestCase):

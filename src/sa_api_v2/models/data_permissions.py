@@ -3,6 +3,7 @@ from django.db.models.signals import post_save
 from .. import utils
 from .core import CacheClearingModel
 from .core import DataSet
+from .mixins import CloneableModelMixin
 
 class DataPermissionManager (models.Manager):
     use_for_related_fields = True
@@ -12,7 +13,7 @@ class DataPermissionManager (models.Manager):
         return self.all()
 
 
-class DataPermission (CacheClearingModel, models.Model):
+class DataPermission (CloneableModelMixin, CacheClearingModel, models.Model):
     """
     Rules for what permissions a given authentication method affords.
     """
