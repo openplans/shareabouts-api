@@ -36,7 +36,10 @@ class CloneableModelMixin (object):
 
         return ignore_field_names
 
-    def clone(self, inst_kwargs=None, commit=True):
+    def clone_related(self, onto):
+        pass
+
+    def clone(self, overrides=None, commit=True):
         """
         Create a duplicate of the model instance, replacing any properties
         specified as keyword arguments. This is a simple base implementation
@@ -44,18 +47,26 @@ class CloneableModelMixin (object):
         does not address related fields in any way.
         """
         fields = self._meta.fields
-        inst_kwargs = inst_kwargs or {}
         ignore_field_names = self.get_ignore_fields(self.__class__)
+        inst_kwargs = {}
 
         for fld in fields:
             if fld.name not in ignore_field_names:
                 fld_value = getattr(self, fld.name)
-                inst_kwargs.setdefault(fld.name, fld_value)
+                inst_kwargs[fld.name] = fld_value
+
+        if overrides:
+            inst_kwargs.update(overrides)
 
         new_inst = self.__class__(**inst_kwargs)
 
         if commit:
             new_inst.save()
+
+            # If commit is true, clone the related submissions. Otherwise,
+            # you will have to call clone_related manually on the cloned
+            # instance once it is saved.
+            self.clone_related(onto=new_inst)
 
         return new_inst
 
@@ -86,7 +97,7 @@ class SubmittedThingManager (FilterByIndexMixin, models.Manager):
         return SubmittedThingQuerySet(self.model, using=self._db)
 
 
-class SubmittedThing (CacheClearingModel, ModelWithDataBlob, TimeStampedModel):
+class SubmittedThing (CloneableModelMixin, CacheClearingModel, ModelWithDataBlob, TimeStampedModel):
     """
     A SubmittedThing generally comes from the end-user.  It may be a place, a
     comment, a vote, etc.
@@ -132,7 +143,7 @@ class SubmittedThing (CacheClearingModel, ModelWithDataBlob, TimeStampedModel):
         return ret
 
 
-class DataSet (CacheClearingModel, models.Model):
+class DataSet (CloneableModelMixin, CacheClearingModel, models.Model):
     """
     A DataSet is a named collection of data, eg. Places, owned by a user,
     and intended for a coherent purpose, eg. display on a single map.
@@ -185,6 +196,15 @@ class DataSet (CacheClearingModel, models.Model):
 
         for thing in things:
             thing.index_values(indexes)
+
+    def clone_related(self, onto):
+        for thing in self.things.all():
+            try:
+                place = thing.place
+            except Place.DoesNotExist:
+                continue
+            if place:
+                place.clone(overrides={'dataset': onto})
 
 
 def after_create_dataset(sender, instance, created, **kwargs):
@@ -251,8 +271,13 @@ class Place (SubmittedThing):
         db_table = 'sa_api_place'
         ordering = ['-updated_datetime']
 
+    def clone_related(self, onto):
+        data_overrides = {'place': onto, 'dataset': onto.dataset}
+        for submission in self.submissions.all():
+            submission.clone(overrides=data_overrides)
 
-class Submission (CloneableModelMixin, SubmittedThing):
+
+class Submission (SubmittedThing):
     """
     A Submission is the simplest flavor of SubmittedThing.
     It belongs to a Place.

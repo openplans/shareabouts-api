@@ -226,15 +226,97 @@ class CloningTests (TestCase):
         # Change a property on the clone and make sure that they're different
         # (i.e., not aliases of the same thing).
         clone.set_name = 'support'
+        clone_data = json.loads(clone.data)
+        clone_data['new-field'] = 'new-value'
+        clone.data = json.dumps(clone_data)
         clone.save()
         self.assertNotEqual(clone.set_name, submission.set_name)
+        self.assertNotEqual(clone.data, submission.data)
 
         # Reload the objects from the database and check that the comparisons
         # still hold.
         submission = Submission.objects.get(pk=submission.id)
         clone = Submission.objects.get(pk=clone.id)
-        self.assertEqual(json.loads(clone.data), json.loads(submission.data))
+        self.assertNotEqual(json.loads(clone.data), json.loads(submission.data))
         self.assertNotEqual(clone.set_name, submission.set_name)
+        self.assertNotEqual(clone.data, submission.data)
+
+    def test_place_can_be_cloned(self):
+        dataset = DataSet.objects.create(owner=self.owner, slug='dataset')
+        place = Place.objects.create(dataset=dataset, geometry='POINT(0 0)')
+        Submission.objects.create(dataset=dataset, place=place, set_name='comments', data='{"field": "value1"}')
+        Submission.objects.create(dataset=dataset, place=place, set_name='comments', data='{"field": "value2"}')
+        Submission.objects.create(dataset=dataset, place=place, set_name='support')
+
+        # Clone the object and make sure the clone's values are initialized
+        # correctly.
+        clone = place.clone()
+        self.assertEqual(clone.dataset, place.dataset)
+        self.assertEqual(clone.geometry, place.geometry)
+        self.assertEqual(clone.submissions.count(), place.submissions.count())
+        self.assertNotEqual(clone.id, place.id)
+
+        # Make sure the clone and the original have no actual submissions in
+        # common.
+        clone_submissions = clone.submissions.all()
+        place_submissions = place.submissions.all()
+
+        clone_submission_set_names = sorted([s.set_name for s in clone_submissions])
+        place_submission_set_names = sorted([s.set_name for s in place_submissions])
+        self.assertEqual(clone_submission_set_names, place_submission_set_names)
+
+        clone_submission_ids = set([s.id for s in clone_submissions])
+        place_submission_ids = set([s.id for s in place_submissions])
+        self.assertEqual(clone_submission_ids & place_submission_ids, set())
+
+        # Change a property on the clone and make sure that they're different
+        # (i.e., not aliases of the same thing).
+        clone.geometry = 'POINT(1 1)'
+        clone.save()
+        self.assertNotEqual(clone.geometry, place.geometry)
+
+        # Reload the objects from the database and check that the comparisons
+        # still hold.
+        place = Place.objects.get(pk=place.id)
+        clone = Place.objects.get(pk=clone.id)
+        self.assertNotEqual(clone.geometry, place.geometry)
+
+    def test_dataset_can_be_cloned(self):
+        dataset = DataSet.objects.create(owner=self.owner, slug='dataset')
+        place1 = Place.objects.create(dataset=dataset, geometry='POINT(0 0)')
+        Submission.objects.create(dataset=dataset, place=place1, set_name='comments', data='{"field": "value1"}')
+        Submission.objects.create(dataset=dataset, place=place1, set_name='comments', data='{"field": "value2"}')
+        Submission.objects.create(dataset=dataset, place=place1, set_name='support')
+        place2 = Place.objects.create(dataset=dataset, geometry='POINT(1 1)')
+        Submission.objects.create(dataset=dataset, place=place2, set_name='comments')
+        Submission.objects.create(dataset=dataset, place=place2, set_name='support')
+
+        # Clone the object and make sure the clone's values are initialized
+        # correctly.
+        clone = dataset.clone(overrides={'slug': 'dataset-2'})
+        self.assertEqual(clone.owner, dataset.owner)
+        self.assertEqual(clone.things.count(), dataset.things.count())
+        self.assertNotEqual(clone.id, dataset.id)
+
+        # Make sure the clone and the original have no actual submissions in
+        # common.
+        clone_submissions = clone.things.filter(submission__isnull=False)
+        orgnl_submissions = dataset.things.filter(submission__isnull=False)
+
+        clone_submission_set_names = sorted([s.submission.set_name for s in clone_submissions])
+        orgnl_submission_set_names = sorted([s.submission.set_name for s in orgnl_submissions])
+        self.assertEqual(clone_submission_set_names, orgnl_submission_set_names)
+
+        clone_submission_ids = set([s.id for s in clone_submissions])
+        orgnl_submission_ids = set([s.id for s in orgnl_submissions])
+        self.assertEqual(clone_submission_ids & orgnl_submission_ids, set())
+
+        clone_places = clone.things.filter(place__isnull=False)
+        orgnl_places = dataset.things.filter(place__isnull=False)
+
+        clone_place_ids = set([s.id for s in clone_places])
+        orgnl_place_ids = set([s.id for s in orgnl_places])
+        self.assertEqual(clone_place_ids & orgnl_place_ids, set())
 
 
 class DataPermissionTests (TestCase):
