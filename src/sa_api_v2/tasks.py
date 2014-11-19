@@ -2,6 +2,7 @@ from __future__ import unicode_literals
 
 from celery import shared_task
 from celery.result import AsyncResult
+from django.db import transaction
 from django.test.client import RequestFactory
 from django.utils.timezone import now
 from .models import DataSnapshotRequest, DataSnapshot, DataSet
@@ -83,6 +84,29 @@ def bulk_data_status_update(uuid):
 
 @shared_task
 def clone_related_dataset_data(orig_dataset_id, new_dataset_id):
-    orig_dataset = DataSet.objects.get(id=orig_dataset_id)
-    new_dataset = DataSet.objects.get(id=new_dataset_id)
-    orig_dataset.clone_related(onto=new_dataset)
+    qs = DataSet.objects.select_related('owner')\
+        .filter(id__in=(orig_dataset_id, new_dataset_id))\
+        .prefetch_related('things',
+                          'things__place',
+                          'things__place__dataset',
+                          'things__place__submitter',
+                          'things__place__submissions',
+                          'things__place__submissions__dataset',
+                          'things__place__submissions__submitter',
+                          'permissions',
+                          'groups',
+                          'groups__submitters',
+                          'groups__permissions',
+                          'keys',
+                          'keys__permissions',
+                          'origins',
+                          'origins__permissions',
+                          )
+    datasets = list(qs)
+    if datasets[0].id == orig_dataset_id:
+        orig_dataset, new_dataset = datasets
+    else:
+        new_dataset, orig_dataset = datasets
+
+    with transaction.atomic():
+        orig_dataset.clone_related(onto=new_dataset)

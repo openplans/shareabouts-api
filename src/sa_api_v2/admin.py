@@ -3,18 +3,23 @@ Basic behind-the-scenes maintenance for superusers,
 via django.contrib.admin.
 """
 
+import itertools
 import json
 import models
 from django.contrib.admin import SimpleListFilter
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.forms import UserChangeForm as BaseUserChangeForm
 from django.contrib.gis import admin
+from django.contrib import messages
 from django.core.urlresolvers import reverse
 from django.forms import ValidationError
+from django.http import HttpResponseRedirect
 from django.utils.html import escape
 from django_ace import AceWidget
+from django_object_actions import DjangoObjectActions
 from .apikey.models import ApiKey
 from .cors.models import Origin
+from .tasks import clone_related_dataset_data
 
 
 class SubmissionSetFilter (SimpleListFilter):
@@ -185,13 +190,33 @@ class WebhookAdmin(admin.ModelAdmin):
     # list_filter = ('name',)
 
 
-class DataSetAdmin(admin.ModelAdmin):
+class DataSetAdmin(DjangoObjectActions, admin.ModelAdmin):
     list_display = ('display_name', 'slug', 'owner')
     prepopulated_fields = {'slug': ['display_name']}
     search_fields = ('display_name', 'slug', 'owner__username')
 
+    objectactions = ('clone_dataset',)
     raw_id_fields = ('owner',)
     inlines = [InlineDataIndexAdmin, InlineDataSetPermissionAdmin, InlineApiKeyAdmin, InlineOriginAdmin, InlineGroupAdmin, InlineWebhookAdmin]
+
+    def clone_dataset(self, request, obj):
+        siblings = models.DataSet.objects.filter(owner=obj.owner)
+        slugs = set([ds.slug for ds in siblings])
+
+        for uniquifier in itertools.count(2):
+            unique_slug = '-'.join([obj.slug, str(uniquifier)])
+            if unique_slug not in slugs: break
+
+        try:
+            new_obj = obj.clone(overrides={'slug': unique_slug}, commit=False)
+            new_obj.save()
+            clone_related_dataset_data.apply_async(args=[obj.id, new_obj.id])
+
+            new_obj_edit_url = reverse('admin:sa_api_v2_dataset_change', args=[new_obj.pk])
+            messages.success(request, 'Cloning dataset. Please give it a few moments.')
+            return HttpResponseRedirect(new_obj_edit_url)
+        except Exception as e:
+            messages.error(request, 'Failed to clone dataset: %s (%s)' % (e, type(e).__name__))
 
     def get_queryset(self, request):
         qs = super(DataSetAdmin, self).get_queryset(request)

@@ -22,6 +22,9 @@ class CloneableModelMixin (object):
 
         return ignore_field_names
 
+    def get_clone_save_kwargs(self):
+        return {}
+
     def clone_related(self, onto):
         pass
 
@@ -47,7 +50,8 @@ class CloneableModelMixin (object):
         new_inst = self.__class__(**inst_kwargs)
 
         if commit:
-            new_inst.save()
+            save_kwargs = self.get_clone_save_kwargs()
+            new_inst.save(**save_kwargs)
 
             # If commit is true, clone the related submissions. Otherwise,
             # you will have to call clone_related manually on the cloned

@@ -24,6 +24,9 @@ class DataIndex (CloneableModelMixin, models.Model):
         for thing in things:
             IndexedValue.objects.sync(thing, self)
 
+    def get_clone_save_kwargs(self):
+        return {'reindex': False}
+
     def save(self, reindex=True, *args, **kwargs):
         ret = super(DataIndex, self).save(*args, **kwargs)
         if reindex:

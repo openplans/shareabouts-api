@@ -73,6 +73,13 @@ class ApiKey(CloneableModelMixin, models.Model):
         for permission in self.permissions.all():
             permission.clone(overrides={'key': onto})
 
+    def get_ignore_fields(self, ModelClass):
+        fields = super(ApiKey, self).get_ignore_fields(ModelClass)
+        # Do not copy over the actual key value
+        if ModelClass == ApiKey:
+            fields.add('key')
+        return fields
+
     def save(self, *args, **kwargs):
         if self.logged_ip == '':
             self.logged_ip = None

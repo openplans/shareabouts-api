@@ -66,6 +66,9 @@ class SubmittedThing (CloneableModelMixin, CacheClearingModel, ModelWithDataBlob
         for index in indexes:
             IndexedValue.objects.sync(self, index, data=data)
 
+    def get_clone_save_kwargs(self):
+        return {'silent': True, 'reindex': False, 'clear_cache': False}
+
     def save(self, silent=False, source='', reindex=True, *args, **kwargs):
         is_new = (self.id == None)
 
@@ -148,6 +151,9 @@ class DataSet (CloneableModelMixin, CacheClearingModel, models.Model):
             if place:
                 place.clone(overrides={'dataset': onto})
 
+        for group in self.groups.all():
+            group.clone(overrides={'dataset': onto})
+
         for index in self.indexes.all():
             index.clone(overrides={'dataset': onto})
 
@@ -158,7 +164,9 @@ class DataSet (CloneableModelMixin, CacheClearingModel, models.Model):
             origin.clone(overrides={'dataset': onto})
 
         for key in self.keys.all():
-            origin.clone(overrides={'dataset': onto})
+            key.clone(overrides={'dataset': onto})
+
+        self.reindex()
 
 
 

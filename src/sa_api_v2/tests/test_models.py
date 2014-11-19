@@ -339,6 +339,19 @@ class CloningTests (TestCase):
         group_submitter_ids = set([s.id for s in group_submitters])
         self.assertEqual(clone_submitter_ids, group_submitter_ids)
 
+    def test_apikey_can_be_cloned(self):
+        dataset = DataSet.objects.create(owner=self.owner, slug='dataset')
+        key = ApiKey.objects.create(dataset=dataset)
+
+        # Clone the object and make sure the clone's values are initialized
+        # correctly.
+        clone = key.clone()
+        self.assertEqual(clone.dataset, key.dataset)
+        self.assertNotEqual(clone.id, key.id)
+
+        # Keys must not repeat across system
+        self.assertNotEqual(clone.key, key.key)
+
 
 class DataPermissionTests (TestCase):
     def clear_objects(self):

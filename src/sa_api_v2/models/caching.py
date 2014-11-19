@@ -42,11 +42,13 @@ class CacheClearingModel (object):
         except ObjectDoesNotExist:
             pass
 
-    def save(self, *args, **kwargs):
+    def save(self, clear_cache=True, *args, **kwargs):
         result = super(CacheClearingModel, self).save(*args, **kwargs)
-        self.clear_instance_cache()
+        if clear_cache:
+            self.clear_instance_cache()
         return result
 
-    def delete(self, *args, **kwargs):
-        self.clear_instance_cache()
+    def delete(self, clear_cache=True, *args, **kwargs):
+        if clear_cache:
+            self.clear_instance_cache()
         return super(CacheClearingModel, self).delete(*args, **kwargs)

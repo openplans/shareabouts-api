@@ -160,6 +160,7 @@ INSTALLED_APPS = (
     'social.apps.django_app.default',
     'raven.contrib.django.raven_compat',
     'django_ace',
+    'django_object_actions',
     'djcelery',
 
     # OAuth
