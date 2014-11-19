@@ -197,6 +197,46 @@ class TestDataIndexes (TestCase):
         self.assertEqual(IndexedValue.objects.all().count(), num_indexed_values - 1)
 
 
+class CloningTests (TestCase):
+    def clear_objects(self):
+        # This should cascade to everything else.
+        User.objects.all().delete()
+
+    def tearDown(self):
+        self.clear_objects()
+
+    def setUp(self):
+        self.clear_objects()
+        self.owner = User.objects.create(username='myuser')
+
+    def test_submission_can_be_cloned(self):
+        dataset = DataSet.objects.create(owner=self.owner, slug='dataset')
+        place = Place.objects.create(dataset=dataset, geometry='POINT(0 0)')
+        submission = Submission.objects.create(dataset=dataset, place=place, set_name='comments', data='{"field": "value"}')
+
+        # Clone the object and make sure the clone's values are initialized
+        # correctly.
+        clone = submission.clone()
+        self.assertEqual(clone.dataset, submission.dataset)
+        self.assertEqual(clone.place, submission.place)
+        self.assertEqual(clone.set_name, submission.set_name)
+        self.assertEqual(json.loads(clone.data), json.loads(submission.data))
+        self.assertNotEqual(clone.id, submission.id)
+
+        # Change a property on the clone and make sure that they're different
+        # (i.e., not aliases of the same thing).
+        clone.set_name = 'support'
+        clone.save()
+        self.assertNotEqual(clone.set_name, submission.set_name)
+
+        # Reload the objects from the database and check that the comparisons
+        # still hold.
+        submission = Submission.objects.get(pk=submission.id)
+        clone = Submission.objects.get(pk=clone.id)
+        self.assertEqual(json.loads(clone.data), json.loads(submission.data))
+        self.assertNotEqual(clone.set_name, submission.set_name)
+
+
 class DataPermissionTests (TestCase):
     def clear_objects(self):
         User.objects.all().delete()

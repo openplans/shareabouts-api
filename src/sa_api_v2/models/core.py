@@ -12,6 +12,54 @@ from .data_indexes import IndexedValue, FilterByIndexMixin
 from .profiles import User
 
 
+class CloneableModelMixin (object):
+    """
+    Mixin providing a clone method that copies all of a models instance's
+    fields to a new instance of the model, allowing overrides.
+
+    """
+    def get_ignore_fields(self, ModelClass):
+        fields = ModelClass._meta.fields
+        pk_name = ModelClass._meta.pk.name
+
+        ignore_field_names = set([pk_name])
+        for fld in fields:
+            if fld.name == pk_name:
+                pk_fld = fld
+                break
+        else:
+            raise Exception('Model %s somehow has no PK field' % (ModelClass,))
+
+        if pk_fld.rel and pk_fld.rel.parent_link:
+            parent_ignore_fields = self.get_ignore_fields(pk_fld.rel.to)
+            ignore_field_names.update(parent_ignore_fields)
+
+        return ignore_field_names
+
+    def clone(self, inst_kwargs=None, commit=True):
+        """
+        Create a duplicate of the model instance, replacing any properties
+        specified as keyword arguments. This is a simple base implementation
+        and may need to be extended for specific classes, since it is
+        does not address related fields in any way.
+        """
+        fields = self._meta.fields
+        inst_kwargs = inst_kwargs or {}
+        ignore_field_names = self.get_ignore_fields(self.__class__)
+
+        for fld in fields:
+            if fld.name not in ignore_field_names:
+                fld_value = getattr(self, fld.name)
+                inst_kwargs.setdefault(fld.name, fld_value)
+
+        new_inst = self.__class__(**inst_kwargs)
+
+        if commit:
+            new_inst.save()
+
+        return new_inst
+
+
 class TimeStampedModel (models.Model):
     created_datetime = models.DateTimeField(default=now, blank=True, db_index=True)
     updated_datetime = models.DateTimeField(auto_now=True, db_index=True)
@@ -204,7 +252,7 @@ class Place (SubmittedThing):
         ordering = ['-updated_datetime']
 
 
-class Submission (SubmittedThing):
+class Submission (CloneableModelMixin, SubmittedThing):
     """
     A Submission is the simplest flavor of SubmittedThing.
     It belongs to a Place.
