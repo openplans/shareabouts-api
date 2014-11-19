@@ -20,12 +20,17 @@ class Migration(DataMigration):
         SubmissionSet = orm.SubmissionSet
         Submission = orm.Submission
 
-        all_submissions = list(Submission.objects.all())
+        all_submissions = list(Submission.objects.all().select_related('place'))
+        ssets = {}
         with transaction.atomic():
             for submission in all_submissions:
-                sset, _ = SubmissionSet.get_or_create(
-                    name=submission.set_name,
-                    place=submission.place_id)
+                if (submission.set_name, submission.place_id) not in ssets:
+                    ssets[(submission.set_name, submission.place_id)] = \
+                        SubmissionSet.objects.create(name=submission.set_name, place=submission.place)
+
+        with transaction.atomic():
+            for submission in all_submissions:
+                sset = ssets[(submission.set_name, submission.place_id)]
                 submission.parent = sset
                 submission.save()
 

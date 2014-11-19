@@ -35,7 +35,7 @@ class Migration(SchemaMigration):
 
         # Adding field 'Submission.parent'
         db.add_column('sa_api_submission', 'parent',
-                      self.gf('django.db.models.fields.related.ForeignKey')(default=1, related_name='children', to=orm['sa_api_v2.SubmissionSet']),
+                      self.gf('django.db.models.fields.related.ForeignKey')(null=True, related_name='children', to=orm['sa_api_v2.SubmissionSet']),
                       keep_default=False)
 
 
