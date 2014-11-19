@@ -239,6 +239,9 @@ class Place (SubmittedThing):
         for submission in self.submissions.all():
             submission.clone(overrides=data_overrides)
 
+    def __unicode__(self):
+        return str(self.id)
+
 
 class Submission (SubmittedThing):
     """

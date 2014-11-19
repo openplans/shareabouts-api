@@ -86,6 +86,7 @@ class SubmittedThingAdmin(admin.OSMGeoAdmin):
     search_fields = ('submitter__username', 'data',)
 
     raw_id_fields = ('submitter', 'dataset')
+    readonly_fields = ('api_path',)
 
     def submitter_name(self, obj):
         return obj.submitter.username if obj.submitter else None
@@ -197,6 +198,7 @@ class DataSetAdmin(DjangoObjectActions, admin.ModelAdmin):
 
     objectactions = ('clone_dataset',)
     raw_id_fields = ('owner',)
+    readonly_fields = ('api_path',)
     inlines = [InlineDataIndexAdmin, InlineDataSetPermissionAdmin, InlineApiKeyAdmin, InlineOriginAdmin, InlineGroupAdmin, InlineWebhookAdmin]
 
     def clone_dataset(self, request, obj):
@@ -217,6 +219,11 @@ class DataSetAdmin(DjangoObjectActions, admin.ModelAdmin):
             return HttpResponseRedirect(new_obj_edit_url)
         except Exception as e:
             messages.error(request, 'Failed to clone dataset: %s (%s)' % (e, type(e).__name__))
+
+    def api_path(self, instance):
+        path = reverse('dataset-detail', args=[instance.owner, instance.slug])
+        return '<a href="{0}">{0}</a>'.format(path)
+    api_path.allow_tags = True
 
     def get_queryset(self, request):
         qs = super(DataSetAdmin, self).get_queryset(request)
@@ -245,6 +252,11 @@ class DataSetAdmin(DjangoObjectActions, admin.ModelAdmin):
 class PlaceAdmin(SubmittedThingAdmin):
     model = models.Place
 
+    def api_path(self, instance):
+        path = reverse('place-detail', args=[instance.dataset.owner, instance.dataset.slug, instance.id])
+        return '<a href="{0}">{0}</a>'.format(path)
+    api_path.allow_tags = True
+
 
 class SubmissionAdmin(SubmittedThingAdmin):
     model = models.Submission
@@ -252,6 +264,8 @@ class SubmissionAdmin(SubmittedThingAdmin):
     list_display = SubmittedThingAdmin.list_display + ('place', 'set_',)
     list_filter = (SubmissionSetFilter,) + SubmittedThingAdmin.list_filter
     search_fields = ('set_name',) + SubmittedThingAdmin.search_fields
+
+    raw_id_fields = ('submitter', 'dataset', 'place')
 
     def set_(self, obj):
         return obj.set_name
@@ -261,6 +275,11 @@ class SubmissionAdmin(SubmittedThingAdmin):
     def place(self, obj):
         return obj.place_id
     place.admin_order_field = 'place'
+
+    def api_path(self, instance):
+        path = reverse('submission-detail', args=[instance.dataset.owner, instance.dataset.slug, instance.place.id, instance.set_name, instance.id])
+        return '<a href="{0}">{0}</a>'.format(path)
+    api_path.allow_tags = True
 
 
 class ActionAdmin(admin.ModelAdmin):
