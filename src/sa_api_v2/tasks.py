@@ -4,7 +4,7 @@ from celery import shared_task
 from celery.result import AsyncResult
 from django.test.client import RequestFactory
 from django.utils.timezone import now
-from .models import DataSnapshotRequest, DataSnapshot
+from .models import DataSnapshotRequest, DataSnapshot, DataSet
 from .serializers import PlaceSerializer, SubmissionSerializer
 from .renderers import CSVRenderer, JSONRenderer, GeoJSONRenderer
 
@@ -80,3 +80,9 @@ def bulk_data_status_update(uuid):
     datarequest = DataSnapshotRequest.objects.get(guid=uuid)
     datarequest.status = taskresult.status.lower()
     datarequest.save()
+
+@shared_task
+def clone_related_dataset_data(orig_dataset_id, new_dataset_id):
+    orig_dataset = DataSet.objects.get(id=orig_dataset_id)
+    new_dataset = DataSet.objects.get(id=new_dataset_id)
+    orig_dataset.clone_related(onto=new_dataset)

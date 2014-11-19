@@ -6,6 +6,7 @@ from django.core.urlresolvers import reverse
 from django.db.models import Count, Q
 from django.http import Http404, HttpResponse, HttpResponseBadRequest, HttpResponseRedirect
 from django.shortcuts import get_object_or_404
+from django.test.client import RequestFactory
 from django.test.utils import override_settings
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
@@ -29,6 +30,7 @@ from .. import renderers
 from .. import parsers
 from .. import apikey
 from .. import cors
+from .. import tasks
 from .. import utils
 from ..cache import cache_buffer
 from ..params import (INCLUDE_INVISIBLE_PARAM, INCLUDE_PRIVATE_PARAM,
@@ -1465,7 +1467,20 @@ class DataSetListView (CachedResourceMixin, DataSetListMixin, OwnedResourceMixin
     POST
     ----
 
-    Create a dataset
+    Create a dataset. You can clone an existing dataset by either:
+
+      * specifying a `X-Shareabouts-Clone` header, or
+      * including a `clone` querystring parameter.
+
+    In either case, the value of the header/parameter can be one of three
+    things:
+
+      * the URL of the dataset to be cloned,
+      * the id of the dataset to be cloned, or
+      * a comma-separated pair of the dataset owner name and slug
+
+    To clone a dataset, the authenticated user must have enough permission on
+    the cloned object to read private and invisible data.
 
     **Authentication**: Basic or session auth *(required)*
 
@@ -1480,6 +1495,91 @@ class DataSetListView (CachedResourceMixin, DataSetListMixin, OwnedResourceMixin
         owner = self.get_owner()
         queryset = super(DataSetListView, self).get_queryset()
         return queryset.filter(owner=owner).order_by('id')
+
+    def create(self, request, owner_username):
+        if 'HTTP_X_SHAREABOUTS_CLONE' in request.META or 'clone' in request.GET:
+            return self.clone(request, owner_username=owner_username)
+        else:
+            return super(DataSetListView, self).create(request, owner_username=owner_username)
+
+    def get_object_to_clone(self, clone_header):
+        try:
+            dataset = None
+
+            # Try to parse it as a comma-separated (owner, slug) pair
+            try:
+                owner_username, dataset_slug = clone_header.split(',')
+                dataset = models.DataSet.objects.all().get(owner__username=owner_username, slug=dataset_slug)
+            except ValueError:
+                pass
+
+            # Try to parse it as a single dataset id
+            try:
+                dataset_id = int(clone_header)
+                dataset = models.DataSet.objects.all().get(id=dataset_id)
+            except ValueError:
+                pass
+
+            # Try to parse it as a full URL
+            from urlparse import urlparse
+            url = urlparse(clone_header)
+            if url.scheme and url.netloc and url.path:
+                match = re.match(r'^/api/v2/(?P<owner_username>[^/]+)/datasets/(?P<dataset_slug>[^/]+)$', url.path)
+                if match:
+                    owner_username = match.group('owner_username')
+                    dataset_slug = match.group('dataset_slug')
+                    dataset = models.DataSet.objects.all().get(owner__username=owner_username, slug=dataset_slug)
+
+        except models.DataSet.DoesNotExist:
+            return None
+
+        return dataset
+
+    def clone(self, request, owner_username):
+        clone_header = request.META.get('HTTP_X_SHAREABOUTS_CLONE') or request.GET.get('clone')
+
+        # Make sure we have a thing to clone
+        if not clone_header:
+            return Response({'errors': ['No object specified to clone']}, status=400)
+
+        original = self.get_object_to_clone(clone_header)
+        if original is None:
+            return Response({'errors': ['No object available to clone for "%s"' % clone_header]}, status=404)
+
+        # Make sure we would have access if we were getting that whole thing
+        fake_request = RequestFactory().get(
+            path=reverse('dataset-detail', args=[original.owner.username, original.slug]),
+            data=dict(include_invisible=True, include_private=True))
+        self.check_object_permissions(fake_request, original)
+
+        # Clone the object using the override values from the request. Only
+        # do a shallow clone during the request. Schedule the deep clone to
+        # run in a background process.
+        overrides = {}
+        queryset = self.get_queryset()
+
+        for field in ('slug', 'display_name'):
+            if field in request.DATA: overrides[field] = request.DATA[field]
+
+        # - - Make sure slug is unique.
+        slug = overrides.get('slug', original.slug)
+        try:
+            queryset.get(slug=slug)
+        except models.DataSet.DoesNotExist:
+            pass
+        else:
+            return Response({'errors': {'slug': 'DataSet with this slug already exists'}}, status=409)
+
+        clone = original.clone(overrides=overrides, commit=False)
+        self.pre_save(clone)
+        clone.save()
+        tasks.clone_related_dataset_data.apply_async(args=[original.id, clone.id])
+        self.post_save(clone, created=True)
+
+        serializer = self.get_serializer(instance=clone)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_202_ACCEPTED,
+                        headers=headers)
 
 
 class AdminDataSetListView (CachedResourceMixin, DataSetListMixin, generics.ListAPIView):
