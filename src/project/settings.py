@@ -152,7 +152,6 @@ INSTALLED_APPS = (
     # =================================
     # 3rd-party reusaple apps
     # =================================
-    'djangorestframework',
     'rest_framework',
     'south',
     'django_nose',
@@ -175,7 +174,6 @@ INSTALLED_APPS = (
     'sa_api_v2',
     'sa_api_v2.apikey',
     'sa_api_v2.cors',
-    'sa_manager',
     'remote_client_user',
 )
 
@@ -297,11 +295,6 @@ LOGGING = {
             'propagate': True,
         },
         'sa_api_v2': {
-            'handlers': ['console'],
-            'level': 'INFO',
-            'propagate': True,
-        },
-        'sa_manager': {
             'handlers': ['console'],
             'level': 'INFO',
             'propagate': True,
