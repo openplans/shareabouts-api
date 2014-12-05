@@ -10,20 +10,19 @@ license unknown.
 """
 
 from django.db import models
+from django.db.models.signals import post_save
 from django.utils.timezone import now
-from ..models import DataSet
+from ..models import DataSet, OriginPermission
+from ..models.mixins import CloneableModelMixin
+from .. import utils
 import re
 
 
-class Origin(models.Model):
-    pattern = models.CharField(max_length=100, help_text='The origin pattern, e.g., *.github.com, localhost:*, map.phila.gov')
+class Origin(CloneableModelMixin, models.Model):
+    pattern = models.CharField(max_length=100, help_text='The origin pattern, e.g., https://*.github.io, http://localhost:*, http*://map.phila.gov')
     logged_ip = models.IPAddressField(blank=True, null=True)
     last_used = models.DateTimeField(blank=True, default=now)
-
-    # I think we are going to only have one key per dataset,
-    # but that could change on either end.
-    datasets = models.ManyToManyField(DataSet, blank=True,
-                                      related_name='origins')
+    dataset = models.ForeignKey(DataSet, blank=True, related_name='origins')
 
     class Meta:
         db_table = 'cors_origin'
@@ -37,12 +36,12 @@ class Origin(models.Model):
         self.logged_ip = None
         self.save()
 
-    @property
-    def dataset(self):
-        try:
-            return self.datasets.all()[0]
-        except IndexError:
-            return None
+    # @property
+    # def dataset(self):
+    #     try:
+    #         return self.datasets.all()[0]
+    #     except IndexError:
+    #         return None
 
     @property
     def owner(self):
@@ -63,11 +62,34 @@ class Origin(models.Model):
         if pattern == '*':
             return True
 
+        # No scheme specified; assume all HTTP[S]
+        if '://' not in pattern:
+            pattern = 'http*://' + pattern
+
         # No wild-cards; literal
-        elif '*' not in pattern:
+        if '*' not in pattern:
             return pattern == origin
 
         # Wildcards; convert to regex
         else:
             pattern = pattern.replace('.', r'\.').replace('*', r'.*')
             return re.match(pattern, origin) is not None
+
+    def clone_related(self, onto):
+        for permission in self.permissions.all():
+            permission.clone(overrides={'origin': onto})
+
+    def save(self, *args, **kwargs):
+        if self.logged_ip == '':
+            self.logged_ip = None
+        return super(Origin, self).save(*args, **kwargs)
+
+
+def create_data_permissions(sender, instance, created, **kwargs):
+    """
+    Create a default permission instance for a new origin.
+    """
+    if created:
+        OriginPermission.objects.create(origin=instance, submission_set='*',
+            can_retrieve=True, can_create=True, can_update=True, can_destroy=True)
+post_save.connect(create_data_permissions, sender=Origin, dispatch_uid="origin-create-permissions")

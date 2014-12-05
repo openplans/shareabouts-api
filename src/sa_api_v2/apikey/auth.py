@@ -40,11 +40,11 @@ class APIKeyBackend(object):
 
     def _get_client_and_key(self, request, key_string):
         dataset = request.get_dataset()
-        for key in self.model.objects.filter(key=key_string).prefetch_related('datasets'):
-            if dataset.id in [ds.id for ds in key.datasets.all()]:
-                client = key
-                return client, key
-        return (None, None)
+        ds_key = dataset.get_key(key_string)
+        if ds_key is None:
+            return (None, None)
+        client = ds_key
+        return client, ds_key
 
 
 def check_api_authorization(request):
@@ -59,14 +59,14 @@ def check_api_authorization(request):
     """ % KEY_HEADER
     ip_address = request.META['REMOTE_ADDR']
     key = request.META.get(KEY_HEADER)
-    
+
     auth_backend = APIKeyBackend()
     client = auth_backend.authenticate(request, key=key, ip_address=ip_address)
     auth = auth_backend.key_instance if (client is not None) else None
-    
+
     if client is None:
         raise PermissionDenied("invalid key?")
-    
+
     # TODO: Add an is_active flag for apikey, and check it here. If not active
     #       raise PermissionDenied.
     client.backend = APIKeyBackend.backend_name

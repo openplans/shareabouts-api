@@ -5,10 +5,10 @@ from django.test.client import RequestFactory
 from django.core.files.base import ContentFile
 from django.core.urlresolvers import reverse
 from nose.tools import istest
-from sa_api_v2.models import Attachment, Action, User, DataSet, Place, SubmissionSet, Submission, Group
+from sa_api_v2.cache import cache_buffer
+from sa_api_v2.models import Attachment, Action, User, DataSet, Place, Submission, Group
 from sa_api_v2.serializers import AttachmentSerializer, ActionSerializer, UserSerializer, PlaceSerializer, DataSetSerializer, SubmissionSerializer
 from social.apps.django_app.default.models import UserSocialAuth
-from ..serializers import cache_buffer
 import json
 from os import path
 from mock import patch
@@ -49,8 +49,7 @@ class TestActionSerializer (TestCase):
         dataset = DataSet.objects.create(slug='data',
                                          owner_id=owner.id)
         place = Place.objects.create(dataset=dataset, geometry='POINT(2 3)')
-        comments = SubmissionSet.objects.create(place=place, name='comments')
-        comment = Submission.objects.create(dataset=dataset, parent=comments)
+        comment = Submission.objects.create(dataset=dataset, place=place, set_name='comments')
 
         self.place_action = Action.objects.create(thing=place.submittedthing_ptr)
         self.comment_action = Action.objects.create(thing=comment.submittedthing_ptr)
@@ -210,7 +209,6 @@ class TestPlaceSerializer (TestCase):
         User.objects.all().delete()
         DataSet.objects.all().delete()
         Place.objects.all().delete()
-        SubmissionSet.objects.all().delete()
         Submission.objects.all().delete()
         cache_buffer.reset()
 
@@ -218,82 +216,27 @@ class TestPlaceSerializer (TestCase):
         self.dataset = DataSet.objects.create(slug='data',
                                               owner_id=self.owner.id)
         self.place = Place.objects.create(dataset=self.dataset, geometry='POINT(2 3)')
-        self.comments = SubmissionSet.objects.create(place=self.place, name='comments')
-        Submission.objects.create(dataset=self.dataset, parent=self.comments)
-        Submission.objects.create(dataset=self.dataset, parent=self.comments)
+        Submission.objects.create(dataset=self.dataset, place=self.place, set_name='comments')
+        Submission.objects.create(dataset=self.dataset, place=self.place, set_name='comments')
 
     def test_can_serlialize_a_null_instance(self):
+        request = RequestFactory().get('')
+        request.get_dataset = lambda: self.dataset
+
         serializer = PlaceSerializer(None)
-        serializer.context = {
-            'request': RequestFactory().get('')
-        }
+        serializer.context = {'request': request}
 
         data = serializer.data
         self.assertIsInstance(data, dict)
 
     def test_place_has_right_number_of_submissions(self):
+        request = RequestFactory().get('')
+        request.get_dataset = lambda: self.dataset
+
         serializer = PlaceSerializer(self.place)
-        serializer.context = {
-            'request': RequestFactory().get('')
-        }
+        serializer.context = {'request': request}
 
         self.assertEqual(serializer.data['submission_sets']['comments']['length'], 2)
-
-    def test_place_cache_cleared_on_new_submissions(self):
-        serializer = PlaceSerializer(self.place)
-        serializer.context = {
-            'request': RequestFactory().get('')
-        }
-
-        # Make sure that the metakey gets entered into the cache, and gets
-        # cleared when a new submission is created.
-        p_metakey = Place.cache.get_serialized_data_meta_key(self.place.pk)
-        ss_metakey = SubmissionSet.cache.get_serialized_data_meta_key(self.comments.pk)
-        self.assertIsNone(cache_buffer.get(p_metakey))
-        self.assertIsNone(cache_buffer.get(ss_metakey))
-
-        initial_data = serializer.data
-        self.assertIsNotNone(cache_buffer.get(p_metakey))
-        self.assertIsNotNone(cache_buffer.get(ss_metakey))
-
-        Submission.objects.create(dataset=self.dataset, parent=self.comments)
-        self.assertIsNone(cache_buffer.get(p_metakey))
-        self.assertIsNone(cache_buffer.get(ss_metakey))
-
-        # Make sure that the actual serialized data is different.
-        serializer = PlaceSerializer(self.place)
-        serializer.context = {
-            'request': RequestFactory().get('')
-        }
-
-        final_data = serializer.data
-        self.assertNotEqual(initial_data, final_data)
-
-    def test_place_cache_cleared_on_new_attachment(self):
-        serializer = PlaceSerializer(self.place)
-        serializer.context = {
-            'request': RequestFactory().get('')
-        }
-
-        # Make sure that the metakey gets entered into the cache, and gets
-        # cleared when a new submission is created.
-        p_metakey = Place.cache.get_serialized_data_meta_key(self.place.pk)
-        self.assertIsNone(cache_buffer.get(p_metakey))
-
-        initial_data = serializer.data
-        self.assertIsNotNone(cache_buffer.get(p_metakey))
-
-        Attachment.objects.create(file=None, name='hello.txt', thing=self.place)
-        self.assertIsNone(cache_buffer.get(p_metakey))
-
-        # Make sure that the actual serialized data is different.
-        serializer = PlaceSerializer(self.place)
-        serializer.context = {
-            'request': RequestFactory().get('')
-        }
-
-        final_data = serializer.data
-        self.assertNotEqual(initial_data, final_data)
 
 
 class TestSubmissionSerializer (TestCase):
@@ -302,7 +245,6 @@ class TestSubmissionSerializer (TestCase):
         User.objects.all().delete()
         DataSet.objects.all().delete()
         Place.objects.all().delete()
-        SubmissionSet.objects.all().delete()
         Submission.objects.all().delete()
         cache_buffer.reset()
 
@@ -322,7 +264,6 @@ class TestDataSetSerializer (TestCase):
         User.objects.all().delete()
         DataSet.objects.all().delete()
         Place.objects.all().delete()
-        SubmissionSet.objects.all().delete()
         Submission.objects.all().delete()
         cache_buffer.reset()
 
@@ -330,9 +271,8 @@ class TestDataSetSerializer (TestCase):
         self.dataset = DataSet.objects.create(slug='data',
                                               owner_id=self.owner.id)
         self.place = Place.objects.create(dataset=self.dataset, geometry='POINT(2 3)')
-        self.comments = SubmissionSet.objects.create(place=self.place, name='comments')
-        Submission.objects.create(dataset=self.dataset, parent=self.comments)
-        Submission.objects.create(dataset=self.dataset, parent=self.comments)
+        Submission.objects.create(dataset=self.dataset, place=self.place, set_name='comments')
+        Submission.objects.create(dataset=self.dataset, place=self.place, set_name='comments')
 
     def test_can_serlialize_a_null_instance(self):
         serializer = DataSetSerializer(None)
@@ -344,22 +284,3 @@ class TestDataSetSerializer (TestCase):
 
         data = serializer.data
         self.assertIsInstance(data, dict)
-
-    # def test_dataset_cache_cleared_on_new_submissions(self):
-    #     serializer = DataSetSerializer(self.dataset)
-    #     serializer.context = {
-    #         'request': RequestFactory().get(''),
-    #         'place_count_map_getter': (lambda: {self.dataset.pk: 0}),
-    #         'submission_sets_map_getter': (lambda: {self.dataset.pk: []})
-    #     }
-
-    #     # Check that we call summaries when serializing a place for the first
-    #     # time.
-    #     metakey = DataSet.cache.get_serialized_data_meta_key(self.dataset.pk)
-    #     self.assertIsNone(cache_buffer.get(metakey))
-
-    #     serializer.data
-    #     self.assertIsNotNone(cache_buffer.get(metakey))
-
-    #     Submission.objects.create(dataset=self.dataset, parent=self.comments)
-    #     self.assertIsNone(cache_buffer.get(metakey))

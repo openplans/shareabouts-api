@@ -3,21 +3,17 @@ DjangoRestFramework resources for the Shareabouts REST API.
 """
 import ujson as json
 import re
-from itertools import groupby, chain
+from collections import defaultdict
+from itertools import chain
 from django.contrib.gis.geos import GEOSGeometry
 from django.core.exceptions import ValidationError
-from django.core.paginator import Page
-from django.db.models import Count
 from rest_framework import pagination
 from rest_framework import serializers
 from rest_framework.reverse import reverse
-from social.apps.django_app.default.models import UserSocialAuth
-import warnings
 
 from . import apikey
 from . import models
-from . import utils
-from .cache import cache_buffer
+from .models import check_data_permission
 from .params import (INCLUDE_INVISIBLE_PARAM, INCLUDE_PRIVATE_PARAM,
     INCLUDE_SUBMISSIONS_PARAM, FORMAT_PARAM)
 
@@ -196,22 +192,6 @@ class AttachmentFileField (serializers.FileField):
         return obj.storage.url(obj.name)
 
 
-class AttachmentSerializer (serializers.ModelSerializer):
-    file = AttachmentFileField()
-
-    class Meta:
-        model = models.Attachment
-        exclude = ('id', 'thing',)
-
-    def to_native(self, obj):
-        if obj is None: obj = models.Attachment()
-        return {
-            'created_datetime': obj.created_datetime,
-            'updated_datetime': obj.updated_datetime,
-            'file': obj.file.storage.url(obj.file.name),
-            'name': obj.name
-        }
-
 ###############################################################################
 #
 # Serializer Mixins
@@ -224,10 +204,21 @@ class ActivityGenerator (object):
         request = self.context['request']
         silent_header = request.META.get('HTTP_X_SHAREABOUTS_SILENT', 'False')
         is_silent = silent_header.lower() in ('true', 't', 'yes', 'y')
-        return super(ActivityGenerator, self).save(silent=is_silent, **kwargs)
+        request_source = request.META.get('HTTP_REFERER', '')
+        return super(ActivityGenerator, self).save(silent=is_silent, source=request_source, **kwargs)
 
 
-class DataBlobProcessor (object):
+class EmptyModelSerializer (object):
+    """
+    A simple mixin that constructs an in-memory model when None is passed in
+    as the object to to_native.
+    """
+    def ensure_obj(self, obj):
+        if obj is None: obj = self.opts.model()
+        return obj
+
+
+class DataBlobProcessor (EmptyModelSerializer):
     """
     Like ModelSerializer, but automatically serializes/deserializes a
     'data' JSON blob of arbitrary key/value pairs.
@@ -247,7 +238,7 @@ class DataBlobProcessor (object):
         Converts a dictionary of data into a dictionary of deserialized fields.
         """
         model = self.opts.model
-        blob = {}
+        blob = json.loads(self.object.data) if self.partial else {}
         data_copy = {}
 
         # Pull off any fields that the model doesn't know about directly
@@ -262,6 +253,8 @@ class DataBlobProcessor (object):
         # data blob get in the way).
         known_fields.remove('data')
 
+        # Split the incoming data into stuff that will be set straight onto
+        # preexisting fields, and stuff that will go into the data blob.
         for key in data:
             if key in known_fields:
                 data_copy[key] = data[key]
@@ -284,7 +277,7 @@ class DataBlobProcessor (object):
         request = self.context['request']
 
         # Did the user not ask for private data? Remove it!
-        if INCLUDE_PRIVATE_PARAM not in request.GET:
+        if not self.is_flag_on(INCLUDE_PRIVATE_PARAM):
             for key in blob_data.keys():
                 if key.startswith('private'):
                     del blob_data[key]
@@ -293,108 +286,10 @@ class DataBlobProcessor (object):
         return data
 
     def to_native(self, obj):
+        obj = self.ensure_obj(obj)
         data = super(DataBlobProcessor, self).to_native(obj)
         self.explode_data_blob(data)
         return data
-
-
-class CachedSerializer (object):
-    def is_many(self, obj=None):
-        if self.many is not None:
-            many = self.many
-        else:
-            many = hasattr(obj, '__iter__') and not isinstance(obj, (dict, Page))
-            if many:
-                warnings.warn('Implict list/queryset serialization is deprecated. '
-                              'Use the `many=True` flag when instantiating the serializer.',
-                              DeprecationWarning, stacklevel=2)
-        return many
-
-    def get_data_cache_keys(self, items):
-        # Preload the serialized_data_keys from the cache
-        cache = self.opts.model.cache
-        cache_params = self.get_cache_params()
-
-        data_keys = [
-            cache.get_serialized_data_key(item.pk, **cache_params)
-            for item in items]
-
-        data_meta_keys = [
-            cache.get_serialized_data_meta_key(item.pk)
-            for item in items]
-
-        param_keys = [
-            cache.get_instance_params_key(item.pk)
-            for item in items]
-
-        return (param_keys + data_keys + data_meta_keys)
-
-    def preload_serialized_data_keys(self, items):
-        # When serializing a page, preload the object list so that it does not
-        # cause two separate queries (or sets of queries when prefetch_related
-        # is used).
-        if isinstance(items, Page):
-            items.object_list = list(items.object_list)
-
-        if self.is_many(items):
-            cache_keys = self.get_data_cache_keys(items)
-            cache_buffer.get_many(cache_keys)
-
-    def other_preload_cache_keys(self, items):
-        return []
-
-    @property
-    def data(self):
-        if self._data is None:
-            self.preload_serialized_data_keys(self.object)
-        return super(CachedSerializer, self).data
-
-    def field_to_native(self, obj, field_name):
-        self.preload_serialized_data_keys(obj)
-        return super(CachedSerializer, self).field_to_native(obj, field_name)
-
-    def to_native(self, obj):
-        if obj is None: obj = self.opts.model()
-
-        cache = self.opts.model.cache
-        cache_params = self.get_cache_params()
-        data_getter = lambda: self.get_uncached_data(obj)
-
-        data = cache.get_serialized_data(obj, data_getter, **cache_params)
-        return data
-
-    def get_uncached_data(self, obj):
-        # The default behavior is to go through the to_native machinery in
-        # Django REST Framework. To do something different, override this
-        # method.
-        return super(CachedSerializer, self).to_native(obj)
-
-    def get_cache_params(self):
-        """
-        Get a dictionary of flags that determine the contents of the place's
-        submission sets. These flags are used primarily to determine the cache
-        key for the submission sets structure.
-        """
-        request = self.context['request']
-        request_params = dict(request.GET.iterlists())
-
-        params = {
-            'include_submissions': INCLUDE_SUBMISSIONS_PARAM in request_params,
-            'include_private': INCLUDE_PRIVATE_PARAM in request_params,
-            'include_invisible': INCLUDE_INVISIBLE_PARAM in request_params,
-        }
-
-        request_params.pop(INCLUDE_SUBMISSIONS_PARAM, None)
-        request_params.pop(INCLUDE_PRIVATE_PARAM, None)
-        request_params.pop(INCLUDE_INVISIBLE_PARAM, None)
-        request_params.pop(FORMAT_PARAM, None)
-
-        # If this doesn't have a parent serializer, then use all the rest of the
-        # query parameters
-        if self.parent is None:
-            params.update(request_params)
-
-        return params
 
 
 ###############################################################################
@@ -509,21 +404,6 @@ class UserSerializer (serializers.ModelSerializer):
         return strategy.extract_avatar_url(user_data)
 
 
-class SubmissionSetSummarySerializer (CachedSerializer, serializers.HyperlinkedModelSerializer):
-    length = serializers.IntegerField()
-    url = SubmissionSetIdentityField()
-
-    class Meta:
-        model = models.SubmissionSet
-        fields = ('length', 'url')
-
-    def get_uncached_data(self, obj):
-        return {
-            'length': obj.length,
-            'url': self.fields['url'].field_to_native(obj, 'url')
-        }
-
-
 class DataSetPlaceSetSummarySerializer (serializers.HyperlinkedModelSerializer):
     length = serializers.IntegerField(source='places_length')
     url = DataSetPlaceSetIdentityField()
@@ -576,34 +456,45 @@ class DataSetSubmissionSetSummarySerializer (serializers.HyperlinkedModelSeriali
         model = models.DataSet
         fields = ('length', 'url')
 
-    def get_submission_sets(self, obj):
-        """
-        Get a list of submission set summary data for this dataset.
-        """
-        include_invisible = INCLUDE_INVISIBLE_PARAM in self.context['request'].GET
-        submissions = obj.submissions.select_related('parent')
-        if not include_invisible:
-            submissions = submissions.filter(visible=True)
+    def is_flag_on(self, flagname):
+        request = self.context['request']
+        param = request.GET.get(flagname, 'false')
+        return param.lower() not in ('false', 'no', 'off')
 
-        # Unset any default ordering
-        submissions = submissions.order_by()
-
-        submissions = submissions.values('dataset', 'parent__name').annotate(length=Count('dataset'))
-        return {obj.pk: submissions}
+    def get_submission_sets(self, dataset):
+        include_invisible = self.is_flag_on(INCLUDE_INVISIBLE_PARAM)
+        submission_sets = defaultdict(list)
+        for submission in dataset.submissions.all():
+            if include_invisible or submission.visible:
+                set_name = submission.set_name
+                submission_sets[set_name].append(submission)
+        return {dataset.id: submission_sets}
 
     def to_native(self, obj):
+        request = self.context['request']
         submission_sets_map = self.get_submission_sets(obj)
         sets = submission_sets_map.get(obj.id, {})
         summaries = {}
-        for submission_set in sets:
-            set_name = submission_set['parent__name']
+        for set_name, submission_set in sets.iteritems():
+            # Ensure the user has read permission on the submission set.
+            user = getattr(request, 'user', None)
+            client = getattr(request, 'client', None)
+            dataset = obj
+            if not check_data_permission(user, client, 'retrieve', dataset, set_name):
+                continue
+
             obj.submission_set_name = set_name
-            obj.submission_set_length = submission_set['length']
+            obj.submission_set_length = len(submission_set)
             summaries[set_name] = super(DataSetSubmissionSetSummarySerializer, self).to_native(obj)
         return summaries
 
 
-class SubmittedThingSerializer (CachedSerializer, ActivityGenerator, DataBlobProcessor):
+class SubmittedThingSerializer (ActivityGenerator, DataBlobProcessor):
+    def is_flag_on(self, flagname):
+        request = self.context['request']
+        param = request.GET.get(flagname, 'false')
+        return param.lower() not in ('false', 'no', 'off')
+
     def restore_fields(self, data, files):
         """
         Converts a dictionary of data into a dictionary of deserialized fields.
@@ -611,11 +502,34 @@ class SubmittedThingSerializer (CachedSerializer, ActivityGenerator, DataBlobPro
         result = super(SubmittedThingSerializer, self).restore_fields(data, files)
 
         if 'submitter' not in data:
-            request = self.context.get('request')
-            if request and request.user.is_authenticated():
-                result['submitter'] = request.user
+            # If the thing exists already, use the existing submitter
+            if hasattr(self, 'object') and self.object is not None:
+                result['submitter'] = self.object.submitter
+
+            # Otherwise, set the submitter to the current user
+            else:
+                request = self.context.get('request')
+                if request and request.user.is_authenticated():
+                    result['submitter'] = request.user
 
         return result
+
+
+class AttachmentSerializer (serializers.ModelSerializer):
+    file = AttachmentFileField()
+
+    class Meta:
+        model = models.Attachment
+        exclude = ('id', 'thing',)
+
+    def to_native(self, obj):
+        if obj is None: obj = models.Attachment()
+        return {
+            'created_datetime': obj.created_datetime,
+            'updated_datetime': obj.updated_datetime,
+            'file': obj.file.storage.url(obj.file.name),
+            'name': obj.name
+        }
 
 
 class PlaceSerializer (SubmittedThingSerializer, serializers.HyperlinkedModelSerializer):
@@ -629,82 +543,74 @@ class PlaceSerializer (SubmittedThingSerializer, serializers.HyperlinkedModelSer
     class Meta:
         model = models.Place
 
-    def get_data_cache_keys(self, items):
-        place_keys = super(PlaceSerializer, self).get_data_cache_keys(items)
+    def get_submission_sets(self, place):
+        include_invisible = self.is_flag_on(INCLUDE_INVISIBLE_PARAM)
+        submission_sets = defaultdict(list)
+        for submission in place.submissions.all():
+            if include_invisible or submission.visible:
+                set_name = submission.set_name
+                submission_sets[set_name].append(submission)
+        return submission_sets
 
-        ss_serializer = SubmissionSetSummarySerializer([], context=self.context, many=True)
-        ss_serializer.parent = self
-        submission_sets = list(chain.from_iterable(item.submission_sets.all() for item in items))
-        ss_keys = ss_serializer.get_data_cache_keys(submission_sets)
-
-        # If include_submissions=on, also preload submission data from the
-        # cache.
-        #
-        # TODO: Can we make it so that we only need the SubmissionSet cache
-        #       data (above) when include_submissions=off?
-        #
-        request = self.context['request']
-        if INCLUDE_SUBMISSIONS_PARAM in request.GET:
-            submission_serializer = SubmissionSerializer([], context=self.context, many=True)
-            submission_serializer.parent = self
-            submissions = list(chain.from_iterable(ss.children.all() for ss in submission_sets))
-            ss_keys += submission_serializer.get_data_cache_keys(submissions)
-
-        return place_keys + ss_keys
-
-    def get_submission_set_summaries(self, obj):
+    def get_submission_set_summaries(self, place):
         """
         Get a mapping from place id to a submission set summary dictionary.
         Get this for the entire dataset at once.
         """
         request = self.context['request']
-        include_invisible = INCLUDE_INVISIBLE_PARAM in request.GET
 
+        submission_sets = self.get_submission_sets(place)
         summaries = {}
-        for submission_set in obj.submission_sets.all():
-            submissions = submission_set.children.all()
-            if not include_invisible:
-                submissions = filter(lambda s: s.visible, submissions)
-            submission_set.length = len(submissions)
-
-            if submission_set.length == 0:
+        for set_name, submissions in submission_sets.iteritems():
+            # Ensure the user has read permission on the submission set.
+            user = getattr(request, 'user', None)
+            client = getattr(request, 'client', None)
+            dataset = getattr(request, 'get_dataset', lambda: None)()
+            if not check_data_permission(user, client, 'retrieve', dataset, set_name):
                 continue
 
-            serializer = SubmissionSetSummarySerializer(submission_set, context=self.context)
-            serializer.parent = self
-            summaries[submission_set.name] = serializer.data
+            url_field = SubmissionSetIdentityField()
+            url_field.initialize(parent=self, field_name=None)
+            set_url = url_field.field_to_native(submissions[0], None)
+
+            summaries[set_name] = {
+                'name': set_name,
+                'length': len(submissions),
+                'url': set_url,
+            }
 
         return summaries
 
-    def get_detailed_submission_sets(self, obj):
+    def get_detailed_submission_sets(self, place):
         """
         Get a mapping from place id to a detiled submission set dictionary.
         Get this for the entire dataset at once.
         """
         request = self.context['request']
-        include_invisible = INCLUDE_INVISIBLE_PARAM in request.GET
 
+        submission_sets = self.get_submission_sets(place)
         details = {}
-        for submission_set in obj.submission_sets.all():
-            submissions = submission_set.children.all()
-            if not include_invisible:
-                submissions = filter(lambda s: s.visible, submissions)
-
-            if len(submissions) == 0:
+        for set_name, submissions in submission_sets.iteritems():
+            # Ensure the user has read permission on the submission set.
+            user = getattr(request, 'user', None)
+            client = getattr(request, 'client', None)
+            dataset = getattr(request, 'get_dataset', lambda: None)()
+            if not check_data_permission(user, client, 'retrieve', dataset, set_name):
                 continue
 
             # We know that the submission datasets will be the same as the place
             # dataset, so say so and avoid an extra query for each.
             for submission in submissions:
-                submission.dataset = obj.dataset
+                submission.dataset = place.dataset
 
-            serializer = SubmissionSerializer(submissions, context=self.context, many=True)
-            serializer.parent = self
-            details[submission_set.name] = serializer.data
+            serializer = SubmissionSerializer(submissions, many=True)
+            serializer.initialize(parent=self, field_name=None)
+            details[set_name] = serializer.data
 
         return details
 
-    def get_uncached_data(self, obj):
+    def to_native(self, obj):
+        obj = self.ensure_obj(obj)
         fields = self.get_fields()
 
         data = {
@@ -716,14 +622,17 @@ class PlaceSerializer (SubmittedThingSerializer, serializers.HyperlinkedModelSer
             'submitter': UserSerializer(obj.submitter).data if obj.submitter else None,
             'data': obj.data,
             'visible': obj.visible,
+            'created_datetime': obj.created_datetime.isoformat() if obj.created_datetime else None,
+            'updated_datetime': obj.updated_datetime.isoformat() if obj.updated_datetime else None,
         }
 
         data = self.explode_data_blob(data)
 
         # data = super(PlaceSerializer, self).to_native(obj)
-        request = self.context['request']
 
-        if INCLUDE_SUBMISSIONS_PARAM not in request.GET:
+        # TODO: Put this flag value directly in to the serializer context,
+        #       instead of relying on the request query parameters.
+        if not self.is_flag_on(INCLUDE_SUBMISSIONS_PARAM):
             submission_sets_getter = self.get_submission_set_summaries
         else:
             submission_sets_getter = self.get_detailed_submission_sets
@@ -740,14 +649,31 @@ class SubmissionSerializer (SubmittedThingSerializer, serializers.HyperlinkedMod
     url = SubmissionIdentityField()
     id = serializers.PrimaryKeyRelatedField(read_only=True)
     dataset = DataSetRelatedField()
-    set = SubmissionSetRelatedField(source='parent')
-    place = PlaceRelatedField(source='parent.place')
+    set = SubmissionSetRelatedField(source='*')
+    place = PlaceRelatedField()
     attachments = AttachmentSerializer(read_only=True, many=True)
     submitter = UserSerializer()
 
     class Meta:
         model = models.Submission
-        exclude = ('parent',)
+        exclude = ('set_name',)
+
+
+class AttachmentSerializer (EmptyModelSerializer, serializers.ModelSerializer):
+    file = AttachmentFileField()
+
+    class Meta:
+        model = models.Attachment
+        exclude = ('id', 'thing',)
+
+    def to_native(self, obj):
+        obj = self.ensure_obj(obj)
+        return {
+            'created_datetime': obj.created_datetime,
+            'updated_datetime': obj.updated_datetime,
+            'file': obj.file.storage.url(obj.file.name),
+            'name': obj.name
+        }
 
 
 class ApiKeySerializer (serializers.ModelSerializer):
@@ -756,7 +682,7 @@ class ApiKeySerializer (serializers.ModelSerializer):
         exclude = ('id', 'datasets', 'logged_ip', 'last_used')
 
 
-class DataSetSerializer (serializers.HyperlinkedModelSerializer):
+class DataSetSerializer (EmptyModelSerializer, serializers.HyperlinkedModelSerializer):
     url = DataSetIdentityField()
     id = serializers.PrimaryKeyRelatedField(read_only=True)
     owner = UserRelatedField()
@@ -769,8 +695,7 @@ class DataSetSerializer (serializers.HyperlinkedModelSerializer):
         model = models.DataSet
 
     def to_native(self, obj):
-        if obj is None: obj = self.opts.model()
-
+        obj = self.ensure_obj(obj)
         fields = self.get_fields()
         fields['places'].context = self.context
         fields['submission_sets'].context = self.context
@@ -789,13 +714,13 @@ class DataSetSerializer (serializers.HyperlinkedModelSerializer):
         return data
 
 
-class ActionSerializer (CachedSerializer, serializers.ModelSerializer):
+class ActionSerializer (EmptyModelSerializer, serializers.ModelSerializer):
     target_type = serializers.SerializerMethodField('get_target_type')
     target = serializers.SerializerMethodField('get_target')
 
     class Meta:
         model = models.Action
-        exclude = ('thing',)
+        exclude = ('thing', 'source')
 
     def get_target_type(self, obj):
         try:
@@ -804,7 +729,7 @@ class ActionSerializer (CachedSerializer, serializers.ModelSerializer):
         except models.Place.DoesNotExist:
             pass
 
-        return obj.thing.submission.parent.name
+        return obj.thing.submission.set_name
 
     def get_target(self, obj):
         try:
@@ -830,10 +755,12 @@ class PaginationMetadataSerializer (serializers.Serializer):
     next = pagination.NextPageField(source='*')
     previous = pagination.PreviousPageField(source='*')
     page = serializers.Field(source='number')
+    num_pages = serializers.Field(source='paginator.num_pages')
 
 
 class PaginatedResultsSerializer (pagination.BasePaginationSerializer):
     metadata = PaginationMetadataSerializer(source='*')
+    many = True
 
 
 class FeatureCollectionSerializer (PaginatedResultsSerializer):

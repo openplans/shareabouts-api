@@ -1,6 +1,9 @@
+import re
 import time
 from django.contrib.gis.geos import GEOSGeometry, Point
+from django.contrib.gis.measure import D
 from functools import wraps
+from urlparse import urlparse, urljoin
 
 def isiterable(obj):
     try:
@@ -9,6 +12,19 @@ def isiterable(obj):
         return False
     else:
         return True
+
+def to_distance(string):
+    try:
+        number = float(string)
+        units = 'm'
+    except ValueError:
+        match = re.match(r'([+-]?\d*\.?\d+)\s*([A-Za-z_]+)', string)
+        if not match:
+            raise ValueError('%r is not a valid distance.')
+        number = float(match.group(1))
+        units = match.group(2)
+
+    return D(**{units: number})
 
 def to_geom(string):
     """
@@ -33,18 +49,18 @@ def memo(f):
     """
     A memoization decorator. Borrowed and modified from
     http://code.activestate.com/recipes/576563-cached-property/
-    
+
     You can create a memoized property like:
-    
+
         @property
         @memo
         def attr(self):
             ...
-    
+
     """
     @wraps(f)
     def get(self, *args, **kwargs):
-        key = (f, args, tuple(kwargs.items()))
+        key = (f.__name__, args, tuple(kwargs.items()))
         try:
             return self._method_memos[key]
         except AttributeError:
@@ -78,3 +94,32 @@ def to_base(num, base):
         digits.insert(0, alphabet[remainder])
 
     return ''.join(digits)
+
+
+def build_relative_url(original_url, relative_path):
+    """
+    Given a source URL, create a full URL for the relative path. For example:
+
+    ('http://ex.co/pictures/silly/abc.png', '/home') --> 'http://ex.co/home'
+    ('http://ex.co/p/index.html', 'about.html') --> 'http://ex.co/p/about.html'
+    ('http://ex.co/', 'https://google.com/') --> 'https://google.com/'
+    """
+    # If we actually have a full URL, just return it.
+    if (re.match('^[A-Za-z][A-Za-z0-9+-.]*://', relative_path)):
+        return relative_path
+
+    parsed_url = urlparse(original_url)
+
+    if relative_path.startswith('/'):
+        path_prefix = ''
+    elif parsed_url.path.endswith('/') or relative_path == '':
+        path_prefix = parsed_url.path
+    else:
+        path_prefix = parsed_url.path.rsplit('/', 1)[0] + '/'
+
+    if path_prefix:
+        full_path = path_prefix + relative_path
+    else:
+        full_path = relative_path
+
+    return urljoin(parsed_url.scheme + '://' + parsed_url.netloc, full_path)

@@ -10,51 +10,14 @@ license unknown.
 """
 
 from django.db import models
+from django.db.models.signals import post_save
 from django.utils.timezone import now
-from ..models import DataSet
+from ..models import DataSet, KeyPermission
+from ..models.mixins import CloneableModelMixin
+from .. import utils
 
 # Changing this would require a migration, ugh.
 KEY_SIZE = 32
-
-
-class ApiKey(models.Model):
-    key = models.CharField(max_length=KEY_SIZE, unique=True)
-    logged_ip = models.IPAddressField(blank=True, null=True)
-    last_used = models.DateTimeField(blank=True, default=now)
-
-    # I think we are going to only have one key per dataset,
-    # but that could change on either end.
-    datasets = models.ManyToManyField(DataSet, blank=True,
-                                      related_name='keys')
-
-    class Meta:
-        db_table = 'apikey_apikey'
-
-    def login(self, ip_address):
-        self.logged_ip = ip_address
-        self.save()
-
-    def logout(self):
-        # YAGNI?
-        self.logged_ip = None
-        self.save()
-
-    @property
-    def dataset(self):
-        try:
-            return self.datasets.all()[0]
-        except IndexError:
-            return None
-
-    @property
-    def owner(self):
-        try:
-            return self.dataset.owner
-        except AttributeError:
-            return None
-
-    def __unicode__(self):
-        return self.key
 
 
 def generate_unique_api_key():
@@ -76,3 +39,58 @@ def generate_unique_api_key():
         api_key += more_key
     api_key = api_key[:KEY_SIZE]
     return api_key
+
+
+class ApiKey(CloneableModelMixin, models.Model):
+    key = models.CharField(max_length=KEY_SIZE, unique=True, default=generate_unique_api_key)
+    logged_ip = models.IPAddressField(blank=True, null=True)
+    last_used = models.DateTimeField(blank=True, default=now)
+    dataset = models.ForeignKey(DataSet, blank=True, related_name='keys')
+
+    class Meta:
+        db_table = 'apikey_apikey'
+
+    def login(self, ip_address):
+        self.logged_ip = ip_address
+        self.save()
+
+    def logout(self):
+        # YAGNI?
+        self.logged_ip = None
+        self.save()
+
+    @property
+    def owner(self):
+        try:
+            return self.dataset.owner
+        except AttributeError:
+            return None
+
+    def __unicode__(self):
+        return self.key
+
+    def clone_related(self, onto):
+        for permission in self.permissions.all():
+            permission.clone(overrides={'key': onto})
+
+    def get_ignore_fields(self, ModelClass):
+        fields = super(ApiKey, self).get_ignore_fields(ModelClass)
+        # Do not copy over the actual key value
+        if ModelClass == ApiKey:
+            fields.add('key')
+        return fields
+
+    def save(self, *args, **kwargs):
+        if self.logged_ip == '':
+            self.logged_ip = None
+        return super(ApiKey, self).save(*args, **kwargs)
+
+
+def create_data_permissions(sender, instance, created, **kwargs):
+    """
+    Create a default permission instance for a new API key.
+    """
+    if created:
+        KeyPermission.objects.create(key=instance, submission_set='*',
+            can_retrieve=True, can_create=True, can_update=True, can_destroy=True)
+post_save.connect(create_data_permissions, sender=ApiKey, dispatch_uid="apikey-create-permissions")

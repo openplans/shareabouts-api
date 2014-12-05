@@ -9,9 +9,21 @@ import logging
 logger = logging.getLogger('sa_api_v2.cache')
 
 
+# A sentinel object to differentiate from None
+Undefined = object()
+
 class CacheBuffer (object):
-    def __init__(self):
+    def __init__(self, initial_buffer=None):
+        # When we get a value from the remote cache, it goes in to the buffer
+        # so that we can retrieve it quickly on our next try.
+        self.buffer = initial_buffer or {}
+        self.timeouts = {}
+
+        # When we set a value, it goes into the queue as well as the buffer.
+        # Values are not set in the remote cache from the queue until we call
+        # flush.
         self.queue = {}
+        self.delete_queue = set()
 
     def get_many(self, keys):
         results = {}
@@ -19,7 +31,9 @@ class CacheBuffer (object):
 
         for key in keys:
             try:
-                results[key] = self.queue[key]
+                value = self.buffer[key]
+                if value is not Undefined:
+                    results[key] = value
             except KeyError:
                 unseen_keys.append(key)
 
@@ -27,44 +41,127 @@ class CacheBuffer (object):
             new_results = django_cache.cache.get_many(unseen_keys)
             if new_results:
                 results.update(new_results)
-                self.queue.update(new_results)
+                self.buffer.update(new_results)
 
-        self.queue.update({key: None for key in set(keys) - set(results.keys())})
+        # TODO: Is this what's supposed to happen? get_many returns None for
+        #       each key that wasn't found?
+        all_results = dict([(key, Undefined) for key in set(keys) - set(results.keys())])
+        self.buffer.update(all_results)
         return results
 
-    def get(self, key):
+    def get(self, key, default=None):
+        if key in self.delete_queue:
+            return None
+
         try:
-            return self.queue[key]
+            value = self.buffer[key]
+            return None if value is Undefined else value
         except KeyError:
-            value = django_cache.cache.get(key)
-            self.queue[key] = value
+            value = django_cache.cache.get(key, default)
+            self.buffer[key] = value
             return value
 
-    def set(self, key, value):
-        self.queue[key] = value
+    def set(self, key, value, timeout=Undefined):
+        self.buffer[key] = self.queue[key] = value
+        self.timeouts[key] = timeout
+
+        try: self.delete_queue.remove(key)
+        except KeyError: pass
+
+    def set_many(self, mapping, timeout=Undefined):
+        self.buffer.update(mapping)
+        self.queue.update(mapping)
+
+        for key in mapping:
+            self.timeouts[key] = timeout
+
+            try: self.delete_queue.remove(key)
+            except KeyError: pass
+
+    def delete(self, key):
+        try: del self.queue[key]
+        except KeyError: pass
+
+        try: del self.buffer[key]
+        except KeyError: pass
+
+        try: del self.timeouts[key]
+        except KeyError: pass
+
+        self.delete_queue.add(key)
 
     def delete_many(self, keys):
         for key in keys:
-            try:
-                del self.queue[key]
-            except KeyError:
-                pass
-        django_cache.cache.delete_many(keys)
+            try: del self.queue[key]
+            except KeyError: pass
 
-    def delete(self, key):
-        try:
-            del self.queue[key]
-        except KeyError:
-            pass
-        django_cache.cache.delete(key)
+            try: del self.buffer[key]
+            except KeyError: pass
+
+            try: del self.timeouts[key]
+            except KeyError: pass
+
+        self.delete_queue.update(keys)
+
+    # === Set operations
+
+    def add(self, skey, members):
+        members = set(members)
+
+        if skey in self.srem_queue:
+            self.srem_queue[skey] -= members
+            if not self.srem_queue[skey]:
+                del self.srem_queue[skey]
+
+        new_members = (self.sadd_queue.get(skey) or set()) | members
+        self.sadd_queue[skey] = new_members
+
+        svalue = (self.buffer.get(skey) or set()) | members
+        self.buffer[skey] = svalue
+
+    def remove(self, skey, members):
+        members = set(members)
+
+        if skey in self.sadd_queue:
+            self.sadd_queue[skey] -= members
+            if not self.sadd_queue[skey]:
+                del self.sadd_queue[skey]
+
+        old_members = (self.srem_queue.get(skey) or set()) | members
+        self.srem_queue[skey] = old_members
+
+        svalue = (self.buffer.get(skey) or set()) - members
+        self.buffer[skey] = svalue
+
+    # === Flush, reset
 
     def flush(self):
+        timed_queues = defaultdict(dict)
+
         if self.queue:
-            django_cache.cache.set_many(self.queue, settings.API_CACHE_TIMEOUT)
-            self.reset()
+            for key, value in self.queue.iteritems():
+                timeout = self.timeouts[key]
+                timed_queues[timeout][key] = value
+
+            for timeout, queue in timed_queues.iteritems():
+                if timeout is not Undefined:
+                    django_cache.cache.set_many(queue, timeout)
+                else:
+                    django_cache.cache.set_many(queue, settings.API_CACHE_TIMEOUT)
+
+        # if self.sadd_queue:
+        #     for key, value in self.sadd_queue.iteritems():
+
+        if self.delete_queue:
+            django_cache.cache.delete_many(self.delete_queue)
+
+        self.reset()
 
     def reset(self):
         self.queue = {}
+        self.delete_queue = set()
+        self.timeouts = {}
+        self.buffer = {}
 cache_buffer = CacheBuffer()
 
 
@@ -144,16 +241,19 @@ class Cache (object):
         so that it does not get evaluated if it doesn't have to be, since
         evaluating it may involve additional queries.
         """
-        instance_params_key = self.get_instance_params_key(inst_key)
-        params = cache_buffer.get(instance_params_key)
+        # instance_params_key = self.get_instance_params_key(inst_key)
+        # params = cache_buffer.get(instance_params_key)
 
-        if params is None:
-            obj = obj_getter()
-            params = self.get_instance_params(obj)
-            logger.debug('Setting instance parameters for "%s": %r' % (instance_params_key, params))
-            cache_buffer.set(instance_params_key, params)
-        else:
-            logger.debug('Found instance parameters for "%s": %r' % (instance_params_key, params))
+        # if params is None:
+        #     obj = obj_getter()
+        #     params = self.get_instance_params(obj)
+        #     logger.debug('Setting instance parameters for "%s": %r' % (instance_params_key, params))
+        #     cache_buffer.set(instance_params_key, params)
+        # else:
+        #     logger.debug('Found instance parameters for "%s": %r' % (instance_params_key, params))
+        # return params
+        obj = obj_getter()
+        params = self.get_instance_params(obj)
         return params
 
     def get_serialized_data_meta_key(self, inst_key):
@@ -206,7 +306,72 @@ class Cache (object):
         self.clear_keys(*(prefixed_keys | data_keys | other_keys))
 
 
+class UserCache (Cache):
+    def get_instance_params(self, user_obj):
+        params = {'user_id': user_obj.id}
+        return params
+
+    # == Raw query caching
+    @classmethod
+    def get_instance_key(cls, **params):
+        return ':'.join(['user-instance', str(params['user_id'])])
+
+    @classmethod
+    def get_instance(cls, **params):
+        """
+        Get a full cached user instance.
+        """
+        key = cls.get_instance_key(**params)
+        return cache_buffer.get(key)
+
+    @classmethod
+    def set_instance(cls, instance, **params):
+        key = cls.get_instance_key(**params)
+        cache_buffer.set(key, instance)
+
+    # == Cache invalidation
+    @classmethod
+    def get_request_prefixes(cls, **params):
+        return set()
+
+    @classmethod
+    def get_other_keys(cls, **params):
+        return set([cls.get_instance_key(**params)])
+
+
 class DataSetCache (Cache):
+    # == Raw query caching
+    def get_instance_key(self, **params):
+        return ':'.join(['dataset-instance', params['owner_username'], params['dataset_slug']])
+
+    def get_instance(self, **params):
+        """
+        Get a full cached dataset instance.
+        """
+        key = self.get_instance_key(**params)
+        return cache_buffer.get(key)
+
+    def set_instance(self, instance, **params):
+        key = self.get_instance_key(**params)
+        cache_buffer.set(key, instance)
+
+    def get_permissions_key(self, **params):
+        return ':'.join(['dataset-permissions', params['owner_username'], params['dataset_slug']])
+
+    def get_permissions(self, **params):
+        key = self.get_permissions_key(**params)
+        return cache_buffer.get(key)
+
+    def save_permissions(self, permissions, **params):
+        key = self.get_permissions_key(**params)
+        cache_buffer.set(key, permissions)
+
+    # == Serialized data caching
+    def get_bulk_data_cache_key(self, dataset_id, submission_set_name, format, **flags):
+        return 'bulk_data:%s:%s:%s:%s' % (
+            dataset_id, submission_set_name, format,
+            ':'.join(k for k, v in flags.items() if v))
+
     def get_instance_params(self, dataset_obj):
         params = {
             'owner_username': dataset_obj.owner.username,
@@ -216,6 +381,7 @@ class DataSetCache (Cache):
         }
         return params
 
+    # == Cache invalidation
     def get_request_prefixes(self, **params):
         owner, dataset = map(params.get, ('owner_username', 'dataset_slug'))
         prefixes = super(DataSetCache, self).get_request_prefixes(**params)
@@ -225,6 +391,9 @@ class DataSetCache (Cache):
         prefixes.update([instance_path, collection_path])
 
         return prefixes
+
+    def get_other_keys(self, **params):
+        return set([self.get_instance_key(**params), self.get_permissions_key(**params)])
 
 
 class PlaceCache (Cache):
@@ -249,36 +418,8 @@ class PlaceCache (Cache):
         dataset_instance_path = reverse('dataset-detail', args=[owner, dataset])
         dataset_collection_path = reverse('dataset-list', args=[owner])
         action_collection_path = reverse('action-list', args=[owner, dataset])
-        prefixes.update([instance_path, collection_path, dataset_instance_path, 
+        prefixes.update([instance_path, collection_path, dataset_instance_path,
                          dataset_collection_path, action_collection_path])
-
-        return prefixes
-
-
-class SubmissionSetCache (Cache):
-    place_cache = PlaceCache()
-
-    # NOTE: A SubmissionSet doesn't live on its own, only on a place. So,
-    # invalidating a SubmissionSet should invalidate its place.
-    def get_instance_params(self, submissionset_obj):
-        params = self.place_cache.get_cached_instance_params(
-            submissionset_obj.place_id, lambda: submissionset_obj.place).copy()
-        params.update({
-            'submission_set_name': submissionset_obj.name,
-            'submission_set_id': submissionset_obj.pk
-        })
-        return params
-
-    def get_request_prefixes(self, **params):
-        owner, dataset, place = map(params.get, ['owner_username', 'dataset_slug', 'place_id'])
-        prefixes = super(SubmissionSetCache, self).get_request_prefixes(**params)
-
-        instance_path = reverse('place-detail', args=[owner, dataset, place])
-        collection_path = reverse('place-list', args=[owner, dataset])
-        dataset_path = reverse('dataset-detail', args=[owner, dataset])
-        action_collection_path = reverse('action-list', args=[owner, dataset])
-
-        prefixes.update([instance_path, collection_path, dataset_path, action_collection_path])
 
         return prefixes
 
@@ -286,12 +427,12 @@ class SubmissionSetCache (Cache):
 class SubmissionCache (Cache):
     dataset_cache = DataSetCache()
     place_cache = PlaceCache()
-    submissionset_cache = SubmissionSetCache()
 
     def get_instance_params(self, submission_obj):
-        params = self.submissionset_cache.get_cached_instance_params(
-            submission_obj.parent_id, lambda: submission_obj.parent).copy()
+        params = self.place_cache.get_cached_instance_params(
+            submission_obj.place_id, lambda: submission_obj.place).copy()
         params.update({
+            'submission_set_name': submission_obj.set_name,
             'submission_id': submission_obj.pk,
             'thing_id': submission_obj.pk,
             'thing_type': 'submission'
@@ -299,11 +440,10 @@ class SubmissionCache (Cache):
         return params
 
     def get_other_keys(self, **params):
-        dataset_id, place_id, submissionset_id = map(params.get, ['dataset_id', 'place_id', 'submission_set_id'])
+        dataset_id, place_id, submission_set_name = map(params.get, ['dataset_id', 'place_id', 'submission_set_name'])
         dataset_serialized_data_keys = self.dataset_cache.get_serialized_data_keys(dataset_id)
         place_serialized_data_keys = self.place_cache.get_serialized_data_keys(place_id)
-        submissionset_serialized_data_keys = self.submissionset_cache.get_serialized_data_keys(submissionset_id)
-        return dataset_serialized_data_keys | place_serialized_data_keys | submissionset_serialized_data_keys
+        return dataset_serialized_data_keys | place_serialized_data_keys
 
     def get_request_prefixes(self, **params):
         owner, dataset, place, submission_set_name, submission = map(params.get, ['owner_username', 'dataset_slug', 'place_id', 'submission_set_name', 'submission_id'])

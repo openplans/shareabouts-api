@@ -3,6 +3,7 @@ from os import environ
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
 SHOW_DEBUG_TOOLBAR = DEBUG
+DEBUG_TOOLBAR_PATCH_SETTINGS = False
 
 ADMINS = (
     # ('Your Name', 'your_email@example.com'),
@@ -35,7 +36,7 @@ SITE_ID = 1
 # How long to keep api cache values. Since the api will invalidate the cache
 # automatically when appropriate, this can (and should) be set to something
 # large.
-API_CACHE_TIMEOUT = 604800  # a week
+API_CACHE_TIMEOUT = 3600  # an hour
 
 ###############################################################################
 #
@@ -109,9 +110,11 @@ WSGI_APPLICATION = 'project.wsgi.application'
 ROOT_URLCONF = 'project.urls'
 
 MIDDLEWARE_CLASSES = (
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.gzip.GZipMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'remote_client_user.middleware.RemoteClientMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
@@ -122,6 +125,12 @@ MIDDLEWARE_CLASSES = (
     'sa_api_v2.middleware.RequestTimeLogger',
     'sa_api_v2.middleware.UniversalP3PHeader',
 )
+
+# We only use the CORS Headers app for oauth. The Shareabouts API resources
+# have their own base view that handles CORS headers.
+CORS_URLS_REGEX = r'^/api/v\d+/users/oauth2/.*$'
+CORS_ORIGIN_ALLOW_ALL = True
+CORS_ALLOW_CREDENTIALS = True
 
 
 ###############################################################################
@@ -142,20 +151,42 @@ INSTALLED_APPS = (
     # 'django.contrib.admindocs',
     'django.contrib.gis',
 
+    # =================================
     # 3rd-party reusaple apps
+    # =================================
     'rest_framework',
     'south',
     'django_nose',
     'storages',
     'social.apps.django_app.default',
+    'raven.contrib.django.raven_compat',
+    'django_ace',
+    'django_object_actions',
+    'djcelery',
 
+    # OAuth
+    'provider',
+    'provider.oauth2',
+    'corsheaders',
+
+    # =================================
     # Project apps
+    # =================================
     'beta_signup',
     'sa_api_v2',
     'sa_api_v2.apikey',
     'sa_api_v2.cors',
-    'sa_manager',
+    'remote_client_user',
 )
+
+
+###############################################################################
+#
+# Background task processing
+#
+
+CELERY_RESULT_BACKEND='djcelery.backends.database:DatabaseBackend'
+
 
 ###############################################################################
 #
@@ -167,10 +198,11 @@ AUTHENTICATION_BACKENDS = (
     # for list of available backends.
     'social.backends.twitter.TwitterOAuth',
     'social.backends.facebook.FacebookOAuth2',
-    'django.contrib.auth.backends.ModelBackend',
+    'sa_api_v2.auth_backends.CachedModelBackend',
 )
 
-SOCIAL_AUTH_USER_MODEL = 'auth.User'
+AUTH_USER_MODEL = 'sa_api_v2.User'
+SOCIAL_AUTH_USER_MODEL = 'sa_api_v2.User'
 SOCIAL_AUTH_PROTECTED_USER_FIELDS = ['email',]
 
 SOCIAL_AUTH_FACEBOOK_EXTRA_DATA = ['name', 'picture', 'bio']
@@ -178,6 +210,8 @@ SOCIAL_AUTH_TWITTER_EXTRA_DATA = ['name', 'description', 'profile_image_url']
 
 # Explicitly request the following extra things from facebook
 SOCIAL_AUTH_FACEBOOK_PROFILE_EXTRA_PARAMS = {'fields': 'id,name,picture.width(96).height(96),first_name,last_name,bio'}
+
+SOCIAL_AUTH_LOGIN_ERROR_URL = 'remote-social-login-error'
 
 
 ################################################################################
@@ -188,29 +222,34 @@ SOCIAL_AUTH_FACEBOOK_PROFILE_EXTRA_PARAMS = {'fields': 'id,name,picture.width(96
 # Tests (nose)
 TEST_RUNNER = 'django_nose.NoseTestSuiteRunner'
 SOUTH_TESTS_MIGRATE = True
+SOUTH_MIGRATION_MODULES = {
+    'oauth2': 'ignore',
+    'djcelery': 'ignore',
+}
 
 # Debug toolbar
 def custom_show_toolbar(request):
     return SHOW_DEBUG_TOOLBAR
 
 DEBUG_TOOLBAR_CONFIG = {
-    'SHOW_TOOLBAR_CALLBACK': custom_show_toolbar,
+    'SHOW_TOOLBAR_CALLBACK': 'project.settings.custom_show_toolbar',
     'INTERCEPT_REDIRECTS': False
 }
 
 INTERNAL_IPS = ('127.0.0.1',)
 DEBUG_TOOLBAR_PANELS = (
-    'debug_toolbar.panels.version.VersionDebugPanel',
-    'debug_toolbar.panels.timer.TimerDebugPanel',
-    'debug_toolbar.panels.profiling.ProfilingDebugPanel',
-    'debug_toolbar.panels.settings_vars.SettingsVarsDebugPanel',
-    'debug_toolbar.panels.headers.HeaderDebugPanel',
-    'debug_toolbar.panels.request_vars.RequestVarsDebugPanel',
-    'debug_toolbar.panels.sql.SQLDebugPanel',
-    'debug_toolbar.panels.template.TemplateDebugPanel',
-    'debug_toolbar.panels.cache.CacheDebugPanel',  # Disabled by default
-    'debug_toolbar.panels.signals.SignalDebugPanel',
-    'debug_toolbar.panels.logger.LoggingPanel',
+    'debug_toolbar.panels.versions.VersionsPanel',
+    'debug_toolbar.panels.timer.TimerPanel',
+    'debug_toolbar.panels.profiling.ProfilingPanel',
+    'debug_toolbar.panels.settings.SettingsPanel',
+    'debug_toolbar.panels.headers.HeadersPanel',
+    'debug_toolbar.panels.request.RequestPanel',
+    'debug_toolbar.panels.sql.SQLPanel',
+    'debug_toolbar.panels.templates.TemplatesPanel',
+    'debug_toolbar.panels.staticfiles.StaticFilesPanel',
+    'debug_toolbar.panels.cache.CachePanel',  # Disabled by default
+    'debug_toolbar.panels.signals.SignalsPanel',
+    'debug_toolbar.panels.logging.LoggingPanel',
 )
 # (See the very end of the file for more debug toolbar settings)
 
@@ -258,11 +297,6 @@ LOGGING = {
             'propagate': True,
         },
         'sa_api_v2': {
-            'handlers': ['console'],
-            'level': 'INFO',
-            'propagate': True,
-        },
-        'sa_manager': {
             'handlers': ['console'],
             'level': 'INFO',
             'propagate': True,
@@ -327,7 +361,11 @@ if 'REDIS_URL' in environ:
         }
     }
 
+    # Django sessions
     SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+
+    # Celery broker
+    BROKER_URL = environ['REDIS_URL'].strip('/') + '/1'
 
 if all([key in environ for key in ('SHAREABOUTS_AWS_KEY',
                                    'SHAREABOUTS_AWS_SECRET',
@@ -341,7 +379,7 @@ if all([key in environ for key in ('SHAREABOUTS_AWS_KEY',
     DEFAULT_FILE_STORAGE = 'storages.backends.s3boto.S3BotoStorage'
     ATTACHMENT_STORAGE = DEFAULT_FILE_STORAGE
     STATICFILES_STORAGE = DEFAULT_FILE_STORAGE
-    STATIC_URL = 'http://%s.s3.amazonaws.com/' % AWS_STORAGE_BUCKET_NAME
+    STATIC_URL = 'https://%s.s3.amazonaws.com/' % AWS_STORAGE_BUCKET_NAME
 
 if 'SHAREABOUTS_TWITTER_KEY' in environ \
     and 'SHAREABOUTS_TWITTER_SECRET' in environ:
@@ -385,11 +423,23 @@ except ImportError:
 
 
 ##############################################################################
+# More background processing
+#
+
+if BROKER_URL == 'django://':
+    INSTALLED_APPS += ('kombu.transport.django', )
+
+
+##############################################################################
 # Debug Toolbar
 # ------------------------
-# Do this after all the settings files have been processed, in case the 
+# Do this after all the settings files have been processed, in case the
 # SHOW_DEBUG_TOOLBAR setting is set.
 
 if SHOW_DEBUG_TOOLBAR:
     INSTALLED_APPS += ('debug_toolbar',)
-    MIDDLEWARE_CLASSES += ('debug_toolbar.middleware.DebugToolbarMiddleware',)
+    MIDDLEWARE_CLASSES = (
+        MIDDLEWARE_CLASSES[:2] +
+        ('debug_toolbar.middleware.DebugToolbarMiddleware',) +
+        MIDDLEWARE_CLASSES[2:]
+    )

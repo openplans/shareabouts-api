@@ -1,4 +1,5 @@
 from django.conf.urls import patterns, url, include
+from django.http import HttpResponse
 from . import views
 
 
@@ -13,6 +14,17 @@ urlpatterns = patterns('sa_api_v2',
     url(r'^(?P<owner_username>[^/]+)/datasets/(?P<dataset_slug>[^/]+)/actions$',
         views.ActionListView.as_view(),
         name='action-list'),
+
+    # bulk data snapshots
+
+    url(r'^(?P<owner_username>[^/]+)/datasets/(?P<dataset_slug>[^/]+)/(?P<submission_set_name>[^/]+)/snapshots$',
+        views.DataSnapshotRequestListView.as_view(),
+        name='dataset-snapshot-list'),
+    url(r'^(?P<owner_username>[^/]+)/datasets/(?P<dataset_slug>[^/]+)/(?P<submission_set_name>[^/]+)/snapshots/(?P<data_guid>[^/.]+)(:?\.(?P<format>[^/]+))?$',
+        views.DataSnapshotInstanceView.as_view(),
+        name='dataset-snapshot-instance'),
+
+    # ad-hoc data
 
     url(r'^(?P<owner_username>[^/]+)/datasets/(?P<dataset_slug>[^/]+)/places/(?P<place_id>\d+)/(?P<submission_set_name>[^/]+)/(?P<submission_id>\d+)$',
         views.SubmissionInstanceView.as_view(),
@@ -33,8 +45,12 @@ urlpatterns = patterns('sa_api_v2',
         name='admin-dataset-list'),
 
     url(r'^(?P<owner_username>[^/]+)/datasets/(?P<dataset_slug>[^/]+)/keys$',
-        lambda *a, **k: None,
+        views.ApiKeyListView.as_view(),
         name='apikey-list'),
+
+    url(r'^(?P<owner_username>[^/]+)/datasets/(?P<dataset_slug>[^/]+)/origins$',
+        views.OriginListView.as_view(),
+        name='origin-list'),
 
     url(r'^(?P<owner_username>[^/]+)/datasets/(?P<dataset_slug>[^/]+)/(?P<submission_set_name>[^/]+)(?:/(?P<pk_list>(?:\d+,)+\d+))?$',
         views.DataSetSubmissionListView.as_view(),
@@ -46,6 +62,8 @@ urlpatterns = patterns('sa_api_v2',
     url(r'^(?P<owner_username>[^/]+)/datasets$',
         views.DataSetListView.as_view(),
         name='dataset-list'),
+
+    # profiles and user info
 
     url(r'^(?P<owner_username>[^/]+)$',
         views.UserInstanceView.as_view(),
@@ -61,15 +79,19 @@ urlpatterns = patterns('sa_api_v2',
 
     # authentication / association
 
+    url(r'^users/login/error/$', views.remote_social_login_error, name='remote-social-login-error'),
     url(r'^users/login/(?P<backend>[^/]+)/$', views.remote_social_login, name='remote-social-login'),
     url(r'^users/logout/$', views.remote_logout, name='remote-logout'),
 
+    url(r'^users/oauth2/', include('provider.oauth2.urls', namespace='oauth2')),
     url(r'^users/', include('social.apps.django_app.urls', namespace='social')),
+
 
     # Utility routes
 
     url(r'^utils/send-away', views.redirector, name='redirector'),
     url(r'^utils/session-key', views.SessionKeyView.as_view(), name='session-key'),
+    url(r'^utils/noop/?$', lambda request: HttpResponse(''), name='noop-route'),
 
 )
 

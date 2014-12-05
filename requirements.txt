@@ -2,10 +2,19 @@
 # Web server
 # ==============================
 
-Django==1.6.2
-gevent
-gunicorn
-newrelic
+Django==1.6.5
+gevent==1.0
+gunicorn==18.0
+newrelic==2.16.0.12
+
+
+
+# ==============================
+# Background processing
+# ==============================
+
+celery==3.1.13
+django-celery==3.1.10
 
 
 
@@ -14,16 +23,18 @@ newrelic
 # ==============================
 
 # DB Settings and Management
-psycopg2
-south
-dj-database-url
+psycopg2==2.5.1
+psycogreen==1.0
+south==0.8.4
+dj-database-url==0.2.2
+django-object-actions==0.4.0
 
 # Caching
-django-redis
+django-redis==3.5.1
 
 # File Storate
-boto
-django-storages
+boto==2.18.0
+django-storages==1.1.8
 
 
 
@@ -31,7 +42,9 @@ django-storages
 # User Accounts and Social Media
 # ==============================
 
-python-social-auth
+python-social-auth==0.1.23
+django-oauth2-provider==0.2.6.1
+django-cors-headers==0.12
 
 
 
@@ -39,12 +52,16 @@ python-social-auth
 # REST API
 # ==============================
 
-djangorestframework>=2.3.11
-djangorestframework-csv>=1.3.0
+djangorestframework==2.3.12
+djangorestframework-csv==1.3.0
+git+https://github.com/mjumbewu/django-rest-framework-bulk.git@84a5d6c#egg=djangorestframework-bulk==0.1.3
 six>=1.4.1
 markdown  # For browsable API docs
-python-dateutil
-ujson
+python-dateutil==2.2
+ujson==1.33
+
+# The Django admin interface
+django-ace==1.0.1
 
 # The manager interface
 requests>=1.2.0
@@ -59,7 +76,9 @@ nose
 django-nose
 mock
 mock_django
-django-debug-toolbar==0.11.0
+responses==0.2.2
+django-debug-toolbar==1.2.1
+raven==4.2.1  # For Sentry error logging
 
 
 # - - - - - - - - - - - - - - - -

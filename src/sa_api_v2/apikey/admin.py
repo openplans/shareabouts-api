@@ -27,7 +27,7 @@ class ApiKeyAdmin(ModelAdmin):
         qs = super(ApiKeyAdmin, self).get_queryset(request)
         user = request.user
         if not user.is_superuser:
-            qs = qs.filter(datasets__owner=user)
+            qs = qs.filter(dataset__owner=user)
         return qs
 
 admin.site.register(ApiKey, ApiKeyAdmin)

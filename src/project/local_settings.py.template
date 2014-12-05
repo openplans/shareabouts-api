@@ -1,3 +1,6 @@
+DEBUG = False
+SHOW_DEBUG_TOOLBAR = False
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.contrib.gis.db.backends.postgis',
@@ -13,6 +16,8 @@ REST_FRAMEWORK = {
     'PAGINATE_BY': 500,
     'PAGINATE_BY_PARAM': 'page_size'
 }
+
+BROKER_URL = 'django://'
 
 # Set the attachment storage class to the file storage class that should
 # manage storing and retriving of place and submission attachments.
