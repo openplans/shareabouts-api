@@ -13,6 +13,7 @@ class ApiKeyForm(ModelForm):
 
     class Meta:
         model = ApiKey
+        fields = ('key', 'logged_ip', 'last_used', 'dataset')
 
     key = CharField(max_length=KEY_SIZE, required=False,
                     help_text=u'If not provided, a random key will be generated.')

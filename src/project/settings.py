@@ -155,7 +155,6 @@ INSTALLED_APPS = (
     # 3rd-party reusaple apps
     # =================================
     'rest_framework',
-    'south',
     'django_nose',
     'storages',
     'social.apps.django_app.default',

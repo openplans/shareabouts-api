@@ -98,7 +98,7 @@ class GroupPermission (DataPermission):
 
 
 class KeyPermission (DataPermission):
-    key = models.ForeignKey('apikey.ApiKey', related_name='permissions')
+    key = models.ForeignKey('sa_api_v2.ApiKey', related_name='permissions')
     parent_attr = 'key'
 
     class Meta:
@@ -109,7 +109,7 @@ class KeyPermission (DataPermission):
 
 
 class OriginPermission (DataPermission):
-    origin = models.ForeignKey('cors.Origin', related_name='permissions')
+    origin = models.ForeignKey('sa_api_v2.Origin', related_name='permissions')
     parent_attr = 'origin'
 
     class Meta:
