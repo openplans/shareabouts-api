@@ -7,9 +7,9 @@ class DataSnapshotRequest (models.Model):
     # Describe the data requested
     dataset = models.ForeignKey('DataSet')
     submission_set = models.CharField(max_length=128)
-    include_private = models.BooleanField()
-    include_invisible = models.BooleanField()
-    include_submissions = models.BooleanField()
+    include_private = models.BooleanField(default=False)
+    include_invisible = models.BooleanField(default=False)
+    include_submissions = models.BooleanField(default=False)
     # Describe the requester
     requester = models.ForeignKey('User', null=True)
     requested_at = models.DateTimeField(auto_now_add=True)
