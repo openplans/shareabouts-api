@@ -1,0 +1,17 @@
+#!/usr/bin/env python
+
+from __future__ import unicode_literals, print_function
+
+import os
+import psycopg2
+
+dburl = os.environ.get('DATABASE_URL')
+
+print('Connecting to the database...', end='')
+conn = psycopg2.connect(dburl)
+cur = conn.cursor()
+print('done.')
+
+print('Setting up PostGIS...', end='')
+cur.execute('CREATE EXTENSION postgis;')
+print('done.')
