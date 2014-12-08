@@ -4,6 +4,7 @@ from __future__ import unicode_literals, print_function
 
 import os
 import psycopg2
+import subprocess
 
 dburl = os.environ.get('DATABASE_URL')
 
@@ -15,3 +16,6 @@ print('done.')
 print('Setting up PostGIS...', end='')
 cur.execute('CREATE EXTENSION postgis;')
 print('done.')
+
+print('Migrating the database models...')
+subprocess.call('src/manage.py migrate', shell=True)
