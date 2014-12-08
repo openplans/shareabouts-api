@@ -1,10 +1,12 @@
 Shareabouts API [![Build Status](https://secure.travis-ci.org/openplans/shareabouts-api.png)](http://travis-ci.org/openplans/shareabouts-api)
 ===============
 
-The Shareabouts API is the data storage and data management component that 
-powers the [Shareabouts web application](https://github.com/openplans/shareabouts). 
+The Shareabouts API is the data storage and data management component that
+powers the [Shareabouts web application](https://github.com/openplans/shareabouts).
 It is a REST API for flexibly storing data about places and an UI for managing
 and exporting your data.
+
+[![Deploy](https://www.herokucdn.com/deploy/button.png)](https://heroku.com/deploy)
 
 Documentation
 -------------
