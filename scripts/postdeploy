@@ -15,6 +15,7 @@ print('done.')
 
 print('Setting up PostGIS...', end='')
 cur.execute('CREATE EXTENSION postgis;')
+conn.commit()
 print('done.')
 
 print('Migrating the database models...')
