@@ -14,13 +14,13 @@
   ],
 
   "env": {
-    "SHAREABOUTS_AWS_BUCKET":      {"description": "Where should uploaded attachments go?"},
-    "SHAREABOUTS_AWS_KEY":         {"description": ""},
-    "SHAREABOUTS_AWS_SECRET":      {"description": ""},
-    "SHAREABOUTS_FACEBOOK_KEY":    {"description": ""},
-    "SHAREABOUTS_FACEBOOK_SECRET": {"description": ""},
-    "SHAREABOUTS_TWITTER_KEY":     {"description": ""},
-    "SHAREABOUTS_TWITTER_SECRET":  {"description": ""},
+    "SHAREABOUTS_AWS_BUCKET":      {"required": false, "description": "Where should uploaded attachments go?"},
+    "SHAREABOUTS_AWS_KEY":         {"required": false, "description": ""},
+    "SHAREABOUTS_AWS_SECRET":      {"required": false, "description": ""},
+    "SHAREABOUTS_FACEBOOK_KEY":    {"required": false, "description": ""},
+    "SHAREABOUTS_FACEBOOK_SECRET": {"required": false, "description": ""},
+    "SHAREABOUTS_TWITTER_KEY":     {"required": false, "description": ""},
+    "SHAREABOUTS_TWITTER_SECRET":  {"required": false, "description": ""},
 
     "BUILDPACK_URL": "https://github.com/ddollar/heroku-buildpack-multi.git",
     "WORKERS": "4",
