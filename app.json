@@ -14,7 +14,16 @@
   ],
 
   "env": {
+    "SHAREABOUTS_AWS_BUCKET":      {"description": "Where should uploaded attachments go?"},
+    "SHAREABOUTS_AWS_KEY":         {"description": ""},
+    "SHAREABOUTS_AWS_SECRET":      {"description": ""},
+    "SHAREABOUTS_FACEBOOK_KEY":    {"description": ""},
+    "SHAREABOUTS_FACEBOOK_SECRET": {"description": ""},
+    "SHAREABOUTS_TWITTER_KEY":     {"description": ""},
+    "SHAREABOUTS_TWITTER_SECRET":  {"description": ""},
+
     "BUILDPACK_URL": "https://github.com/ddollar/heroku-buildpack-multi.git",
+    "WORKERS": "4",
     "SECRET_TOKEN": {
       "description": "A secret key for verifying the integrity of signed cookies.",
       "generator": "secret"
