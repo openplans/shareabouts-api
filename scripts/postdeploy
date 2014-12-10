@@ -18,5 +18,10 @@ cur.execute('CREATE EXTENSION postgis;')
 conn.commit()
 print('done.')
 
+print('Closing the database connection...', end='')
+cur.close()
+conn.close()
+print('done.')
+
 print('Migrating the database models...')
 subprocess.call('src/manage.py migrate', shell=True)
