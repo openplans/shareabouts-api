@@ -62,7 +62,7 @@ setup(
     author='Shareabouts Developers',
     author_email='shareabouts-dev@googlegroups.com',
     package_dir = {'': package_root},
-    packages=get_packages('sa_api') + get_packages('sa_api_v2'),
+    packages=get_packages('sa_api') + get_packages('sa_api_v2') + get_packages('remote_client_user'),
     package_data=get_package_data('sa_api_v2'),
     install_requires=['djangorestframework>=2.3.9'],
     classifiers=[
