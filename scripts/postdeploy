@@ -14,9 +14,15 @@ cur = conn.cursor()
 print('done.')
 
 print('Setting up PostGIS...', end='')
-cur.execute('CREATE EXTENSION postgis;')
-conn.commit()
-print('done.')
+try:
+    cur.execute('CREATE EXTENSION postgis;')
+    conn.commit()
+except psycopg2.ProgrammingError as e:
+    print(str(e).strip(), end='...')
+    print('nothing to do.')
+    conn.rollback()
+else:
+    print('done.')
 
 print('Closing the database connection...', end='')
 cur.close()
