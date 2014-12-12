@@ -425,6 +425,11 @@ except ImportError:
 # More background processing
 #
 
+try:
+    BROKER_URL
+except NameError:
+    BROKER_URL = 'django://'
+
 if BROKER_URL == 'django://':
     INSTALLED_APPS += ('kombu.transport.django', )
 

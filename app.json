@@ -1,0 +1,32 @@
+{
+  "name": "Shareabouts Data Server",
+  "description": "A standalone Shareabouts data API server.",
+  "repository": "https://github.com/openplans/shareabouts-api",
+  "logo": "https://pbs.twimg.com/profile_images/476001405501587456/rnCUrPIX_400x400.png",
+
+  "scripts": {
+    "postdeploy": "scripts/postdeploy"
+  },
+
+  "addons": [
+    "heroku-postgresql:standard-0",
+    "rediscloud"
+  ],
+
+  "env": {
+    "SHAREABOUTS_AWS_BUCKET":      {"required": false, "description": "Where should uploaded attachments go?"},
+    "SHAREABOUTS_AWS_KEY":         {"required": false, "description": ""},
+    "SHAREABOUTS_AWS_SECRET":      {"required": false, "description": ""},
+    "SHAREABOUTS_FACEBOOK_KEY":    {"required": false, "description": ""},
+    "SHAREABOUTS_FACEBOOK_SECRET": {"required": false, "description": ""},
+    "SHAREABOUTS_TWITTER_KEY":     {"required": false, "description": ""},
+    "SHAREABOUTS_TWITTER_SECRET":  {"required": false, "description": ""},
+
+    "BUILDPACK_URL": "https://github.com/ddollar/heroku-buildpack-multi.git",
+    "WORKERS": "4",
+    "SECRET_TOKEN": {
+      "description": "A secret key for verifying the integrity of signed cookies.",
+      "generator": "secret"
+    }
+  }
+}

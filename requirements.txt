@@ -61,6 +61,7 @@ six>=1.4.1
 markdown  # For browsable API docs
 python-dateutil==2.2
 ujson==1.33
+Pillow==2.6.1
 
 # The Django admin interface
 django-ace==1.0.1
