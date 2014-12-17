@@ -3157,7 +3157,7 @@ class TestDataSetInstanceView (APITestMixin, TestCase):
         response = self.view(request, **self.request_kwargs)
 
         # Check that the request was successful
-        self.assertStatusCode(response, 401)
+        self.assertStatusCode(response, 200)
 
     def test_GET_response(self):
         request = self.factory.get(self.path)
@@ -3175,7 +3175,7 @@ class TestDataSetInstanceView (APITestMixin, TestCase):
         self.assertIn('url', data)
         self.assertIn('slug', data)
         self.assertIn('display_name', data)
-        self.assertIn('keys', data)
+        self.assertNotIn('keys', data)
         self.assertIn('owner', data)
         self.assertIn('places', data)
         self.assertIn('submission_sets', data)
@@ -3463,13 +3463,12 @@ class TestDataSetListView (APITestMixin, TestCase):
         cache_buffer.reset()
         django_cache.clear()
 
-    # 401, not logged in owner
     def test_anonymous_GET_response(self):
         request = self.factory.get(self.path)
         response = self.view(request, **self.request_kwargs)
 
         # Check that the request was successful
-        self.assertStatusCode(response, 401)
+        self.assertStatusCode(response, 200)
 
     def test_GET_response(self):
         request = self.factory.get(self.path)

@@ -1324,7 +1324,6 @@ class DataSetInstanceView (OwnedResourceMixin, generics.RetrieveUpdateDestroyAPI
     model = models.DataSet
     serializer_class = serializers.DataSetSerializer
     authentication_classes = (authentication.BasicAuthentication, authentication.OAuth2Authentication, ShareaboutsSessionAuth)
-    permission_classes = (IsLoggedInOwner,)
     client_authentication_classes = ()
     always_allow_options = True
 
@@ -1355,6 +1354,23 @@ class DataSetInstanceView (OwnedResourceMixin, generics.RetrieveUpdateDestroyAPI
             response.status_code = 301
             response['Location'] = response.data['url']
         return response
+
+
+class DataSetKeyListView (OwnedResourceMixin, generics.ListAPIView):
+    """
+    """
+
+    model = apikey.models.ApiKey
+    serializer_class = serializers.ApiKeySerializer
+    authentication_classes = (authentication.BasicAuthentication, authentication.OAuth2Authentication, ShareaboutsSessionAuth)
+    permission_classes = (IsLoggedInOwner,)
+    client_authentication_classes = ()
+    always_allow_options = True
+
+    def get_queryset(self):
+        dataset = self.get_dataset()
+        queryset = super(DataSetKeyListView, self).get_queryset()
+        return queryset.filter(dataset=dataset)
 
 
 class DataSetListMixin (object):
@@ -1435,7 +1451,6 @@ class DataSetListView (DataSetListMixin, OwnedResourceMixin, generics.ListCreate
     ------------------------------------------------------------
     """
 
-    permission_classes = (IsLoggedInOwner,)
     client_authentication_classes = ()
 
     def pre_save(self, obj):
