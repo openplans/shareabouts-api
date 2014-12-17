@@ -12,8 +12,8 @@ from rest_framework.settings import APISettings
 from rest_framework_bulk import generics as bulk_generics
 from social.apps.django_app import views as social_views
 from ..params import (INCLUDE_INVISIBLE_PARAM, INCLUDE_PRIVATE_PARAM,
-    INCLUDE_SUBMISSIONS_PARAM, NEAR_PARAM, DISTANCE_PARAM, FORMAT_PARAM,
-    PAGE_PARAM, PAGE_SIZE_PARAM, CALLBACK_PARAM)
+    INCLUDE_SUBMISSIONS_PARAM, NEAR_PARAM, DISTANCE_PARAM, TEXTSEARCH_PARAM,
+    FORMAT_PARAM, PAGE_PARAM, PAGE_SIZE_PARAM, CALLBACK_PARAM)
 from ..models import DataSnapshotRequest, DataSnapshot, DataSet
 from ..tasks import store_bulk_data, bulk_data_status_update
 from .base_views import OwnedResourceMixin

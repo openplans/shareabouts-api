@@ -1044,6 +1044,46 @@ class TestPlaceListView (APITestMixin, TestCase):
         # Check that we have the right number of rows
         self.assertEqual(len(rows), 2)
 
+    def test_GET_text_search_response(self):
+        Place.objects.create(dataset=self.dataset, geometry='POINT(0 0)', data=json.dumps({'foo': 'bar', 'name': 1})),
+        Place.objects.create(dataset=self.dataset, geometry='POINT(1 0)', data=json.dumps({'foo': 'bar', 'name': 2})),
+        Place.objects.create(dataset=self.dataset, geometry='POINT(2 0)', data=json.dumps({'foo': 'baz', 'name': 3})),
+        Place.objects.create(dataset=self.dataset, geometry='POINT(3 0)', data=json.dumps({'name': 4})),
+
+        request = self.factory.get(self.path + '?search=bar')
+        response = self.view(request, **self.request_kwargs)
+        data = json.loads(response.rendered_content)
+
+        # Check that there are ATM features
+        self.assertStatusCode(response, 200)
+        self.assert_(all([feature['properties'].get('foo') == 'bar' for feature in data['features']]))
+        self.assertEqual(len(data['features']), 2)
+
+        request = self.factory.get(self.path + '?search=ba')
+        response = self.view(request, **self.request_kwargs)
+        data = json.loads(response.rendered_content)
+
+        # Check that the request was successful
+        self.assertStatusCode(response, 200)
+        self.assert_(all([feature['properties'].get('foo') in ('bar', 'baz') for feature in data['features']]))
+        self.assertEqual(len(data['features']), 3)
+
+        request = self.factory.get(self.path + '?search=bad')
+        response = self.view(request, **self.request_kwargs)
+        data = json.loads(response.rendered_content)
+
+        # Check that the request was successful
+        self.assertStatusCode(response, 200)
+        self.assertEqual(len(data['features']), 0)
+
+        request = self.factory.get(self.path + '?search=')
+        response = self.view(request, **self.request_kwargs)
+        data = json.loads(response.rendered_content)
+
+        # Check that the request was successful
+        self.assertStatusCode(response, 200)
+        self.assertEqual(len(data['features']), self.dataset.places.filter(visible=True).count())
+
     def test_GET_filtered_response(self):
         Place.objects.create(dataset=self.dataset, geometry='POINT(0 0)', data=json.dumps({'foo': 'bar', 'name': 1})),
         Place.objects.create(dataset=self.dataset, geometry='POINT(1 0)', data=json.dumps({'foo': 'bar', 'name': 2})),

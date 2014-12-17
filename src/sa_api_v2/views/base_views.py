@@ -35,7 +35,8 @@ from .. import utils
 from ..cache import cache_buffer
 from ..params import (INCLUDE_INVISIBLE_PARAM, INCLUDE_PRIVATE_PARAM,
     INCLUDE_SUBMISSIONS_PARAM, NEAR_PARAM, DISTANCE_PARAM, BBOX_PARAM,
-    FORMAT_PARAM, PAGE_PARAM, PAGE_SIZE_PARAM, CALLBACK_PARAM)
+    TEXTSEARCH_PARAM, FORMAT_PARAM, PAGE_PARAM, PAGE_SIZE_PARAM,
+    CALLBACK_PARAM)
 from functools import wraps
 from itertools import groupby, count
 from collections import defaultdict
@@ -472,8 +473,14 @@ class FilteredResourceMixin (object):
         special_filters = set([FORMAT_PARAM, PAGE_PARAM, PAGE_SIZE_PARAM(),
             INCLUDE_SUBMISSIONS_PARAM, INCLUDE_PRIVATE_PARAM,
             INCLUDE_INVISIBLE_PARAM, NEAR_PARAM, DISTANCE_PARAM,
-            BBOX_PARAM, CALLBACK_PARAM(self)])
+            TEXTSEARCH_PARAM, BBOX_PARAM, CALLBACK_PARAM(self)])
 
+        # Filter by full-text search
+        textsearch_filter = self.request.GET.get(TEXTSEARCH_PARAM, None)
+        if textsearch_filter:
+            queryset = queryset.filter(data__icontains=textsearch_filter)
+
+        # Then filter by attributes
         for key, values in self.request.GET.iterlists():
             if key not in special_filters:
                 # Filter quickly for indexed values
