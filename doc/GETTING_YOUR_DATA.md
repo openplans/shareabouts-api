@@ -1,4 +1,4 @@
-Once you have a Shareabouts map collecting data, you can explore it via the Django admin interface, and via the web-based RESTful API browser.
+Once you have a [Shareabouts map](https://github.com/openplans/shareabouts/blob/master/README.md#a-short-guide-to-setting-up-shareabouts) collecting data, you can explore the data via the Django admin interface, and via the web-based RESTful API browser.
 
 ## Viewing data via the Django admin interface
 
