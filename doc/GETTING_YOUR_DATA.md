@@ -10,10 +10,12 @@ e.g.
 
         http://data.shareabouts.org/admin/
 
+The trailing slash after `admin` is necessary, don't forget it.
+
 ### What can I do with the Django admin interface?
 
 Using the Django interface, you can
-* create new datasets
+* create new datasets and API keys
 * view places by date
 * view places in a particular dataset
 * hide or show places with the Visibility checkbox in list view
