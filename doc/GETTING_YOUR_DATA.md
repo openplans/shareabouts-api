@@ -67,3 +67,7 @@ Once you have the download link, you most likely want it as a csv. Add `.csv` to
 * load the provided URL, like `https://data.shareabouts.org/api/v2/openplans/datasets/test-data/places/snapshots/dac284a6-734a-0b31314e3505`
 * reload it with `.csv` on the end, `https://data.shareabouts.org/api/v2/openplans/datasets/test-data/places/snapshots/dac284a6-734a-0b31314e3505.csv`
 * save the file (copying it out to a file will give you something with weird line breaks)
+
+## Getting data via the Shareabouts CLI tools
+
+You can use the separate [Shareabouts command line tools](https://github.com/openplans/shareabouts-cli-tools) to import and export data from a Shareabouts dataset. These python scripts make it easy to generate nightly reports, upload polygons, get custom CSV exports, and more.
