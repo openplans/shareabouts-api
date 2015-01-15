@@ -46,6 +46,8 @@ Copy the file
 credentials for connecting to your development database.  This file will not be
 checked in to the repository.
 
+NOTE: If you are getting a "Peer authentication failed" error, you may need to set `HOST` in the DATABASES section to `localhost`. This is because Django attempts to connect to the database using UNIX sockets by default. More information on this error can be found [here](http://stackoverflow.com/questions/8167602/django-connection-to-postgresql-peer-authentication-failed/8232004#8232004)
+
 Then bootstrap the development database using the usual Django command:
 
     src/manage.py syncdb --migrate
