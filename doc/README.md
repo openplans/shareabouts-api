@@ -35,6 +35,9 @@ For PostGIS 2.0:
     
     createdb shareabouts_v2
     psql -U postgres -d shareabouts_v2 
+    \password postgres
+    Enter new password: <enter your password>
+    Enter it again: <enter your password again>
     CREATE EXTENSION postgis;    
     \q
 
