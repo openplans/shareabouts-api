@@ -796,6 +796,40 @@ class QueryError(exceptions.APIException):
 # --------------
 #
 
+class ShareaboutsAPIRootView (views.APIView):
+    """
+    Welcome to the Shareabouts API. The Shareabouts API is the data storage
+    and data management component that powers the
+    [Shareabouts web application](https://github.com/openplans/shareabouts).
+    It is a REST API for flexibly storing data about places.
+
+    The Shareabouts API supports a number of authentication methods, including
+    basic auth for users, and OAuth for constructing applications against the
+    API. The API also allows you to easily build Twitter and Facebook
+    authentication into your own application build on the Shareabouts API.
+
+    The best place to start browsing is in your datasets. Use the link at the
+    top-right to log in.
+
+    """
+    def get(self, request):
+        user = request.user
+
+        response_data = {}
+
+        if user.is_authenticated():
+            response_data['your datasets'] = request.build_absolute_uri(
+                reverse('dataset-list', kwargs={'owner_username': user.username})
+            )
+
+        if user.is_superuser:
+            response_data['all datasets'] = request.build_absolute_uri(
+                reverse('admin-dataset-list')
+            )
+
+        return Response(response_data)
+
+
 class PlaceInstanceView (CachedResourceMixin, LocatedResourceMixin, OwnedResourceMixin, FilteredResourceMixin, generics.RetrieveUpdateDestroyAPIView):
     """
     GET

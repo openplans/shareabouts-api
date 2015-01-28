@@ -1,9 +1,14 @@
 from django.conf.urls import patterns, url, include
+from django.contrib.auth.views import login
 from django.http import HttpResponse
 from . import views
 
 
 urlpatterns = patterns('sa_api_v2',
+    url(r'^$',
+        views.ShareaboutsAPIRootView.as_view(),
+        name='api-root'),
+
     url(r'^(?P<owner_username>[^/]+)/datasets/(?P<dataset_slug>[^/]+)/places/(?P<thing_id>\d+)/attachments$',
         views.AttachmentListView.as_view(),
         name='place-attachments'),
@@ -86,6 +91,7 @@ urlpatterns = patterns('sa_api_v2',
     url(r'^users/oauth2/', include('provider.oauth2.urls', namespace='oauth2')),
     url(r'^users/', include('social.apps.django_app.urls', namespace='social')),
 
+    url(r'^forms/', include('rest_framework.urls', namespace='rest_framework')),
 
     # Utility routes
 

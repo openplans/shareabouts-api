@@ -38,6 +38,9 @@ SITE_ID = 1
 # large.
 API_CACHE_TIMEOUT = 3600  # an hour
 
+# Where should the user be redirected to when they visit the root of the site?
+ROOT_REDIRECT_TO = 'api-root'
+
 ###############################################################################
 #
 # Time Zones

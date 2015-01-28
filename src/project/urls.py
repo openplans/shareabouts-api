@@ -1,8 +1,10 @@
 from django.conf.urls import patterns, include, url
+from django.conf import settings
 
 # Uncomment the next two lines to enable the admin:
 from django.contrib import admin
 from django.http import HttpResponseRedirect, HttpResponse
+from django.shortcuts import resolve_url
 
 admin.autodiscover()
 
@@ -12,7 +14,7 @@ urlpatterns = patterns('',
     # url(r'^project/', include('project.foo.urls')),
 
     # NOTE: Redirect all manager urls until the manager is fixed.
-    url(r'^$', lambda x: HttpResponseRedirect('http://openplans.org/shareabouts/')),
+    url(r'^$', lambda x: HttpResponseRedirect(resolve_url(settings.ROOT_REDIRECT_TO))),
 
     # Uncomment the admin/doc line below to enable admin documentation:
     # url(r'^admin/doc/', include('django.contrib.admindocs.urls')),
@@ -28,8 +30,6 @@ urlpatterns = patterns('',
     # For now, the API and the management console are hosted together.
     url(r'^api/v2/', include('sa_api_v2.urls')),
     url(r'^api/v1/', lambda x: HttpResponse(status=410)),
-    # NOTE: Redirect all manager urls until the manager is fixed.
-    url(r'^manage/', lambda x: HttpResponseRedirect('http://openplans.org/shareabouts/')),
 
 )
 
