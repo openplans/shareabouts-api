@@ -6,7 +6,7 @@ from django.db import transaction
 from django.test.client import RequestFactory
 from django.utils.timezone import now
 from .models import DataSnapshotRequest, DataSnapshot, DataSet
-from .serializers import PlaceSerializer, SubmissionSerializer
+from .serializers import SimplePlaceSerializer, SimpleSubmissionSerializer
 from .renderers import CSVRenderer, JSONRenderer, GeoJSONRenderer
 
 import logging
@@ -21,10 +21,10 @@ def generate_bulk_content(dataset, submission_set_name, **flags):
 
     if submission_set_name == 'places':
         submissions = dataset.places.all()
-        serializer = PlaceSerializer(submissions)
+        serializer = SimplePlaceSerializer(submissions)
     else:
         submissions = dataset.submissions.filter(set_name=submission_set_name)
-        serializer = SubmissionSerializer(submissions)
+        serializer = SimpleSubmissionSerializer(submissions)
 
     # Construct a request for the serializer context
     r_data = {}

@@ -12,6 +12,7 @@ from rest_framework import serializers
 from rest_framework.reverse import reverse
 
 from . import apikey
+from . import cors
 from . import models
 from .models import check_data_permission
 from .params import (INCLUDE_INVISIBLE_PARAM, INCLUDE_PRIVATE_PARAM,
@@ -362,19 +363,69 @@ class ShareaboutsUserDataStrategy (object):
 # Serializers
 # -----------
 #
+# Many of the serializers below come in two forms:
+#
+# 1) A hyperlinked serializer -- this form includes URLs to the object's
+#    related fields, as well as the object's own URL. This is useful for the
+#    self-describing nature of the web API.
+#
+# 2) A simple serializer -- this form does not include any of the URLs in the
+#    hyperlinked serializer. This is more useful for bulk data dumps where all
+#    of the related data is included in a package.
+#
 
-class GroupSerializer (serializers.ModelSerializer):
-    dataset = DataSetRelatedField()
 
+class AttachmentSerializer (EmptyModelSerializer, serializers.ModelSerializer):
+    file = AttachmentFileField()
+
+    class Meta:
+        model = models.Attachment
+        exclude = ('id', 'thing',)
+
+    def to_native(self, obj):
+        obj = self.ensure_obj(obj)
+        return {
+            'created_datetime': obj.created_datetime,
+            'updated_datetime': obj.updated_datetime,
+            'file': obj.file.storage.url(obj.file.name),
+            'name': obj.name
+        }
+
+
+class ApiKeySerializer (serializers.ModelSerializer):
+    class Meta:
+        model = apikey.models.ApiKey
+        exclude = ('id', 'dataset', 'logged_ip', 'last_used')
+
+
+class OriginSerializer (serializers.ModelSerializer):
+    class Meta:
+        model = cors.models.Origin
+        exclude = ('id', 'dataset', 'logged_ip', 'last_used')
+
+
+# Group serializers
+class BaseGroupSerializer (serializers.ModelSerializer):
     class Meta:
         model = models.Group
         exclude = ('submitters', 'id')
 
+class SimpleGroupSerializer (BaseGroupSerializer):
+    class Meta (BaseGroupSerializer.Meta):
+        pass
 
-class UserSerializer (serializers.ModelSerializer):
+class GroupSerializer (BaseGroupSerializer):
+    dataset = DataSetRelatedField()
+
+    class Meta (BaseGroupSerializer.Meta):
+        pass
+
+
+# User serializers
+class BaseUserSerializer (serializers.ModelSerializer):
     name = serializers.SerializerMethodField('get_name')
     avatar_url = serializers.SerializerMethodField('get_avatar_url')
-    groups = GroupSerializer(many=True, source='_groups', read_only=True)
+    groups = SimpleGroupSerializer(many=True, source='_groups', read_only=True)
 
     strategies = {
         'twitter': TwitterUserDataStrategy(),
@@ -403,7 +454,18 @@ class UserSerializer (serializers.ModelSerializer):
         user_data, strategy = self.get_strategy(obj)
         return strategy.extract_avatar_url(user_data)
 
+class SimpleUserSerializer (BaseUserSerializer):
+    class Meta (BaseUserSerializer.Meta):
+        pass
 
+class UserSerializer (BaseUserSerializer):
+    groups = GroupSerializer(many=True, source='_groups', read_only=True)
+
+    class Meta (BaseUserSerializer.Meta):
+        pass
+
+
+# DataSet place set serializer
 class DataSetPlaceSetSummarySerializer (serializers.HyperlinkedModelSerializer):
     length = serializers.IntegerField(source='places_length')
     url = DataSetPlaceSetIdentityField()
@@ -448,6 +510,7 @@ class DataSetPlaceSetSummarySerializer (serializers.HyperlinkedModelSerializer):
         return data
 
 
+# DataSet submission set serializer
 class DataSetSubmissionSetSummarySerializer (serializers.HyperlinkedModelSerializer):
     length = serializers.IntegerField(source='submission_set_length')
     url = DataSetSubmissionSetIdentityField()
@@ -515,30 +578,12 @@ class SubmittedThingSerializer (ActivityGenerator, DataBlobProcessor):
         return result
 
 
-class AttachmentSerializer (serializers.ModelSerializer):
-    file = AttachmentFileField()
-
-    class Meta:
-        model = models.Attachment
-        exclude = ('id', 'thing',)
-
-    def to_native(self, obj):
-        if obj is None: obj = models.Attachment()
-        return {
-            'created_datetime': obj.created_datetime,
-            'updated_datetime': obj.updated_datetime,
-            'file': obj.file.storage.url(obj.file.name),
-            'name': obj.name
-        }
-
-
-class PlaceSerializer (SubmittedThingSerializer, serializers.HyperlinkedModelSerializer):
-    url = PlaceIdentityField()
+# Place serializers
+class BasePlaceSerializer (SubmittedThingSerializer, serializers.ModelSerializer):
     id = serializers.PrimaryKeyRelatedField(read_only=True)
     geometry = GeometryField(format='wkt')
-    dataset = DataSetRelatedField()
     attachments = AttachmentSerializer(read_only=True, many=True)
-    submitter = UserSerializer(read_only=False)
+    submitter = SimpleUserSerializer(read_only=False)
 
     class Meta:
         model = models.Place
@@ -551,6 +596,12 @@ class PlaceSerializer (SubmittedThingSerializer, serializers.HyperlinkedModelSer
                 set_name = submission.set_name
                 submission_sets[set_name].append(submission)
         return submission_sets
+
+    def summary_to_native(self, set_name, submissions):
+        return {
+            'name': set_name,
+            'length': len(submissions)
+        }
 
     def get_submission_set_summaries(self, place):
         """
@@ -569,17 +620,14 @@ class PlaceSerializer (SubmittedThingSerializer, serializers.HyperlinkedModelSer
             if not check_data_permission(user, client, 'retrieve', dataset, set_name):
                 continue
 
-            url_field = SubmissionSetIdentityField()
-            url_field.initialize(parent=self, field_name=None)
-            set_url = url_field.field_to_native(submissions[0], None)
-
-            summaries[set_name] = {
-                'name': set_name,
-                'length': len(submissions),
-                'url': set_url,
-            }
+            summaries[set_name] = self.summary_to_native(set_name, submissions)
 
         return summaries
+
+    def set_to_native(self, set_name, submissions):
+        serializer = SimpleSubmissionSerializer(submissions, many=True)
+        serializer.initialize(parent=self, field_name=None)
+        return serializer.data
 
     def get_detailed_submission_sets(self, place):
         """
@@ -603,28 +651,34 @@ class PlaceSerializer (SubmittedThingSerializer, serializers.HyperlinkedModelSer
             for submission in submissions:
                 submission.dataset = place.dataset
 
-            serializer = SubmissionSerializer(submissions, many=True)
-            serializer.initialize(parent=self, field_name=None)
-            details[set_name] = serializer.data
+            details[set_name] = self.set_to_native(set_name, submissions)
 
         return details
+
+    def attachments_to_native(self, obj):
+        return [AttachmentSerializer(a).data for a in obj.attachments.all()]
+
+    def submitter_to_native(self, obj):
+        return SimpleUserSerializer(obj.submitter).data if obj.submitter else None
 
     def to_native(self, obj):
         obj = self.ensure_obj(obj)
         fields = self.get_fields()
 
         data = {
-            'url': fields['url'].field_to_native(obj, 'pk'),  # = PlaceIdentityField()
             'id': obj.pk,  # = serializers.PrimaryKeyRelatedField(read_only=True)
             'geometry': str(obj.geometry or 'POINT(0 0)'),  # = GeometryField(format='wkt')
             'dataset': obj.dataset_id,  # = DataSetRelatedField()
-            'attachments': [AttachmentSerializer(a).data for a in obj.attachments.all()],  # = AttachmentSerializer(read_only=True)
-            'submitter': UserSerializer(obj.submitter).data if obj.submitter else None,
+            'attachments': self.attachments_to_native(obj),  # = AttachmentSerializer(read_only=True)
+            'submitter': self.submitter_to_native(obj),
             'data': obj.data,
             'visible': obj.visible,
             'created_datetime': obj.created_datetime.isoformat() if obj.created_datetime else None,
             'updated_datetime': obj.updated_datetime.isoformat() if obj.updated_datetime else None,
         }
+
+        if 'url' in fields:
+            data['url'] = fields['url'].field_to_native(obj, 'pk')
 
         data = self.explode_data_blob(data)
 
@@ -644,51 +698,66 @@ class PlaceSerializer (SubmittedThingSerializer, serializers.HyperlinkedModelSer
 
         return data
 
+class SimplePlaceSerializer (BasePlaceSerializer):
+    class Meta (BasePlaceSerializer.Meta):
+        pass
 
-class SubmissionSerializer (SubmittedThingSerializer, serializers.HyperlinkedModelSerializer):
-    url = SubmissionIdentityField()
-    id = serializers.PrimaryKeyRelatedField(read_only=True)
+class PlaceSerializer (BasePlaceSerializer, serializers.HyperlinkedModelSerializer):
+    url = PlaceIdentityField()
     dataset = DataSetRelatedField()
-    set = SubmissionSetRelatedField(source='*')
-    place = PlaceRelatedField()
+    submitter = UserSerializer(read_only=False)
+
+    class Meta (BasePlaceSerializer.Meta):
+        pass
+
+    def summary_to_native(self, set_name, submissions):
+        url_field = SubmissionSetIdentityField()
+        url_field.initialize(parent=self, field_name=None)
+        set_url = url_field.field_to_native(submissions[0], None)
+
+        return {
+            'name': set_name,
+            'length': len(submissions),
+            'url': set_url,
+        }
+
+    def set_to_native(self, set_name, submissions):
+        serializer = SubmissionSerializer(submissions, many=True)
+        serializer.initialize(parent=self, field_name=None)
+        return serializer.data
+
+    def submitter_to_native(self, obj):
+        return UserSerializer(obj.submitter).data if obj.submitter else None
+
+
+# Submission serializers
+class BaseSubmissionSerializer (SubmittedThingSerializer, serializers.ModelSerializer):
+    id = serializers.PrimaryKeyRelatedField(read_only=True)
     attachments = AttachmentSerializer(read_only=True, many=True)
-    submitter = UserSerializer()
+    submitter = SimpleUserSerializer()
 
     class Meta:
         model = models.Submission
         exclude = ('set_name',)
 
+class SimpleSubmissionSerializer (BaseSubmissionSerializer):
+    class Meta (BaseSubmissionSerializer.Meta):
+        pass
 
-class AttachmentSerializer (EmptyModelSerializer, serializers.ModelSerializer):
-    file = AttachmentFileField()
+class SubmissionSerializer (BaseSubmissionSerializer, serializers.HyperlinkedModelSerializer):
+    url = SubmissionIdentityField()
+    dataset = DataSetRelatedField()
+    set = SubmissionSetRelatedField(source='*')
+    place = PlaceRelatedField()
+    submitter = UserSerializer()
 
-    class Meta:
-        model = models.Attachment
-        exclude = ('id', 'thing',)
-
-    def to_native(self, obj):
-        obj = self.ensure_obj(obj)
-        return {
-            'created_datetime': obj.created_datetime,
-            'updated_datetime': obj.updated_datetime,
-            'file': obj.file.storage.url(obj.file.name),
-            'name': obj.name
-        }
+    class Meta (BaseSubmissionSerializer.Meta):
+        pass
 
 
-class ApiKeySerializer (serializers.ModelSerializer):
-    class Meta:
-        model = apikey.models.ApiKey
-        exclude = ('id', 'dataset', 'logged_ip', 'last_used')
-
-
-class DataSetSerializer (EmptyModelSerializer, serializers.HyperlinkedModelSerializer):
-    url = DataSetIdentityField()
+# DataSet serializers
+class BaseDataSetSerializer (EmptyModelSerializer, serializers.ModelSerializer):
     id = serializers.PrimaryKeyRelatedField(read_only=True)
-    owner = UserRelatedField()
-
-    places = DataSetPlaceSetSummarySerializer(source='*', read_only=True, many=True)
-    submission_sets = DataSetSubmissionSetSummarySerializer(source='*', read_only=True, many=True)
 
     class Meta:
         model = models.DataSet
@@ -709,9 +778,30 @@ class DataSetSerializer (EmptyModelSerializer, serializers.HyperlinkedModelSeria
             'submission_sets': fields['submission_sets'].field_to_native(obj, 'submission_sets'),
         }
 
+        if 'url' in fields:
+            data['url'] = fields['url'].field_to_native(obj, 'url')
+
         return data
 
+class SimpleDataSetSerializer (BaseDataSetSerializer):
+    keys = ApiKeySerializer(many=True)
+    origins = OriginSerializer(many=True)
 
+    class Meta (BaseDataSetSerializer.Meta):
+        pass
+
+class DataSetSerializer (BaseDataSetSerializer, serializers.HyperlinkedModelSerializer):
+    url = DataSetIdentityField()
+    owner = UserRelatedField()
+
+    places = DataSetPlaceSetSummarySerializer(source='*', read_only=True, many=True)
+    submission_sets = DataSetSubmissionSetSummarySerializer(source='*', read_only=True, many=True)
+
+    class Meta (BaseDataSetSerializer.Meta):
+        pass
+
+
+# Action serializer
 class ActionSerializer (EmptyModelSerializer, serializers.ModelSerializer):
     target_type = serializers.SerializerMethodField('get_target_type')
     target = serializers.SerializerMethodField('get_target')
