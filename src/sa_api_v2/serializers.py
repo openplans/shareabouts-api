@@ -819,6 +819,23 @@ class DataSetSerializer (BaseDataSetSerializer, serializers.HyperlinkedModelSeri
         pass
 
     def from_native(self, data, files=None):
+        # Load any bulk dataset definition supplied
+        if 'load_data' in files:
+            from haslib import sha1
+            from base64 import b64encode
+
+            # Somehow, make sure there's not already some loading going on.
+
+            # NOTE: In the event that we have a file too large to fit in memory
+            #       this will create problems for us. However, we'll deal with
+            #       that when we have a file too large to fit in memory.
+            content = files['load_data'].read()
+            identifier = b64encode(sha1(content).digest())
+
+            # Store the input in the cache (or on S3?).
+            # Kick off the load task, passing in the cache key (or file name).
+            # Make sure the task id gets on to the response.
+
         return super(DataSetSerializer, self).from_native(data, files)
 
 
