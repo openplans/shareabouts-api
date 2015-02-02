@@ -794,7 +794,8 @@ class BaseDataSetSerializer (EmptyModelSerializer, serializers.ModelSerializer):
         ret = self._dict_class(data)
         ret.fields = self._dict_class()
         for field_name, field in fields.iteritems():
-            value = data[field_name]
+            default = getattr(field, 'get_default_value', lambda: None)()
+            value = data.get(field_name, default)
             ret.fields[field_name] = self.augment_field(field, field_name, field_name, value)
         return ret
 
@@ -812,8 +813,13 @@ class DataSetSerializer (BaseDataSetSerializer, serializers.HyperlinkedModelSeri
     places = DataSetPlaceSetSummarySerializer(source='*', read_only=True, many=True)
     submission_sets = DataSetSubmissionSetSummarySerializer(source='*', read_only=True, many=True)
 
+    load_data = serializers.FileField(write_only=True, required=False)
+
     class Meta (BaseDataSetSerializer.Meta):
         pass
+
+    def from_native(self, data, files=None):
+        return super(DataSetSerializer, self).from_native(data, files)
 
 
 # Action serializer
