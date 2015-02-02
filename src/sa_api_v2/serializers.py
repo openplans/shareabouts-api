@@ -384,12 +384,21 @@ class AttachmentSerializer (EmptyModelSerializer, serializers.ModelSerializer):
 
     def to_native(self, obj):
         obj = self.ensure_obj(obj)
-        return {
+        data = {
             'created_datetime': obj.created_datetime,
             'updated_datetime': obj.updated_datetime,
             'file': obj.file.storage.url(obj.file.name),
             'name': obj.name
         }
+        fields = self.get_fields()
+
+        # Construct a SortedDictWithMetaData to get the brosable API form
+        ret = self._dict_class(data)
+        ret.fields = self._dict_class()
+        for field_name, field in fields.iteritems():
+            value = data[field_name]
+            ret.fields[field_name] = self.augment_field(field, field_name, field_name, value)
+        return ret
 
 
 class ApiKeySerializer (serializers.ModelSerializer):
@@ -781,7 +790,13 @@ class BaseDataSetSerializer (EmptyModelSerializer, serializers.ModelSerializer):
         if 'url' in fields:
             data['url'] = fields['url'].field_to_native(obj, 'url')
 
-        return data
+        # Construct a SortedDictWithMetaData to get the brosable API form
+        ret = self._dict_class(data)
+        ret.fields = self._dict_class()
+        for field_name, field in fields.iteritems():
+            value = data[field_name]
+            ret.fields[field_name] = self.augment_field(field, field_name, field_name, value)
+        return ret
 
 class SimpleDataSetSerializer (BaseDataSetSerializer):
     keys = ApiKeySerializer(many=True)
