@@ -1739,6 +1739,7 @@ class ClientAuthListView (OwnedResourceMixin, generics.ListCreateAPIView):
                        files=None, many=False, partial=False):
         if isinstance(data, dict):
             dataset = self.get_dataset()
+            data = data.copy()
             data['dataset'] = dataset.id
         return super(ClientAuthListView, self).get_serializer(
             instance=instance, data=data, files=files, many=many,
