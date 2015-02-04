@@ -21,10 +21,10 @@ def generate_bulk_content(dataset, submission_set_name, **flags):
 
     if submission_set_name == 'places':
         submissions = dataset.places.all()
-        serializer = SimplePlaceSerializer(submissions)
+        serializer = SimplePlaceSerializer(submissions, many=True)
     else:
         submissions = dataset.submissions.filter(set_name=submission_set_name)
-        serializer = SimpleSubmissionSerializer(submissions)
+        serializer = SimpleSubmissionSerializer(submissions, many=True)
 
     # Construct a request for the serializer context
     r_data = {}
