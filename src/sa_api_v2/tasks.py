@@ -236,12 +236,15 @@ def load_dataset_archive(dataset_id, archive_url):
 
             # Construct each place and submission individually
             for place_data in data.get('features'):
+                place_data.pop('type', None)
+                place_data.update(place_data.pop('properties', {}))
+
                 place_data.pop('id', None)
-                place_data['properties'].pop('dataset', None)
-                place_data['properties'].pop('created_datetime', None)
-                place_data['properties'].pop('updated_datetime', None)
-                submission_sets_data = place_data['properties'].pop('submission_sets', None)
-                submitter_data = place_data['properties'].pop('submitter', None)
+                place_data.pop('dataset', None)
+                place_data.pop('created_datetime', None)
+                place_data.pop('updated_datetime', None)
+                submission_sets_data = place_data.pop('submission_sets', None)
+                submitter_data = place_data.pop('submitter', None)
 
                 serializer = SimplePlaceSerializer(data=place_data)
                 assert serializer.is_valid(), list_errors(serializer.errors)
