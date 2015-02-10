@@ -779,6 +779,7 @@ class PlaceSerializer (BasePlaceSerializer, serializers.HyperlinkedModelSerializ
 
 # Submission serializers
 class BaseSubmissionSerializer (SubmittedThingSerializer, serializers.ModelSerializer):
+    id = serializers.IntegerField(read_only=True)
     attachments = AttachmentSerializer(read_only=True, many=True)
     submitter = SimpleUserSerializer()
 
@@ -803,8 +804,6 @@ class SubmissionSerializer (BaseSubmissionSerializer, serializers.HyperlinkedMod
 
 # DataSet serializers
 class BaseDataSetSerializer (EmptyModelSerializer, serializers.ModelSerializer):
-    id = serializers.PrimaryKeyRelatedField(read_only=True)
-
     class Meta:
         model = models.DataSet
 
@@ -821,11 +820,11 @@ class BaseDataSetSerializer (EmptyModelSerializer, serializers.ModelSerializer):
 
         if 'places' in fields:
             fields['places'].context = self.context
-            data['places'] = fields['places'].field_to_native(obj, 'places'),
+            data['places'] = fields['places'].field_to_native(obj, 'places')
 
         if 'submission_sets' in fields:
             fields['submission_sets'].context = self.context
-            data['submission_sets'] = fields['submission_sets'].field_to_native(obj, 'submission_sets'),
+            data['submission_sets'] = fields['submission_sets'].field_to_native(obj, 'submission_sets')
 
         if 'url' in fields:
             data['url'] = fields['url'].field_to_native(obj, 'url')
