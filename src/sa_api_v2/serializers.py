@@ -401,13 +401,36 @@ class AttachmentSerializer (EmptyModelSerializer, serializers.ModelSerializer):
         return ret
 
 
+class DataSetPermissionSerializer (serializers.ModelSerializer):
+    class Meta:
+        model = models.DataSetPermission
+        exclude = ('id', 'dataset')
+
+class GroupPermissionSerializer (serializers.ModelSerializer):
+    class Meta:
+        model = models.GroupPermission
+        exclude = ('id', 'group')
+
+class KeyPermissionSerializer (serializers.ModelSerializer):
+    class Meta:
+        model = models.KeyPermission
+        exclude = ('id', 'key')
+
+class OriginPermissionSerializer (serializers.ModelSerializer):
+    class Meta:
+        model = models.OriginPermission
+        exclude = ('id', 'origin')
+
 class ApiKeySerializer (serializers.ModelSerializer):
+    permissions = KeyPermissionSerializer(many=True)
+
     class Meta:
         model = apikey.models.ApiKey
         exclude = ('id', 'dataset', 'logged_ip', 'last_used')
 
-
 class OriginSerializer (serializers.ModelSerializer):
+    permissions = OriginPermissionSerializer(many=True)
+
     class Meta:
         model = cors.models.Origin
         exclude = ('id', 'dataset', 'logged_ip', 'last_used')
@@ -420,8 +443,10 @@ class BaseGroupSerializer (serializers.ModelSerializer):
         exclude = ('submitters', 'id')
 
 class SimpleGroupSerializer (BaseGroupSerializer):
+    permissions = GroupPermissionSerializer(many=True)
+
     class Meta (BaseGroupSerializer.Meta):
-        pass
+        exclude = ('id', 'dataset', 'submitters')
 
 class GroupSerializer (BaseGroupSerializer):
     dataset = DataSetRelatedField()
@@ -434,6 +459,8 @@ class GroupSerializer (BaseGroupSerializer):
 class BaseUserSerializer (serializers.ModelSerializer):
     name = serializers.SerializerMethodField('get_name')
     avatar_url = serializers.SerializerMethodField('get_avatar_url')
+    provider_type = serializers.SerializerMethodField('get_provider_type')
+    provider_id = serializers.SerializerMethodField('get_provider_id')
     groups = SimpleGroupSerializer(many=True, source='_groups', read_only=True)
 
     strategies = {
@@ -462,6 +489,18 @@ class BaseUserSerializer (serializers.ModelSerializer):
     def get_avatar_url(self, obj):
         user_data, strategy = self.get_strategy(obj)
         return strategy.extract_avatar_url(user_data)
+
+    def get_provider_type(self, obj):
+        for social_auth in obj.social_auth.all():
+            return social_auth.provider
+        else:
+            return ''
+
+    def get_provider_id(self, obj):
+        for social_auth in obj.social_auth.all():
+            return social_auth.uid
+        else:
+            return None
 
 class SimpleUserSerializer (BaseUserSerializer):
     class Meta (BaseUserSerializer.Meta):
@@ -589,7 +628,6 @@ class SubmittedThingSerializer (ActivityGenerator, DataBlobProcessor):
 
 # Place serializers
 class BasePlaceSerializer (SubmittedThingSerializer, serializers.ModelSerializer):
-    id = serializers.PrimaryKeyRelatedField(read_only=True)
     geometry = GeometryField(format='wkt')
     attachments = AttachmentSerializer(read_only=True, many=True)
     submitter = SimpleUserSerializer(read_only=False)
@@ -709,7 +747,7 @@ class BasePlaceSerializer (SubmittedThingSerializer, serializers.ModelSerializer
 
 class SimplePlaceSerializer (BasePlaceSerializer):
     class Meta (BasePlaceSerializer.Meta):
-        pass
+        read_only_fields = ('dataset',)
 
 class PlaceSerializer (BasePlaceSerializer, serializers.HyperlinkedModelSerializer):
     url = PlaceIdentityField()
@@ -741,7 +779,6 @@ class PlaceSerializer (BasePlaceSerializer, serializers.HyperlinkedModelSerializ
 
 # Submission serializers
 class BaseSubmissionSerializer (SubmittedThingSerializer, serializers.ModelSerializer):
-    id = serializers.PrimaryKeyRelatedField(read_only=True)
     attachments = AttachmentSerializer(read_only=True, many=True)
     submitter = SimpleUserSerializer()
 
@@ -751,7 +788,7 @@ class BaseSubmissionSerializer (SubmittedThingSerializer, serializers.ModelSeria
 
 class SimpleSubmissionSerializer (BaseSubmissionSerializer):
     class Meta (BaseSubmissionSerializer.Meta):
-        pass
+        read_only_fields = ('dataset', 'place')
 
 class SubmissionSerializer (BaseSubmissionSerializer, serializers.HyperlinkedModelSerializer):
     url = SubmissionIdentityField()
@@ -774,21 +811,29 @@ class BaseDataSetSerializer (EmptyModelSerializer, serializers.ModelSerializer):
     def to_native(self, obj):
         obj = self.ensure_obj(obj)
         fields = self.get_fields()
-        fields['places'].context = self.context
-        fields['submission_sets'].context = self.context
 
         data = {
-            'url': fields['url'].field_to_native(obj, 'url'),
             'id': obj.pk,
             'slug': obj.slug,
             'display_name': obj.display_name,
             'owner': fields['owner'].field_to_native(obj, 'owner') if obj.owner_id else None,
-            'places': fields['places'].field_to_native(obj, 'places'),
-            'submission_sets': fields['submission_sets'].field_to_native(obj, 'submission_sets'),
         }
+
+        if 'places' in fields:
+            fields['places'].context = self.context
+            data['places'] = fields['places'].field_to_native(obj, 'places'),
+
+        if 'submission_sets' in fields:
+            fields['submission_sets'].context = self.context
+            data['submission_sets'] = fields['submission_sets'].field_to_native(obj, 'submission_sets'),
 
         if 'url' in fields:
             data['url'] = fields['url'].field_to_native(obj, 'url')
+
+        if 'keys' in fields: data['keys'] = fields['keys'].field_to_native(obj, 'keys')
+        if 'origins' in fields: data['origins'] = fields['origins'].field_to_native(obj, 'origins')
+        if 'groups' in fields: data['groups'] = fields['groups'].field_to_native(obj, 'groups')
+        if 'permissions' in fields: data['permissions'] = fields['permissions'].field_to_native(obj, 'permissions')
 
         # Construct a SortedDictWithMetaData to get the brosable API form
         ret = self._dict_class(data)
@@ -799,9 +844,11 @@ class BaseDataSetSerializer (EmptyModelSerializer, serializers.ModelSerializer):
             ret.fields[field_name] = self.augment_field(field, field_name, field_name, value)
         return ret
 
-class SimpleDataSetSerializer (BaseDataSetSerializer):
-    keys = ApiKeySerializer(many=True)
-    origins = OriginSerializer(many=True)
+class SimpleDataSetSerializer (BaseDataSetSerializer, serializers.ModelSerializer):
+    keys = ApiKeySerializer(many=True, read_only=False)
+    origins = OriginSerializer(many=True, read_only=False)
+    groups = SimpleGroupSerializer(many=True, read_only=False)
+    permissions = DataSetPermissionSerializer(many=True, read_only=False)
 
     class Meta (BaseDataSetSerializer.Meta):
         pass
@@ -813,30 +860,37 @@ class DataSetSerializer (BaseDataSetSerializer, serializers.HyperlinkedModelSeri
     places = DataSetPlaceSetSummarySerializer(source='*', read_only=True, many=True)
     submission_sets = DataSetSubmissionSetSummarySerializer(source='*', read_only=True, many=True)
 
-    load_data = serializers.FileField(write_only=True, required=False)
+    load_from_url = serializers.URLField(write_only=True, required=False)
 
     class Meta (BaseDataSetSerializer.Meta):
         pass
 
-    def from_native(self, data, files=None):
+    def validate_load_from_url(self, attrs, source):
+        url = attrs.get(source)
+        if url:
+            # Verify that at least a head request on the given URL is valid.
+            import requests
+            head_response = requests.head(url)
+            if head_response.status_code != 200:
+                raise ValidationError('There was an error reading from the URL: %s' % head_response.content)
+        return attrs
+
+    def save_object(self, obj, **kwargs):
+        obj.save(**kwargs)
+
         # Load any bulk dataset definition supplied
-        if 'load_data' in files:
-            from haslib import sha1
-            from base64 import b64encode
-
+        if hasattr(self, 'load_url'):
             # Somehow, make sure there's not already some loading going on.
+            # Then, do:
+            from .tasks import load_dataset_archive
+            load_dataset_archive.apply_async(args=(obj.id, self.load_url,))
 
-            # NOTE: In the event that we have a file too large to fit in memory
-            #       this will create problems for us. However, we'll deal with
-            #       that when we have a file too large to fit in memory.
-            content = files['load_data'].read()
-            identifier = b64encode(sha1(content).digest())
 
-            # Store the input in the cache (or on S3?).
-            # Kick off the load task, passing in the cache key (or file name).
-            # Make sure the task id gets on to the response.
-
-        return super(DataSetSerializer, self).from_native(data, files)
+    def from_native(self, data, files=None):
+        obj = super(DataSetSerializer, self).from_native(data, files)
+        if data and 'load_from_url' in data and data['load_from_url']:
+            self.load_url = data['load_from_url']
+        return obj
 
 
 # Action serializer

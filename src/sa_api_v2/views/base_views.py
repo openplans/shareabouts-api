@@ -1390,6 +1390,49 @@ class DataSetInstanceView (OwnedResourceMixin, generics.RetrieveUpdateDestroyAPI
         return response
 
 
+class DataSetMetadataView (OwnedResourceMixin, generics.RetrieveAPIView):
+    """
+    GET
+    ---
+    Get the metadata about a particular dataset. This includes api keys,
+    allowed origins, permissions associated with each, groups, etc.
+
+    **Authentication**: Basic or session (required)
+
+    ------------------------------------------------------------
+    """
+
+    model = models.DataSet
+    serializer_class = serializers.SimpleDataSetSerializer
+    authentication_classes = (authentication.BasicAuthentication, authentication.OAuth2Authentication, ShareaboutsSessionAuth)
+    client_authentication_classes = ()
+    permission_classes = (IsLoggedInOwner,)
+    always_allow_options = True
+
+    def get_object_or_404(self, owner_username, dataset_slug):
+        try:
+            return self.model.objects\
+                .filter(slug=dataset_slug, owner__username=owner_username)\
+                .prefetch_related(
+                    'permissions',
+                    'groups',
+                    'groups__permissions',
+                    'keys',
+                    'keys__permissions',
+                    'origins',
+                    'origins__permissions')\
+                .get()
+        except self.model.DoesNotExist:
+            raise Http404
+
+    def get_object(self, queryset=None):
+        dataset_slug = self.kwargs[self.dataset_slug_kwarg]
+        owner_username = self.kwargs[self.owner_username_kwarg]
+        obj = self.get_object_or_404(owner_username, dataset_slug)
+        self.verify_object(obj)
+        return obj
+
+
 class DataSetKeyListView (OwnedResourceMixin, generics.ListAPIView):
     """
     """

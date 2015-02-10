@@ -20,6 +20,10 @@ urlpatterns = patterns('sa_api_v2',
         views.ActionListView.as_view(),
         name='action-list'),
 
+    url(r'^(?P<owner_username>[^/]+)/datasets/(?P<dataset_slug>[^/]+)/metadata$',
+        views.DataSetMetadataView.as_view(),
+        name='dataset-metadata'),
+
     # bulk data snapshots
 
     url(r'^(?P<owner_username>[^/]+)/datasets/(?P<dataset_slug>[^/]+)/(?P<submission_set_name>[^/]+)/snapshots$',
