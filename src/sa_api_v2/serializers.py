@@ -878,7 +878,7 @@ class DataSetSerializer (BaseDataSetSerializer, serializers.HyperlinkedModelSeri
         obj.save(**kwargs)
 
         # Load any bulk dataset definition supplied
-        if hasattr(self, 'load_url'):
+        if hasattr(self, 'load_url') and self.load_url:
             # Somehow, make sure there's not already some loading going on.
             # Then, do:
             from .tasks import load_dataset_archive
@@ -886,10 +886,9 @@ class DataSetSerializer (BaseDataSetSerializer, serializers.HyperlinkedModelSeri
 
 
     def from_native(self, data, files=None):
-        obj = super(DataSetSerializer, self).from_native(data, files)
-        if data and 'load_from_url' in data and data['load_from_url']:
-            self.load_url = data['load_from_url']
-        return obj
+        if data and 'load_from_url' in data:
+            self.load_url = data.pop('load_from_url')
+        return super(DataSetSerializer, self).from_native(data, files)
 
 
 # Action serializer
