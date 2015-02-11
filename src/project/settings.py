@@ -66,7 +66,7 @@ USE_L10N = True
 MEDIA_ROOT = ''
 MEDIA_URL = ''
 
-STATIC_ROOT = ''
+STATIC_ROOT = 'staticfiles'
 STATIC_URL = '/static/'
 STATICFILES_FINDERS = (
     'django.contrib.staticfiles.finders.FileSystemFinder',
@@ -373,8 +373,6 @@ if all([key in environ for key in ('SHAREABOUTS_AWS_KEY',
 
     DEFAULT_FILE_STORAGE = 'storages.backends.s3boto.S3BotoStorage'
     ATTACHMENT_STORAGE = DEFAULT_FILE_STORAGE
-    STATICFILES_STORAGE = DEFAULT_FILE_STORAGE
-    STATIC_URL = 'https://%s.s3.amazonaws.com/' % AWS_STORAGE_BUCKET_NAME
 
 if 'SHAREABOUTS_TWITTER_KEY' in environ \
     and 'SHAREABOUTS_TWITTER_SECRET' in environ:
