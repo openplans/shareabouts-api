@@ -213,10 +213,7 @@ def list_errors(errors):
 def load_dataset_archive(dataset_id, archive_url):
     dataset = DataSet.objects.get(id=dataset_id)
 
-    try:
-        archive_response = requests.get(archive_url)
-    except:
-        pass
+    archive_response = requests.get(archive_url)
 
     if archive_response.status_code == 200:
         data = archive_response.json()

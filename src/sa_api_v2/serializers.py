@@ -888,6 +888,8 @@ class DataSetSerializer (BaseDataSetSerializer, serializers.HyperlinkedModelSeri
     def from_native(self, data, files=None):
         if data and 'load_from_url' in data:
             self.load_url = data.pop('load_from_url')
+            if self.load_url and isinstance(self.load_url, list):
+                self.load_url = unicode(self.load_url[0])
         return super(DataSetSerializer, self).from_native(data, files)
 
 
