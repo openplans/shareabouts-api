@@ -1,5 +1,7 @@
 Once you have a [Shareabouts map](https://github.com/openplans/shareabouts/blob/master/README.md#a-short-guide-to-setting-up-shareabouts) collecting data, you can explore the data via the Django admin interface, and via the web-based RESTful API browser.
 
+
+
 ## Viewing data via the Django admin interface
 
 Shareabouts data is accessible via the regular Django interface, at 
@@ -24,6 +26,8 @@ Using the Django interface, you can
 You cannot
 * download data in a csv
 * easily browse through data
+
+
 
 ## Viewing and downloading data via the API
 
@@ -70,6 +74,47 @@ Once you have the download link, you most likely want it as a csv. Add `.csv` to
 * reload it with `.csv` on the end, `https://data.shareabouts.org/api/v2/openplans/datasets/test-data/places/snapshots/dac284a6-734a-0b31314e3505.csv`
 * save the file (copying it out to a file will give you something with weird line breaks)
 
+
+
 ## Getting data via the Shareabouts CLI tools
 
 You can use the separate [Shareabouts command line tools](https://github.com/openplans/shareabouts-cli-tools) to import and export data from a Shareabouts dataset. These python scripts make it easy to generate nightly reports, upload polygons, get custom CSV exports, and more.
+
+
+
+## Transferring data from one API to another
+
+1. **Create a new dataset with keys/origins the same as the old dataset.**
+
+   This can either be done through the API at */api/v2/<owner>/datasets*, or
+   through the Django admin interface at */admin/sa_api_v2/dataset/add/*. You
+   will have to set the keys and origins through the Django admin interface.
+
+2. **Switch the dataset root URL to the new dataset.**
+
+   You can do this through with the Heroku command line client:
+
+    heroku config:set DATASET_ROOT=<path-to-new-dataset>
+
+   You can also now do this through Heroku's web dashboard interface. Navigate
+   to the **Settings** tab for your app, and find the **Reveal Config Vars**
+   button. Click **Edit** to change a value.
+
+3. **Make a snapshot of the old dataset.**
+
+   The places snapshot should include all private data, invisible data, and
+   submissions on each place. First, navigate to
+   */api/v2/<old-owner>/datasets/<old-slug>/places/snapshots?include_private&include_invisible&include_submissions&new*.
+   Next, remove the *new* parameter from the URL and wait until the snapshot
+   is ready (until the status is `'success'`). When it is done, copy the given
+   URL.
+
+4. **Load the old data into the new dataset.**
+
+   Navigate to */api/v2/<owner>/datasets/<slug>* and paste the URL from step
+   #3 in to the *Load from URL* field. Click **PUT** and the data should begin
+   to load. You won't see the results until the data has completed. It may
+   take a while. **Note** that it will note all data as new data; i.e., if you
+   do step #4 twice, it may load twice as many points as you expect. So **do
+   not retry** unless you know something went wrong. You can check whether
+   something went wrong by inspecting the server logs (not ideal, I know).
