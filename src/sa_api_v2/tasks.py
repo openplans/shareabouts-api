@@ -164,14 +164,16 @@ def get_or_create_user(user_data, users_map):
     users_map[username] = user
 
     # Create a social auth entry for the user, if appropriate
-    if 'provider_type' in user_data and 'provider_id' in user_data:
+    provider = user_data.get('provider_type')
+    uid = user_data.get('provider_id')
+    if provider and uid:
         UserSocialAuth.objects.create(
             user=user,
-            provider=user_data.get('provider_type'),
-            uid=user_data.get('provider_id'),
+            provider=provider,
+            uid=uid,
             extra_data=
                 get_twitter_extra_data(user_data)
-                if user_data.get('provider_type') == 'twitter' else
+                if provider == 'twitter' else
                 get_facebook_extra_data(user_data)
         )
 
