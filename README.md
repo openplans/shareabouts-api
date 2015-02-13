@@ -1,23 +1,17 @@
-Shareabouts API [![Build Status](https://secure.travis-ci.org/openplans/shareabouts-api.png)](http://travis-ci.org/openplans/shareabouts-api)
+Hey Duwamish API
 ===============
 
-The Shareabouts API is the data storage and data management component that
-powers the [Shareabouts web application](https://github.com/openplans/shareabouts).
+The Hey Duwamish API is the data storage and data management component that
+powers the [Hey Duwamish web application](https://github.com/smartercleanup/duwamish).
 It is a REST API for flexibly storing data about places and an UI for managing
 and exporting your data.
-
-[![Deploy](https://www.herokucdn.com/deploy/button.png)](https://heroku.com/deploy)
 
 Documentation
 -------------
 All of our documentation is is our `doc` directory. Use it to learn more about:
-* [local setup](https://github.com/openplans/shareabouts-api/blob/master/doc/README.md)
-* [how to deploy to DotCloud](https://github.com/openplans/shareabouts-api/blob/master/doc/DEPLOY.md)
-* [upgrading from an older version](https://github.com/openplans/shareabouts-api/blob/master/doc/UPGRADE.md)
-
-Demo
-------------
-Please feel free to check out our [staging server](http://sapistaging-civicworks.dotcloud.com/manage/datasets/) to see how it work. Use username `demo-user` and password `demo`
+* [local setup](https://github.com/smartercleanup/duwamish-api/blob/master/doc/README.md)
+* [how to deploy to DotCloud](https://github.com/smartercleanup/duwamish-api/blob/master/doc/DEPLOY.md)
+<!-- TODO: Add API docs -->
 
 Contributing
 ------------
@@ -25,8 +19,6 @@ In the spirit of [free software](http://www.fsf.org/licensing/essays/free-sw.htm
 
 Here are some ways *you* can contribute:
 
-* by joining our developers discussion list: http://groups.google.com/group/shareabouts-dev
-* by taking a look at our pipeline in the public tracker: https://www.pivotaltracker.com/projects/398973
 * by using alpha, beta, and prerelease versions
 * by reporting bugs
 * by suggesting new features
@@ -39,4 +31,4 @@ Here are some ways *you* can contribute:
 
 Credits
 -------------
-Shareabouts is a project of [OpenPlans](http://openplans.org).
+Hey Duwamish is powered by Shareabouts, a project of [OpenPlans](http://openplans.org).

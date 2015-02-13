@@ -1,7 +1,6 @@
-From 0 to a Shareabouts API instance in about an hour
+Setting up a Hey Duwamish API instance in about an hour
 ======================================
-Shareabouts requires python2.6 or greater (and PostgreSQL 9.1 and development libraries by default to build).
-
+Hey Duwamish requires python2.6 or greater (and PostgreSQL 9.1 and development libraries by default to build).
 
 What's here
 ------------
@@ -13,7 +12,7 @@ which is a Django web application providing:
 * A management user interface, at /manage
 * The basic Django admin UI, for low-level superuser tasks, at /admin
 
-The Shareabouts web application JavaScript and related files are
+The Hey Duwamish web application JavaScript and related files are
 *not* part of this package. [You'll need to install that separately](https://github.com/openplans/shareabouts/).
 
 For more about the parts of Shareabouts,
@@ -25,8 +24,14 @@ Database
 
 The Shareabouts REST API requires GeoDjango.  To install GeoDjango on your
 platform, see https://docs.djangoproject.com/en/dev/ref/contrib/gis/install/#platform-specific-instructions.
+For example, to install on Debian/Ubuntu, perform the following:
+
+    sudo apt-get install postgresql-9.3 postgresql-9.3-postgis-2.1 postgresql-server-dev-9.3 python-psycopg2 binutils
 
 Create a development database for the Shareabouts data store.
+    
+    sudo su postgres
+
 Typically for PostGIS 1.5 this is done like:
 
     createdb -T template_postgis shareabouts_v2
@@ -35,17 +40,20 @@ For PostGIS 2.0:
     
     createdb shareabouts_v2
     psql -U postgres -d shareabouts_v2 
+    # inside the postgres CLI:
+    \password postgres
+    # Enter a db password, noting that 'postgres' is the password in our template 'src/project/local_settings.py.template'
+    Enter new password: <enter your password>
+    Enter it again: <enter your password again>
     CREATE EXTENSION postgis;    
     \q
 
 Copy the file
-`src/project/local_settings.py.template` to `src/project/local_settings.py` and fill in the
-credentials for connecting to your development database.  This file will not be
-checked in to the repository.
+`src/project/local_settings.py.template` to `src/project/local_settings.py`, which is pre-filled with some default credentials for connecting to your development database.  The new file will not be checked in to the repository.
 
 Then bootstrap the development database using the usual Django command:
 
-    src/manage.py syncdb --migrate
+    src/manage.py migrate
 
 
 Local setup
@@ -89,13 +97,24 @@ to activate your virtual environment every time you start a new terminal session
 
     source env/bin/activate
 
+Accessing the Management UI
+----------------------------
 
+To generate an API key to connect a web app with your locally deployed API, execute the following:
+
+    ./src/manage.py createsuperuser
+
+Create a username and password, then access the admin panel as follows (assuming that we've deployed to localhost 8001):
+
+    http://localhost:8001/admin
+
+Then create a dataset and API key. We can load these into our web-app as `SITE_URL` and `SITE_KEY` variables, which will connect our front end app to the API.
 
 Running the Shareabouts Web Application
 -----------------------------------------
 
 For local development, you will probably also want to install and run [the
-front-end mapping application](https://github.com/openplans/shareabouts/).
+front-end mapping application](https://github.com/smartercleanup/duwamish/).
 
 
 Deployment
