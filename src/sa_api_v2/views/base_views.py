@@ -1807,7 +1807,7 @@ class UserInstanceView (OwnedResourceMixin, generics.RetrieveAPIView):
     model = models.User
     client_authentication_classes = ()
     always_allow_options = True
-    serializer_class = serializers.UserSerializer
+    serializer_class = serializers.FullUserSerializer
     SAFE_CORS_METHODS = ('GET', 'HEAD', 'TRACE', 'OPTIONS')
 
     def get_queryset(self):

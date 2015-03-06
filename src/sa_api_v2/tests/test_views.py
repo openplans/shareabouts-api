@@ -517,11 +517,7 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
         # - SELECT * FROM sa_api_attachment AS a
         #    WHERE a.thing_id IN (<self.place.id>);
         #
-        # - SELECT * FROM sa_api_group as g
-        #     JOIN sa_api_group_submitters as s ON (g.id = s.group_id)
-        #    WHERE gs.user_id IN (<[each submitter id]>);
-        #
-        with self.assertNumQueries(12):
+        with self.assertNumQueries(11):
             response = self.view(request, **self.request_kwargs)
             self.assertStatusCode(response, 200)
 
@@ -581,11 +577,7 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
         # - SELECT * FROM sa_api_attachment AS a
         #    WHERE a.thing_id IN (<self.place.id>);
         #
-        # - SELECT * FROM sa_api_group as g
-        #     JOIN sa_api_group_submitters as s ON (g.id = s.group_id)
-        #    WHERE gs.user_id IN (<[each submitter id]>);
-        #
-        with self.assertNumQueries(12):
+        with self.assertNumQueries(11):
             response = self.view(request, **self.request_kwargs)
             self.assertStatusCode(response, 200)
 
@@ -611,7 +603,7 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
 
         # Check that we make a finite number of queries
         #
-        # ---- Checking data access permissions:
+        # ---- Checking data access permissions (only when authed):
         #
         # - SELECT requested dataset
         # - SELECT dataset permissions
@@ -620,7 +612,7 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
         # - SELECT origins
         # - SELECT origin permissions
         #
-        # ---- Building the data
+        # ---- Building the data (each time)
         #
         # - SELECT * FROM sa_api_place AS p
         #     JOIN sa_api_submittedthing AS t ON (p.submittedthing_ptr_id = t.id)
@@ -642,7 +634,7 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
         # - SELECT * FROM sa_api_attachment AS a
         #    WHERE a.thing_id IN (<self.place.id>);
         #
-        with self.assertNumQueries(18):
+        with self.assertNumQueries(16):
             response = self.view(anon_request, **self.request_kwargs)
             self.assertStatusCode(response, 200)
             response = self.view(auth_request, **self.request_kwargs)

@@ -461,7 +461,6 @@ class BaseUserSerializer (serializers.ModelSerializer):
     avatar_url = serializers.SerializerMethodField('get_avatar_url')
     provider_type = serializers.SerializerMethodField('get_provider_type')
     provider_id = serializers.SerializerMethodField('get_provider_id')
-    groups = SimpleGroupSerializer(many=True, source='_groups', read_only=True)
 
     strategies = {
         'twitter': TwitterUserDataStrategy(),
@@ -503,10 +502,27 @@ class BaseUserSerializer (serializers.ModelSerializer):
             return None
 
 class SimpleUserSerializer (BaseUserSerializer):
+    """
+    Generates a partial user representation, for use as submitter data in bulk
+    data calls.
+    """
     class Meta (BaseUserSerializer.Meta):
-        pass
+        exclude = BaseUserSerializer.Meta.exclude + ('groups',)
 
 class UserSerializer (BaseUserSerializer):
+    """
+    Generates a partial user representation, for use as submitter data in API
+    calls.
+    """
+    class Meta (BaseUserSerializer.Meta):
+        exclude = BaseUserSerializer.Meta.exclude + ('groups',)
+
+class FullUserSerializer (BaseUserSerializer):
+    """
+    Generates a representation of the current user. Since it's only for the
+    current user, it should have all the user's information on it (all that
+    the user would need).
+    """
     groups = GroupSerializer(many=True, source='_groups', read_only=True)
 
     class Meta (BaseUserSerializer.Meta):
