@@ -9,7 +9,7 @@ from django.contrib.gis.geos import GEOSGeometry
 from django.core.exceptions import ValidationError
 from rest_framework import pagination
 from rest_framework import serializers
-from rest_framework.reverse import reverse
+# from rest_framework.reverse import reverse
 
 from . import apikey
 from . import cors
@@ -89,6 +89,41 @@ class ShareaboutsFieldMixin (object):
         return url_kwargs
 
 
+def api_reverse(view_name, kwargs={}, request=None, format=None):
+    """
+    A special case of URL reversal where we know we're getting an API URL. This
+    can be much faster than Django's built-in general purpose regex resolver.
+
+    """
+    if request:
+        url = '{}://{}/api/v2'.format(request.scheme, request.get_host())
+    else:
+        url = '/api/v2'
+
+    route_template_strings = {
+        'submission-detail': '/{owner_username}/datasets/{dataset_slug}/places/{place_id}/{submission_set_name}/{submission_id}',
+        'submission-list': '/{owner_username}/datasets/{dataset_slug}/places/{place_id}/{submission_set_name}',
+
+        'place-detail': '/{owner_username}/datasets/{dataset_slug}/places/{place_id}',
+        'place-list': '/{owner_username}/datasets/{dataset_slug}/places',
+
+        'dataset-detail': '/{owner_username}/datasets/{dataset_slug}',
+        'user-detail': '/{owner_username}',
+        'dataset-submission-list': '/{owner_username}/datasets/{submission_set_name}',
+    }
+
+    try:
+        route_template_string = route_template_strings[view_name]
+    except KeyError:
+        raise ValueError('No API route named {} formatted.'.format(view_name))
+
+    url += route_template_string.format(**kwargs)
+
+    if format is not None:
+        url += '.' + format
+
+    return url
+
 class ShareaboutsRelatedField (ShareaboutsFieldMixin, serializers.HyperlinkedRelatedField):
     """
     Represents a Shareabouts relationship using hyperlinking.
@@ -111,7 +146,7 @@ class ShareaboutsRelatedField (ShareaboutsFieldMixin, serializers.HyperlinkedRel
             return
 
         kwargs = self.get_url_kwargs(obj)
-        return reverse(view_name, kwargs=kwargs, request=request, format=format)
+        return api_reverse(view_name, kwargs=kwargs, request=request, format=format)
 
 
 class DataSetRelatedField (ShareaboutsRelatedField):
@@ -158,7 +193,7 @@ class ShareaboutsIdentityField (ShareaboutsFieldMixin, serializers.HyperlinkedId
         if format and self.format and self.format != format:
             format = self.format
 
-        return reverse(view_name, kwargs=kwargs, request=request, format=format)
+        return api_reverse(view_name, kwargs=kwargs, request=request, format=format)
 
 
 class PlaceIdentityField (ShareaboutsIdentityField):
