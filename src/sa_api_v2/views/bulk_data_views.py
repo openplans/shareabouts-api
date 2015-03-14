@@ -119,9 +119,9 @@ class DataSnapshotRequestListView (DataSnapshotMixin, OwnedResourceMixin, views.
         return {
             'dataset': self.get_dataset(),
             'submission_set': submission_set_name,
-            'include_private': params.get('include_private', 'false').lower() not in ('f', 'false', 'off'),
-            'include_invisible': params.get('include_invisible', 'false').lower() not in ('f', 'false', 'off'),
-            'include_submissions': params.get('include_submissions', 'false').lower() not in ('f', 'false', 'off'),
+            'include_private': str(params.get('include_private', False)).lower() not in ('f', 'false', 'off'),
+            'include_invisible': str(params.get('include_invisible', False)).lower() not in ('f', 'false', 'off'),
+            'include_submissions': str(params.get('include_submissions', False)).lower() not in ('f', 'false', 'off'),
         }
 
     def get_or_create_datarequest(self, request, owner_username, dataset_slug, submission_set_name):
