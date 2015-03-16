@@ -110,7 +110,7 @@ def api_reverse(view_name, kwargs={}, request=None, format=None):
 
         'dataset-detail': '/{owner_username}/datasets/{dataset_slug}',
         'user-detail': '/{owner_username}',
-        'dataset-submission-list': '/{owner_username}/datasets/{submission_set_name}',
+        'dataset-submission-list': '/{owner_username}/datasets/{dataset_slug}/{submission_set_name}',
     }
 
     try:
