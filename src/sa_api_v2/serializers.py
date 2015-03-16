@@ -7,6 +7,7 @@ from collections import defaultdict
 from itertools import chain
 from django.contrib.gis.geos import GEOSGeometry
 from django.core.exceptions import ValidationError
+from django.utils.http import urlquote_plus
 from rest_framework import pagination
 from rest_framework import serializers
 # from rest_framework.reverse import reverse
@@ -96,20 +97,20 @@ def api_reverse(view_name, kwargs={}, request=None, format=None):
 
     """
     if request:
-        url = u'{}://{}/api/v2'.format(request.scheme, request.get_host())
+        url = '{}://{}/api/v2'.format(request.scheme, request.get_host())
     else:
-        url = u'/api/v2'
+        url = '/api/v2'
 
     route_template_strings = {
-        'submission-detail': u'/{owner_username}/datasets/{dataset_slug}/places/{place_id}/{submission_set_name}/{submission_id}',
-        'submission-list': u'/{owner_username}/datasets/{dataset_slug}/places/{place_id}/{submission_set_name}',
+        'submission-detail': '/{owner_username}/datasets/{dataset_slug}/places/{place_id}/{submission_set_name}/{submission_id}',
+        'submission-list': '/{owner_username}/datasets/{dataset_slug}/places/{place_id}/{submission_set_name}',
 
-        'place-detail': u'/{owner_username}/datasets/{dataset_slug}/places/{place_id}',
-        'place-list': u'/{owner_username}/datasets/{dataset_slug}/places',
+        'place-detail': '/{owner_username}/datasets/{dataset_slug}/places/{place_id}',
+        'place-list': '/{owner_username}/datasets/{dataset_slug}/places',
 
-        'dataset-detail': u'/{owner_username}/datasets/{dataset_slug}',
-        'user-detail': u'/{owner_username}',
-        'dataset-submission-list': u'/{owner_username}/datasets/{submission_set_name}',
+        'dataset-detail': '/{owner_username}/datasets/{dataset_slug}',
+        'user-detail': '/{owner_username}',
+        'dataset-submission-list': '/{owner_username}/datasets/{submission_set_name}',
     }
 
     try:
@@ -117,10 +118,11 @@ def api_reverse(view_name, kwargs={}, request=None, format=None):
     except KeyError:
         raise ValueError('No API route named {} formatted.'.format(view_name))
 
-    url += route_template_string.format(**kwargs)
+    url_params = dict([(key, urlquote_plus(val)) for key,val in kwargs.iteritems()])
+    url += route_template_string.format(**url_params)
 
     if format is not None:
-        url += u'.' + format
+        url += '.' + format
 
     return url
 
