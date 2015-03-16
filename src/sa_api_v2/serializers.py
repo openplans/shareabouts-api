@@ -96,20 +96,20 @@ def api_reverse(view_name, kwargs={}, request=None, format=None):
 
     """
     if request:
-        url = '{}://{}/api/v2'.format(request.scheme, request.get_host())
+        url = u'{}://{}/api/v2'.format(request.scheme, request.get_host())
     else:
-        url = '/api/v2'
+        url = u'/api/v2'
 
     route_template_strings = {
-        'submission-detail': '/{owner_username}/datasets/{dataset_slug}/places/{place_id}/{submission_set_name}/{submission_id}',
-        'submission-list': '/{owner_username}/datasets/{dataset_slug}/places/{place_id}/{submission_set_name}',
+        'submission-detail': u'/{owner_username}/datasets/{dataset_slug}/places/{place_id}/{submission_set_name}/{submission_id}',
+        'submission-list': u'/{owner_username}/datasets/{dataset_slug}/places/{place_id}/{submission_set_name}',
 
-        'place-detail': '/{owner_username}/datasets/{dataset_slug}/places/{place_id}',
-        'place-list': '/{owner_username}/datasets/{dataset_slug}/places',
+        'place-detail': u'/{owner_username}/datasets/{dataset_slug}/places/{place_id}',
+        'place-list': u'/{owner_username}/datasets/{dataset_slug}/places',
 
-        'dataset-detail': '/{owner_username}/datasets/{dataset_slug}',
-        'user-detail': '/{owner_username}',
-        'dataset-submission-list': '/{owner_username}/datasets/{submission_set_name}',
+        'dataset-detail': u'/{owner_username}/datasets/{dataset_slug}',
+        'user-detail': u'/{owner_username}',
+        'dataset-submission-list': u'/{owner_username}/datasets/{submission_set_name}',
     }
 
     try:
@@ -120,7 +120,7 @@ def api_reverse(view_name, kwargs={}, request=None, format=None):
     url += route_template_string.format(**kwargs)
 
     if format is not None:
-        url += '.' + format
+        url += u'.' + format
 
     return url
 
