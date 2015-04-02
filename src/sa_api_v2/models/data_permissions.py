@@ -12,6 +12,16 @@ class DataPermissionManager (models.Manager):
     def all_permissions(self):
         return self.all()
 
+    def add_permission(self, submission_set, can_create, can_retrieve, can_update, can_destroy, priority=None):
+        PermModel = self.model
+        return self.add(PermModel(
+            submission_set=submission_set,
+            can_create=can_create,
+            can_retrieve=can_retrieve,
+            can_update=can_update,
+            can_destroy=can_destroy,
+            priority=priority))
+
 
 class DataPermission (CloneableModelMixin, CacheClearingModel, models.Model):
     """

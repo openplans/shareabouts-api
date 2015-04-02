@@ -1305,6 +1305,8 @@ class TestPlaceListView (APITestMixin, TestCase):
         #
         request = self.factory.post(self.path, data=place_data, content_type='application/json')
         request.META[KEY_HEADER] = self.apikey.key
+        self.apikey.permissions.all().delete()
+        self.apikey.permissions.add_permission('places', True, True, False, False)
 
         response = self.view(request, **self.request_kwargs)
 
@@ -1334,6 +1336,19 @@ class TestPlaceListView (APITestMixin, TestCase):
         # Check that we actually created a place
         final_num_places = Place.objects.all().count()
         self.assertEqual(final_num_places, start_num_places + 1)
+
+        #
+        # View should 401 when api key does not have enough permission
+        #
+        request = self.factory.post(self.path, data=place_data, content_type='application/json')
+        request.META[KEY_HEADER] = self.apikey.key
+        self.apikey.permissions.all().delete()
+        self.apikey.permissions.add_permission('places', False, True, False, False)
+        self.apikey.permissions.add_permission('comments', True, True, False, False)
+
+        response = self.view(request, **self.request_kwargs)
+        self.assertStatusCode(response, 403)
+
 
     def test_PUT_creates_in_bulk(self):
         # Create a couple bogus places so that we can be sure we're not
