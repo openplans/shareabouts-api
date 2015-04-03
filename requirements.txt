@@ -6,6 +6,7 @@ Django==1.7.1
 gevent==1.0
 gunicorn==18.0
 newrelic==2.16.0.12
+dj_static==0.0.6
 
 
 

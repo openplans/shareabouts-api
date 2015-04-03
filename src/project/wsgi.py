@@ -32,3 +32,13 @@ application = get_wsgi_application()
 # Send errors to Sentry
 from raven.contrib.django.raven_compat.middleware.wsgi import Sentry
 application = Sentry(application)
+
+from dj_static import Cling
+application = Cling(application)
+
+from .twinkie import ExpiresMiddleware
+application = ExpiresMiddleware(application, {
+    'application/javascript': 365*24*60*60,
+    'text/css':               365*24*60*60,
+    'image/png':              365*24*60*60,
+})

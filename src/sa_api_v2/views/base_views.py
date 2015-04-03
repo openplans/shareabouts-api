@@ -1807,7 +1807,7 @@ class UserInstanceView (OwnedResourceMixin, generics.RetrieveAPIView):
     model = models.User
     client_authentication_classes = ()
     always_allow_options = True
-    serializer_class = serializers.UserSerializer
+    serializer_class = serializers.FullUserSerializer
     SAFE_CORS_METHODS = ('GET', 'HEAD', 'TRACE', 'OPTIONS')
 
     def get_queryset(self):
@@ -1834,7 +1834,7 @@ class CurrentUserInstanceView (CorsEnabledMixin, views.APIView):
             user_url = reverse('user-detail', args=[request.user.username])
             return HttpResponseRedirect(user_url + '?' + request.GET.urlencode(), status=303)
         else:
-            return Response(None)
+            return Response(None, headers={'cache-control': 'private, max-age=0, no-cache'})
 
     def post(self, request):
         from django.contrib.auth import authenticate, login
@@ -1877,7 +1877,7 @@ class SessionKeyView (CorsEnabledMixin, views.APIView):
     def get(self, request):
         return Response({
             settings.SESSION_COOKIE_NAME: request.session.session_key,
-        })
+        }, headers={'cache-control': 'private, max-age=0, no-cache'})
 
 
 ###############################################################################

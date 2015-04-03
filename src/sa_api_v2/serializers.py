@@ -7,9 +7,10 @@ from collections import defaultdict
 from itertools import chain
 from django.contrib.gis.geos import GEOSGeometry
 from django.core.exceptions import ValidationError
+from django.utils.http import urlquote_plus
 from rest_framework import pagination
 from rest_framework import serializers
-from rest_framework.reverse import reverse
+# from rest_framework.reverse import reverse
 
 from . import apikey
 from . import cors
@@ -89,6 +90,42 @@ class ShareaboutsFieldMixin (object):
         return url_kwargs
 
 
+def api_reverse(view_name, kwargs={}, request=None, format=None):
+    """
+    A special case of URL reversal where we know we're getting an API URL. This
+    can be much faster than Django's built-in general purpose regex resolver.
+
+    """
+    if request:
+        url = '{}://{}/api/v2'.format(request.scheme, request.get_host())
+    else:
+        url = '/api/v2'
+
+    route_template_strings = {
+        'submission-detail': '/{owner_username}/datasets/{dataset_slug}/places/{place_id}/{submission_set_name}/{submission_id}',
+        'submission-list': '/{owner_username}/datasets/{dataset_slug}/places/{place_id}/{submission_set_name}',
+
+        'place-detail': '/{owner_username}/datasets/{dataset_slug}/places/{place_id}',
+        'place-list': '/{owner_username}/datasets/{dataset_slug}/places',
+
+        'dataset-detail': '/{owner_username}/datasets/{dataset_slug}',
+        'user-detail': '/{owner_username}',
+        'dataset-submission-list': '/{owner_username}/datasets/{dataset_slug}/{submission_set_name}',
+    }
+
+    try:
+        route_template_string = route_template_strings[view_name]
+    except KeyError:
+        raise ValueError('No API route named {} formatted.'.format(view_name))
+
+    url_params = dict([(key, urlquote_plus(val)) for key,val in kwargs.iteritems()])
+    url += route_template_string.format(**url_params)
+
+    if format is not None:
+        url += '.' + format
+
+    return url
+
 class ShareaboutsRelatedField (ShareaboutsFieldMixin, serializers.HyperlinkedRelatedField):
     """
     Represents a Shareabouts relationship using hyperlinking.
@@ -111,7 +148,7 @@ class ShareaboutsRelatedField (ShareaboutsFieldMixin, serializers.HyperlinkedRel
             return
 
         kwargs = self.get_url_kwargs(obj)
-        return reverse(view_name, kwargs=kwargs, request=request, format=format)
+        return api_reverse(view_name, kwargs=kwargs, request=request, format=format)
 
 
 class DataSetRelatedField (ShareaboutsRelatedField):
@@ -158,7 +195,7 @@ class ShareaboutsIdentityField (ShareaboutsFieldMixin, serializers.HyperlinkedId
         if format and self.format and self.format != format:
             format = self.format
 
-        return reverse(view_name, kwargs=kwargs, request=request, format=format)
+        return api_reverse(view_name, kwargs=kwargs, request=request, format=format)
 
 
 class PlaceIdentityField (ShareaboutsIdentityField):
@@ -461,7 +498,6 @@ class BaseUserSerializer (serializers.ModelSerializer):
     avatar_url = serializers.SerializerMethodField('get_avatar_url')
     provider_type = serializers.SerializerMethodField('get_provider_type')
     provider_id = serializers.SerializerMethodField('get_provider_id')
-    groups = SimpleGroupSerializer(many=True, source='_groups', read_only=True)
 
     strategies = {
         'twitter': TwitterUserDataStrategy(),
@@ -503,10 +539,27 @@ class BaseUserSerializer (serializers.ModelSerializer):
             return None
 
 class SimpleUserSerializer (BaseUserSerializer):
+    """
+    Generates a partial user representation, for use as submitter data in bulk
+    data calls.
+    """
     class Meta (BaseUserSerializer.Meta):
-        pass
+        exclude = BaseUserSerializer.Meta.exclude + ('groups',)
 
 class UserSerializer (BaseUserSerializer):
+    """
+    Generates a partial user representation, for use as submitter data in API
+    calls.
+    """
+    class Meta (BaseUserSerializer.Meta):
+        exclude = BaseUserSerializer.Meta.exclude + ('groups',)
+
+class FullUserSerializer (BaseUserSerializer):
+    """
+    Generates a representation of the current user. Since it's only for the
+    current user, it should have all the user's information on it (all that
+    the user would need).
+    """
     groups = GroupSerializer(many=True, source='_groups', read_only=True)
 
     class Meta (BaseUserSerializer.Meta):
@@ -878,7 +931,7 @@ class DataSetSerializer (BaseDataSetSerializer, serializers.HyperlinkedModelSeri
         obj.save(**kwargs)
 
         # Load any bulk dataset definition supplied
-        if hasattr(self, 'load_url'):
+        if hasattr(self, 'load_url') and self.load_url:
             # Somehow, make sure there's not already some loading going on.
             # Then, do:
             from .tasks import load_dataset_archive
@@ -886,10 +939,11 @@ class DataSetSerializer (BaseDataSetSerializer, serializers.HyperlinkedModelSeri
 
 
     def from_native(self, data, files=None):
-        obj = super(DataSetSerializer, self).from_native(data, files)
-        if data and 'load_from_url' in data and data['load_from_url']:
-            self.load_url = data['load_from_url']
-        return obj
+        if data and 'load_from_url' in data:
+            self.load_url = data.pop('load_from_url')
+            if self.load_url and isinstance(self.load_url, list):
+                self.load_url = unicode(self.load_url[0])
+        return super(DataSetSerializer, self).from_native(data, files)
 
 
 # Action serializer
