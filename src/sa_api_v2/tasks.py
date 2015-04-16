@@ -242,7 +242,7 @@ def load_dataset_archive(dataset_id, archive_url):
                 place_data.pop('dataset', None)
                 place_data.pop('created_datetime', None)
                 place_data.pop('updated_datetime', None)
-                submission_sets_data = place_data.pop('submission_sets', None)
+                submission_sets_data = place_data.pop('submission_sets', {})
                 submitter_data = place_data.pop('submitter', None)
 
                 serializer = SimplePlaceSerializer(data=place_data)
