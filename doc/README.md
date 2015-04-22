@@ -62,10 +62,11 @@ Local setup
 Install `pip` and `virtualenv`, if not already installed.  These will keep your
 requirements isolated from the rest of your machine.
 
-    easy_install pip
-    pip install virtualenv
+    sudo apt-get install python-pip python-dev build-essential
+    sudo pip install --upgrade pip
+    sudo pip install --upgrade virtualenv
 
-You may need to use `sudo` to install these tools.
+For older versions of ubuntu:
 
     sudo easy_install pip
     sudo pip install virtualenv
