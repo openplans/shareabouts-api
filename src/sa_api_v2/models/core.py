@@ -169,22 +169,6 @@ class DataSet (CloneableModelMixin, CacheClearingModel, models.Model):
         self.reindex()
 
 
-
-def after_create_dataset(sender, instance, created, **kwargs):
-    """
-    Add planbox as an allowed origin on all datasets.
-    """
-    if created:
-        from sa_api_v2.cors.models import Origin
-        # openplans.org domains
-        origin = Origin.objects.create(dataset=instance, pattern='(?:www.)?openplans.org')
-        origin.permissions.all().update(can_update=False, can_destroy=False)
-        # openplans github domain
-        origin = Origin.objects.create(dataset=instance, pattern='openplans.github.io')
-        origin.permissions.all().update(can_update=False, can_destroy=False)
-post_save.connect(after_create_dataset, sender=DataSet, dispatch_uid="dataset-create")
-
-
 class Webhook (TimeStampedModel):
     """
     A Webhook is a user-defined HTTP callback for POSTing place or submitted

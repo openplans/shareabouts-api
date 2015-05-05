@@ -133,7 +133,8 @@ def create_data_permissions(sender, instance, created, **kwargs):
     """
     Create a default permission instance for a new dataset.
     """
-    if created:
+    cloned = hasattr(instance, '_cloned_from')
+    if created and not cloned:
         DataSetPermission.objects.create(dataset=instance, submission_set='*',
             can_retrieve=True, can_create=False, can_update=False, can_destroy=False)
 post_save.connect(create_data_permissions, sender=DataSet, dispatch_uid="dataset-create-permissions")
