@@ -150,7 +150,6 @@ INSTALLED_APPS = (
     'django.contrib.admin',
     # Uncomment the next line to enable admin documentation:
     # 'django.contrib.admindocs',
-    'django.contrib.gis',
 
     # =================================
     # 3rd-party reusaple apps
@@ -177,6 +176,9 @@ INSTALLED_APPS = (
     'sa_api_v2.apikey',
     'sa_api_v2.cors',
     'remote_client_user',
+
+    # GeoDjango comes last so that we can override its admin templates.
+    'django.contrib.gis',
 )
 
 
