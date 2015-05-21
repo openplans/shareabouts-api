@@ -85,6 +85,7 @@ class SubmittedThingAdmin(admin.OSMGeoAdmin):
     list_filter = (DataSetFilter,)
     search_fields = ('submitter__username', 'data',)
 
+    openlayers_url = 'https://cdnjs.cloudflare.com/ajax/libs/openlayers/2.13.1/OpenLayers.js'
     raw_id_fields = ('submitter', 'dataset')
     readonly_fields = ('api_path',)
 
@@ -135,7 +136,7 @@ class InlineApiKeyAdmin(admin.StackedInline):
             return '(You must save your dataset before you can edit the permissions on your API key.)'
         else:
             return (
-                '<a href="%s"><strong>Edit permissions</strong></a>' % (reverse('admin:apikey_apikey_change', args=[instance.pk]))
+                '<a href="%s"><strong>Edit permissions</strong></a>' % (reverse('admin:sa_api_v2_apikey_change', args=[instance.pk]))
                 + self.permissions_list(instance)
             )
     edit_url.allow_tags = True
@@ -158,7 +159,7 @@ class InlineOriginAdmin(admin.StackedInline):
             return '(You must save your dataset before you can edit the permissions on your origin.)'
         else:
             return (
-                '<a href="%s"><strong>Edit permissions</strong></a>' % (reverse('admin:cors_origin_change', args=[instance.pk]))
+                '<a href="%s"><strong>Edit permissions</strong></a>' % (reverse('admin:sa_api_v2_origin_change', args=[instance.pk]))
                 + self.permissions_list(instance)
             )
     edit_url.allow_tags = True
@@ -168,6 +169,23 @@ class InlineGroupAdmin(admin.StackedInline):
     model = models.Group
     filter_horizontal = ('submitters',)
     extra = 0
+    readonly_fields = ('edit_url',)
+
+    def permissions_list(self, instance):
+        if instance.pk:
+            return '<ul>%s</ul>' % ''.join(['<li>%s</li>' % (escape(permission),) for permission in instance.permissions.all()])
+        else:
+            return ''
+
+    def edit_url(self, instance):
+        if instance.pk is None:
+            return '(You must save your dataset before you can edit the permissions on your API key.)'
+        else:
+            return (
+                '<a href="%s"><strong>Edit permissions</strong></a>' % (reverse('admin:sa_api_v2_group_change', args=[instance.pk]))
+                + self.permissions_list(instance)
+            )
+    edit_url.allow_tags = True
 
 
 class InlineDataSetPermissionAdmin(admin.TabularInline):

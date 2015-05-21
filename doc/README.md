@@ -1,9 +1,6 @@
-From 0 to Shareabouts in about an hour
+From 0 to a Shareabouts API instance in about an hour
 ======================================
 Shareabouts requires python2.6 or greater (and PostgreSQL 9.1 and development libraries by default to build).
-
-If you are converting from Shareabouts 1.0, note that
-we have switched platforms. See [the upgrade docs](UPGRADE.md).
 
 
 What's here
@@ -17,7 +14,7 @@ which is a Django web application providing:
 * The basic Django admin UI, for low-level superuser tasks, at /admin
 
 The Shareabouts web application JavaScript and related files are
-*not* part of this package. You'll need to install that separately.
+*not* part of this package. [You'll need to install that separately](https://github.com/openplans/shareabouts/).
 
 For more about the parts of Shareabouts,
 see [the architecture documentation](ARCHITECTURE.md).
@@ -97,19 +94,8 @@ to activate your virtual environment every time you start a new terminal session
 Running the Shareabouts Web Application
 -----------------------------------------
 
-For local development, you will probably also want to install and run the
-front-end mapping application.  To do so, you will want a separate clone
-of the shareabouts repository, with the sa-web branch checked out.
-(This is as of 2012-09-05; will likely move to a separate repository
-in the future.)
-
-For example, in another terminal session, do this:
-
-    git clone https://github.com/openplans/shareabouts/ sa-web
-    cd sa-web
-    git checkout sa-web
-
-Then follow its own install documentation, in doc/README.md.
+For local development, you will probably also want to install and run [the
+front-end mapping application](https://github.com/openplans/shareabouts/).
 
 
 Deployment

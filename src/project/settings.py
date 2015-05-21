@@ -38,6 +38,9 @@ SITE_ID = 1
 # large.
 API_CACHE_TIMEOUT = 3600  # an hour
 
+# Where should the user be redirected to when they visit the root of the site?
+ROOT_REDIRECT_TO = 'api-root'
+
 ###############################################################################
 #
 # Time Zones
@@ -65,7 +68,7 @@ ATTACHMENT_STORAGE = 'django.core.files.storage.FileSystemStorage'
 MEDIA_ROOT = ''
 MEDIA_URL = ''
 
-STATIC_ROOT = ''
+STATIC_ROOT = 'staticfiles'
 STATIC_URL = '/static/'
 STATICFILES_FINDERS = (
     'django.contrib.staticfiles.finders.FileSystemFinder',
@@ -149,7 +152,6 @@ INSTALLED_APPS = (
     'django.contrib.admin',
     # Uncomment the next line to enable admin documentation:
     # 'django.contrib.admindocs',
-    'django.contrib.gis',
 
     # =================================
     # 3rd-party reusaple apps
@@ -176,6 +178,9 @@ INSTALLED_APPS = (
     'sa_api_v2.apikey',
     'sa_api_v2.cors',
     'remote_client_user',
+
+    # GeoDjango comes last so that we can override its admin templates.
+    'django.contrib.gis',
 )
 
 
@@ -278,11 +283,6 @@ LOGGING = {
         },
     },
     'handlers': {
-        'mail_admins': {
-            'level': 'ERROR',
-            'filters': ['require_debug_false'],
-            'class': 'django.utils.log.AdminEmailHandler'
-        },
         'console': {
             'level': 'INFO',
             'class': 'logging.StreamHandler',
@@ -291,7 +291,7 @@ LOGGING = {
     },
     'loggers': {
         'django.request': {
-            'handlers': ['mail_admins', 'console'],
+            'handlers': ['console'],
             'level': 'ERROR',
             'propagate': True,
         },
@@ -377,8 +377,6 @@ if all([key in environ for key in ('SHAREABOUTS_AWS_KEY',
 
     DEFAULT_FILE_STORAGE = 'storages.backends.s3boto.S3BotoStorage'
     ATTACHMENT_STORAGE = DEFAULT_FILE_STORAGE
-    STATICFILES_STORAGE = DEFAULT_FILE_STORAGE
-    STATIC_URL = 'https://%s.s3.amazonaws.com/' % AWS_STORAGE_BUCKET_NAME
 
 if 'SHAREABOUTS_TWITTER_KEY' in environ \
     and 'SHAREABOUTS_TWITTER_SECRET' in environ:

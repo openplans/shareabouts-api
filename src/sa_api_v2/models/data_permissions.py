@@ -12,6 +12,16 @@ class DataPermissionManager (models.Manager):
     def all_permissions(self):
         return self.all()
 
+    def add_permission(self, submission_set, can_create, can_retrieve, can_update, can_destroy, priority=None):
+        PermModel = self.model
+        return self.add(PermModel(
+            submission_set=submission_set,
+            can_create=can_create,
+            can_retrieve=can_retrieve,
+            can_update=can_update,
+            can_destroy=can_destroy,
+            priority=priority))
+
 
 class DataPermission (CloneableModelMixin, CacheClearingModel, models.Model):
     """
@@ -123,7 +133,8 @@ def create_data_permissions(sender, instance, created, **kwargs):
     """
     Create a default permission instance for a new dataset.
     """
-    if created:
+    cloned = hasattr(instance, '_cloned_from')
+    if created and not cloned:
         DataSetPermission.objects.create(dataset=instance, submission_set='*',
             can_retrieve=True, can_create=False, can_update=False, can_destroy=False)
 post_save.connect(create_data_permissions, sender=DataSet, dispatch_uid="dataset-create-permissions")

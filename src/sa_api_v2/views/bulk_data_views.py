@@ -12,8 +12,8 @@ from rest_framework.settings import APISettings
 from rest_framework_bulk import generics as bulk_generics
 from social.apps.django_app import views as social_views
 from ..params import (INCLUDE_INVISIBLE_PARAM, INCLUDE_PRIVATE_PARAM,
-    INCLUDE_SUBMISSIONS_PARAM, NEAR_PARAM, DISTANCE_PARAM, FORMAT_PARAM,
-    PAGE_PARAM, PAGE_SIZE_PARAM, CALLBACK_PARAM)
+    INCLUDE_SUBMISSIONS_PARAM, NEAR_PARAM, DISTANCE_PARAM, TEXTSEARCH_PARAM,
+    FORMAT_PARAM, PAGE_PARAM, PAGE_SIZE_PARAM, CALLBACK_PARAM)
 from ..models import DataSnapshotRequest, DataSnapshot, DataSet
 from ..tasks import store_bulk_data, bulk_data_status_update
 from .base_views import OwnedResourceMixin
@@ -119,9 +119,9 @@ class DataSnapshotRequestListView (DataSnapshotMixin, OwnedResourceMixin, views.
         return {
             'dataset': self.get_dataset(),
             'submission_set': submission_set_name,
-            'include_private': params.get('include_private', 'false').lower() not in ('f', 'false', 'off'),
-            'include_invisible': params.get('include_invisible', 'false').lower() not in ('f', 'false', 'off'),
-            'include_submissions': params.get('include_submissions', 'false').lower() not in ('f', 'false', 'off'),
+            'include_private': str(params.get('include_private', False)).lower() not in ('f', 'false', 'off'),
+            'include_invisible': str(params.get('include_invisible', False)).lower() not in ('f', 'false', 'off'),
+            'include_submissions': str(params.get('include_submissions', False)).lower() not in ('f', 'false', 'off'),
         }
 
     def get_or_create_datarequest(self, request, owner_username, dataset_slug, submission_set_name):

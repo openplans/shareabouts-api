@@ -290,6 +290,14 @@ class CloningTests (TestCase):
         Submission.objects.create(dataset=dataset, place=place2, set_name='comments')
         Submission.objects.create(dataset=dataset, place=place2, set_name='support')
 
+        apikey = dataset.keys.create(key='somekey')
+        apikey.permissions.all().delete()
+        apikey.permissions.create(submission_set='comments', can_retrieve=True, can_create=True)
+
+        origin = dataset.origins.create(pattern='someorigin.com')
+        origin.permissions.all().delete()
+        origin.permissions.create(submission_set='comments', can_retrieve=True, can_create=True)
+
         # Clone the object and make sure the clone's values are initialized
         # correctly.
         clone = dataset.clone(overrides={'slug': 'dataset-2'})
@@ -316,6 +324,26 @@ class CloningTests (TestCase):
         clone_place_ids = set([s.id for s in clone_places])
         orgnl_place_ids = set([s.id for s in orgnl_places])
         self.assertEqual(clone_place_ids & orgnl_place_ids, set())
+
+        # Make sure the clone and the original have the same values (but not
+        # references) for keys and origins.
+        self.assertEqual(dataset.permissions.count(), clone.permissions.count())
+        self.assertEqual(dataset.keys.count(), clone.keys.count())
+        self.assertEqual(dataset.origins.count(), clone.origins.count())
+
+        clone_key_ids = set([k.id for k in clone.keys.all()])
+        orgnl_key_ids = set([k.id for k in dataset.keys.all()])
+        self.assertEqual(clone_key_ids & orgnl_key_ids, set())
+
+        clone_orgn_ids = set([o.id for o in clone.origins.all()])
+        orgnl_orgn_ids = set([o.id for o in dataset.origins.all()])
+        self.assertEqual(clone_orgn_ids & orgnl_orgn_ids, set())
+
+        clonekey = dataset.keys.get(key=apikey.key)
+        self.assertEqual(apikey.permissions.count(), clonekey.permissions.count())
+
+        cloneorigin = dataset.origins.get(pattern=origin.pattern)
+        self.assertEqual(origin.permissions.count(), cloneorigin.permissions.count())
 
     def test_group_can_be_cloned(self):
         dataset = DataSet.objects.create(owner=self.owner, slug='dataset')

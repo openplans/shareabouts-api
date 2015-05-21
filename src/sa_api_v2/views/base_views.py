@@ -35,7 +35,8 @@ from .. import utils
 from ..cache import cache_buffer
 from ..params import (INCLUDE_INVISIBLE_PARAM, INCLUDE_PRIVATE_PARAM,
     INCLUDE_SUBMISSIONS_PARAM, NEAR_PARAM, DISTANCE_PARAM, BBOX_PARAM,
-    FORMAT_PARAM, PAGE_PARAM, PAGE_SIZE_PARAM, CALLBACK_PARAM)
+    TEXTSEARCH_PARAM, FORMAT_PARAM, PAGE_PARAM, PAGE_SIZE_PARAM,
+    CALLBACK_PARAM)
 from functools import wraps
 from itertools import groupby, count
 from collections import defaultdict
@@ -472,8 +473,14 @@ class FilteredResourceMixin (object):
         special_filters = set([FORMAT_PARAM, PAGE_PARAM, PAGE_SIZE_PARAM(),
             INCLUDE_SUBMISSIONS_PARAM, INCLUDE_PRIVATE_PARAM,
             INCLUDE_INVISIBLE_PARAM, NEAR_PARAM, DISTANCE_PARAM,
-            BBOX_PARAM, CALLBACK_PARAM(self)])
+            TEXTSEARCH_PARAM, BBOX_PARAM, CALLBACK_PARAM(self)])
 
+        # Filter by full-text search
+        textsearch_filter = self.request.GET.get(TEXTSEARCH_PARAM, None)
+        if textsearch_filter:
+            queryset = queryset.filter(data__icontains=textsearch_filter)
+
+        # Then filter by attributes
         for key, values in self.request.GET.iterlists():
             if key not in special_filters:
                 # Filter quickly for indexed values
@@ -788,6 +795,40 @@ class QueryError(exceptions.APIException):
 # Resource Views
 # --------------
 #
+
+class ShareaboutsAPIRootView (views.APIView):
+    """
+    Welcome to the Shareabouts API. The Shareabouts API is the data storage
+    and data management component that powers the
+    [Shareabouts web application](https://github.com/openplans/shareabouts).
+    It is a REST API for flexibly storing data about places.
+
+    The Shareabouts API supports a number of authentication methods, including
+    basic auth for users, and OAuth for constructing applications against the
+    API. The API also allows you to easily build Twitter and Facebook
+    authentication into your own application build on the Shareabouts API.
+
+    The best place to start browsing is in your datasets. Use the link at the
+    top-right to log in.
+
+    """
+    def get(self, request):
+        user = request.user
+
+        response_data = {}
+
+        if user.is_authenticated():
+            response_data['your datasets'] = request.build_absolute_uri(
+                reverse('dataset-list', kwargs={'owner_username': user.username})
+            )
+
+        if user.is_superuser:
+            response_data['all datasets'] = request.build_absolute_uri(
+                reverse('admin-dataset-list')
+            )
+
+        return Response(response_data)
+
 
 class PlaceInstanceView (CachedResourceMixin, LocatedResourceMixin, OwnedResourceMixin, FilteredResourceMixin, generics.RetrieveUpdateDestroyAPIView):
     """
@@ -1317,7 +1358,6 @@ class DataSetInstanceView (OwnedResourceMixin, generics.RetrieveUpdateDestroyAPI
     model = models.DataSet
     serializer_class = serializers.DataSetSerializer
     authentication_classes = (authentication.BasicAuthentication, authentication.OAuth2Authentication, ShareaboutsSessionAuth)
-    permission_classes = (IsLoggedInOwner,)
     client_authentication_classes = ()
     always_allow_options = True
 
@@ -1348,6 +1388,66 @@ class DataSetInstanceView (OwnedResourceMixin, generics.RetrieveUpdateDestroyAPI
             response.status_code = 301
             response['Location'] = response.data['url']
         return response
+
+
+class DataSetMetadataView (OwnedResourceMixin, generics.RetrieveAPIView):
+    """
+    GET
+    ---
+    Get the metadata about a particular dataset. This includes api keys,
+    allowed origins, permissions associated with each, groups, etc.
+
+    **Authentication**: Basic or session (required)
+
+    ------------------------------------------------------------
+    """
+
+    model = models.DataSet
+    serializer_class = serializers.SimpleDataSetSerializer
+    authentication_classes = (authentication.BasicAuthentication, authentication.OAuth2Authentication, ShareaboutsSessionAuth)
+    client_authentication_classes = ()
+    permission_classes = (IsLoggedInOwner,)
+    always_allow_options = True
+
+    def get_object_or_404(self, owner_username, dataset_slug):
+        try:
+            return self.model.objects\
+                .filter(slug=dataset_slug, owner__username=owner_username)\
+                .prefetch_related(
+                    'permissions',
+                    'groups',
+                    'groups__permissions',
+                    'keys',
+                    'keys__permissions',
+                    'origins',
+                    'origins__permissions')\
+                .get()
+        except self.model.DoesNotExist:
+            raise Http404
+
+    def get_object(self, queryset=None):
+        dataset_slug = self.kwargs[self.dataset_slug_kwarg]
+        owner_username = self.kwargs[self.owner_username_kwarg]
+        obj = self.get_object_or_404(owner_username, dataset_slug)
+        self.verify_object(obj)
+        return obj
+
+
+class DataSetKeyListView (OwnedResourceMixin, generics.ListAPIView):
+    """
+    """
+
+    model = apikey.models.ApiKey
+    serializer_class = serializers.ApiKeySerializer
+    authentication_classes = (authentication.BasicAuthentication, authentication.OAuth2Authentication, ShareaboutsSessionAuth)
+    permission_classes = (IsLoggedInOwner,)
+    client_authentication_classes = ()
+    always_allow_options = True
+
+    def get_queryset(self):
+        dataset = self.get_dataset()
+        queryset = super(DataSetKeyListView, self).get_queryset()
+        return queryset.filter(dataset=dataset)
 
 
 class DataSetListMixin (object):
@@ -1428,7 +1528,6 @@ class DataSetListView (DataSetListMixin, OwnedResourceMixin, generics.ListCreate
     ------------------------------------------------------------
     """
 
-    permission_classes = (IsLoggedInOwner,)
     client_authentication_classes = ()
 
     def pre_save(self, obj):
@@ -1683,6 +1782,7 @@ class ClientAuthListView (OwnedResourceMixin, generics.ListCreateAPIView):
                        files=None, many=False, partial=False):
         if isinstance(data, dict):
             dataset = self.get_dataset()
+            data = data.copy()
             data['dataset'] = dataset.id
         return super(ClientAuthListView, self).get_serializer(
             instance=instance, data=data, files=files, many=many,
@@ -1707,7 +1807,7 @@ class UserInstanceView (OwnedResourceMixin, generics.RetrieveAPIView):
     model = models.User
     client_authentication_classes = ()
     always_allow_options = True
-    serializer_class = serializers.UserSerializer
+    serializer_class = serializers.FullUserSerializer
     SAFE_CORS_METHODS = ('GET', 'HEAD', 'TRACE', 'OPTIONS')
 
     def get_queryset(self):
@@ -1734,7 +1834,7 @@ class CurrentUserInstanceView (CorsEnabledMixin, views.APIView):
             user_url = reverse('user-detail', args=[request.user.username])
             return HttpResponseRedirect(user_url + '?' + request.GET.urlencode(), status=303)
         else:
-            return Response(None)
+            return Response(None, headers={'cache-control': 'private, max-age=0, no-cache'})
 
     def post(self, request):
         from django.contrib.auth import authenticate, login
@@ -1777,7 +1877,7 @@ class SessionKeyView (CorsEnabledMixin, views.APIView):
     def get(self, request):
         return Response({
             settings.SESSION_COOKIE_NAME: request.session.session_key,
-        })
+        }, headers={'cache-control': 'private, max-age=0, no-cache'})
 
 
 ###############################################################################

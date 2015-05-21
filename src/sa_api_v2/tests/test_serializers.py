@@ -7,7 +7,7 @@ from django.core.urlresolvers import reverse
 from nose.tools import istest
 from sa_api_v2.cache import cache_buffer
 from sa_api_v2.models import Attachment, Action, User, DataSet, Place, Submission, Group
-from sa_api_v2.serializers import AttachmentSerializer, ActionSerializer, UserSerializer, PlaceSerializer, DataSetSerializer, SubmissionSerializer
+from sa_api_v2.serializers import AttachmentSerializer, ActionSerializer, UserSerializer, FullUserSerializer, PlaceSerializer, DataSetSerializer, SubmissionSerializer
 from social.apps.django_app.default.models import UserSocialAuth
 import json
 from os import path
@@ -192,13 +192,17 @@ class TestUserSerializer (TestCase):
         Group.objects.all().delete()
         DataSet.objects.all().delete()
 
-    def test_returns_an_empty_list_of_groups_for_normal_users(self):
-        serializer = UserSerializer(self.normal_user)
+    def test_partial_serializer_does_not_return_a_users_groups(self):
+        serializer = UserSerializer(self.special_user)
+        self.assertNotIn('groups', serializer.data)
+
+    def test_full_serializer_returns_an_empty_list_of_groups_for_normal_users(self):
+        serializer = FullUserSerializer(self.normal_user)
         self.assertIn('groups', serializer.data)
         self.assertEqual(serializer.data['groups'], [])
 
-    def test_returns_a_users_groups(self):
-        serializer = UserSerializer(self.special_user)
+    def test_full_serializer_returns_a_users_groups(self):
+        serializer = FullUserSerializer(self.special_user)
         self.assertIn('groups', serializer.data)
         self.assertEqual(serializer.data['groups'], [{'dataset': reverse('dataset-detail', kwargs={'dataset_slug': 'ds1', 'owner_username': 'my_owning_user'}), 'name': 'special users'}])
 

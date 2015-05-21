@@ -48,6 +48,7 @@ class CloneableModelMixin (object):
             inst_kwargs.update(overrides)
 
         new_inst = self.__class__(**inst_kwargs)
+        new_inst._cloned_from = self
 
         if commit:
             save_kwargs = self.get_clone_save_kwargs()

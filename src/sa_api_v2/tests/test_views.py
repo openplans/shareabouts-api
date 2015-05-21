@@ -517,11 +517,7 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
         # - SELECT * FROM sa_api_attachment AS a
         #    WHERE a.thing_id IN (<self.place.id>);
         #
-        # - SELECT * FROM sa_api_group as g
-        #     JOIN sa_api_group_submitters as s ON (g.id = s.group_id)
-        #    WHERE gs.user_id IN (<[each submitter id]>);
-        #
-        with self.assertNumQueries(12):
+        with self.assertNumQueries(11):
             response = self.view(request, **self.request_kwargs)
             self.assertStatusCode(response, 200)
 
@@ -581,11 +577,7 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
         # - SELECT * FROM sa_api_attachment AS a
         #    WHERE a.thing_id IN (<self.place.id>);
         #
-        # - SELECT * FROM sa_api_group as g
-        #     JOIN sa_api_group_submitters as s ON (g.id = s.group_id)
-        #    WHERE gs.user_id IN (<[each submitter id]>);
-        #
-        with self.assertNumQueries(12):
+        with self.assertNumQueries(11):
             response = self.view(request, **self.request_kwargs)
             self.assertStatusCode(response, 200)
 
@@ -611,7 +603,7 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
 
         # Check that we make a finite number of queries
         #
-        # ---- Checking data access permissions:
+        # ---- Checking data access permissions (only when authed):
         #
         # - SELECT requested dataset
         # - SELECT dataset permissions
@@ -620,7 +612,7 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
         # - SELECT origins
         # - SELECT origin permissions
         #
-        # ---- Building the data
+        # ---- Building the data (each time)
         #
         # - SELECT * FROM sa_api_place AS p
         #     JOIN sa_api_submittedthing AS t ON (p.submittedthing_ptr_id = t.id)
@@ -642,7 +634,7 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
         # - SELECT * FROM sa_api_attachment AS a
         #    WHERE a.thing_id IN (<self.place.id>);
         #
-        with self.assertNumQueries(18):
+        with self.assertNumQueries(16):
             response = self.view(anon_request, **self.request_kwargs)
             self.assertStatusCode(response, 200)
             response = self.view(auth_request, **self.request_kwargs)
@@ -1044,6 +1036,46 @@ class TestPlaceListView (APITestMixin, TestCase):
         # Check that we have the right number of rows
         self.assertEqual(len(rows), 2)
 
+    def test_GET_text_search_response(self):
+        Place.objects.create(dataset=self.dataset, geometry='POINT(0 0)', data=json.dumps({'foo': 'bar', 'name': 1})),
+        Place.objects.create(dataset=self.dataset, geometry='POINT(1 0)', data=json.dumps({'foo': 'bar', 'name': 2})),
+        Place.objects.create(dataset=self.dataset, geometry='POINT(2 0)', data=json.dumps({'foo': 'baz', 'name': 3})),
+        Place.objects.create(dataset=self.dataset, geometry='POINT(3 0)', data=json.dumps({'name': 4})),
+
+        request = self.factory.get(self.path + '?search=bar')
+        response = self.view(request, **self.request_kwargs)
+        data = json.loads(response.rendered_content)
+
+        # Check that there are ATM features
+        self.assertStatusCode(response, 200)
+        self.assert_(all([feature['properties'].get('foo') == 'bar' for feature in data['features']]))
+        self.assertEqual(len(data['features']), 2)
+
+        request = self.factory.get(self.path + '?search=ba')
+        response = self.view(request, **self.request_kwargs)
+        data = json.loads(response.rendered_content)
+
+        # Check that the request was successful
+        self.assertStatusCode(response, 200)
+        self.assert_(all([feature['properties'].get('foo') in ('bar', 'baz') for feature in data['features']]))
+        self.assertEqual(len(data['features']), 3)
+
+        request = self.factory.get(self.path + '?search=bad')
+        response = self.view(request, **self.request_kwargs)
+        data = json.loads(response.rendered_content)
+
+        # Check that the request was successful
+        self.assertStatusCode(response, 200)
+        self.assertEqual(len(data['features']), 0)
+
+        request = self.factory.get(self.path + '?search=')
+        response = self.view(request, **self.request_kwargs)
+        data = json.loads(response.rendered_content)
+
+        # Check that the request was successful
+        self.assertStatusCode(response, 200)
+        self.assertEqual(len(data['features']), self.dataset.places.filter(visible=True).count())
+
     def test_GET_filtered_response(self):
         Place.objects.create(dataset=self.dataset, geometry='POINT(0 0)', data=json.dumps({'foo': 'bar', 'name': 1})),
         Place.objects.create(dataset=self.dataset, geometry='POINT(1 0)', data=json.dumps({'foo': 'bar', 'name': 2})),
@@ -1273,6 +1305,8 @@ class TestPlaceListView (APITestMixin, TestCase):
         #
         request = self.factory.post(self.path, data=place_data, content_type='application/json')
         request.META[KEY_HEADER] = self.apikey.key
+        self.apikey.permissions.all().delete()
+        self.apikey.permissions.add_permission('places', True, True, False, False)
 
         response = self.view(request, **self.request_kwargs)
 
@@ -1302,6 +1336,19 @@ class TestPlaceListView (APITestMixin, TestCase):
         # Check that we actually created a place
         final_num_places = Place.objects.all().count()
         self.assertEqual(final_num_places, start_num_places + 1)
+
+        #
+        # View should 401 when api key does not have enough permission
+        #
+        request = self.factory.post(self.path, data=place_data, content_type='application/json')
+        request.META[KEY_HEADER] = self.apikey.key
+        self.apikey.permissions.all().delete()
+        self.apikey.permissions.add_permission('places', False, True, False, False)
+        self.apikey.permissions.add_permission('comments', True, True, False, False)
+
+        response = self.view(request, **self.request_kwargs)
+        self.assertStatusCode(response, 403)
+
 
     def test_PUT_creates_in_bulk(self):
         # Create a couple bogus places so that we can be sure we're not
@@ -1724,6 +1771,10 @@ class TestSubmissionInstanceView (APITestMixin, TestCase):
         self.submission = self.submissions[0]
 
         self.apikey = ApiKey.objects.create(key='abc', dataset=self.dataset)
+        ApiKey.objects.create(key='abc2', dataset=self.dataset)
+
+        self.origin = Origin.objects.create(pattern='def', dataset=self.dataset)
+        Origin.objects.create(pattern='def2', dataset=self.dataset)
 
         self.request_kwargs = {
           'owner_username': self.owner.username,
@@ -3117,7 +3168,7 @@ class TestDataSetInstanceView (APITestMixin, TestCase):
         response = self.view(request, **self.request_kwargs)
 
         # Check that the request was successful
-        self.assertStatusCode(response, 401)
+        self.assertStatusCode(response, 200)
 
     def test_GET_response(self):
         request = self.factory.get(self.path)
@@ -3135,7 +3186,7 @@ class TestDataSetInstanceView (APITestMixin, TestCase):
         self.assertIn('url', data)
         self.assertIn('slug', data)
         self.assertIn('display_name', data)
-        self.assertIn('keys', data)
+        self.assertNotIn('keys', data)
         self.assertIn('owner', data)
         self.assertIn('places', data)
         self.assertIn('submission_sets', data)
@@ -3423,13 +3474,12 @@ class TestDataSetListView (APITestMixin, TestCase):
         cache_buffer.reset()
         django_cache.clear()
 
-    # 401, not logged in owner
     def test_anonymous_GET_response(self):
         request = self.factory.get(self.path)
         response = self.view(request, **self.request_kwargs)
 
         # Check that the request was successful
-        self.assertStatusCode(response, 401)
+        self.assertStatusCode(response, 200)
 
     def test_GET_response(self):
         request = self.factory.get(self.path)
