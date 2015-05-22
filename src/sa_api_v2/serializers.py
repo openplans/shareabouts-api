@@ -538,6 +538,17 @@ class BaseUserSerializer (serializers.ModelSerializer):
         else:
             return None
 
+    def to_native(self, obj):
+        return {
+            "name": self.get_name(obj),
+            "avatar_url": self.get_avatar_url(obj),
+            "provider_type": self.get_provider_type(obj),
+            "provider_id": self.get_provider_id(obj),
+            "id": obj.id,
+            "username": obj.username
+        } if obj else {}
+
+
 class SimpleUserSerializer (BaseUserSerializer):
     """
     Generates a partial user representation, for use as submitter data in bulk
@@ -564,6 +575,14 @@ class FullUserSerializer (BaseUserSerializer):
 
     class Meta (BaseUserSerializer.Meta):
         pass
+
+    def to_native(self, obj):
+        data = super(FullUserSerializer, self).to_native(obj)
+        if obj:
+            group_field = self.base_fields['groups']
+            group_field.initialize(parent=self, field_name='groups')
+            data['groups'] = group_field.field_to_native(obj, 'groups')
+        return data
 
 
 # DataSet place set serializer

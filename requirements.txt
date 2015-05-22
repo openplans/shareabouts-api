@@ -34,7 +34,7 @@ django-object-actions==0.4.0
 django-redis==3.5.1
 
 # File Storate
-boto==2.18.0
+boto==2.36.0
 django-storages==1.1.8
 
 

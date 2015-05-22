@@ -1771,6 +1771,10 @@ class TestSubmissionInstanceView (APITestMixin, TestCase):
         self.submission = self.submissions[0]
 
         self.apikey = ApiKey.objects.create(key='abc', dataset=self.dataset)
+        ApiKey.objects.create(key='abc2', dataset=self.dataset)
+
+        self.origin = Origin.objects.create(pattern='def', dataset=self.dataset)
+        Origin.objects.create(pattern='def2', dataset=self.dataset)
 
         self.request_kwargs = {
           'owner_username': self.owner.username,

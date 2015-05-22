@@ -85,6 +85,7 @@ class SubmittedThingAdmin(admin.OSMGeoAdmin):
     list_filter = (DataSetFilter,)
     search_fields = ('submitter__username', 'data',)
 
+    openlayers_url = 'https://cdnjs.cloudflare.com/ajax/libs/openlayers/2.13.1/OpenLayers.js'
     raw_id_fields = ('submitter', 'dataset')
     readonly_fields = ('api_path',)
 
