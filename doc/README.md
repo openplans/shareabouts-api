@@ -1,4 +1,4 @@
-Setting up a Hey Duwamish API instance in about an hour
+Setting up a Hey Duwamish API instance
 ======================================
 Hey Duwamish requires python2.6 or greater (and PostgreSQL 9.1 and development libraries by default to build).
 
@@ -17,44 +17,6 @@ The Hey Duwamish web application JavaScript and related files are
 
 For more about the parts of Shareabouts,
 see [the architecture documentation](ARCHITECTURE.md).
-
-
-Database
---------
-
-The Shareabouts REST API requires GeoDjango.  To install GeoDjango on your
-platform, see https://docs.djangoproject.com/en/dev/ref/contrib/gis/install/#platform-specific-instructions.
-For example, to install on Debian/Ubuntu, perform the following:
-
-    sudo apt-get install postgresql-9.3 postgresql-9.3-postgis-2.1 postgresql-server-dev-9.3 python-psycopg2 binutils
-
-Create a development database for the Shareabouts data store.
-    
-    sudo su postgres
-
-Typically for PostGIS 1.5 this is done like:
-
-    createdb -T template_postgis shareabouts_v2
-    
-For PostGIS 2.0:
-    
-    createdb shareabouts_v2
-    psql -U postgres -d shareabouts_v2 
-    # inside the postgres CLI:
-    \password postgres
-    # Enter a db password, noting that 'postgres' is the password in our template 'src/project/local_settings.py.template'
-    Enter new password: <enter your password>
-    Enter it again: <enter your password again>
-    CREATE EXTENSION postgis;    
-    \q
-
-Copy the file
-`src/project/local_settings.py.template` to `src/project/local_settings.py`, which is pre-filled with some default credentials for connecting to your development database.  The new file will not be checked in to the repository.
-
-Then bootstrap the development database using the usual Django command:
-
-    src/manage.py migrate
-
 
 Local setup
 ------------
@@ -97,6 +59,39 @@ NOTE: If you're new to programming with virtual environments, be sure to remembe
 to activate your virtual environment every time you start a new terminal session.
 
     source env/bin/activate
+
+Database
+--------
+
+The Shareabouts REST API requires GeoDjango.  To install GeoDjango on your
+platform, see https://docs.djangoproject.com/en/dev/ref/contrib/gis/install/#platform-specific-instructions.
+For example, to install on Debian/Ubuntu, perform the following:
+
+    sudo apt-get install postgresql-9.3 postgresql-9.3-postgis-2.1 postgresql-server-dev-9.3 python-psycopg2 binutils
+
+Create a development database for the Shareabouts data store.
+
+    sudo su postgres
+
+For PostGIS 2.0:
+
+    createdb shareabouts_v2
+    psql -U postgres -d shareabouts_v2
+    # inside the postgres CLI:
+    # execute the '\password' psql command for set the password for the 'postgres' user:
+    \password postgres
+    # Enter a db password, noting that 'postgres' is the password in our template 'src/project/local_settings.py.template'
+    Enter new password: <enter your password>
+    Enter it again: <enter your password again>
+    CREATE EXTENSION postgis;
+    \q
+
+Copy the file
+`src/project/local_settings.py.template` to `src/project/local_settings.py`, which is pre-filled with some default credentials for connecting to your development database.  The new file will not be checked in to the repository.
+
+Then bootstrap the development database using the usual Django command:
+
+    src/manage.py migrate
 
 Accessing the Management UI
 ----------------------------
