@@ -10,8 +10,6 @@ Documentation
 -------------
 All of our documentation is is our `doc` directory. Use it to learn more about:
 * [local setup](https://github.com/smartercleanup/duwamish-api/blob/master/doc/README.md)
-* [how to deploy to DotCloud](https://github.com/smartercleanup/duwamish-api/blob/master/doc/DEPLOY.md)
-<!-- TODO: Add API docs -->
 
 Contributing
 ------------
