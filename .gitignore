@@ -1,6 +1,8 @@
 # user-specific
 db/*.sqlite3
 log/*.log
+debug*
+.idea
 
 # tmp
 tmp/
@@ -22,10 +24,12 @@ coverage.data
 
 # compiled files
 *.py[co]
+staticfiles
 
 # environment
-env/
+env*
 .env/
 
 # Local project settings
 # src/project/local_settings.py
+
