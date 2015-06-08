@@ -87,8 +87,7 @@ class Command(BaseCommand):
         # query for the dataset
         # TODO: Find a way to load raingarden data dynamically
         # Using the same dataset across flavors will slow down all flavors
-        dataset = sa_models.DataSet.objects.get(slug='duwamish')
-        # dataset = sa_models.DataSet.objects.get(slug='raingardens')
+        dataset = sa_models.DataSet.objects.get(slug='raingardens')
 
         data = {
             "description": description,
