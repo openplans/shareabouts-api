@@ -5,6 +5,9 @@ from ... import models as sa_models
 from ... import forms
 import datetime
 import json
+from django.core.files import File
+import os
+import urllib
 
 import logging
 log = logging.getLogger(__name__)
@@ -38,9 +41,7 @@ class Command(BaseCommand):
                 site_name = row[possible_name]
                 break
 
-        # TODO: implement attachment
-        # if (row['Image']):
-        #     # add attachment
+        imageUrl = row['Image']
 
         # create our data, used in Place for our dataset:
         location_type = 'raingarden'
@@ -75,7 +76,6 @@ class Command(BaseCommand):
         try:
             existing_user = sa_models.User.objects.get(username=username, email=email)
             user = existing_user
-            # print("existing user exists:", user)
         except sa_models.User.DoesNotExist:
             user = sa_models.User(
                 username = username,
@@ -110,3 +110,20 @@ class Command(BaseCommand):
         place.dataset = dataset
         place.submitter = user
         place.save()
+
+        if imageUrl:
+            file_name = "blob"
+            content = urllib.urlretrieve(imageUrl, file_name)
+            temp_file = File(open(content[0]))
+
+            attachmentForm = forms.AttachmentForm({
+                "created_datetime": datetime.datetime.now(),
+                "updated_datetime": datetime.datetime.now(),
+                "name": "my_image"
+            }, {"file": temp_file})
+
+            attachment = attachmentForm.save(commit=False)
+            attachment.thing = place.submittedthing_ptr
+            attachment.save()
+            temp_file.close()
+            os.remove(file_name)
