@@ -188,6 +188,7 @@ INSTALLED_APPS = (
 #
 
 CELERY_RESULT_BACKEND='djcelery.backends.database:DatabaseBackend'
+CELERY_ACCEPT_CONTENT = ['json', 'msgpack', 'yaml']
 
 
 ###############################################################################
@@ -340,23 +341,8 @@ if 'DEBUG' in environ:
     SHOW_DEBUG_TOOLBAR = DEBUG
 
 if 'REDIS_URL' in environ:
-    scheme, connstring = environ['REDIS_URL'].split('://')
-    if '@' in connstring:
-        userpass, netloc = connstring.split('@')
-        userename, password = userpass.split(':')
-    else:
-        userpass = None
-        netloc = connstring
-    CACHES = {
-        "default": {
-            "BACKEND": "redis_cache.cache.RedisCache",
-            "LOCATION": "%s:0" % (netloc,),
-            "OPTIONS": {
-                "CLIENT_CLASS": "redis_cache.client.DefaultClient",
-                "PASSWORD": password,
-            } if userpass else {}
-        }
-    }
+    import django_cache_url
+    CACHES = {'default': django_cache_url.config(env='REDIS_URL')}
 
     # Django sessions
     SESSION_ENGINE = "django.contrib.sessions.backends.cache"
