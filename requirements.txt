@@ -20,7 +20,7 @@ django-celery==3.1.10
 
 
 # ==============================
-# Database and Persistance
+# Database and Persistence
 # ==============================
 
 # DB Settings and Management
@@ -33,7 +33,7 @@ django-object-actions==0.4.0
 # Caching
 django-redis==3.5.1
 
-# File Storate
+# File Storage
 boto==2.36.0
 django-storages==1.1.8
 
