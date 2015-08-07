@@ -1,8 +1,11 @@
 from __future__ import print_function
 from django.core.management.base import BaseCommand
-import csv
+import csv, sys
 from ... import models as sa_models
 from ... import forms
+# for manually testing with `./manage.py shell` commandline:
+# from sa_api_v2 import models as sa_models
+# from sa_api_v2 import forms
 import datetime
 import json
 from django.core.files import File
@@ -12,7 +15,7 @@ import urllib
 import logging
 log = logging.getLogger(__name__)
 
-csv_filepathname="raingardens.csv"
+csv_filepathname = sys.argv[2]
 
 class Command(BaseCommand):
     help = 'Import a CSV file of places.'
@@ -22,7 +25,6 @@ class Command(BaseCommand):
         print('Command.handle: starting CSV import (print)')
 
         reader = csv.DictReader(open(csv_filepathname))
-
         i = 0
         for row in reader:
             if (i % 10 == 0):
@@ -31,65 +33,49 @@ class Command(BaseCommand):
             self.save_row(row)
 
     def save_row(self, row):
-        lat=float(row['Lat'])
-        long=float(row['Long'])
-
-        site_name = 'raingarden'
-        possible_names = ['Designer', 'Installer', 'Owner']
-        for possible_name in possible_names:
-            if row[possible_name]:
-                site_name = row[possible_name]
-                break
-
-        imageUrl = row['Image']
+        lat = float(row['Lat'])
+        lon = float(row['Long'])
 
         # create our data, used in Place for our dataset:
         location_type = 'raingarden'
-        # TODO: fill in description with raingarden size, cost, etc
-        size = row['Size (sq ft)']
+        garden_size = row['Size (sq ft)']
         drainage_area = row['Drainage Area (sq ft)']
         primary_source = row['Primary Source']
-        size = "size: " + size
-        drainage_area = "drainage area: " + drainage_area
-        primary_source = "primary source: " + primary_source
-        # TODO: Create custom model for these fields
-        # wsu_master_gardeners = row['WSU Master Gardeners']
-        # raingardens_webiste = row['"12,000 Rain Garden Website"']
-        # conservation_district =row['Conservation District']
-        # county_surface_water_utility = row['County Surface Water Management Utility']
-        # stewardship_partners = row['Stewardship Partners']
-        # landscape_engineer_architect_installed = row['"Landscape, Engineer, or Architect professional "']
+        designer = row['Designer']
+        installer = row['Installer']
 
-        description = "\n".join([size, drainage_area, primary_source])
+        description = row['Comments']
+        if description == 'NULL':
+            description = ''
 
+        street_address = row['Street Address ']
+        city = row['City']
+        garden_address = ", ".join([street_address, city, 'WA'])
 
-        # TODO: add check for whether the user wants their info listed
-        share_information_header = "Please do not share any of my information, I wish to remain private OR  Approved to Show on Website?"
-        share_my_information = (row[share_information_header] == 'NO')
-        if (share_my_information):
+        # Imported rain gardens are unnamed
+        site_name = ''
+
+        share_user_info_header = 'Please do not share any of my information, I wish it to remain private'
+        share_user_info = row[share_user_info_header] == 'NO'
+
+        submitter_name = os.environ['RAIN_GARDENS_STEWARD_NAME']
+        submitter_email = os.environ['RAIN_GARDENS_STEWARD_EMAIL']
+
+        if (share_user_info and row['Name '] != '' and row['Email '] != ''):
             username=row['Name ']
             email=row['Email ']
         else : # Not used because they are anonymous
-            username = 'Raingardens Steward'
-            email = 'jacob@smartercleanup.org'
-        # create a User model (if none already existing):
-        try:
-            existing_user = sa_models.User.objects.get(username=username, email=email)
-            user = existing_user
-        except sa_models.User.DoesNotExist:
-            user = sa_models.User(
-                username = username,
-                email = email
-            )
-            print("existing user does not exist, creating new user:", user)
-            user.save()
-
-        # query for the dataset
-        # TODO: Find a way to load raingarden data dynamically
-        # Using the same dataset across flavors will slow down all flavors
-        dataset = sa_models.DataSet.objects.get(slug='raingardens')
+            username = submitter_name
+            email = submitter_email
 
         data = {
+            "gardensize": garden_size,
+            "designer": designer,
+            "private-garden_address": garden_address,
+            "installer": installer,
+            "contributingsize": drainage_area,
+            "sources": primary_source,
+
             "description": description,
             "location_type": location_type,
             "name": site_name,
@@ -98,18 +84,54 @@ class Command(BaseCommand):
         }
         data = json.dumps(data)
 
+        is_visible = (row["Approved to Show on Website"] == 'YES')
         placeForm = forms.PlaceForm({
             "data":data,
-            "geometry":"POINT(%f %f)" % (long, lat), # floats as coords are accurate enough
+            "geometry":"POINT(%f %f)" % (lon, lat), # floats as coords are accurate enough
             "created_datetime": datetime.datetime.now(),
             "updated_datetime": datetime.datetime.now(),
-            "visible": "True"
+            "visible": is_visible
         })
         place = placeForm.save(commit=False)
+
+        if (share_user_info):
+            # create a User model (if none already existing):
+            try:
+                submitter = sa_models.User.objects.get(
+                    username=submitter_name,
+                    email=submitter_email
+                )
+            except sa_models.User.DoesNotExist:
+                submitter = sa_models.User(
+                    username = submitter_name,
+                    email = submitter_email
+                )
+                print("existing user does not exist, creating new user:", submitter)
+                submitter.save()
+            place.submitter = submitter
+
+        try:
+            dataset = sa_models.DataSet.objects.get(slug='raingardens')
+        except sa_models.DataSet.DoesNotExist:
+            # query for the dataset
+            dataset_owner = sa_models.User.objects.get(
+                username=os.environ['DATASET_OWNER_NAME'],
+                email=os.environ['DATASET_OWNER_EMAIL']
+            )
+            dataset = sa_models.DataSet(
+                slug='raingardens',
+                display_name='raingardens',
+                owner=dataset_owner
+            )
+            print("existing dataset does not exist, creating new dataset:", 'raingardens')
+            dataset.save()
         place.dataset = dataset
-        place.submitter = user
+
         place.save()
 
+        imageUrl = row['Image']
+
+        # TODO: Parallelize this!
         if imageUrl:
             file_name = "blob"
             content = urllib.urlretrieve(imageUrl, file_name)
