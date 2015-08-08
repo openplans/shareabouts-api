@@ -40,13 +40,17 @@ class Command(BaseCommand):
         location_type = 'raingarden'
         garden_size = row['Size (sq ft)']
         drainage_area = row['Drainage Area (sq ft)']
-        primary_source = row['Primary Source']
         designer = row['Designer']
         installer = row['Installer']
 
         description = row['Comments']
         if description == 'NULL':
             description = ''
+
+        primary_source = row['Primary Source']
+        if primary_source == 'NULL':
+            primary_source = ''
+
 
         street_address = row['Street Address ']
         city = row['City']
