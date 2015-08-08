@@ -98,21 +98,10 @@ class Command(BaseCommand):
         })
         place = placeForm.save(commit=False)
 
-        if (share_user_info):
-            # create a User model (if none already existing):
-            try:
-                submitter = sa_models.User.objects.get(
-                    username=submitter_name,
-                    email=submitter_email
-                )
-            except sa_models.User.DoesNotExist:
-                submitter = sa_models.User(
-                    username = submitter_name,
-                    email = submitter_email
-                )
-                print("existing user does not exist, creating new user:", submitter)
-                submitter.save()
-            place.submitter = submitter
+        submitter = sa_models.User.objects.get(
+            username=os.environ['RAIN_GARDENS_STEWARD_USERNAME']
+        )
+        place.submitter = submitter
 
         try:
             dataset = sa_models.DataSet.objects.get(slug='raingardens')
@@ -129,6 +118,7 @@ class Command(BaseCommand):
             )
             print("existing dataset does not exist, creating new dataset:", 'raingardens')
             dataset.save()
+
         place.dataset = dataset
 
         place.save()
