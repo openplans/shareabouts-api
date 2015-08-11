@@ -98,11 +98,6 @@ class Command(BaseCommand):
         })
         place = placeForm.save(commit=False)
 
-        # TODO: Check whether the rain garden number is already taken
-        # If it is, should we override it? Or move it to another number?
-        rain_garden_number = row['Rain Garden Number']
-        place.submittedthing_ptr_id = rain_garden_number
-
         submitter = sa_models.User.objects.get(
             username=os.environ['RAIN_GARDENS_STEWARD_USERNAME']
         )
@@ -131,6 +126,7 @@ class Command(BaseCommand):
         imageUrl = row['Image']
 
         # TODO: Parallelize this!
+        # TODO: Use pipe instead of saving/uploading file locally
         if imageUrl:
             file_name = "blob"
             content = urllib.urlretrieve(imageUrl, file_name)
