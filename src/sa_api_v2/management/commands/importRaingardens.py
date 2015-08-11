@@ -72,6 +72,8 @@ class Command(BaseCommand):
             username = submitter_name
             email = submitter_email
 
+        rain_garden_number = row['Rain Garden Number']
+
         data = {
             "gardensize": garden_size,
             "designer": designer,
@@ -84,7 +86,8 @@ class Command(BaseCommand):
             "location_type": location_type,
             "name": site_name,
             "private-submitter_email": email,
-            "submitter_name": username
+            "submitter_name": username,
+            "garden_number": rain_garden_number
         }
         data = json.dumps(data)
 
