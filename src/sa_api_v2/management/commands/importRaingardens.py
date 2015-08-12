@@ -72,6 +72,8 @@ class Command(BaseCommand):
             username = submitter_name
             email = submitter_email
 
+        rain_garden_number = row['Rain Garden Number']
+
         data = {
             "gardensize": garden_size,
             "designer": designer,
@@ -84,7 +86,8 @@ class Command(BaseCommand):
             "location_type": location_type,
             "name": site_name,
             "private-submitter_email": email,
-            "submitter_name": username
+            "submitter_name": username,
+            "garden_number": rain_garden_number
         }
         data = json.dumps(data)
 
@@ -97,11 +100,6 @@ class Command(BaseCommand):
             "visible": is_visible
         })
         place = placeForm.save(commit=False)
-
-        # TODO: Check whether the rain garden number is already taken
-        # If it is, should we override it? Or move it to another number?
-        rain_garden_number = row['Rain Garden Number']
-        place.submittedthing_ptr_id = rain_garden_number
 
         submitter = sa_models.User.objects.get(
             username=os.environ['RAIN_GARDENS_STEWARD_USERNAME']
@@ -131,6 +129,7 @@ class Command(BaseCommand):
         imageUrl = row['Image']
 
         # TODO: Parallelize this!
+        # TODO: Use pipe instead of saving/uploading file locally
         if imageUrl:
             file_name = "blob"
             content = urllib.urlretrieve(imageUrl, file_name)
