@@ -1,6 +1,7 @@
 from __future__ import print_function
 from django.core.management.base import BaseCommand
-import csv, sys
+import csv
+import sys
 from ... import models as sa_models
 from ... import forms
 # for manually testing with `./manage.py shell` commandline:
@@ -16,6 +17,7 @@ import logging
 log = logging.getLogger(__name__)
 
 csv_filepathname = sys.argv[2]
+
 
 class Command(BaseCommand):
     help = 'Import a CSV file of places.'
@@ -47,28 +49,35 @@ class Command(BaseCommand):
         if description == 'NULL':
             description = ''
 
-        primary_source = row['Primary Source']
-        if primary_source == 'NULL':
-            primary_source = ''
-
+        # TODO: create array of values when cell contains 'roof', 'pavement',
+        #  or 'other'
+        # shoud be case insensitive
+        sources = row['Primary Sources']
+        if sources == 'NULL':
+            sources = ''
 
         street_address = row['Street Address ']
+        if street_address == 'NULL':
+            street_address = ''
+
         city = row['City']
         garden_address = ", ".join([street_address, city, 'WA'])
 
         # Imported rain gardens are unnamed
         site_name = ''
 
-        share_user_info_header = 'Please do not share any of my information, I wish it to remain private'
+        # share_user_info_header = 'Please do not share any of my information,
+        # I wish it to remain private'
+        share_user_info_header = 'Remain Private'
         share_user_info = row[share_user_info_header] == 'NO'
 
         submitter_name = os.environ['RAIN_GARDENS_STEWARD_NAME']
         submitter_email = os.environ['RAIN_GARDENS_STEWARD_EMAIL']
 
         if (share_user_info and row['Name '] != '' and row['Email '] != ''):
-            username=row['Name ']
-            email=row['Email ']
-        else : # Not used because they are anonymous
+            username = row['Name ']
+            email = row['Email ']
+        else:  # Not used because they are anonymous
             username = submitter_name
             email = submitter_email
 
@@ -79,12 +88,12 @@ class Command(BaseCommand):
             "designer": designer,
             "private-garden_address": garden_address,
             "installer": installer,
-            "contributingsize": drainage_area,
-            "sources": primary_source,
+            "contributing_area": drainage_area,
+            "sources": sources,
 
             "description": description,
             "location_type": location_type,
-            "name": site_name,
+            "garden_name": site_name,
             "private-submitter_email": email,
             "submitter_name": username,
             "garden_number": rain_garden_number
@@ -93,8 +102,9 @@ class Command(BaseCommand):
 
         is_visible = (row["Approved to Show on Website"] == 'YES')
         placeForm = forms.PlaceForm({
-            "data":data,
-            "geometry":"POINT(%f %f)" % (lon, lat), # floats as coords are accurate enough
+            "data": data,
+            # For geometry, using floats for lat/lon are accurate enough
+            "geometry": "POINT(%f %f)" % (lon, lat),
             "created_datetime": datetime.datetime.now(),
             "updated_datetime": datetime.datetime.now(),
             "visible": is_visible
@@ -119,7 +129,8 @@ class Command(BaseCommand):
                 display_name='raingardens',
                 owner=dataset_owner
             )
-            print("existing dataset does not exist, creating new dataset:", 'raingardens')
+            print("existing dataset does not exist, creating new dataset:",
+                  'raingardens')
             dataset.save()
 
         place.dataset = dataset
