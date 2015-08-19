@@ -40,67 +40,83 @@ class Command(BaseCommand):
 
         # create our data, used in Place for our dataset:
         location_type = 'raingarden'
-        garden_size = row['Size (sq ft)']
-        drainage_area = row['Drainage Area (sq ft)']
+        garden_size = row['Rain garden Size (sq ft)']
+        drainage_area = row['Contributing Area (sq ft)']
         designer = row['Designer']
         installer = row['Installer']
+        remain_private = row['Remain Private']
 
-        description = row['Comments']
-        if description == 'NULL':
-            description = ''
+        description = row['Description']
 
-        # TODO: create array of values when cell contains 'roof', 'pavement',
+        # Create array of values when cell contains 'roof', 'pavement',
         #  or 'other'
-        # shoud be case insensitive
-        sources = row['Primary Sources']
-        if sources == 'NULL':
-            sources = ''
+        raw_sources = row['Primary Sources'].lower().split(' ')
+        possible_sources = {"driveway": "pavement",
+                            "street": "pavement",
+                            "roof": "roof",
+                            "pavement": "pavement",
+                            "garden": "other",
+                            "other": "other"
+                            }
+        sources = set()
+        for source in raw_sources:
+            try:
+                sources.add(possible_sources[source])
+            except KeyError:
+                continue
+        sources = list(sources)
 
-        street_address = row['Street Address ']
-        if street_address == 'NULL':
-            street_address = ''
-
+        street_address = row['Street Address']
         city = row['City']
-        garden_address = ", ".join([street_address, city, 'WA'])
+        zip_code = row['Zip Code']
 
-        # Imported rain gardens are unnamed
-        site_name = ''
+        full_address = [street_address, city, 'WA', zip_code]
+        filtered_full_address = [x for x in full_address
+                                 if (x and x != 'NULL')]
+        garden_address = ", ".join(filtered_full_address)
+
+        rain_garden_name = row['Rain Garden Name']
 
         # share_user_info_header = 'Please do not share any of my information,
         # I wish it to remain private'
+        # TODO: If they want to remain private,
+        # shall we make the garden invisible?
         share_user_info_header = 'Remain Private'
-        share_user_info = row[share_user_info_header] == 'NO'
+        remain_private = row[share_user_info_header] == 'YES'
 
         submitter_name = os.environ['RAIN_GARDENS_STEWARD_NAME']
         submitter_email = os.environ['RAIN_GARDENS_STEWARD_EMAIL']
 
-        if (share_user_info and row['Name '] != '' and row['Email '] != ''):
-            username = row['Name ']
-            email = row['Email ']
-        else:  # Not used because they are anonymous
+        # TODO: If the garden is "remain_private", should we hide
+        # the contributor's name, or hide the entire rain garden?
+        if (row['Contributor\'s Name'] != '' and row['Email'] != ''):
+            username = row['Contributor\'s Name']
+            email = row['Email']
+        else:  # Use our defaults when username and email are not provided
             username = submitter_name
             email = submitter_email
 
         rain_garden_number = row['Rain Garden Number']
 
         data = {
-            "gardensize": garden_size,
+            "rain_garden_size": garden_size,
             "designer": designer,
-            "private-garden_address": garden_address,
+            "private-rain_garden_address": garden_address,
             "installer": installer,
             "contributing_area": drainage_area,
             "sources": sources,
 
             "description": description,
             "location_type": location_type,
-            "garden_name": site_name,
-            "private-submitter_email": email,
-            "submitter_name": username,
-            "garden_number": rain_garden_number
+            "rain_garden_name": rain_garden_name,
+            "private-contributor_email": email,
+            "contributor_name": username,
+            "rain_garden_number": rain_garden_number,
+            "remain_private": remain_private
         }
         data = json.dumps(data)
 
-        is_visible = (row["Approved to Show on Website"] == 'YES')
+        is_visible = not remain_private
         placeForm = forms.PlaceForm({
             "data": data,
             # For geometry, using floats for lat/lon are accurate enough
@@ -111,9 +127,15 @@ class Command(BaseCommand):
         })
         place = placeForm.save(commit=False)
 
-        submitter = sa_models.User.objects.get(
-            username=os.environ['RAIN_GARDENS_STEWARD_USERNAME']
-        )
+        try:
+            submitter = sa_models.User.objects.get(
+                username=username,
+                email=email
+            )
+        except sa_models.User.DoesNotExist:
+            submitter = sa_models.User.objects.get(
+                username=os.environ['RAIN_GARDENS_STEWARD_USERNAME']
+            )
         place.submitter = submitter
 
         try:
