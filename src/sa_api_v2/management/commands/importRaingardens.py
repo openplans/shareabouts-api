@@ -1,6 +1,7 @@
 from __future__ import print_function
 from django.core.management.base import BaseCommand
-import csv, sys
+import csv
+import sys
 from ... import models as sa_models
 from ... import forms
 # for manually testing with `./manage.py shell` commandline:
@@ -16,6 +17,7 @@ import logging
 log = logging.getLogger(__name__)
 
 csv_filepathname = sys.argv[2]
+
 
 class Command(BaseCommand):
     help = 'Import a CSV file of places.'
@@ -38,72 +40,102 @@ class Command(BaseCommand):
 
         # create our data, used in Place for our dataset:
         location_type = 'raingarden'
-        garden_size = row['Size (sq ft)']
-        drainage_area = row['Drainage Area (sq ft)']
+        garden_size = row['Rain garden Size (sq ft)']
+        drainage_area = row['Contributing Area (sq ft)']
         designer = row['Designer']
         installer = row['Installer']
+        remain_private = row['Remain Private']
 
-        description = row['Comments']
-        if description == 'NULL':
-            description = ''
+        description = row['Description']
 
-        primary_source = row['Primary Source']
-        if primary_source == 'NULL':
-            primary_source = ''
+        # Create array of values when cell contains 'roof', 'pavement',
+        #  or 'other'
+        raw_sources = row['Primary Sources'].lower().split(' ')
+        possible_sources = {"driveway": "pavement",
+                            "street": "pavement",
+                            "roof": "roof",
+                            "pavement": "pavement",
+                            "garden": "other",
+                            "other": "other"
+                            }
+        sources = set()
+        for source in raw_sources:
+            try:
+                sources.add(possible_sources[source])
+            except KeyError:
+                continue
+        sources = list(sources)
 
-
-        street_address = row['Street Address ']
+        street_address = row['Street Address']
         city = row['City']
-        garden_address = ", ".join([street_address, city, 'WA'])
+        zip_code = row['Zip Code']
 
-        # Imported rain gardens are unnamed
-        site_name = ''
+        full_address = [street_address, city, 'WA', zip_code]
+        filtered_full_address = [x for x in full_address
+                                 if (x and x != 'NULL')]
+        garden_address = ", ".join(filtered_full_address)
 
-        share_user_info_header = 'Please do not share any of my information, I wish it to remain private'
-        share_user_info = row[share_user_info_header] == 'NO'
+        rain_garden_name = row['Rain Garden Name']
+
+        # share_user_info_header = 'Please do not share any of my information,
+        # I wish it to remain private'
+        # TODO: If they want to remain private,
+        # shall we make the garden invisible?
+        share_user_info_header = 'Remain Private'
+        remain_private = row[share_user_info_header] == 'YES'
 
         submitter_name = os.environ['RAIN_GARDENS_STEWARD_NAME']
         submitter_email = os.environ['RAIN_GARDENS_STEWARD_EMAIL']
 
-        if (share_user_info and row['Name '] != '' and row['Email '] != ''):
-            username=row['Name ']
-            email=row['Email ']
-        else : # Not used because they are anonymous
+        # TODO: If the garden is "remain_private", should we hide
+        # the contributor's name, or hide the entire rain garden?
+        if (row['Contributor\'s Name'] != '' and row['Email'] != ''):
+            username = row['Contributor\'s Name']
+            email = row['Email']
+        else:  # Use our defaults when username and email are not provided
             username = submitter_name
             email = submitter_email
 
         rain_garden_number = row['Rain Garden Number']
 
         data = {
-            "gardensize": garden_size,
+            "rain_garden_size": garden_size,
             "designer": designer,
-            "private-garden_address": garden_address,
+            "private-rain_garden_address": garden_address,
             "installer": installer,
-            "contributingsize": drainage_area,
-            "sources": primary_source,
+            "contributing_area": drainage_area,
+            "sources": sources,
 
             "description": description,
             "location_type": location_type,
-            "name": site_name,
-            "private-submitter_email": email,
-            "submitter_name": username,
-            "garden_number": rain_garden_number
+            "rain_garden_name": rain_garden_name,
+            "private-contributor_email": email,
+            "contributor_name": username,
+            "rain_garden_number": rain_garden_number,
+            "remain_private": remain_private
         }
         data = json.dumps(data)
 
-        is_visible = (row["Approved to Show on Website"] == 'YES')
+        is_visible = not remain_private
         placeForm = forms.PlaceForm({
-            "data":data,
-            "geometry":"POINT(%f %f)" % (lon, lat), # floats as coords are accurate enough
+            "data": data,
+            # For geometry, using floats for lat/lon are accurate enough
+            "geometry": "POINT(%f %f)" % (lon, lat),
             "created_datetime": datetime.datetime.now(),
             "updated_datetime": datetime.datetime.now(),
             "visible": is_visible
         })
         place = placeForm.save(commit=False)
 
-        submitter = sa_models.User.objects.get(
-            username=os.environ['RAIN_GARDENS_STEWARD_USERNAME']
-        )
+        try:
+            submitter = sa_models.User.objects.get(
+                username=username,
+                email=email
+            )
+        except sa_models.User.DoesNotExist:
+            submitter = sa_models.User.objects.get(
+                username=os.environ['RAIN_GARDENS_STEWARD_USERNAME']
+            )
         place.submitter = submitter
 
         try:
@@ -119,7 +151,8 @@ class Command(BaseCommand):
                 display_name='raingardens',
                 owner=dataset_owner
             )
-            print("existing dataset does not exist, creating new dataset:", 'raingardens')
+            print("existing dataset does not exist, creating new dataset:",
+                  'raingardens')
             dataset.save()
 
         place.dataset = dataset
