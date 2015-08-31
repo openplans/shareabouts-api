@@ -66,6 +66,8 @@ To generate a snapshot, visit `server/api/v2/user/datasets/datasets/places/snaps
 
 Swap `surveys` for `places` to download comments.
 
+If you are logged in as the dataset owner or a server administrator you can download a snapshot with private data included as well by including the `include_private` querystring parameter, i.e. `server/api/v2/user/datasets/datasets/places/snapshots?include_private&new`
+
 Refresh the provided link, if the file isn't ready you'll see 'You can download the data at the given URL when it is done being generated'.
 
 Once you have the download link, you most likely want it as a csv. Add `.csv` to the end of the url, and then do a "Save Page As" from your browser. E.g.
