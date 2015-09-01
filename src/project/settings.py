@@ -188,7 +188,7 @@ INSTALLED_APPS = (
 #
 
 CELERY_RESULT_BACKEND='djcelery.backends.database:DatabaseBackend'
-CELERY_ACCEPT_CONTENT = ['json', 'msgpack', 'yaml']
+CELERY_ACCEPT_CONTENT = ['json', 'msgpack', 'yaml', 'pickle']
 
 
 ###############################################################################
