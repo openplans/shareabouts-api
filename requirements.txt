@@ -32,7 +32,7 @@ django-object-actions==0.4.0
 
 # Caching
 django-redis==3.5.1
-git+https://github.com/ghickman/django-cache-url.git@1.0-release#egg=django-cache-url
+django-cache-url==1.0.0
 
 # File Storate
 boto==2.36.0
