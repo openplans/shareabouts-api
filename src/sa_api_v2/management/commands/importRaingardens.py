@@ -40,10 +40,10 @@ class Command(BaseCommand):
 
         # create our data, used in Place for our dataset:
         location_type = 'raingarden'
-        garden_size = row['Rain garden Size (sq ft)']
-        drainage_area = row['Contributing Area (sq ft)']
-        designer = row['Designer']
-        installer = row['Installer']
+        garden_size = validate(row['Rain garden Size (sq ft)'])
+        drainage_area = validate(row['Contributing Area (sq ft)'])
+        designer = validate(row['Designer'])
+        installer = validate(row['Installer'])
         remain_private = row['Remain Private']
 
         description = row['Description']
@@ -176,3 +176,10 @@ class Command(BaseCommand):
             attachment.save()
             temp_file.close()
             os.remove(file_name)
+
+
+def validate(value):
+    if value == 'NULL':
+        return ''
+    else:
+        return value
