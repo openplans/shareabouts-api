@@ -40,10 +40,10 @@ class Command(BaseCommand):
 
         # create our data, used in Place for our dataset:
         location_type = 'raingarden'
-        garden_size = row['Rain garden Size (sq ft)']
-        drainage_area = row['Contributing Area (sq ft)']
-        designer = row['Designer']
-        installer = row['Installer']
+        garden_size = validate(row['Rain garden Size (sq ft)'])
+        drainage_area = validate(row['Contributing Area (sq ft)'])
+        designer = validate(row['Designer'])
+        installer = validate(row['Installer'])
         remain_private = row['Remain Private']
 
         description = row['Description']
@@ -79,16 +79,14 @@ class Command(BaseCommand):
 
         # share_user_info_header = 'Please do not share any of my information,
         # I wish it to remain private'
-        # TODO: If they want to remain private,
-        # shall we make the garden invisible?
+        # TODO: For now, if rain gardens are private, we assume
+        # all sensitive info is removed from source file
         share_user_info_header = 'Remain Private'
         remain_private = row[share_user_info_header] == 'YES'
 
         submitter_name = os.environ['RAIN_GARDENS_STEWARD_NAME']
         submitter_email = os.environ['RAIN_GARDENS_STEWARD_EMAIL']
 
-        # TODO: If the garden is "remain_private", should we hide
-        # the contributor's name, or hide the entire rain garden?
         if (row['Contributor\'s Name'] != '' and row['Email'] != ''):
             username = row['Contributor\'s Name']
             email = row['Email']
@@ -116,14 +114,13 @@ class Command(BaseCommand):
         }
         data = json.dumps(data)
 
-        is_visible = not remain_private
         placeForm = forms.PlaceForm({
             "data": data,
             # For geometry, using floats for lat/lon are accurate enough
             "geometry": "POINT(%f %f)" % (lon, lat),
             "created_datetime": datetime.datetime.now(),
             "updated_datetime": datetime.datetime.now(),
-            "visible": is_visible
+            "visible": True
         })
         place = placeForm.save(commit=False)
 
@@ -179,3 +176,10 @@ class Command(BaseCommand):
             attachment.save()
             temp_file.close()
             os.remove(file_name)
+
+
+def validate(value):
+    if value == 'NULL':
+        return ''
+    else:
+        return value
