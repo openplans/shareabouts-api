@@ -40,6 +40,10 @@ the project requirements:
     source env/bin/activate
     pip install -r requirements.txt
 
+(May have to first address Database section below, as `pip install -r
+requirements.txt` may fail looking for `pg_config`.)
+
+
 NOTE: If you run in to trouble with gevent, you can safely comment it out of
 the requirements.txt file.  It is not needed for local development.  To comment
 it out, just add a hash to the beginning of the line for `gevent`.
