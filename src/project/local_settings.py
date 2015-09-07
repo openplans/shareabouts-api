@@ -2,8 +2,9 @@ from __future__ import print_function
 import os
 import re
 
-DEBUG = True
+DEBUG = os.environ.get('DEBUG', True)
 SHOW_DEBUG_TOOLBAR = False
+
 
 def read_env():
     """Pulled from Honcho code with minor updates, reads local default
@@ -13,7 +14,6 @@ def read_env():
     """
     try:
         file_path = os.path.join(os.path.dirname(__file__), '..',  '.env')
-        # print "filepath:" + str(file_path)
         with open(file_path) as f:
             content = f.read()
     except IOError:
@@ -36,12 +36,10 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.contrib.gis.db.backends.postgis',
         'NAME': 'shareabouts_v2',
-        'USER': os.environ['USERNAME'],
-        'PASSWORD': os.environ['PASS'],
-        'HOST': 'localhost',
-        # For dockerization:
-        # 'HOST': 'postgis',
-        'PORT': '5432',
+        'USER': os.environ.get('USERNAME', 'NO_USER_NAME'),
+        'PASSWORD': os.environ.get('PASS', 'NO_PASSWORD'),
+        'HOST': os.environ.get('HOST', 'localhost'),
+        'PORT': os.environ.get('PORT', '5432'),
     }
 }
 
@@ -58,11 +56,15 @@ BROKER_URL = 'django://'
 # ATTACHMENT_STORAGE = 'django.core.files.storage.FileSystemStorage'
 
 # Duwamish account settings:
-SOCIAL_AUTH_TWITTER_KEY = os.environ['SOCIAL_AUTH_TWITTER_KEY']
-SOCIAL_AUTH_TWITTER_SECRET = os.environ['SOCIAL_AUTH_TWITTER_SECRET']
+SOCIAL_AUTH_TWITTER_KEY = os.environ.get('SOCIAL_AUTH_TWITTER_KEY',
+                                         'NO_SOCIAL_AUTH_TWITTER_KEY')
+SOCIAL_AUTH_TWITTER_SECRET = os.environ.get('SOCIAL_AUTH_TWITTER_SECRET',
+                                            'NO_SOCIAL_AUTH_TWITTER_SECRET')
 
-SOCIAL_AUTH_FACEBOOK_KEY = os.environ['SOCIAL_AUTH_FACEBOOK_KEY']
-SOCIAL_AUTH_FACEBOOK_SECRET = os.environ['SOCIAL_AUTH_FACEBOOK_SECRET']
+SOCIAL_AUTH_FACEBOOK_KEY = os.environ.get('SOCIAL_AUTH_FACEBOOK_KEY',
+                                          'NO_SOCIAL_AUTH_FACEBOOK_KEY')
+SOCIAL_AUTH_FACEBOOK_SECRET = os.environ.get('SOCIAL_AUTH_FACEBOOK_SECRET',
+                                             'NO_SOCIAL_AUTH_FACEBOOK_SECRET')
 
 # Django will use django.core.files.storage.FileSystemStorage by default.
 # Uncomment the following lines if you want to use S3 storage instead.
@@ -77,13 +79,16 @@ ATTACHMENT_STORAGE = 'storages.backends.s3boto.S3BotoStorage'
 # ATTACHMENT_STORAGE = DEFAULT_FILE_STORAGE
 # STATICFILES_STORAGE = DEFAULT_FILE_STORAGE
 
-AWS_ACCESS_KEY_ID = os.environ['AWS_ACCESS_KEY_ID']
-AWS_SECRET_ACCESS_KEY = os.environ['AWS_SECRET_ACCESS_KEY']
-AWS_STORAGE_BUCKET_NAME = os.environ['AWS_STORAGE_BUCKET_NAME']
+AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID',
+                                   'NO_AWS_ACCESS_KEY_ID')
+AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY',
+                                       'NO_AWS_SECRET_ACCESS_KEY')
+AWS_STORAGE_BUCKET_NAME = os.environ.get('AWS_STORAGE_BUCKET_NAME',
+                                         'NO_AWS_STORAGE_BUCKET_NAME')
 # STATIC_URL = 'https://%s.s3.amazonaws.com/' % AWS_STORAGE_BUCKET_NAME
 AWS_QUERYSTRING_AUTH = False
 
-LAUNCHROCK_KEY = os.environ['LAUNCHROCK_KEY']
+LAUNCHROCK_KEY = os.environ.get('LAUNCHROCK_KEY', 'NO_LAUNCHROCK_KEY')
 
 # Some default settings that are handy for debugging
 LOGGING = {
