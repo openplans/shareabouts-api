@@ -29,7 +29,7 @@ def read_env():
             os.environ.setdefault(key, val)
 read_env()
 
-DEBUG = (os.environ.get('DEBUG', False) in ["False", "false", False])
+DEBUG = (os.environ.get('DEBUG', True) in ["True", "true", True])
 SHOW_DEBUG_TOOLBAR = False
 
 DATABASES = {
