@@ -25,7 +25,7 @@ The Shareabouts REST API requires GeoDjango.  To install GeoDjango on your
 platform, see https://docs.djangoproject.com/en/dev/ref/contrib/gis/install/#platform-specific-instructions.
 For example, to install on Debian/Ubuntu, perform the following:
 
-    sudo apt-get install postgresql-9.3 postgresql-9.3-postgis-2.1 postgresql-server-dev-9.3 python-psycopg2 binutils
+    sudo apt-get install postgresql postgis libpq-dev postgresql-9.4 postgresql-9.4-postgis-2.1 postgresql-server-dev-9.4 python-psycopg2 binutils
 
 Create a development database for the Shareabouts data store.
 
@@ -82,7 +82,6 @@ the project requirements:
 
 (May have to first address Database section above, as `pip install -r
 requirements.txt` may fail looking for `pg_config`.)
-
 
 NOTE: If you run in to trouble with gevent, you can safely comment it out of
 the requirements.txt file.  It is not needed for local development.  To comment
