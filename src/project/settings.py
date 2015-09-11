@@ -62,11 +62,13 @@ USE_L10N = True
 #
 # Templates and Static Assets
 #
+from os.path import dirname, normpath, abspath, join as pathjoin
 
 MEDIA_ROOT = ''
 MEDIA_URL = ''
 
-STATIC_ROOT = 'staticfiles'
+PROJECT_ROOT = normpath(dirname(__file__))
+STATIC_ROOT = abspath(pathjoin(dirname(__file__), '..', '..', 'static'))
 STATIC_URL = '/static/'
 STATICFILES_FINDERS = (
     'django.contrib.staticfiles.finders.FileSystemFinder',
@@ -415,7 +417,6 @@ try:
     from .local_settings import *
 except ImportError:
     pass
-
 
 ##############################################################################
 # More background processing

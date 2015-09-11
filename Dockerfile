@@ -4,7 +4,7 @@
 ############################################################
 
 # Set the base image to Ubuntu
-FROM ubuntu
+FROM buildpack-deps:jessie
 
 # File Author / Maintainer
 MAINTAINER Luke Swart <luke@smartercleanup.org>
@@ -19,10 +19,12 @@ RUN apt-get install -y tar git curl wget dialog net-tools build-essential gettex
 RUN apt-get install -y python-dev python-distribute python-pip
 
 # Install Postgres/PostGIS dependencies:
-RUN apt-get install -y postgresql-9.3 postgresql-9.3-postgis-2.1 postgresql-server-dev-9.3 python-psycopg2 postgresql libpq-dev
+RUN apt-get install -y python-psycopg2 postgresql libpq-dev postgresql-9.4-postgis-2.1 postgis postgresql-9.4
 
 # If you want to deploy from an online host git repository, you can use the following command to clone:
 RUN git clone https://github.com/smartercleanup/duwamish-api.git && cd duwamish-api && git checkout docker-deploy && cd -
+# local testing:
+# ADD . duwamish-api
 
 # Get pip to download and install requirements:
 RUN pip install -r /duwamish-api/requirements.txt
@@ -31,13 +33,13 @@ RUN pip install -r /duwamish-api/requirements.txt
 EXPOSE 8010
 
 # Set the default directory where CMD will execute
-WORKDIR /duwamish-api/src
-RUN ln -s staticfiles static
+WORKDIR /duwamish-api
+
+RUN mkdir static
 VOLUME /duwamish-api/static
 
-# Set the default command to execute    
+# Set the default command to execute
 # when creating a new container
-# i.e. using CherryPy to serve the application
+# ex:
 # CMD python server.py
-CMD gunicorn wsgi:application -w 3 -b 0.0.0.0:8010
-
+CMD sh -c "python src/manage.py collectstatic --noinput && gunicorn wsgi:application -w 3 -b 0.0.0.0:8010"
