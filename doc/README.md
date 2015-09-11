@@ -44,8 +44,15 @@ For PostGIS 2.0:
     CREATE EXTENSION postgis;
     \q
 
-Copy the file
-`src/project/local_settings.py.template` to `src/project/local_settings.py`, which is pre-filled with some default credentials for connecting to your development database.  The new file will not be checked in to the repository.
+To enable your database settings, go to the `src` folder and create a new hidden text file called `.env` and your information:
+
+    PASS=<enter your password here>
+
+We have a configuration with default settings that will load automatically. If you want to override any of the default database settings, add them to the `.env` file as follows:
+
+    USERNAME=<default is 'postgres'>
+    HOST=<default is 'localhost'>
+    PORT=<default is '5432'>
 
 Then bootstrap the development database using the usual Django command:
 

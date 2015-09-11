@@ -36,8 +36,8 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.contrib.gis.db.backends.postgis',
         'NAME': 'shareabouts_v2',
-        'USER': os.environ.get('USERNAME', 'NO_USER_NAME'),
-        'PASSWORD': os.environ.get('PASS', 'NO_PASSWORD'),
+        'USER': os.environ.get('USERNAME', 'postgres'),
+        'PASSWORD': os.environ.get('PASS', 'postgres'),
         'HOST': os.environ.get('HOST', 'localhost'),
         'PORT': os.environ.get('PORT', '5432'),
     }
