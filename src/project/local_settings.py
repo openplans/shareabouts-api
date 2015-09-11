@@ -2,9 +2,6 @@ from __future__ import print_function
 import os
 import re
 
-DEBUG = os.environ.get('DEBUG', True)
-SHOW_DEBUG_TOOLBAR = False
-
 
 def read_env():
     """Pulled from Honcho code with minor updates, reads local default
@@ -31,6 +28,9 @@ def read_env():
                 val = re.sub(r'\\(.)', r'\1', m3.group(1))
             os.environ.setdefault(key, val)
 read_env()
+
+DEBUG = (os.environ.get('DEBUG', False) in ["False", "false", False])
+SHOW_DEBUG_TOOLBAR = False
 
 DATABASES = {
     'default': {
