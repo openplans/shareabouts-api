@@ -18,52 +18,6 @@ The Hey Duwamish web application JavaScript and related files are
 For more about the parts of Shareabouts,
 see [the architecture documentation](ARCHITECTURE.md).
 
-Local setup
-------------
-
-Install `pip` and `virtualenv`, if not already installed.  These will keep your
-requirements isolated from the rest of your machine.
-
-    sudo apt-get install python-pip python-dev build-essential
-    sudo pip install --upgrade pip
-    sudo pip install --upgrade virtualenv
-
-For older versions of ubuntu:
-
-    sudo easy_install pip
-    sudo pip install virtualenv
-
-Create a new virtual environment inside of the repository folder, and install
-the project requirements:
-
-    virtualenv env
-    source env/bin/activate
-    pip install -r requirements.txt
-
-(May have to first address Database section below, as `pip install -r
-requirements.txt` may fail looking for `pg_config`.)
-
-
-NOTE: If you run in to trouble with gevent, you can safely comment it out of
-the requirements.txt file.  It is not needed for local development.  To comment
-it out, just add a hash to the beginning of the line for `gevent`.
-
-To run the development server:
-
-    src/manage.py runserver 8001
-
-This will start the service at http://localhost:8001/ .
-
-If you don't specify a port, the server will start on port 8000.
-We recommend getting in the habit of using port 8001 so you can
-work with the sa-web front end application on the same development
-host, and run that one on port 8000.
-
-NOTE: If you're new to programming with virtual environments, be sure to remember
-to activate your virtual environment every time you start a new terminal session.
-
-    source env/bin/activate
-
 Database
 --------
 
@@ -97,6 +51,52 @@ Then bootstrap the development database using the usual Django command:
 
     src/manage.py migrate
 
+Local setup
+------------
+
+Install `pip` and `virtualenv`, if not already installed.  These will keep your
+requirements isolated from the rest of your machine.
+
+    sudo apt-get install python-pip python-dev build-essential
+    sudo pip install --upgrade pip
+    sudo pip install --upgrade virtualenv
+
+For older versions of ubuntu:
+
+    sudo easy_install pip
+    sudo pip install virtualenv
+
+Create a new virtual environment inside of the repository folder, and install
+the project requirements:
+
+    virtualenv env
+    source env/bin/activate
+    pip install -r requirements.txt
+
+(May have to first address Database section above, as `pip install -r
+requirements.txt` may fail looking for `pg_config`.)
+
+
+NOTE: If you run in to trouble with gevent, you can safely comment it out of
+the requirements.txt file.  It is not needed for local development.  To comment
+it out, just add a hash to the beginning of the line for `gevent`.
+
+To run the development server:
+
+    src/manage.py runserver 8001
+
+This will start the service at http://localhost:8001/ .
+
+If you don't specify a port, the server will start on port 8000.
+We recommend getting in the habit of using port 8001 so you can
+work with the sa-web front end application on the same development
+host, and run that one on port 8000.
+
+NOTE: If you're new to programming with virtual environments, be sure to remember
+to activate your virtual environment every time you start a new terminal session.
+
+    source env/bin/activate
+
 Accessing the Management UI
 ----------------------------
 
@@ -129,4 +129,3 @@ Testing
 To run the tests, run this command:
 
   src/manage.py test
-
