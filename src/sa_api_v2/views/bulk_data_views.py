@@ -203,7 +203,11 @@ class DataSnapshotInstanceView (DataSnapshotMixin, OwnedResourceMixin, views.API
             }, status=400)
 
         content = getattr(datarequest.fulfillment, format)
-        return HttpResponse(content)
+        if format == 'csv':
+            mime = 'text/csv'
+        else:
+            mime = 'application/json'
+        return HttpResponse(content, content_type=mime)
 
     def delete(self, request, owner_username, dataset_slug, submission_set_name, data_guid, format=None):
         try:
