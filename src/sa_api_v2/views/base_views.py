@@ -446,7 +446,7 @@ class CorsEnabledMixin (object):
             response['Access-Control-Allow-Origin'] = request.META.get('HTTP_ORIGIN')
 
         else:
-            response['Access-Control-Allow-Origin'] = ''
+            response['Access-Control-Allow-Origin'] = '*'
 
         response['Access-Control-Allow-Methods'] = ', '.join(self.allowed_methods)
         response['Access-Control-Allow-Headers'] = request.META.get('HTTP_ACCESS_CONTROL_REQUEST_HEADERS', '')
