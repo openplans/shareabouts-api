@@ -178,8 +178,9 @@ class Command(BaseCommand):
             os.remove(file_name)
 
 
+# value must be a string
 def validate(value):
-    if value == 'NULL':
+    if value == 'NULL' or value.isspace():
         return ''
     else:
         return value
