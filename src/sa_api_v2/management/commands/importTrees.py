@@ -49,17 +49,7 @@ class Command(BaseCommand):
         # Tree Condition|Water Bag?|Photo?|Notes_|||||||||||
 
         location_type = 'tree'
-        # Read our lat/lon, but skip the row in the case where lat/lon
-        # is an empty row
-        try:
-            lat, lon = [float(x) for x in row['Lat/Long'].split('/')]
-        except ValueError as v:
-            if (not str(v) == 'could not convert string to float: '):
-                raise v
-            else:
-                print("Skipping invalid row:", row)
-                return
-
+        lat, lon = [float(x) for x in row['Lat/Long'].split('/')]
         common_name = validate(row['Common name'])
         latin_name = validate(row['Latin Name'])
         condition = validate(row['Tree Condition'])
@@ -74,6 +64,8 @@ class Command(BaseCommand):
         phone = validate(row['Phone'])
         first_name = validate(row['First_Name'])
         last_name = validate(row['Last_Name'])
+
+        print("processing tree id_tag:", id_tag)
 
         # Attachment data:
         imageUrl = validate(row['Image URL'])
