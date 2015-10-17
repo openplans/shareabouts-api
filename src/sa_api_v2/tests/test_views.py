@@ -1598,6 +1598,26 @@ class TestPlaceListView (APITestMixin, TestCase):
         # --------------------------------------------------
 
         #
+        # View should return private data when allowed (api key)
+        #
+        request = self.factory.get(self.path + '?include_invisible')
+        self.apikey.permissions.add_permission(
+            '*',
+            can_create=False,
+            can_retrieve=True,
+            can_update=False,
+            can_destroy=False,
+            can_access_protected=True)
+        request.META[KEY_HEADER] = self.apikey.key
+        response = self.view(request, **self.request_kwargs)
+        data = json.loads(response.rendered_content)
+
+        # Check that the request was restricted
+        self.assertStatusCode(response, 200)
+
+        # --------------------------------------------------
+
+        #
         # View should return private data when owner is logged in (Session Auth)
         #
         request = self.factory.get(self.path + '?include_invisible')
