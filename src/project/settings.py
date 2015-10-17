@@ -340,15 +340,21 @@ if 'DEBUG' in environ:
     TEMPLATE_DEBUG = DEBUG
     SHOW_DEBUG_TOOLBAR = DEBUG
 
-if 'REDIS_URL' in environ:
+# Look for the following redis environment variables, in order
+for REDIS_URL_ENVVAR in ('REDIS_URL', 'OPENREDIS_URL'):
+    if REDIS_URL_ENVVAR in environ: break
+else:
+    REDIS_URL_ENVVAR = None
+
+if REDIS_URL_ENVVAR:
     import django_cache_url
-    CACHES = {'default': django_cache_url.config(env='REDIS_URL')}
+    CACHES = {'default': django_cache_url.config(env=REDIS_URL_ENVVAR)}
 
     # Django sessions
     SESSION_ENGINE = "django.contrib.sessions.backends.cache"
 
     # Celery broker
-    BROKER_URL = environ['REDIS_URL'].strip('/') + '/1'
+    BROKER_URL = environ[REDIS_URL_ENVVAR].strip('/') + '/1'
 
 if all([key in environ for key in ('SHAREABOUTS_AWS_KEY',
                                    'SHAREABOUTS_AWS_SECRET',
