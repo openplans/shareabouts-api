@@ -317,7 +317,7 @@ class ActionAdmin(admin.ModelAdmin):
         qs = super(ActionAdmin, self).queryset(request)
         user = request.user
         if not user.is_superuser:
-            qs = qs.filter(dataset__owner=user)
+            qs = qs.filter(thing__dataset__owner=user)
         return qs.select_related('submitter', 'thing', 'thing__place')
 
     # Django 1.6+
@@ -325,7 +325,7 @@ class ActionAdmin(admin.ModelAdmin):
         qs = super(ActionAdmin, self).get_queryset(request)
         user = request.user
         if not user.is_superuser:
-            qs = qs.filter(dataset__owner=user)
+            qs = qs.filter(thing__dataset__owner=user)
         return qs.select_related('submitter', 'thing', 'thing__place')
 
     def submitter_name(self, obj):
