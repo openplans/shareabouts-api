@@ -208,6 +208,14 @@ class WebhookAdmin(admin.ModelAdmin):
     raw_id_fields = ('dataset',)
     # list_filter = ('name',)
 
+    def get_queryset(self, request):
+        qs = super(WebhookAdmin, self).get_queryset(request)
+        user = request.user
+        if not user.is_superuser:
+            qs = qs.filter(dataset__owner=user)
+        return qs
+
+
 
 class DataSetAdmin(DjangoObjectActions, admin.ModelAdmin):
     list_display = ('display_name', 'slug', 'owner')
@@ -307,11 +315,17 @@ class ActionAdmin(admin.ModelAdmin):
     # Pre-Django 1.6
     def queryset(self, request):
         qs = super(ActionAdmin, self).queryset(request)
+        user = request.user
+        if not user.is_superuser:
+            qs = qs.filter(dataset__owner=user)
         return qs.select_related('submitter', 'thing', 'thing__place')
 
     # Django 1.6+
     def get_queryset(self, request):
         qs = super(ActionAdmin, self).get_queryset(request)
+        user = request.user
+        if not user.is_superuser:
+            qs = qs.filter(dataset__owner=user)
         return qs.select_related('submitter', 'thing', 'thing__place')
 
     def submitter_name(self, obj):
@@ -340,6 +354,13 @@ class GroupAdmin(admin.ModelAdmin):
             'admin/js/jquery-ui-1.10.4.min.js',
             'admin/js/admin-list-reorder.js',
         )
+
+    def get_queryset(self, request):
+        qs = super(GroupAdmin, self).get_queryset(request)
+        user = request.user
+        if not user.is_superuser:
+            qs = qs.filter(dataset__owner=user)
+        return qs
 
 
 class UserChangeForm(BaseUserChangeForm):
