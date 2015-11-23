@@ -1,18 +1,14 @@
 #!/bin/sh
 
-# libevent development files are required for gevent
-sudo apt-get install libevent-dev
-
-# Install GeoDjango dependencies -- see
-# https://docs.djangoproject.com/en/dev/ref/contrib/gis/install/#ubuntu
-sudo apt-get install binutils gdal-bin libproj-dev postgresql-9.1-postgis \
-     postgresql-server-dev-9.1 python-psycopg2
+# Create a virtual environment
+virtualenv env
+source env/bin/activate
 
 # Install the python requirements
-sudo pip install -r requirements.txt
+pip install -r requirements.txt
 
 # ... and this, optional testing stuff
-sudo pip install coverage
+pip install coverage
 
 # Initialize the database
 psql -U postgres <<EOF

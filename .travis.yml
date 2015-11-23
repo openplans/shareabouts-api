@@ -1,5 +1,6 @@
 # https://github.com/travis-ci/travis-ci/wiki/.travis.yml-options
 
+sudo: false
 install: "ci/install.sh"
 script: "src/manage.py test project sa_api_v2 remote_client_user --with-coverage --cover-package=sa_api_v2 --cover-package=remote_client_user"
 python:
@@ -15,6 +16,21 @@ notifications:
      - dev@openplans.org
     on_success: change
     on_failure: always
+
+addons:
+  apt:
+    packages:
+    # Required for gevent
+    - libevent-dev
+
+    # GeoDjango dependencies -- see
+    # https://docs.djangoproject.com/en/dev/ref/contrib/gis/install/#ubuntu
+    - binutils
+    - gdal-bin
+    - libproj-dev
+    - postgresql-9.1-postgis-2.1
+    - postgresql-server-dev-9.1
+    - python-psycopg2
 
 # branches:
 #   only:
