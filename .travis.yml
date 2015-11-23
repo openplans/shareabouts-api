@@ -19,14 +19,19 @@ notifications:
 
 addons:
   apt:
+    sources:
+    # GIS packages, specifically GDAL (see
+    # https://github.com/travis-ci/travis-ci/issues/2683)
+    - ppa:ubuntugis/ubuntugis-unstable
+
     packages:
     - python-virtualenv
 
     # Required for gevent
     - libevent-dev
 
-    # GeoDjango dependencies -- see
-    # https://docs.djangoproject.com/en/dev/ref/contrib/gis/install/#ubuntu
+    # GeoDjango dependencies (see
+    # https://docs.djangoproject.com/en/dev/ref/contrib/gis/install/#ubuntu)
     - binutils
     - gdal-bin
     - libproj-dev
