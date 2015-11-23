@@ -391,3 +391,6 @@ admin.site.register(models.Submission, SubmissionAdmin)
 admin.site.register(models.Action, ActionAdmin)
 admin.site.register(models.Group, GroupAdmin)
 admin.site.register(models.Webhook, WebhookAdmin)
+
+admin.site.site_header = 'Shareabouts API Server Administration'
+admin.site.site_header = 'Shareabouts API Server'
