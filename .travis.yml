@@ -20,6 +20,8 @@ notifications:
 addons:
   apt:
     packages:
+    - python-virtualenv
+
     # Required for gevent
     - libevent-dev
 
