@@ -1,6 +1,7 @@
 from __future__ import print_function
 from django.core.management.base import BaseCommand
 import csv
+import re
 import sys
 from ... import models as sa_models
 from ... import forms
@@ -50,7 +51,8 @@ class Command(BaseCommand):
 
         # Create array of values when cell contains 'roof', 'pavement',
         #  or 'other'
-        raw_sources = row['Primary Sources'].lower().split(' ')
+        regex = re.compile(r'[, ]+')
+        raw_sources = regex.split(row['Primary Sources'].lower())
         possible_sources = {"driveway": "pavement",
                             "street": "pavement",
                             "roof": "roof",
