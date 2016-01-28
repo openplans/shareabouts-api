@@ -283,11 +283,15 @@ class IsAllowedByDataPermissions(permissions.BasePermission):
         else:
             data_type = 'places'
 
+        # Check whether we have to get permission for protected data
+        protected = (INCLUDE_INVISIBLE_PARAM in request.GET or
+                     INCLUDE_PRIVATE_PARAM in request.GET)
+
         user = getattr(request, 'user', None)
         client = getattr(request, 'client', None)
         dataset = getattr(request, 'get_dataset', lambda: None)()
 
-        return models.check_data_permission(user, client, do_action, dataset, data_type)
+        return models.check_data_permission(user, client, do_action, dataset, data_type, protected)
 
 
 ###############################################################################
@@ -557,7 +561,7 @@ class OwnedResourceMixin (ClientAuthenticationMixin, CorsEnabledMixin):
     """
     renderer_classes = (JSONRenderer, JSONPRenderer, BrowsableAPIRenderer, renderers.PaginatedCSVRenderer)
     parser_classes = (JSONParser, FormParser, MultiPartParser)
-    permission_classes = (IsOwnerOrReadOnly, IsLoggedInOwnerOrPublicDataOnly, IsAllowedByDataPermissions)
+    permission_classes = (IsOwnerOrReadOnly, IsAllowedByDataPermissions)
     authentication_classes = (authentication.BasicAuthentication, authentication.OAuth2Authentication, ShareaboutsSessionAuth)
     client_authentication_classes = (apikey.auth.ApiKeyAuthentication, cors.auth.OriginAuthentication)
     content_negotiation_class = ShareaboutsContentNegotiation
@@ -665,6 +669,15 @@ class OwnedResourceMixin (ClientAuthenticationMixin, CorsEnabledMixin):
 
         if not self.is_verified_object(obj, ObjType):
             raise Http404
+
+
+class ProtectedOwnedResourceMixin (OwnedResourceMixin):
+    """
+    A base class for views that require an extra layer of protection. This mixin
+    does not allow access to private data queries unless the user is logged in
+    directly as the owner of the resource.
+    """
+    permission_classes = (IsLoggedInOwnerOrPublicDataOnly,) + OwnedResourceMixin.permission_classes
 
 
 class CachedResourceMixin (object):
@@ -1257,7 +1270,7 @@ class SubmissionListView (CachedResourceMixin, OwnedResourceMixin, FilteredResou
                                 **kwargs)
 
 
-class DataSetSubmissionListView (CachedResourceMixin, OwnedResourceMixin, FilteredResourceMixin, generics.ListAPIView):
+class DataSetSubmissionListView (CachedResourceMixin, ProtectedOwnedResourceMixin, FilteredResourceMixin, generics.ListAPIView):
     """
 
     GET
@@ -1325,7 +1338,7 @@ class DataSetSubmissionListView (CachedResourceMixin, OwnedResourceMixin, Filter
             .prefetch_related('attachments', 'submitter__social_auth', 'submitter___groups')
 
 
-class DataSetInstanceView (OwnedResourceMixin, generics.RetrieveUpdateDestroyAPIView):
+class DataSetInstanceView (ProtectedOwnedResourceMixin, generics.RetrieveUpdateDestroyAPIView):
     """
     GET
     ---
@@ -1390,7 +1403,7 @@ class DataSetInstanceView (OwnedResourceMixin, generics.RetrieveUpdateDestroyAPI
         return response
 
 
-class DataSetMetadataView (OwnedResourceMixin, generics.RetrieveAPIView):
+class DataSetMetadataView (ProtectedOwnedResourceMixin, generics.RetrieveAPIView):
     """
     GET
     ---
@@ -1433,7 +1446,7 @@ class DataSetMetadataView (OwnedResourceMixin, generics.RetrieveAPIView):
         return obj
 
 
-class DataSetKeyListView (OwnedResourceMixin, generics.ListAPIView):
+class DataSetKeyListView (ProtectedOwnedResourceMixin, generics.ListAPIView):
     """
     """
 
@@ -1486,7 +1499,7 @@ class DataSetListMixin (object):
         return dict(sets.items())
 
 
-class DataSetListView (DataSetListMixin, OwnedResourceMixin, generics.ListCreateAPIView):
+class DataSetListView (DataSetListMixin, ProtectedOwnedResourceMixin, generics.ListCreateAPIView):
     """
 
     GET

@@ -12,7 +12,7 @@ class DataPermissionManager (models.Manager):
     def all_permissions(self):
         return self.all()
 
-    def add_permission(self, submission_set, can_create, can_retrieve, can_update, can_destroy, priority=None):
+    def add_permission(self, submission_set, can_create, can_retrieve, can_update, can_destroy, can_access_protected=False, priority=None):
         PermModel = self.model
         return self.add(PermModel(
             submission_set=submission_set,
@@ -20,6 +20,7 @@ class DataPermissionManager (models.Manager):
             can_retrieve=can_retrieve,
             can_update=can_update,
             can_destroy=can_destroy,
+            can_access_protected=can_access_protected,
             priority=priority))
 
 
@@ -32,6 +33,7 @@ class DataPermission (CloneableModelMixin, CacheClearingModel, models.Model):
     can_create = models.BooleanField(default=False)
     can_update = models.BooleanField(default=False)
     can_destroy = models.BooleanField(default=False)
+    can_access_protected = models.BooleanField(default=False)
     priority = models.PositiveIntegerField(blank=True)
 
     objects = DataPermissionManager()
@@ -140,21 +142,24 @@ def create_data_permissions(sender, instance, created, **kwargs):
 post_save.connect(create_data_permissions, sender=DataSet, dispatch_uid="dataset-create-permissions")
 
 
-def any_allow(permissions, do_action, submission_set):
+def any_allow(permissions, do_action, submission_set, protected=False):
     """
     Check whether any of the data permissions in the managed set allow the
-    action on a submission set with the given name.
+    action on a submission set with the given name. Specify whether the action
+    is on protected data.
     """
     for permission in permissions:
         if (permission.submission_set in (submission_set, '*')
-            and getattr(permission, 'can_' + do_action, False)):
+            and getattr(permission, 'can_' + do_action, False)
+            and (permission.can_access_protected or not protected)):
             return True
     return False
 
-def check_data_permission(user, client, do_action, dataset, submission_set):
+def check_data_permission(user, client, do_action, dataset, submission_set, protected=False):
     """
     Check whether the given user has permission on the submission_set in
-    the context of the given client (e.g., an API key or an origin).
+    the context of the given client (e.g., an API key or an origin). Specify
+    whether the permission is for protected data.
     """
     if do_action not in ('retrieve', 'create', 'update', 'destroy'):
         raise ValueError
@@ -167,20 +172,20 @@ def check_data_permission(user, client, do_action, dataset, submission_set):
         return True
 
     # Start with the dataset permission
-    if dataset and any_allow(dataset.permissions.all(), do_action, submission_set):
+    if dataset and any_allow(dataset.permissions.all(), do_action, submission_set, protected):
         return True
 
     # Then the client permission
     if client is not None:
         if (client.dataset == dataset and
-            any_allow(client.permissions.all(), do_action, submission_set)):
+            any_allow(client.permissions.all(), do_action, submission_set, protected)):
             return True
 
     # Next, check the user's groups
     if user is not None and user.is_authenticated():
         for group in user._groups.all():
             if (dataset and group.dataset_id == dataset.id and
-                any_allow(group.permissions.all(), do_action, submission_set)):
+                any_allow(group.permissions.all(), do_action, submission_set, protected)):
                 return True
 
     return False
