@@ -24,6 +24,13 @@ LON_COLUMN = 'Long'
 
 RAINGARDEN_NAME_COLUMN = 'Rain Garden Name'
 IMAGE_COLUMN = 'Image'
+
+STREET_ADDRESS_COLUMN = 'Street Address'
+CITY_COLUMN = 'City'
+ZIP_COLUMN = 'Zip Code'
+STATE = 'WA'
+
+# optional columns:
 RAINGARDEN_NUMBER_COLUMN = 'Rain Garden Number'
 CONTRIBUTOR_NAME_COLUMN = 'Contributor\'s Name'
 EMAIL_COLUMN = 'Email'
@@ -34,11 +41,7 @@ INSTALLER_COLUMN = 'Installer'
 REMAIN_PRIVATE_COLUMN = 'Remain Private'
 DESCRIPTION_COLUMN = 'Description'
 PRIMARY_SOURCES_COLUMN = 'Primary Sources'
-
-STREET_ADDRESS_COLUMN = 'Street Address'
-CITY_COLUMN = 'City'
-ZIP_COLUMN = 'Zip Code'
-STATE = 'WA'
+OWNER_COLUMN = 'Owner'
 
 
 class Command(BaseCommand):
@@ -67,6 +70,7 @@ class Command(BaseCommand):
         designer = validate(row[DESIGNER_COLUMN])
         installer = validate(row[INSTALLER_COLUMN])
         remain_private = row[REMAIN_PRIVATE_COLUMN]
+        rain_garden_owner = row[OWNER_COLUMN]
 
         description = row[DESCRIPTION_COLUMN]
 
@@ -119,13 +123,16 @@ class Command(BaseCommand):
 
         rain_garden_number = row[RAINGARDEN_NUMBER_COLUMN]
 
+        # TODO: Only add an attribute when the row contains the attribute
         data = {
+            "private-rain_garden_address": garden_address,
+
             "rain_garden_size": garden_size,
             "designer": designer,
-            "private-rain_garden_address": garden_address,
             "installer": installer,
             "contributing_area": drainage_area,
             "sources": sources,
+            "owner": rain_garden_owner,
 
             "description": description,
             "location_type": location_type,
