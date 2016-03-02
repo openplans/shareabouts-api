@@ -19,6 +19,27 @@ log = logging.getLogger(__name__)
 
 csv_filepathname = sys.argv[2]
 
+LAT_COLUMN = 'Lat'
+LON_COLUMN = 'Long'
+
+RAINGARDEN_NAME_COLUMN = 'Rain Garden Name'
+IMAGE_COLUMN = 'Image'
+RAINGARDEN_NUMBER_COLUMN = 'Rain Garden Number'
+CONTRIBUTOR_NAME_COLUMN = 'Contributor\'s Name'
+EMAIL_COLUMN = 'Email'
+RAINGARDEN_SIZE_COLUMN = 'Rain garden Size (sq ft)'
+RAINGARDEN_CONTRIBUTING_AREA_COLUMN = 'Contributing Area (sq ft)'
+DESIGNER_COLUMN = 'Designer'
+INSTALLER_COLUMN = 'Installer'
+REMAIN_PRIVATE_COLUMN = 'Remain Private'
+DESCRIPTION_COLUMN = 'Description'
+PRIMARY_SOURCES_COLUMN = 'Primary Sources'
+
+STREET_ADDRESS_COLUMN = 'Street Address'
+CITY_COLUMN = 'City'
+ZIP_COLUMN = 'Zip Code'
+STATE = 'WA'
+
 
 class Command(BaseCommand):
     help = 'Import a CSV file of places.'
@@ -36,23 +57,23 @@ class Command(BaseCommand):
             self.save_row(row)
 
     def save_row(self, row):
-        lat = float(row['Lat'])
-        lon = float(row['Long'])
+        lat = float(row[LAT_COLUMN])
+        lon = float(row[LON_COLUMN])
 
         # create our data, used in Place for our dataset:
         location_type = 'raingarden'
-        garden_size = validate(row['Rain garden Size (sq ft)'])
-        drainage_area = validate(row['Contributing Area (sq ft)'])
-        designer = validate(row['Designer'])
-        installer = validate(row['Installer'])
-        remain_private = row['Remain Private']
+        garden_size = validate(row[RAINGARDEN_SIZE_COLUMN])
+        drainage_area = validate(row[RAINGARDEN_CONTRIBUTING_AREA_COLUMN])
+        designer = validate(row[DESIGNER_COLUMN])
+        installer = validate(row[INSTALLER_COLUMN])
+        remain_private = row[REMAIN_PRIVATE_COLUMN]
 
-        description = row['Description']
+        description = row[DESCRIPTION_COLUMN]
 
         # Create array of values when cell contains 'roof', 'pavement',
         #  or 'other'
         regex = re.compile(r'[, ]+')
-        raw_sources = regex.split(row['Primary Sources'].lower())
+        raw_sources = regex.split(row[PRIMARY_SOURCES_COLUMN].lower())
         possible_sources = {"driveway": "pavement",
                             "street": "pavement",
                             "roof": "roof",
@@ -68,16 +89,16 @@ class Command(BaseCommand):
                 continue
         sources = list(sources)
 
-        street_address = row['Street Address']
-        city = row['City']
-        zip_code = row['Zip Code']
+        street_address = row[STREET_ADDRESS_COLUMN]
+        city = row[CITY_COLUMN]
+        zip_code = row[ZIP_COLUMN]
 
-        full_address = [street_address, city, 'WA', zip_code]
+        full_address = [street_address, city, STATE, zip_code]
         filtered_full_address = [x for x in full_address
                                  if (x and x != 'NULL')]
         garden_address = ", ".join(filtered_full_address)
 
-        rain_garden_name = row['Rain Garden Name']
+        rain_garden_name = row[RAINGARDEN_NAME_COLUMN]
 
         # share_user_info_header = 'Please do not share any of my information,
         # I wish it to remain private'
@@ -89,14 +110,14 @@ class Command(BaseCommand):
         submitter_name = os.environ['RAIN_GARDENS_STEWARD_NAME']
         submitter_email = os.environ['RAIN_GARDENS_STEWARD_EMAIL']
 
-        if (row['Contributor\'s Name'] != '' and row['Email'] != ''):
-            username = row['Contributor\'s Name']
-            email = row['Email']
+        if (row[CONTRIBUTOR_NAME_COLUMN] != '' and row[EMAIL_COLUMN] != ''):
+            username = row[CONTRIBUTOR_NAME_COLUMN]
+            email = row[EMAIL_COLUMN]
         else:  # Use our defaults when username and email are not provided
             username = submitter_name
             email = submitter_email
 
-        rain_garden_number = row['Rain Garden Number']
+        rain_garden_number = row[RAINGARDEN_NUMBER_COLUMN]
 
         data = {
             "rain_garden_size": garden_size,
@@ -158,7 +179,7 @@ class Command(BaseCommand):
 
         place.save()
 
-        imageUrl = row['Image']
+        imageUrl = row[IMAGE_COLUMN]
 
         # TODO: Parallelize this!
         # TODO: Use pipe instead of saving/uploading file locally
