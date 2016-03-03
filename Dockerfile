@@ -1,9 +1,9 @@
 ###########################################################
 # Dockerfile to build Python WSGI Application Containers
-# Based on Ubuntu
+# Based on Debian
 ############################################################
 
-# Set the base image to Ubuntu
+# Set the base image to Debian
 FROM buildpack-deps:jessie
 
 # File Author / Maintainer
