@@ -80,8 +80,7 @@ class Command(BaseCommand):
 
         rain_garden_name = row[RAINGARDEN_NAME_COLUMN]
 
-        # TODO: For now, if rain gardens are private, we assume
-        # all sensitive info is already removed from the row
+        # Place is not visible if the rain garden is marked private
         remain_private = row[SHARE_USER_INFO_COLUMN] == 'YES'
 
         submitter_name = os.environ['RAIN_GARDENS_STEWARD_NAME']
@@ -150,7 +149,7 @@ class Command(BaseCommand):
             "geometry": "POINT(%f %f)" % (lon, lat),
             "created_datetime": datetime.datetime.now(),
             "updated_datetime": datetime.datetime.now(),
-            "visible": True
+            "visible": remain_private
         })
         place = placeForm.save(commit=False)
 
