@@ -42,4 +42,6 @@ VOLUME /api/static
 # when creating a new container
 # ex:
 # CMD python server.py
-CMD sh -c "python src/manage.py collectstatic --noinput && gunicorn wsgi:application -w 3 -b 0.0.0.0:8010"
+# or:
+# CMD sh -c "python src/manage.py collectstatic --noinput && gunicorn wsgi:application -w 3 -b 0.0.0.0:8010"
+CMD /api/start.sh
