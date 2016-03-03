@@ -187,8 +187,8 @@ class Command(BaseCommand):
 
         imageUrl = row[IMAGE_COLUMN]
 
-        # TODO: Parallelize this!
-        # TODO: Use pipe instead of saving/uploading file locally
+        # TODO: Parallelize this! (or make it asynchronous)
+        # TODO: Use a pipe instead of saving/uploading the file locally
         if imageUrl:
             file_name = "blob"
             content = urllib.urlretrieve(imageUrl, file_name)
