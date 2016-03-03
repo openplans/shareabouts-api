@@ -30,6 +30,8 @@ CITY_COLUMN = 'City'
 ZIP_COLUMN = 'Zip Code'
 STATE = 'WA'
 
+SHARE_USER_INFO_COLUMN = 'Remain Private'
+
 # optional columns:
 RAINGARDEN_NUMBER_COLUMN = 'Rain Garden Number'
 CONTRIBUTOR_NAME_COLUMN = 'Contributor\'s Name'
@@ -60,18 +62,46 @@ class Command(BaseCommand):
             self.save_row(row)
 
     def save_row(self, row):
+        # This will throw float casting error if a lat/long column is empty
         lat = float(row[LAT_COLUMN])
         lon = float(row[LON_COLUMN])
 
         # create our data, used in Place for our dataset:
         location_type = 'raingarden'
+        remain_private = row[REMAIN_PRIVATE_COLUMN]
+        street_address = row[STREET_ADDRESS_COLUMN]
+        city = row[CITY_COLUMN]
+        zip_code = row[ZIP_COLUMN]
+
+        full_address = [street_address, city, STATE, zip_code]
+        filtered_full_address = [x for x in full_address
+                                 if (x and x != 'NULL')]
+        garden_address = ", ".join(filtered_full_address)
+
+        rain_garden_name = row[RAINGARDEN_NAME_COLUMN]
+
+        # TODO: For now, if rain gardens are private, we assume
+        # all sensitive info is already removed from the row
+        remain_private = row[SHARE_USER_INFO_COLUMN] == 'YES'
+
+        submitter_name = os.environ['RAIN_GARDENS_STEWARD_NAME']
+        submitter_email = os.environ['RAIN_GARDENS_STEWARD_EMAIL']
+
+        if (row[CONTRIBUTOR_NAME_COLUMN] != '' and row[EMAIL_COLUMN] != ''):
+            username = row[CONTRIBUTOR_NAME_COLUMN]
+            email = row[EMAIL_COLUMN]
+        else:  # Use our defaults when username and email are not provided
+            username = submitter_name
+            email = submitter_email
+
+        rain_garden_number = row[RAINGARDEN_NUMBER_COLUMN]
+
+        # optional Place attributes for our rain gardens:
         garden_size = validate(row[RAINGARDEN_SIZE_COLUMN])
         drainage_area = validate(row[RAINGARDEN_CONTRIBUTING_AREA_COLUMN])
         designer = validate(row[DESIGNER_COLUMN])
         installer = validate(row[INSTALLER_COLUMN])
-        remain_private = row[REMAIN_PRIVATE_COLUMN]
-        rain_garden_owner = row[OWNER_COLUMN]
-
+        rain_garden_owner = validate(row[OWNER_COLUMN])
         description = row[DESCRIPTION_COLUMN]
 
         # Create array of values when cell contains 'roof', 'pavement',
@@ -92,36 +122,6 @@ class Command(BaseCommand):
             except KeyError:
                 continue
         sources = list(sources)
-
-        street_address = row[STREET_ADDRESS_COLUMN]
-        city = row[CITY_COLUMN]
-        zip_code = row[ZIP_COLUMN]
-
-        full_address = [street_address, city, STATE, zip_code]
-        filtered_full_address = [x for x in full_address
-                                 if (x and x != 'NULL')]
-        garden_address = ", ".join(filtered_full_address)
-
-        rain_garden_name = row[RAINGARDEN_NAME_COLUMN]
-
-        # share_user_info_header = 'Please do not share any of my information,
-        # I wish it to remain private'
-        # TODO: For now, if rain gardens are private, we assume
-        # all sensitive info is removed from source file
-        share_user_info_header = 'Remain Private'
-        remain_private = row[share_user_info_header] == 'YES'
-
-        submitter_name = os.environ['RAIN_GARDENS_STEWARD_NAME']
-        submitter_email = os.environ['RAIN_GARDENS_STEWARD_EMAIL']
-
-        if (row[CONTRIBUTOR_NAME_COLUMN] != '' and row[EMAIL_COLUMN] != ''):
-            username = row[CONTRIBUTOR_NAME_COLUMN]
-            email = row[EMAIL_COLUMN]
-        else:  # Use our defaults when username and email are not provided
-            username = submitter_name
-            email = submitter_email
-
-        rain_garden_number = row[RAINGARDEN_NUMBER_COLUMN]
 
         # TODO: Only add an attribute when the row contains the attribute
         data = {
