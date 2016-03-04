@@ -77,10 +77,10 @@ requests>=2.9.1
 # Testing, validating, and debugging
 # ==============================
 
-nose
+nose==1.3.7
 django-nose==1.3
-mock
-mock_django
+mock==1.3.0
+mock_django==0.6.10
 responses==0.5.1
 django-debug-toolbar==1.2.1
 raven==5.11.0  # For Sentry error logging
