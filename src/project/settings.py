@@ -227,10 +227,10 @@ SOCIAL_AUTH_LOGIN_ERROR_URL = 'remote-social-login-error'
 # Tests (nose)
 TEST_RUNNER = 'django_nose.NoseTestSuiteRunner'
 TESTS_MIGRATE = True
-#MIGRATION_MODULES = {
-#    'oauth2': 'ignore',
-#    'djcelery': 'ignore',
-#}
+# MIGRATION_MODULES = {
+#     'oauth2': 'ignore',
+#     'djcelery': 'ignore',
+# }
 
 # Debug toolbar
 def custom_show_toolbar(request):
@@ -305,7 +305,7 @@ LOGGING = {
         'django.db.backends': {
             'handlers': ['console'],
             'level': 'DEBUG',
-           'propagate': True,
+            'propagate': True,
         },
 
         'utils.request_timer': {
@@ -371,12 +371,12 @@ if all([key in environ for key in ('SHAREABOUTS_AWS_KEY',
     ATTACHMENT_STORAGE = DEFAULT_FILE_STORAGE
 
 if 'SHAREABOUTS_TWITTER_KEY' in environ \
-    and 'SHAREABOUTS_TWITTER_SECRET' in environ:
+        and 'SHAREABOUTS_TWITTER_SECRET' in environ:
     SOCIAL_AUTH_TWITTER_KEY = environ['SHAREABOUTS_TWITTER_KEY']
     SOCIAL_AUTH_TWITTER_SECRET = environ['SHAREABOUTS_TWITTER_SECRET']
 
 if 'SHAREABOUTS_FACEBOOK_KEY' in environ \
-    and 'SHAREABOUTS_FACEBOOK_SECRET' in environ:
+        and 'SHAREABOUTS_FACEBOOK_SECRET' in environ:
     SOCIAL_AUTH_FACEBOOK_KEY = environ['SHAREABOUTS_FACEBOOK_KEY']
     SOCIAL_AUTH_FACEBOOK_SECRET = environ['SHAREABOUTS_FACEBOOK_SECRET']
 
