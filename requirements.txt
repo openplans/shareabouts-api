@@ -45,7 +45,9 @@ django-storages==1.4
 python-social-auth==0.2.14
 # Use fork of oauth2-provider, for Django 1.7 compatibility
 # django-oauth2-provider==0.2.6.1
-git+https://github.com/glassresistor/django-oauth2-provider.git@4269205#egg=django-oauth2-provider==0.2.7-dev
+# git+https://github.com/glassresistor/django-oauth2-provider.git@4269205#egg=django-oauth2-provider==0.2.7-dev
+# installing django-ouath-toolkit to replace django-oauth2-provider
+django-oauth-toolkit== 0.10.0
 django-cors-headers==1.1.0
 
 
