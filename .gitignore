@@ -34,3 +34,5 @@ env*
 # Local project settings
 # src/project/local_settings.py
 
+# IDE project file
+.project
