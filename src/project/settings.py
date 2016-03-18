@@ -166,8 +166,10 @@ INSTALLED_APPS = (
     'djcelery',
 
     # OAuth
-    'provider',
-    'provider.oauth2',
+    # 'provider',
+    # 'provider.oauth2',
+    # testing switch to django-oauth-toolkit
+    'oauth2_provider',
     'corsheaders',
 
     # =================================
