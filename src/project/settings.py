@@ -208,6 +208,7 @@ AUTHENTICATION_BACKENDS = (
     'sa_api_v2.auth_backends.CachedModelBackend',
 )
 
+OAUTH2_PROVIDER_APPLICATION_MODEL = 'oauth2_provider.Application'
 AUTH_USER_MODEL = 'sa_api_v2.User'
 SOCIAL_AUTH_USER_MODEL = 'sa_api_v2.User'
 SOCIAL_AUTH_PROTECTED_USER_FIELDS = ['email',]

@@ -1,7 +1,8 @@
 import base64
 import logging
 from django.contrib.auth import get_user_model, SESSION_KEY, BACKEND_SESSION_KEY
-from provider.oauth2.models import Client
+# from provider.oauth2.models import Client
+from oauth2_provider.models import AbstractApplication
 from remote_client_user.models import ClientPermissions
 from rest_framework.authentication import get_authorization_header
 
