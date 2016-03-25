@@ -30,8 +30,10 @@ def get_authed_user(request):
 
     # Get the client
     try:
-        client = Client.objects.select_related('permissions').get(client_id=client_id, client_secret=client_secret)
-    except Client.DoesNotExist:
+#        client = Client.objects.select_related('permissions').get(client_id=client_id, client_secret=client_secret)
+        client = Application.objects.select_related('permissions').get(client_id=client_id, client_secret=client_secret)
+#    except Client.DoesNotExist:
+    except Application.DoesNotExist:
         return None
 
     # Get or create the user if the client allows
