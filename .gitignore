@@ -36,3 +36,4 @@ env*
 
 # IDE project file
 .project
+*.pydevproject
