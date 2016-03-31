@@ -41,7 +41,7 @@ class RemoteClientUserTests (TestCase):
         assert_is_none(auth)
 
     def test_no_auth_with_client_with_no_permissions(self):
-        Application.objects.create(client_id='abc', client_secret='123', client_type=Application.CLIENT_CONFIDENTIAL, redirect_uri='http://www.example.com')
+        Application.objects.create(client_id='abc', client_secret='123', client_type=Application.CLIENT_CONFIDENTIAL, redirect_uris='http://www.example.com')
 
         request = RequestFactory().get('')
         request.META['HTTP_AUTHORIZATION'] = 'Remote ' + base64.encodestring('abc;123;mjumbewu;mjumbewu@example.com').strip()
@@ -52,7 +52,7 @@ class RemoteClientUserTests (TestCase):
     def test_auth_with_client_with_login_permissions(self):
         User = get_user_model()
         User.objects.create_user(username='mjumbewu', email='mjumbewu@example.com', password='!')
-        client = Application.objects.create(client_id='abc', client_secret='123', client_type=Application.CLIENT_CONFIDENTIAL, redirect_uri='http://www.example.com')
+        client = Application.objects.create(client_id='abc', client_secret='123', client_type=Application.CLIENT_CONFIDENTIAL, redirect_uris='http://www.example.com')
         ClientPermissions.objects.create(client=client, allow_remote_signin=True)
 
         request = RequestFactory().get('')
@@ -62,7 +62,7 @@ class RemoteClientUserTests (TestCase):
         assert_is_not_none(auth)
 
     def test_no_auth_with_client_with_no_signup_permissions(self):
-        client = Application.objects.create(client_id='abc', client_secret='123', client_type=Application.CLIENT_CONFIDENTIAL, redirect_uri='http://www.example.com')
+        client = Application.objects.create(client_id='abc', client_secret='123', client_type=Application.CLIENT_CONFIDENTIAL, redirect_uris='http://www.example.com')
         ClientPermissions.objects.create(client=client, allow_remote_signin=True)
 
         request = RequestFactory().get('')
@@ -72,7 +72,7 @@ class RemoteClientUserTests (TestCase):
         assert_is_none(auth)
 
     def test_auth_with_client_with_signup_permissions(self):
-        client = Application.objects.create(client_id='abc', client_secret='123', client_type=Application.CLIENT_CONFIDENTIAL, redirect_uri='http://www.example.com')
+        client = Application.objects.create(client_id='abc', client_secret='123', client_type=Application.CLIENT_CONFIDENTIAL, redirect_uris='http://www.example.com')
         ClientPermissions.objects.create(client=client, allow_remote_signin=True, allow_remote_signup=True)
 
         request = RequestFactory().get('')
