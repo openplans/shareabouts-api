@@ -42,7 +42,7 @@ class RemoteClientUserTests (TestCase):
 
     def test_no_auth_with_client_with_no_permissions(self):
         User = get_user_model()
-        user = User.objects.create_user(username='dvalpey', email='dvalpey@example.com', password='!')
+        user = User.objects.create_user(username='mjumbewu', email='mjumbewu@example.com', password='!')
         
         Application.objects.create(client_id='abc', client_secret='123', user_id=user.id, client_type=Application.CLIENT_CONFIDENTIAL, redirect_uris='http://www.example.com')
 
