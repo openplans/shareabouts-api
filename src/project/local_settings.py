@@ -45,10 +45,7 @@ DATABASES = {
 
 REST_FRAMEWORK = {
     'PAGINATE_BY': 500,
-    'PAGINATE_BY_PARAM': 'page_size',
-    'DEFAULT_AUTHENTICATION_CLASSES': (
-        'oauth2_provider.ext.rest_framework.OAuth2Authentication',
-    )
+    'PAGINATE_BY_PARAM': 'page_size'
 }
 
 BROKER_URL = 'django://'
