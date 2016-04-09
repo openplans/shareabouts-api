@@ -101,7 +101,10 @@ ATTACHMENT_STORAGE = 'django.core.files.storage.FileSystemStorage'
 #
 REST_FRAMEWORK = {
     'PAGINATE_BY': 100,
-    'PAGINATE_BY_PARAM': 'page_size'
+    'PAGINATE_BY_PARAM': 'page_size',
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'oauth2_provider.ext.rest_framework.OAuth2Authentication',
+    )
 }
 
 ###############################################################################
