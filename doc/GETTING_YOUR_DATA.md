@@ -114,7 +114,7 @@ You can use the separate [Shareabouts command line tools](https://github.com/ope
 4. **Load the old data into the new dataset.**
 
    Navigate to */api/v2/<owner>/datasets/<slug>* and paste the URL from step
-   #3 in to the *Load from URL* field. Click **PUT** and the data should begin
+   3 in to the *Load from URL* field. Click **PUT** and the data should begin
    to load. You won't see the results until the data has completed. It may
    take a while. **Note** that it will note all data as new data; i.e., if you
    do step #4 twice, it may load twice as many points as you expect. So **do
