@@ -45,7 +45,7 @@ checked in to the repository.
 
 Then bootstrap the development database using the usual Django command:
 
-    src/manage.py syncdb --migrate
+    src/manage.py migrate
 
 
 Local setup
