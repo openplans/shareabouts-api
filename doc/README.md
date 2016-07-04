@@ -26,17 +26,16 @@ Database
 The Shareabouts REST API requires GeoDjango.  To install GeoDjango on your
 platform, see https://docs.djangoproject.com/en/dev/ref/contrib/gis/install/#platform-specific-instructions.
 
-Create a development database for the Shareabouts data store.
-Typically for PostGIS 1.5 this is done like:
-
-    createdb -T template_postgis shareabouts_v2
-    
-For PostGIS 2.0:
+Create a development database for the Shareabouts data store. For PostGIS 2.0:
     
     createdb shareabouts_v2
     psql -U postgres -d shareabouts_v2 
-    CREATE EXTENSION postgis;    
+    CREATE EXTENSION postgis;
     \q
+
+For PostGIS 1.5:
+
+    createdb -T template_postgis shareabouts_v2
 
 Copy the file
 `src/project/local_settings.py.template` to `src/project/local_settings.py` and fill in the
