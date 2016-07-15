@@ -370,6 +370,7 @@ class UserChangeForm(BaseUserChangeForm):
 
 class UserAdmin(BaseUserAdmin):
     form = UserChangeForm
+    change_form_template = 'loginas/change_form.html'
 
     fieldsets = BaseUserAdmin.fieldsets + (
             # (None, {'fields': ('some_extra_data',)}),

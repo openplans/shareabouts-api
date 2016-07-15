@@ -21,6 +21,7 @@ urlpatterns = patterns('',
 
     # Uncomment the next line to enable the admin:
     url(r'^admin/', include(admin.site.urls)),
+    url(r'^admin/', include('loginas.urls')),
 
     # For now, use basic auth.
     url(r'^accounts/', include('django.contrib.auth.urls')),

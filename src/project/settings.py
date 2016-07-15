@@ -162,6 +162,7 @@ INSTALLED_APPS = (
     'django_ace',
     'django_object_actions',
     'djcelery',
+    'loginas',
 
     # OAuth
     'provider',
