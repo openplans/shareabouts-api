@@ -222,11 +222,14 @@ class DataSetAdmin(DjangoObjectActions, admin.ModelAdmin):
     prepopulated_fields = {'slug': ['display_name']}
     search_fields = ('display_name', 'slug', 'owner__username')
 
-    objectactions = ('clone_dataset',)
+    objectactions = ('clone_dataset', 'clear_cache')
     raw_id_fields = ('owner',)
     readonly_fields = ('api_path',)
     inlines = [InlineDataIndexAdmin, InlineDataSetPermissionAdmin, InlineApiKeyAdmin, InlineOriginAdmin, InlineGroupAdmin, InlineWebhookAdmin]
 
+    def clear_cache(self, request, obj):
+        obj.clear_instance_cache()
+    
     def clone_dataset(self, request, obj):
         siblings = models.DataSet.objects.filter(owner=obj.owner)
         slugs = set([ds.slug for ds in siblings])
@@ -311,6 +314,7 @@ class SubmissionAdmin(SubmittedThingAdmin):
 class ActionAdmin(admin.ModelAdmin):
     date_hierarchy = 'created_datetime'
     list_display = ('id', 'created_datetime', 'action', 'type_of_thing', 'submitter_name', 'source')
+    raw_id_fields = ('thing',)
 
     # Pre-Django 1.6
     def queryset(self, request):
