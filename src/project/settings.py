@@ -1,4 +1,5 @@
 from os import environ
+import os
 
 DEBUG = False
 TEMPLATE_DEBUG = DEBUG
@@ -14,11 +15,11 @@ MANAGERS = ADMINS
 DATABASES = {
     'default': {
         'ENGINE': 'django.contrib.gis.db.backends.postgis', # Add 'backends.postgis', 'mysql', 'sqlite3' or 'oracle'.
-        'NAME': environ['RDS_DB_NAME'],  # Or path to database file if using sqlite3.
-        'USER': environ['RDS_USERNAME'], # Not used with sqlite3.
-        'PASSWORD':  environ['RDS_PASSWORD'], # Not used with sqlite3.
-        'HOST': environ['RDS_HOSTNAME'], # Set to empty string for localhost. Not used with sqlite3.
-        'PORT': environ['RDS_PORT'],     # Set to empty string for default. Not used with sqlite3.
+        'NAME': environ.get('RDS_DB_NAME'),  # Or path to database file if using sqlite3.
+        'USER': environ.get('RDS_USERNAME'), # Not used with sqlite3.
+        'PASSWORD':  environ.get('RDS_PASSWORD'), # Not used with sqlite3.
+        'HOST': environ.get('RDS_HOSTNAME'), # Set to empty string for localhost. Not used with sqlite3.
+        'PORT': environ.get('RDS_PORT'),     # Set to empty string for default. Not used with sqlite3.
     }
 }
 
