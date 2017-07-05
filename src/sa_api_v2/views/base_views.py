@@ -1270,7 +1270,7 @@ class SubmissionListView (CachedResourceMixin, OwnedResourceMixin, FilteredResou
                                 **kwargs)
 
 
-class DataSetSubmissionListView (CachedResourceMixin, ProtectedOwnedResourceMixin, FilteredResourceMixin, generics.ListAPIView):
+class DataSetSubmissionListView (CachedResourceMixin, OwnedResourceMixin, FilteredResourceMixin, generics.ListAPIView):
     """
 
     GET
