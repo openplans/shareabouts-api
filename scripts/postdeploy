@@ -7,7 +7,7 @@ import psycopg2
 import subprocess
 
 dburl = os.environ.get('DATABASE_URL')
-USE_GEODB = (environ.get('USE_GEODB', 'True').lower() == 'true')
+USE_GEODB = (os.environ.get('USE_GEODB', 'True').lower() == 'true')
 
 if USE_GEODB:
     print('Connecting to the database...', end='')
