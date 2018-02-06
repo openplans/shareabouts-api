@@ -1,6 +1,6 @@
 import operator
 import ujson as json
-from django.contrib.gis.db import models
+from django.db import models
 from .mixins import CloneableModelMixin
 
 

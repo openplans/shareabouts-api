@@ -1,7 +1,9 @@
 import ujson as json
+from django.conf import settings
 from rest_framework.renderers import JSONRenderer, JSONPRenderer
 from rest_framework_csv.renderers import CSVRenderer
-from django.contrib.gis.geos import GEOSGeometry
+if settings.USE_GEODB:
+    from django.contrib.gis.geos import GEOSGeometry
 
 
 class PaginatedCSVRenderer (CSVRenderer):
