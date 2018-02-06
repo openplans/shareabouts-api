@@ -6,10 +6,14 @@ via django.contrib.admin.
 import itertools
 import json
 import models
+from django.conf import settings
 from django.contrib.admin import SimpleListFilter
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.forms import UserChangeForm as BaseUserChangeForm
-from django.contrib.gis import admin
+if settings.USE_GEODB:
+    from django.contrib.gis import admin
+else:
+    from django.contrib import admin
 from django.contrib import messages
 from django.core.urlresolvers import reverse
 from django.forms import ValidationError
@@ -77,7 +81,8 @@ class PrettyAceWidget (AceWidget):
         return super(PrettyAceWidget, self).render(name, value, attrs=attrs)
 
 
-class SubmittedThingAdmin(admin.OSMGeoAdmin):
+BaseGeoAdmin = admin.OSMGeoAdmin if settings.USE_GEODB else admin.ModelAdmin
+class SubmittedThingAdmin(BaseGeoAdmin):
     date_hierarchy = 'created_datetime'
     inlines = (InlineAttachmentAdmin,)
     list_display = ('id', 'created_datetime', 'submitter_name', 'dataset', 'visible', 'data')
@@ -229,7 +234,7 @@ class DataSetAdmin(DjangoObjectActions, admin.ModelAdmin):
 
     def clear_cache(self, request, obj):
         obj.clear_instance_cache()
-    
+
     def clone_dataset(self, request, obj):
         siblings = models.DataSet.objects.filter(owner=obj.owner)
         slugs = set([ds.slug for ds in siblings])

@@ -1,6 +1,6 @@
 import time
 import uuid
-from django.contrib.gis.db import models
+from django.db import models
 
 
 class DataSnapshotRequest (models.Model):
