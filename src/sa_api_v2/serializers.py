@@ -5,7 +5,9 @@ import ujson as json
 import re
 from collections import defaultdict
 from itertools import chain
-from django.contrib.gis.geos import GEOSGeometry
+from django.conf import settings
+if settings.USE_GEODB:
+    from django.contrib.gis.geos import GEOSGeometry
 from django.core.exceptions import ValidationError
 from django.utils.http import urlquote_plus
 from rest_framework import pagination

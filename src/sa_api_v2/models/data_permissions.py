@@ -1,4 +1,4 @@
-from django.contrib.gis.db import models
+from django.db import models
 from django.db.models.signals import post_save
 from .. import utils
 from .core import CacheClearingModel
