@@ -11,6 +11,7 @@ ADMINS = (
 
 MANAGERS = ADMINS
 
+USE_GEODB = (environ.get('USE_GEODB', 'True').lower() == 'true')
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.', # Add 'postgresql_psycopg2', 'mysql', 'sqlite3' or 'oracle'.
@@ -177,10 +178,13 @@ INSTALLED_APPS = (
     'sa_api_v2.apikey',
     'sa_api_v2.cors',
     'remote_client_user',
-
-    # GeoDjango comes last so that we can override its admin templates.
-    'django.contrib.gis',
 )
+
+if USE_GEODB:
+    INSTALLED_APPS += (
+        # GeoDjango comes last so that we can override its admin templates.
+        'django.contrib.gis',
+    )
 
 
 ###############################################################################
@@ -334,7 +338,9 @@ if 'DATABASE_URL' in environ:
     import dj_database_url
     # NOTE: Be sure that your DATABASE_URL has the 'postgis://' scheme.
     DATABASES = {'default': dj_database_url.config()}
-    DATABASES['default']['ENGINE'] = 'django.contrib.gis.db.backends.postgis'
+
+    if USE_GEODB:
+        DATABASES['default']['ENGINE'] = 'django.contrib.gis.db.backends.postgis'
 
 if 'DEBUG' in environ:
     DEBUG = (environ['DEBUG'].lower() == 'true')
@@ -429,10 +435,10 @@ if BROKER_URL == 'django://':
 # Do this after all the settings files have been processed, in case the
 # SHOW_DEBUG_TOOLBAR setting is set.
 
-if SHOW_DEBUG_TOOLBAR:
-    INSTALLED_APPS += ('debug_toolbar',)
-    MIDDLEWARE_CLASSES = (
-        MIDDLEWARE_CLASSES[:2] +
-        ('debug_toolbar.middleware.DebugToolbarMiddleware',) +
-        MIDDLEWARE_CLASSES[2:]
-    )
+# if SHOW_DEBUG_TOOLBAR:
+#     INSTALLED_APPS += ('debug_toolbar',)
+#     MIDDLEWARE_CLASSES = (
+#         MIDDLEWARE_CLASSES[:2] +
+#         ('debug_toolbar.middleware.DebugToolbarMiddleware',) +
+#         MIDDLEWARE_CLASSES[2:]
+#     )
