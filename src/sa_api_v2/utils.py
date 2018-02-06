@@ -1,7 +1,9 @@
 import re
 import time
-from django.contrib.gis.geos import GEOSGeometry, Point
-from django.contrib.gis.measure import D
+from django.conf import settings
+if settings.USE_GEODB:
+    from django.contrib.gis.geos import GEOSGeometry, Point
+    from django.contrib.gis.measure import D
 from functools import wraps
 from urlparse import urlparse, urljoin
 
