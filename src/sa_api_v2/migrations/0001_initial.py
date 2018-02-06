@@ -270,7 +270,11 @@ class Migration(migrations.Migration):
             name='Place',
             fields=[
                 ('submittedthing_ptr', models.OneToOneField(parent_link=True, auto_created=True, primary_key=True, serialize=False, to='sa_api_v2.SubmittedThing')),
-                ('geometry', django.contrib.gis.db.models.fields.GeometryField(srid=4326)),
+                (
+                    ('geometry', django.contrib.gis.db.models.fields.GeometryField(srid=4326))
+                    if settings.USE_GEODB else
+                    ('geometry', models.TextField())
+                ),
             ],
             options={
                 'ordering': ['-updated_datetime'],

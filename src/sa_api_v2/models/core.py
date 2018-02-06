@@ -1,7 +1,13 @@
 import ujson as json
-from django.contrib.gis.db import models
-from django.contrib.gis.db.models import query
 from django.conf import settings
+
+if settings.USE_GEODB:
+    from django.contrib.gis.db import models
+    from django.contrib.gis.db.models import query
+else:
+    from django.db import models
+    from django.db.models import query
+
 from django.core.files.storage import get_storage_class
 from django.db.models.signals import post_save
 from django.utils.timezone import now
@@ -192,11 +198,16 @@ class Webhook (TimeStampedModel):
         return 'On %s data in %s' % (self.event, self.submission_set)
 
 
-class GeoSubmittedThingQuerySet (query.GeoQuerySet, SubmittedThingQuerySet):
-    pass
 
 
-class GeoSubmittedThingManager (models.GeoManager, SubmittedThingManager):
+if settings.USE_GEODB:
+    class GeoBaseManager (models.GeoManager, SubmittedThingManager): pass
+    class GeoSubmittedThingQuerySet (query.GeoQuerySet, SubmittedThingQuerySet): pass
+else:
+    GeoBaseManager = SubmittedThingManager
+    GeoSubmittedThingQuerySet = SubmittedThingQuerySet
+
+class GeoSubmittedThingManager (GeoBaseManager):
     def get_queryset(self):
         return GeoSubmittedThingQuerySet(self.model, using=self._db)
 
@@ -207,7 +218,10 @@ class Place (SubmittedThing):
     other submissions such as comments or surveys can be attached.
 
     """
-    geometry = models.GeometryField()
+    if settings.USE_GEODB:
+        geometry = models.GeometryField()
+    else:
+        geometry = models.TextField()
 
     objects = GeoSubmittedThingManager()
     cache = cache.PlaceCache()

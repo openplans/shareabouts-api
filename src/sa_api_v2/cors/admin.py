@@ -1,5 +1,5 @@
 from django.contrib.admin import ModelAdmin
-from django.contrib.gis import admin
+from django.contrib import admin
 from .. import models
 from sa_api_v2.cors.models import Origin
 
