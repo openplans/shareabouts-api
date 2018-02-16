@@ -213,11 +213,11 @@ AUTH_USER_MODEL = 'sa_api_v2.User'
 SOCIAL_AUTH_USER_MODEL = 'sa_api_v2.User'
 SOCIAL_AUTH_PROTECTED_USER_FIELDS = ['email',]
 
-SOCIAL_AUTH_FACEBOOK_EXTRA_DATA = ['name', 'picture', 'bio']
+SOCIAL_AUTH_FACEBOOK_EXTRA_DATA = ['name', 'picture', 'about']
 SOCIAL_AUTH_TWITTER_EXTRA_DATA = ['name', 'description', 'profile_image_url']
 
 # Explicitly request the following extra things from facebook
-SOCIAL_AUTH_FACEBOOK_PROFILE_EXTRA_PARAMS = {'fields': 'id,name,picture.width(96).height(96),first_name,last_name,bio'}
+SOCIAL_AUTH_FACEBOOK_PROFILE_EXTRA_PARAMS = {'fields': 'id,name,picture.width(96).height(96),first_name,last_name,about'}
 
 SOCIAL_AUTH_LOGIN_ERROR_URL = 'remote-social-login-error'
 

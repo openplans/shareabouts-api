@@ -378,7 +378,7 @@ class FacebookUserDataStrategy (object):
         return user_info['name']
 
     def extract_bio(self, user_info):
-        return user_info['bio']
+        return user_info['about']
 
 
 class ShareaboutsUserDataStrategy (object):
