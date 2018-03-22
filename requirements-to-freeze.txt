@@ -1,0 +1,93 @@
+# ==============================
+# Web server
+# ==============================
+
+Django==1.7.11
+gevent==1.0
+gunicorn==18.0
+newrelic==2.16.0.12
+dj_static==0.0.6
+
+
+
+# ==============================
+# Background processing
+# ==============================
+
+celery==3.1.13
+django-celery==3.1.10
+
+
+
+# ==============================
+# Database and Persistence
+# ==============================
+
+# DB Settings and Management
+psycopg2==2.7.3.2
+psycogreen==1.0
+south==1.0.1
+dj-database-url==0.2.2
+django-object-actions==0.4.0
+
+# Caching
+django-redis==4.2.0
+django-cache-url==1.0.0
+
+# File Storage
+boto==2.36.0
+django-storages==1.1.8
+
+
+
+# ==============================
+# User Accounts and Social Media
+# ==============================
+
+django-loginas==0.2.2
+python-social-auth==0.2.13
+# Use fork of oauth2-provider, for Django 1.7 compatibility
+# django-oauth2-provider==0.2.6.1
+git+https://github.com/glassresistor/django-oauth2-provider.git@4269205#egg=django-oauth2-provider==0.2.7-dev
+django-cors-headers==0.12
+
+
+
+# ==============================
+# REST API
+# ==============================
+
+djangorestframework==2.3.12
+djangorestframework-csv==1.3.0
+git+https://github.com/mjumbewu/django-rest-framework-bulk.git@84a5d6c#egg=djangorestframework-bulk==0.1.3
+six>=1.4.1
+markdown  # For browsable API docs
+python-dateutil==2.2
+ujson==1.33
+Pillow==2.6.1
+
+# The Django admin interface
+django-ace==1.0.1
+
+# The manager interface
+requests>=1.2.0
+
+
+
+# ==============================
+# Testing, validating, and debugging
+# ==============================
+
+nose
+django-nose==1.3
+mock
+mock_django
+responses==0.2.2
+django-debug-toolbar==1.2.1
+raven==4.2.1  # For Sentry error logging
+
+
+# - - - - - - - - - - - - - - - -
+
+# For DRF 0.4 (deprecated)
+URLObject>=0.6.0

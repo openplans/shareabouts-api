@@ -1,93 +1,60 @@
-# ==============================
-# Web server
-# ==============================
-
-Django==1.7.11
-gevent==1.0
-gunicorn==18.0
-newrelic==2.16.0.12
-dj_static==0.0.6
-
-
-
-# ==============================
-# Background processing
-# ==============================
-
-celery==3.1.13
-django-celery==3.1.10
-
-
-
-# ==============================
-# Database and Persistence
-# ==============================
-
-# DB Settings and Management
-psycopg2==2.7.3.2
-psycogreen==1.0
-south==1.0.1
-dj-database-url==0.2.2
-django-object-actions==0.4.0
-
-# Caching
-django-redis==4.2.0
-django-cache-url==1.0.0
-
-# File Storage
+amqp==1.4.9
+anyjson==0.3.3
+billiard==3.3.0.23
 boto==2.36.0
-django-storages==1.1.8
-
-
-
-# ==============================
-# User Accounts and Social Media
-# ==============================
-
-django-loginas==0.2.2
-python-social-auth==0.2.13
-# Use fork of oauth2-provider, for Django 1.7 compatibility
-# django-oauth2-provider==0.2.6.1
-git+https://github.com/glassresistor/django-oauth2-provider.git@4269205#egg=django-oauth2-provider==0.2.7-dev
-django-cors-headers==0.12
-
-
-
-# ==============================
-# REST API
-# ==============================
-
-djangorestframework==2.3.12
-djangorestframework-csv==1.3.0
-git+https://github.com/mjumbewu/django-rest-framework-bulk.git@84a5d6c#egg=djangorestframework-bulk==0.1.3
-six>=1.4.1
-markdown  # For browsable API docs
-python-dateutil==2.2
-ujson==1.33
-Pillow==2.6.1
-
-# The Django admin interface
+celery==3.1.13
+certifi==2018.1.18
+chardet==3.0.4
+defusedxml==0.5.0
+dj-database-url==0.2.2
+dj-static==0.0.6
+Django==1.7.11
 django-ace==1.0.1
-
-# The manager interface
-requests>=1.2.0
-
-
-
-# ==============================
-# Testing, validating, and debugging
-# ==============================
-
-nose
-django-nose==1.3
-mock
-mock_django
-responses==0.2.2
+django-cache-url==1.0.0
+django-celery==3.1.10
+django-cors-headers==0.12
 django-debug-toolbar==1.2.1
-raven==4.2.1  # For Sentry error logging
-
-
-# - - - - - - - - - - - - - - - -
-
-# For DRF 0.4 (deprecated)
-URLObject>=0.6.0
+django-loginas==0.2.2
+django-nose==1.3
+django-oauth2-provider==0.2.7.dev0
+django-object-actions==0.4.0
+django-redis==4.2.0
+django-storages==1.1.8
+djangorestframework==2.3.12
+djangorestframework-bulk==0.1.3
+djangorestframework-csv==1.3.0
+gevent==1.0
+greenlet==0.4.13
+gunicorn==18.0
+idna==2.6
+kombu==3.0.37
+Markdown==2.6.11
+mock==2.0.0
+mock-django==0.6.10
+msgpack-python==0.5.5
+newrelic==2.16.0.12
+nose==1.3.7
+oauthlib==2.0.6
+pbr==3.1.1
+Pillow==2.6.1
+pkg-resources==0.0.0
+psycogreen==1.0
+psycopg2==2.7.3.2
+PyJWT==1.5.3
+python-dateutil==2.2
+python-social-auth==0.2.13
+python3-openid==3.1.0
+pytz==2018.3
+raven==4.2.1
+redis==2.10.6
+requests==2.18.4
+requests-oauthlib==0.8.0
+responses==0.2.2
+shortuuid==0.5.0
+six==1.11.0
+South==1.0.1
+sqlparse==0.2.4
+static3==0.7.0
+ujson==1.33
+urllib3==1.22
+URLObject==2.4.3
