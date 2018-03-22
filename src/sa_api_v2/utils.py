@@ -5,7 +5,13 @@ if settings.USE_GEODB:
     from django.contrib.gis.geos import GEOSGeometry, Point
     from django.contrib.gis.measure import D
 from functools import wraps
-from urlparse import urlparse, urljoin
+
+try:
+    # Python 2
+    from urlparse import urlparse, urljoin
+except:
+    # Python 3
+    from urllib.parse import urlparse, urljoin
 
 def isiterable(obj):
     try:

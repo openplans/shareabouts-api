@@ -41,7 +41,12 @@ from ..params import (INCLUDE_INVISIBLE_PARAM, INCLUDE_PRIVATE_PARAM,
 from functools import wraps
 from itertools import groupby, count
 from collections import defaultdict
-from urllib import urlencode
+try:
+    # Python 2
+    from urllib import urlencode
+except:
+    # Python 3
+    from urllib.parse import urlencode
 import re
 import requests
 import ujson as json

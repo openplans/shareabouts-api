@@ -5,7 +5,6 @@ via django.contrib.admin.
 
 import itertools
 import json
-import models
 from django.conf import settings
 from django.contrib.admin import SimpleListFilter
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
@@ -21,6 +20,7 @@ from django.http import HttpResponseRedirect
 from django.utils.html import escape
 from django_ace import AceWidget
 from django_object_actions import DjangoObjectActions
+from . import models
 from .apikey.models import ApiKey
 from .cors.models import Origin
 from .tasks import clone_related_dataset_data

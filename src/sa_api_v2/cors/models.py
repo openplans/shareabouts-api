@@ -20,7 +20,7 @@ import re
 
 class Origin(CloneableModelMixin, models.Model):
     pattern = models.CharField(max_length=100, help_text='The origin pattern, e.g., https://*.github.io, http://localhost:*, http*://map.phila.gov')
-    logged_ip = models.IPAddressField(blank=True, null=True)
+    logged_ip = models.GenericIPAddressField(blank=True, null=True)
     last_used = models.DateTimeField(blank=True, default=now)
     dataset = models.ForeignKey(DataSet, blank=True, related_name='origins')
 

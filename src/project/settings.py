@@ -116,7 +116,8 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.gzip.GZipMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'remote_client_user.middleware.RemoteClientMiddleware',
+    # TODO: Update to use dajngo-oauth-tools
+    # 'toolbar_client_user.middleware.RemoteClientMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
@@ -166,8 +167,7 @@ INSTALLED_APPS = (
     'loginas',
 
     # OAuth
-    'provider',
-    'provider.oauth2',
+    'oauth2_provider',
     'corsheaders',
 
     # =================================
@@ -177,7 +177,8 @@ INSTALLED_APPS = (
     'sa_api_v2',
     'sa_api_v2.apikey',
     'sa_api_v2.cors',
-    'remote_client_user',
+    # TODO: Update to use django-oauth-toolkit
+    # 'remote_client_user',
 )
 
 if USE_GEODB:
@@ -229,11 +230,6 @@ SOCIAL_AUTH_LOGIN_ERROR_URL = 'remote-social-login-error'
 
 # Tests (nose)
 TEST_RUNNER = 'django_nose.NoseTestSuiteRunner'
-SOUTH_TESTS_MIGRATE = True
-SOUTH_MIGRATION_MODULES = {
-    'oauth2': 'ignore',
-    'djcelery': 'ignore',
-}
 
 # Debug toolbar
 def custom_show_toolbar(request):

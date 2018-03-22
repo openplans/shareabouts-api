@@ -1,13 +1,15 @@
 import base64
 import logging
 from django.contrib.auth import get_user_model, SESSION_KEY, BACKEND_SESSION_KEY
-from provider.oauth2.models import Client
+# TODO: Update this to use django-oauth-toolkit; needed for the region service
+# from provider.oauth2.models import Client
 from remote_client_user.models import ClientPermissions
 from rest_framework.authentication import get_authorization_header
 
 logger = logging.getLogger('remote_client_user')
 
 
+# TODO: Update this to use django-oauth-toolkit
 def get_authed_user(request):
     # Get the HTTP Authorization header value
     auth_header = get_authorization_header(request).split()

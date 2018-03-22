@@ -46,7 +46,7 @@ class Migration(migrations.Migration):
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
                 ('created_datetime', models.DateTimeField(default=django.utils.timezone.now, db_index=True, blank=True)),
                 ('updated_datetime', models.DateTimeField(auto_now=True, db_index=True)),
-                ('action', models.CharField(default=b'create', max_length=16)),
+                ('action', models.CharField(default='create', max_length=16)),
                 ('source', models.TextField(null=True, blank=True)),
             ],
             options={
@@ -86,8 +86,8 @@ class Migration(migrations.Migration):
             name='DataIndex',
             fields=[
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
-                ('attr_name', models.CharField(max_length=100, verbose_name=b'Attribute name', db_index=True)),
-                ('attr_type', models.CharField(default=b'string', max_length=10, verbose_name=b'Attribute type', choices=[(b'string', b'String')])),
+                ('attr_name', models.CharField(max_length=100, verbose_name='Attribute name', db_index=True)),
+                ('attr_type', models.CharField(default='string', max_length=10, verbose_name='Attribute type', choices=[('string', 'String')])),
             ],
             options={
             },
@@ -110,7 +110,7 @@ class Migration(migrations.Migration):
             name='DataSetPermission',
             fields=[
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
-                ('submission_set', models.CharField(help_text=b'Either the name of a submission set (e.g., "comments"), or "places". Leave blank to refer to all things.', max_length=128, blank=True)),
+                ('submission_set', models.CharField(help_text='Either the name of a submission set (e.g., "comments"), or "places". Leave blank to refer to all things.', max_length=128, blank=True)),
                 ('can_retrieve', models.BooleanField(default=True)),
                 ('can_create', models.BooleanField(default=False)),
                 ('can_update', models.BooleanField(default=False)),
@@ -143,9 +143,9 @@ class Migration(migrations.Migration):
                 ('include_invisible', models.BooleanField(default=False)),
                 ('include_submissions', models.BooleanField(default=False)),
                 ('requested_at', models.DateTimeField(auto_now_add=True)),
-                ('status', models.TextField(default=b'', blank=True)),
+                ('status', models.TextField(default='', blank=True)),
                 ('fulfilled_at', models.DateTimeField(null=True)),
-                ('guid', models.TextField(default=b'', unique=True, blank=True)),
+                ('guid', models.TextField(default='', unique=True, blank=True)),
                 ('dataset', models.ForeignKey(to='sa_api_v2.DataSet')),
                 ('requester', models.ForeignKey(to=settings.AUTH_USER_MODEL, null=True)),
             ],
@@ -158,8 +158,8 @@ class Migration(migrations.Migration):
             name='Group',
             fields=[
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
-                ('name', models.CharField(help_text=b'What is the name of the group to which users with this group belong? For example: "judges", "administrators", "winners", ...', max_length=32)),
-                ('dataset', models.ForeignKey(related_name='groups', to='sa_api_v2.DataSet', help_text=b'Which dataset does this group apply to?')),
+                ('name', models.CharField(help_text='What is the name of the group to which users with this group belong? For example: "judges", "administrators", "winners", ...', max_length=32)),
+                ('dataset', models.ForeignKey(related_name='groups', to='sa_api_v2.DataSet', help_text='Which dataset does this group apply to?')),
                 ('submitters', models.ManyToManyField(related_name='_groups', to=settings.AUTH_USER_MODEL, blank=True)),
             ],
             options={
@@ -171,7 +171,7 @@ class Migration(migrations.Migration):
             name='GroupPermission',
             fields=[
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
-                ('submission_set', models.CharField(help_text=b'Either the name of a submission set (e.g., "comments"), or "places". Leave blank to refer to all things.', max_length=128, blank=True)),
+                ('submission_set', models.CharField(help_text='Either the name of a submission set (e.g., "comments"), or "places". Leave blank to refer to all things.', max_length=128, blank=True)),
                 ('can_retrieve', models.BooleanField(default=True)),
                 ('can_create', models.BooleanField(default=False)),
                 ('can_update', models.BooleanField(default=False)),
@@ -198,7 +198,7 @@ class Migration(migrations.Migration):
             name='KeyPermission',
             fields=[
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
-                ('submission_set', models.CharField(help_text=b'Either the name of a submission set (e.g., "comments"), or "places". Leave blank to refer to all things.', max_length=128, blank=True)),
+                ('submission_set', models.CharField(help_text='Either the name of a submission set (e.g., "comments"), or "places". Leave blank to refer to all things.', max_length=128, blank=True)),
                 ('can_retrieve', models.BooleanField(default=True)),
                 ('can_create', models.BooleanField(default=False)),
                 ('can_update', models.BooleanField(default=False)),
@@ -214,7 +214,7 @@ class Migration(migrations.Migration):
             name='Origin',
             fields=[
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
-                ('pattern', models.CharField(help_text=b'The origin pattern, e.g., https://*.github.io, http://localhost:*, http*://map.phila.gov', max_length=100)),
+                ('pattern', models.CharField(help_text='The origin pattern, e.g., https://*.github.io, http://localhost:*, http*://map.phila.gov', max_length=100)),
                 ('logged_ip', models.IPAddressField(null=True, blank=True)),
                 ('last_used', models.DateTimeField(default=django.utils.timezone.now, blank=True)),
                 ('dataset', models.ForeignKey(related_name='origins', blank=True, to='sa_api_v2.DataSet')),
@@ -228,7 +228,7 @@ class Migration(migrations.Migration):
             name='OriginPermission',
             fields=[
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
-                ('submission_set', models.CharField(help_text=b'Either the name of a submission set (e.g., "comments"), or "places". Leave blank to refer to all things.', max_length=128, blank=True)),
+                ('submission_set', models.CharField(help_text='Either the name of a submission set (e.g., "comments"), or "places". Leave blank to refer to all things.', max_length=128, blank=True)),
                 ('can_retrieve', models.BooleanField(default=True)),
                 ('can_create', models.BooleanField(default=False)),
                 ('can_update', models.BooleanField(default=False)),
@@ -246,7 +246,7 @@ class Migration(migrations.Migration):
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
                 ('created_datetime', models.DateTimeField(default=django.utils.timezone.now, db_index=True, blank=True)),
                 ('updated_datetime', models.DateTimeField(auto_now=True, db_index=True)),
-                ('data', models.TextField(default=b'{}')),
+                ('data', models.TextField(default='{}')),
                 ('visible', models.BooleanField(default=True, db_index=True)),
             ],
             options={
@@ -289,7 +289,7 @@ class Migration(migrations.Migration):
                 ('created_datetime', models.DateTimeField(default=django.utils.timezone.now, db_index=True, blank=True)),
                 ('updated_datetime', models.DateTimeField(auto_now=True, db_index=True)),
                 ('submission_set', models.CharField(max_length=128)),
-                ('event', models.CharField(default=b'add', max_length=128, choices=[(b'add', b'On add')])),
+                ('event', models.CharField(default='add', max_length=128, choices=[('add', 'On add')])),
                 ('url', models.URLField(max_length=2048)),
                 ('dataset', models.ForeignKey(related_name='webhooks', to='sa_api_v2.DataSet')),
             ],
@@ -357,7 +357,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='action',
             name='thing',
-            field=models.ForeignKey(related_name='actions', db_column=b'data_id', to='sa_api_v2.SubmittedThing'),
+            field=models.ForeignKey(related_name='actions', db_column='data_id', to='sa_api_v2.SubmittedThing'),
             preserve_default=True,
         ),
         migrations.AddField(

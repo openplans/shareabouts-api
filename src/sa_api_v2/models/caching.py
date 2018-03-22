@@ -1,5 +1,5 @@
 from django.core.exceptions import ObjectDoesNotExist
-from django.utils.importlib import import_module
+from importlib import import_module
 
 
 class CacheClearingModel (object):
