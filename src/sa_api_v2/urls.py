@@ -93,7 +93,7 @@ urlpatterns = patterns('sa_api_v2',
     url(r'^users/logout/$', views.remote_logout, name='remote-logout'),
 
     url(r'^users/oauth2/', include('provider.oauth2.urls', namespace='oauth2')),
-    url(r'^users/', include('social.apps.django_app.urls', namespace='social')),
+    url(r'^users/', include('social_django.urls', namespace='social')),
 
     url(r'^forms/', include('rest_framework.urls', namespace='rest_framework')),
 

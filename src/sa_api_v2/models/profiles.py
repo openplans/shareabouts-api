@@ -30,7 +30,7 @@ class ShareaboutsUserManager (UserManager):
         return access_token
 
     def ensure_social_user(self, provider, user_id, username, extra_data=None, firstname=None, lastname=None):
-        from social.apps.django_app.default.models import UserSocialAuth
+        from social_django.models import UserSocialAuth
         import uuid
 
         try:

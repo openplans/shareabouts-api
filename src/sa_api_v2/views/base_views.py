@@ -19,7 +19,7 @@ from rest_framework.renderers import JSONRenderer, JSONPRenderer, BrowsableAPIRe
 from rest_framework.request import Request
 from rest_framework.exceptions import APIException
 from rest_framework_bulk import generics as bulk_generics
-from social.apps.django_app import views as social_views
+from social_django import views as social_views
 from mock import patch
 from .. import apikey
 from .. import cors

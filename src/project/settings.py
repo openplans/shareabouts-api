@@ -119,7 +119,7 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
-    'social.apps.django_app.middleware.SocialAuthExceptionMiddleware',
+    'social_django.middleware.SocialAuthExceptionMiddleware',
     # Uncomment the next line for simple clickjacking protection:
     # 'django.middleware.clickjacking.XFrameOptionsMiddleware',
 
@@ -157,7 +157,8 @@ INSTALLED_APPS = (
     'rest_framework',
     'django_nose',
     'storages',
-    'social.apps.django_app.default',
+    # 'social.apps.django_app.default',
+    'social_django',
     'raven.contrib.django.raven_compat',
     'django_ace',
     'django_object_actions',
@@ -200,8 +201,8 @@ CELERY_ACCEPT_CONTENT = ['json', 'msgpack', 'yaml', 'pickle']
 AUTHENTICATION_BACKENDS = (
     # See http://django-social-auth.readthedocs.org/en/latest/configuration.html
     # for list of available backends.
-    'social.backends.twitter.TwitterOAuth',
-    'social.backends.facebook.FacebookOAuth2',
+    'social_core.backends.twitter.TwitterOAuth',
+    'social_core.backends.facebook.FacebookOAuth2',
     'sa_api_v2.auth_backends.CachedModelBackend',
 )
 
