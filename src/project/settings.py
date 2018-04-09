@@ -2,7 +2,7 @@ from os import environ
 
 DEBUG = True
 TEMPLATE_DEBUG = DEBUG
-SHOW_DEBUG_TOOLBAR = DEBUG
+SHOW_DEBUG_TOOLBAR = False
 DEBUG_TOOLBAR_PATCH_SETTINGS = False
 
 ADMINS = (
@@ -157,7 +157,6 @@ INSTALLED_APPS = (
     'rest_framework',
     'django_nose',
     'storages',
-    # 'social.apps.django_app.default',
     'social_django',
     'raven.contrib.django.raven_compat',
     'django_ace',
@@ -340,7 +339,7 @@ if 'DATABASE_URL' in environ:
 if 'DEBUG' in environ:
     DEBUG = (environ['DEBUG'].lower() == 'true')
     TEMPLATE_DEBUG = DEBUG
-    SHOW_DEBUG_TOOLBAR = DEBUG
+    SHOW_DEBUG_TOOLBAR = False
 
 # Look for the following redis environment variables, in order
 for REDIS_URL_ENVVAR in ('REDIS_URL', 'OPENREDIS_URL'):

@@ -43,7 +43,7 @@ def generate_unique_api_key():
 
 class ApiKey(CloneableModelMixin, models.Model):
     key = models.CharField(max_length=KEY_SIZE, unique=True, default=generate_unique_api_key)
-    logged_ip = models.IPAddressField(blank=True, null=True)
+    logged_ip = models.GenericIPAddressField(blank=True, null=True)
     last_used = models.DateTimeField(blank=True, default=now)
     dataset = models.ForeignKey(DataSet, blank=True, related_name='keys')
 
