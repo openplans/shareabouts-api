@@ -58,7 +58,7 @@ django-cors-headers==0.12
 # REST API
 # ==============================
 
-djangorestframework==2.3.12
+djangorestframework==2.4.8
 djangorestframework-csv==1.3.0
 git+https://github.com/mjumbewu/django-rest-framework-bulk.git@84a5d6c#egg=djangorestframework-bulk==0.1.3
 six>=1.4.1
