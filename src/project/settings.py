@@ -337,6 +337,10 @@ if 'DATABASE_URL' in environ:
     DATABASES['default']['ENGINE'] = 'django.contrib.gis.db.backends.postgis'
 
 if 'DEBUG' in environ:
+    INSTALLED_APPS += (
+        'sslserver',
+    )
+
     DEBUG = (environ['DEBUG'].lower() == 'true')
     TEMPLATE_DEBUG = DEBUG
     SHOW_DEBUG_TOOLBAR = False
