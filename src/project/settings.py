@@ -67,7 +67,7 @@ USE_L10N = True
 MEDIA_ROOT = ''
 MEDIA_URL = ''
 
-STATIC_ROOT = 'staticfiles'
+STATIC_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "staticfiles"))
 STATIC_URL = '/static/'
 STATICFILES_FINDERS = (
     'django.contrib.staticfiles.finders.FileSystemFinder',
