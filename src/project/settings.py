@@ -67,13 +67,15 @@ USE_L10N = True
 MEDIA_ROOT = ''
 MEDIA_URL = ''
 
-STATIC_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "staticfiles"))
+STATIC_ROOT = '/opt/python/current/app/static'
 STATIC_URL = '/static/'
 STATICFILES_FINDERS = (
     'django.contrib.staticfiles.finders.FileSystemFinder',
     'django.contrib.staticfiles.finders.AppDirectoriesFinder',
 )
 STATICFILES_DIRS = ()
+
+#STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.staticfiles_storage'
 
 TEMPLATE_LOADERS = (
     'django.template.loaders.filesystem.Loader',
