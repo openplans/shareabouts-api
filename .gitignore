@@ -29,3 +29,8 @@ env/
 
 # Local project settings
 src/project/local_settings.py
+
+# Elastic Beanstalk Files
+.elasticbeanstalk/*
+!.elasticbeanstalk/*.cfg.yml
+!.elasticbeanstalk/*.global.yml

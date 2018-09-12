@@ -1,6 +1,7 @@
 from os import environ
+import os
 
-DEBUG = True
+DEBUG = False
 TEMPLATE_DEBUG = DEBUG
 SHOW_DEBUG_TOOLBAR = DEBUG
 DEBUG_TOOLBAR_PATCH_SETTINGS = False
@@ -14,12 +15,12 @@ MANAGERS = ADMINS
 USE_GEODB = (environ.get('USE_GEODB', 'True').lower() == 'true')
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.', # Add 'postgresql_psycopg2', 'mysql', 'sqlite3' or 'oracle'.
-        'NAME': '',                      # Or path to database file if using sqlite3.
-        'USER': '',                      # Not used with sqlite3.
-        'PASSWORD': '',                  # Not used with sqlite3.
-        'HOST': '',                      # Set to empty string for localhost. Not used with sqlite3.
-        'PORT': '',                      # Set to empty string for default. Not used with sqlite3.
+        'ENGINE': 'django.contrib.gis.db.backends.postgis', # Add 'backends.postgis', 'mysql', 'sqlite3' or 'oracle'.
+        'NAME': environ.get('RDS_DB_NAME'),  # Or path to database file if using sqlite3.
+        'USER': environ.get('RDS_USERNAME'), # Not used with sqlite3.
+        'PASSWORD':  environ.get('RDS_PASSWORD'), # Not used with sqlite3.
+        'HOST': environ.get('RDS_HOSTNAME'), # Set to empty string for localhost. Not used with sqlite3.
+        'PORT': environ.get('RDS_PORT'),     # Set to empty string for default. Not used with sqlite3.
     }
 }
 
@@ -67,13 +68,15 @@ USE_L10N = True
 MEDIA_ROOT = ''
 MEDIA_URL = ''
 
-STATIC_ROOT = 'staticfiles'
+STATIC_ROOT = '/opt/python/current/app/static'
 STATIC_URL = '/static/'
 STATICFILES_FINDERS = (
     'django.contrib.staticfiles.finders.FileSystemFinder',
     'django.contrib.staticfiles.finders.AppDirectoriesFinder',
 )
 STATICFILES_DIRS = ()
+
+#STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.staticfiles_storage'
 
 TEMPLATE_LOADERS = (
     'django.template.loaders.filesystem.Loader',
