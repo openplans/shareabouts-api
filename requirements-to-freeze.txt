@@ -13,7 +13,7 @@ dj_static
 # Background processing
 # ==============================
 
-celery
+celery<4.0  # For Django 1.8
 django-celery
 
 
@@ -29,12 +29,12 @@ dj-database-url
 django-object-actions
 
 # Caching
-django-redis
+django-redis<4.10  # For Django 1.8
 django-cache-url
 
 # File Storage
 boto
-django-storages
+django-storages<1.7.1  # For Django 1.8
 
 
 
@@ -45,8 +45,8 @@ django-storages
 django-loginas
 social-auth-core
 social-auth-app-django
-django-oauth-toolkit==0.12.0
-django-cors-headers
+django-oauth-toolkit
+django-cors-headers<2.5.2  # For Django 1.8
 
 
 
@@ -64,7 +64,7 @@ ujson
 Pillow
 
 # The Django admin interface
-django-ace
+django-ace<1.0.5  # For Django 1.8
 
 # The manager interface
 requests
