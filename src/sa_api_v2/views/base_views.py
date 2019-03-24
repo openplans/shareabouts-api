@@ -20,7 +20,7 @@ from rest_framework.renderers import JSONRenderer, JSONPRenderer, BrowsableAPIRe
 from rest_framework.request import Request
 from rest_framework.exceptions import APIException
 from rest_framework_bulk import generics as bulk_generics
-from social.apps.django_app import views as social_views
+#from social.apps.django_app import views as social_views
 from mock import patch
 from .. import apikey
 from .. import cors
@@ -1933,15 +1933,15 @@ def capture_referer(view_func):
 
     return wrapper
 
-remote_social_login = capture_referer(social_views.auth)
+#remote_social_login = capture_referer(social_views.auth)
 remote_logout = capture_referer(auth_views.logout)
 
 def remote_social_login_error(request):
     error_redirect_url = request.session.get('client_error_next')
     return redirector(request, target=error_redirect_url)
 
-# social_auth_login = use_social_auth_headers(social_views.auth)
-# social_auth_complete = use_social_auth_headers(social_views.complete)
+## social_auth_login = use_social_auth_headers(social_views.auth)
+## social_auth_complete = use_social_auth_headers(social_views.complete)
 
 def redirector(request, target=None):
     """

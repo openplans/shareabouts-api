@@ -8,7 +8,7 @@ from django.db import transaction
 from django.test.client import RequestFactory
 from django.utils.timezone import now
 from itertools import chain
-from social.apps.django_app.default.models import UserSocialAuth
+#from social.apps.django_app.default.models import UserSocialAuth
 from .models import DataSnapshotRequest, DataSnapshot, DataSet, User
 from .serializers import SimplePlaceSerializer, SimpleSubmissionSerializer, SimpleDataSetSerializer
 from .renderers import CSVRenderer, JSONRenderer, GeoJSONRenderer
@@ -276,4 +276,3 @@ def load_dataset_archive(dataset_id, archive_url):
             # Load meta-data like permissions and such
             # metadata = data.get('metadata')
             # for permission_data in metadata.get('permissions'):
-
