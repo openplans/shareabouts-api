@@ -491,7 +491,7 @@ class FilteredResourceMixin (object):
             queryset = queryset.filter(data__icontains=textsearch_filter)
 
         # Then filter by attributes
-        for key, values in self.request.GET.iterlists():
+        for key, values in self.request.GET.lists():
             if key not in special_filters:
                 # Filter quickly for indexed values
                 if self.get_dataset().indexes.filter(attr_name=key).exists():
