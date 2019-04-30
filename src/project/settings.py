@@ -166,8 +166,7 @@ INSTALLED_APPS = (
     'djcelery',
     'loginas',
 
-    # OAuth
-    'oauth2_provider',
+    # CORS
     'corsheaders',
 
     # =================================
