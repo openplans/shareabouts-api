@@ -43,9 +43,8 @@ django-storages<1.7  # For Django 1.8
 # ==============================
 
 django-loginas
-#social-auth-core
-#social-auth-app-django
-django-oauth-toolkit<1.0.0  # For Django 1.8
+social-auth-core
+social-auth-app-django
 django-cors-headers<2.5.0  # For Django 1.8
 
 

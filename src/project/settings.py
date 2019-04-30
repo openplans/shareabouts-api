@@ -159,7 +159,7 @@ INSTALLED_APPS = (
     'rest_framework',
     'django_nose',
     'storages',
-    # 'social.apps.django_app.default',
+    'social_django',
     'raven.contrib.django.raven_compat',
     'django_ace',
     'django_object_actions',
@@ -202,14 +202,17 @@ CELERY_ACCEPT_CONTENT = ['json', 'msgpack', 'yaml', 'pickle']
 #
 
 AUTHENTICATION_BACKENDS = (
-    # See http://django-social-auth.readthedocs.org/en/latest/configuration.html
+    # See https://python-social-auth.readthedocs.io/en/latest/configuration/django.html
     # for list of available backends.
-    # 'social.backends.twitter.TwitterOAuth',
-    # 'social.backends.facebook.FacebookOAuth2',
+    'social_core.backends.twitter.TwitterOAuth',
+    'social_core.backends.facebook.FacebookOAuth2',
     'sa_api_v2.auth_backends.CachedModelBackend',
 )
 
 AUTH_USER_MODEL = 'sa_api_v2.User'
+# TODO: Enable after Django 1.11 update # SOCIAL_AUTH_POSTGRES_JSONFIELD = True
+SOCIAL_AUTH_URL_NAMESPACE = 'social'
+
 SOCIAL_AUTH_USER_MODEL = 'sa_api_v2.User'
 SOCIAL_AUTH_PROTECTED_USER_FIELDS = ['email',]
 
