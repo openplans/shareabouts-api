@@ -56,7 +56,7 @@ class GeoJSONRenderer(JSONRenderer):
         geometry = feature_props.pop(self.geometry_field)
         feature_id = feature_props.get(self.id_field)  # Should this be popped?
 
-        if isinstance(geometry, basestring):
+        if isinstance(geometry, str):
             geometry = json.loads(GEOSGeometry(geometry).json)
         elif isinstance(geometry, GEOSGeometry):
             geometry = json.loads(geometry.json)

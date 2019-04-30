@@ -51,7 +51,7 @@ class GeometryField(serializers.WritableField):
             raise ValueError('Cannot output as %s' % self.format)
 
     def from_native(self, data):
-        if not isinstance(data, basestring):
+        if not isinstance(data, str):
             data = json.dumps(data)
 
         try:
@@ -120,7 +120,7 @@ def api_reverse(view_name, kwargs={}, request=None, format=None):
     except KeyError:
         raise ValueError('No API route named {} formatted.'.format(view_name))
 
-    url_params = dict([(key, urlquote_plus(val)) for key,val in kwargs.iteritems()])
+    url_params = dict([(key, urlquote_plus(val)) for key,val in kwargs.items()])
     url += route_template_string.format(**url_params)
 
     if format is not None:
@@ -287,7 +287,7 @@ class DataBlobProcessor (EmptyModelSerializer):
 
         # Also ignore the following field names (treat them like reserved
         # words).
-        known_fields.update(self.base_fields.keys())
+        known_fields.update(list(self.base_fields.keys()))
 
         # And allow an arbitrary value field named 'data' (don't let the
         # data blob get in the way).
@@ -304,7 +304,7 @@ class DataBlobProcessor (EmptyModelSerializer):
         data_copy['data'] = json.dumps(blob)
 
         if not self.partial:
-            for field_name, field in self.base_fields.items():
+            for field_name, field in list(self.base_fields.items()):
                 if (not field.read_only and field_name not in data_copy):
                     data_copy[field_name] = field.default
 
@@ -318,7 +318,7 @@ class DataBlobProcessor (EmptyModelSerializer):
 
         # Did the user not ask for private data? Remove it!
         if not self.is_flag_on(INCLUDE_PRIVATE_PARAM):
-            for key in blob_data.keys():
+            for key in list(blob_data.keys()):
                 if key.startswith('private'):
                     del blob_data[key]
 
@@ -434,7 +434,7 @@ class AttachmentSerializer (EmptyModelSerializer, serializers.ModelSerializer):
         # Construct a SortedDictWithMetaData to get the brosable API form
         ret = self._dict_class(data)
         ret.fields = self._dict_class()
-        for field_name, field in fields.iteritems():
+        for field_name, field in fields.items():
             value = data[field_name]
             ret.fields[field_name] = self.augment_field(field, field_name, field_name, value)
         return ret
@@ -660,7 +660,7 @@ class DataSetSubmissionSetSummarySerializer (serializers.HyperlinkedModelSeriali
         submission_sets_map = self.get_submission_sets(obj)
         sets = submission_sets_map.get(obj.id, {})
         summaries = {}
-        for set_name, submission_set in sets.iteritems():
+        for set_name, submission_set in sets.items():
             # Ensure the user has read permission on the submission set.
             user = getattr(request, 'user', None)
             client = getattr(request, 'client', None)
@@ -733,7 +733,7 @@ class BasePlaceSerializer (SubmittedThingSerializer, serializers.ModelSerializer
 
         submission_sets = self.get_submission_sets(place)
         summaries = {}
-        for set_name, submissions in submission_sets.iteritems():
+        for set_name, submissions in submission_sets.items():
             # Ensure the user has read permission on the submission set.
             user = getattr(request, 'user', None)
             client = getattr(request, 'client', None)
@@ -759,7 +759,7 @@ class BasePlaceSerializer (SubmittedThingSerializer, serializers.ModelSerializer
 
         submission_sets = self.get_submission_sets(place)
         details = {}
-        for set_name, submissions in submission_sets.iteritems():
+        for set_name, submissions in submission_sets.items():
             # Ensure the user has read permission on the submission set.
             user = getattr(request, 'user', None)
             client = getattr(request, 'client', None)
@@ -911,7 +911,7 @@ class BaseDataSetSerializer (EmptyModelSerializer, serializers.ModelSerializer):
         # Construct a SortedDictWithMetaData to get the brosable API form
         ret = self._dict_class(data)
         ret.fields = self._dict_class()
-        for field_name, field in fields.iteritems():
+        for field_name, field in fields.items():
             default = getattr(field, 'get_default_value', lambda: None)()
             value = data.get(field_name, default)
             ret.fields[field_name] = self.augment_field(field, field_name, field_name, value)
@@ -963,7 +963,7 @@ class DataSetSerializer (BaseDataSetSerializer, serializers.HyperlinkedModelSeri
         if data and 'load_from_url' in data:
             self.load_url = data.pop('load_from_url')
             if self.load_url and isinstance(self.load_url, list):
-                self.load_url = unicode(self.load_url[0])
+                self.load_url = str(self.load_url[0])
         return super(DataSetSerializer, self).from_native(data, files)
 
 
@@ -979,7 +979,7 @@ class ActionSerializer (EmptyModelSerializer, serializers.ModelSerializer):
     def get_target_type(self, obj):
         try:
             if obj.thing.place is not None:
-                return u'place'
+                return 'place'
         except models.Place.DoesNotExist:
             pass
 

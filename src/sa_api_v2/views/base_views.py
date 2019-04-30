@@ -43,7 +43,7 @@ from itertools import groupby, count
 from collections import defaultdict
 try:
     # Python 2
-    from urllib import urlencode
+    from urllib.parse import urlencode
 except:
     # Python 3
     from urllib.parse import urlencode
@@ -148,7 +148,7 @@ def is_apikey_auth(auth):
 
 
 def is_origin_auth(auth):
-    return isinstance(auth, basestring) and auth.startswith('origin')
+    return isinstance(auth, str) and auth.startswith('origin')
 
 
 def is_really_logged_in(user, request):
@@ -662,7 +662,7 @@ class OwnedResourceMixin (ClientAuthenticationMixin, CorsEnabledMixin):
         # We do not want to risk assuming a user owns a place, for example, just
         # because their username is in the URL.
         for attr in self.kwargs:
-            if attr in params and unicode(self.kwargs[attr]) != unicode(params[attr]):
+            if attr in params and str(self.kwargs[attr]) != str(params[attr]):
                 return False
 
         return True
@@ -781,7 +781,7 @@ class CachedResourceMixin (object):
     def cache_response(self, key, response):
         data = response.data
         status = response.status_code
-        headers = response.items()
+        headers = list(response.items())
 
         # Cache enough info to recreate the response.
         django_cache.cache.set(key, (data, status, headers), settings.API_CACHE_TIMEOUT)
@@ -1502,7 +1502,7 @@ class DataSetListMixin (object):
         for summary in summaries:
             sets[summary['dataset']].append(summary)
 
-        return dict(sets.items())
+        return dict(list(sets.items()))
 
 
 class DataSetListView (DataSetListMixin, ProtectedOwnedResourceMixin, generics.ListCreateAPIView):
@@ -1590,7 +1590,7 @@ class DataSetListView (DataSetListMixin, ProtectedOwnedResourceMixin, generics.L
                 pass
 
             # Try to parse it as a full URL
-            from urlparse import urlparse
+            from urllib.parse import urlparse
             url = urlparse(clone_header)
             if url.scheme and url.netloc and url.path:
                 match = re.match(r'^/api/v2/(?P<owner_username>[^/]+)/datasets/(?P<dataset_slug>[^/]+)$', url.path)

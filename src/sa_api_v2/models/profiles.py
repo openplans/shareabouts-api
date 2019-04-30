@@ -22,7 +22,7 @@ class ShareaboutsUserManager (UserManager):
             auth=(key, secret), data={'grant_type': 'client_credentials'})
 
         if token_response.status_code != 200:
-            raise Exception(u'Received a {0} response while retrieving Twitter '
+            raise Exception('Received a {0} response while retrieving Twitter '
                 'authorization token: "{1}"'.format(
                 token_response.status_code, token_response.text))
 
@@ -70,7 +70,7 @@ class ShareaboutsUserManager (UserManager):
         response = requests.get(user_url, headers=headers)
 
         if response.status_code != 200:
-            raise Exception(u'Received a {0} response while trying to get user '
+            raise Exception('Received a {0} response while trying to get user '
                 'details for user "{2}" from twitter: {1}'.format(
                     response.status_code, response.text, username))
 

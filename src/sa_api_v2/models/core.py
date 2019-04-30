@@ -101,7 +101,7 @@ class DataSet (CloneableModelMixin, CacheClearingModel, models.Model):
     """
     owner = models.ForeignKey(User, related_name='datasets')
     display_name = models.CharField(max_length=128)
-    slug = models.SlugField(max_length=128, default=u'')
+    slug = models.SlugField(max_length=128, default='')
 
     cache = cache.DataSetCache()
     # previous_version = 'sa_api_v1.models.DataSet'

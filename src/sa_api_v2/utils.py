@@ -8,7 +8,7 @@ from functools import wraps
 
 try:
     # Python 2
-    from urlparse import urlparse, urljoin
+    from urllib.parse import urlparse, urljoin
 except:
     # Python 3
     from urllib.parse import urlparse, urljoin

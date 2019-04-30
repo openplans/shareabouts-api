@@ -139,11 +139,11 @@ class CacheBuffer (object):
         timed_queues = defaultdict(dict)
 
         if self.queue:
-            for key, value in self.queue.iteritems():
+            for key, value in self.queue.items():
                 timeout = self.timeouts[key]
                 timed_queues[timeout][key] = value
 
-            for timeout, queue in timed_queues.iteritems():
+            for timeout, queue in timed_queues.items():
                 if timeout is not Undefined:
                     django_cache.cache.set_many(queue, timeout)
                 else:
@@ -370,7 +370,7 @@ class DataSetCache (Cache):
     def get_bulk_data_cache_key(self, dataset_id, submission_set_name, format, **flags):
         return 'bulk_data:%s:%s:%s:%s' % (
             dataset_id, submission_set_name, format,
-            ':'.join(k for k, v in flags.items() if v))
+            ':'.join(k for k, v in list(flags.items()) if v))
 
     def get_instance_params(self, dataset_obj):
         params = {
@@ -383,7 +383,7 @@ class DataSetCache (Cache):
 
     # == Cache invalidation
     def get_request_prefixes(self, **params):
-        owner, dataset = map(params.get, ('owner_username', 'dataset_slug'))
+        owner, dataset = list(map(params.get, ('owner_username', 'dataset_slug')))
         prefixes = super(DataSetCache, self).get_request_prefixes(**params)
 
         instance_path = reverse('dataset-detail', args=[owner, dataset])
@@ -410,7 +410,7 @@ class PlaceCache (Cache):
         return params
 
     def get_request_prefixes(self, **params):
-        owner, dataset, place = map(params.get, ('owner_username', 'dataset_slug', 'place_id'))
+        owner, dataset, place = list(map(params.get, ('owner_username', 'dataset_slug', 'place_id')))
         prefixes = super(PlaceCache, self).get_request_prefixes(**params)
 
         instance_path = reverse('place-detail', args=[owner, dataset, place])
@@ -440,13 +440,13 @@ class SubmissionCache (Cache):
         return params
 
     def get_other_keys(self, **params):
-        dataset_id, place_id, submission_set_name = map(params.get, ['dataset_id', 'place_id', 'submission_set_name'])
+        dataset_id, place_id, submission_set_name = list(map(params.get, ['dataset_id', 'place_id', 'submission_set_name']))
         dataset_serialized_data_keys = self.dataset_cache.get_serialized_data_keys(dataset_id)
         place_serialized_data_keys = self.place_cache.get_serialized_data_keys(place_id)
         return dataset_serialized_data_keys | place_serialized_data_keys
 
     def get_request_prefixes(self, **params):
-        owner, dataset, place, submission_set_name, submission = map(params.get, ['owner_username', 'dataset_slug', 'place_id', 'submission_set_name', 'submission_id'])
+        owner, dataset, place, submission_set_name, submission = list(map(params.get, ['owner_username', 'dataset_slug', 'place_id', 'submission_set_name', 'submission_id']))
         prefixes = super(SubmissionCache, self).get_request_prefixes(**params)
 
         # TODO: it's pretty clear that a developer should be able to register
@@ -523,7 +523,7 @@ class AttachmentCache (Cache):
             return prefixes | self.get_place_attachment_request_prefixes(**params)
 
     def get_submission_attachment_request_prefixes(self, **params):
-        owner, dataset, place, submission_set_name, submission = map(params.get, ['owner_username', 'dataset_slug', 'place_id', 'submission_set_name', 'submission_id'])
+        owner, dataset, place, submission_set_name, submission = list(map(params.get, ['owner_username', 'dataset_slug', 'place_id', 'submission_set_name', 'submission_id']))
         prefixes = set()
 
         specific_instance_path = reverse('submission-detail', args=[owner, dataset, place, submission_set_name, submission])
@@ -542,7 +542,7 @@ class AttachmentCache (Cache):
         return prefixes
 
     def get_place_attachment_request_prefixes(self, **params):
-        owner, dataset, place = map(params.get, ('owner_username', 'dataset_slug', 'place_id'))
+        owner, dataset, place = list(map(params.get, ('owner_username', 'dataset_slug', 'place_id')))
         prefixes = set()
 
         instance_path = reverse('place-detail', args=[owner, dataset, place])

@@ -9,7 +9,7 @@ import base64
 import csv
 import json
 import mock
-from StringIO import StringIO
+from io import StringIO
 from ..models import User, DataSet, Place, Submission, Attachment, Action, Group, DataIndex
 from ..cache import cache_buffer
 from ..apikey.models import ApiKey
@@ -149,9 +149,9 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
 
         # Check that the submission sets look right
         self.assertEqual(len(data['properties']['submission_sets']), 2)
-        self.assertIn('comments', data['properties']['submission_sets'].keys())
-        self.assertIn('likes', data['properties']['submission_sets'].keys())
-        self.assertNotIn('applause', data['properties']['submission_sets'].keys())
+        self.assertIn('comments', list(data['properties']['submission_sets'].keys()))
+        self.assertIn('likes', list(data['properties']['submission_sets'].keys()))
+        self.assertNotIn('applause', list(data['properties']['submission_sets'].keys()))
 
         # Check that the submitter looks right
         self.assertIsNotNone(data['properties']['submitter'])
@@ -179,7 +179,7 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
         self.assertIsInstance(comments_set, list)
         self.assertEqual(len(comments_set), 2)
         self.assertIn('foo', comments_set[0])
-        self.assert_(all([comment['visible'] for comment in comments_set]))
+        self.assertTrue(all([comment['visible'] for comment in comments_set]))
 
         # --------------------------------------------------
 
@@ -224,7 +224,7 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
         # Check that the invisible submissions are included
         comments_set = data['properties']['submission_sets'].get('comments')
         self.assertEqual(len(comments_set), 3)
-        self.assert_(not all([comment['visible'] for comment in comments_set]))
+        self.assertTrue(not all([comment['visible'] for comment in comments_set]))
 
     def test_GET_response_with_attachment(self):
         request = self.factory.get(self.path)
@@ -1048,7 +1048,7 @@ class TestPlaceListView (APITestMixin, TestCase):
 
         # Check that there are ATM features
         self.assertStatusCode(response, 200)
-        self.assert_(all([feature['properties'].get('foo') == 'bar' for feature in data['features']]))
+        self.assertTrue(all([feature['properties'].get('foo') == 'bar' for feature in data['features']]))
         self.assertEqual(len(data['features']), 2)
 
         request = self.factory.get(self.path + '?search=ba')
@@ -1057,7 +1057,7 @@ class TestPlaceListView (APITestMixin, TestCase):
 
         # Check that the request was successful
         self.assertStatusCode(response, 200)
-        self.assert_(all([feature['properties'].get('foo') in ('bar', 'baz') for feature in data['features']]))
+        self.assertTrue(all([feature['properties'].get('foo') in ('bar', 'baz') for feature in data['features']]))
         self.assertEqual(len(data['features']), 3)
 
         request = self.factory.get(self.path + '?search=bad')
@@ -1088,7 +1088,7 @@ class TestPlaceListView (APITestMixin, TestCase):
 
         # Check that there are ATM features
         self.assertStatusCode(response, 200)
-        self.assert_(all([feature['properties'].get('foo') == 'bar' for feature in data['features']]))
+        self.assertTrue(all([feature['properties'].get('foo') == 'bar' for feature in data['features']]))
         self.assertEqual(len(data['features']), 2)
 
         request = self.factory.get(self.path + '?foo=qux')
@@ -1324,7 +1324,7 @@ class TestPlaceListView (APITestMixin, TestCase):
         self.assertIsNone(data['properties']['submitter'])
 
         # visible should be true by default
-        self.assert_(data['properties'].get('visible'))
+        self.assertTrue(data['properties'].get('visible'))
 
         # Check that geometry exists
         self.assertIn('geometry', data)
@@ -1472,7 +1472,7 @@ class TestPlaceListView (APITestMixin, TestCase):
         self.assertIsNone(data['properties']['submitter'])
 
         # visible should be true by default
-        self.assert_(data['properties'].get('visible'))
+        self.assertTrue(data['properties'].get('visible'))
 
         # Check that geometry exists
         self.assertIn('geometry', data)
@@ -1532,7 +1532,7 @@ class TestPlaceListView (APITestMixin, TestCase):
         self.assertEqual(data['properties']['submitter']['id'], self.submitter.id)
 
         # visible should be true by default
-        self.assert_(data['properties'].get('visible'))
+        self.assertTrue(data['properties'].get('visible'))
 
         # Check that geometry exists
         self.assertIn('geometry', data)
@@ -2258,7 +2258,7 @@ class TestSubmissionListView (APITestMixin, TestCase):
 
         # Check that there are ATM features
         self.assertStatusCode(response, 200)
-        self.assert_(all([result.get('baz') == 'bar' for result in data['results']]))
+        self.assertTrue(all([result.get('baz') == 'bar' for result in data['results']]))
         self.assertEqual(len(data['results']), 2)
 
         request = self.factory.get(self.path + '?baz=qux')
@@ -2411,7 +2411,7 @@ class TestSubmissionListView (APITestMixin, TestCase):
         self.assertEqual(data.get('submitter_name'), 'Andy')
 
         # visible should be true by default
-        self.assert_(data.get('visible'))
+        self.assertTrue(data.get('visible'))
 
         # private-secrets is not special, but is private, so should not come
         # back down
@@ -2480,7 +2480,7 @@ class TestSubmissionListView (APITestMixin, TestCase):
         self.assertEqual(data['submitter']['id'], self.submitter.id)
 
         # visible should be true by default
-        self.assert_(data.get('visible'))
+        self.assertTrue(data.get('visible'))
 
         # private-secrets is not special, but is private, so should not come
         # back down
@@ -2592,7 +2592,7 @@ class TestSubmissionListView (APITestMixin, TestCase):
         self.assertEqual(data.get('submitter_name'), 'Andy')
 
         # visible should be true by default
-        self.assert_(data.get('visible'))
+        self.assertTrue(data.get('visible'))
 
         # private-secrets is not special, but is private, so should not come
         # back down
@@ -2751,7 +2751,7 @@ class TestSubmissionListView (APITestMixin, TestCase):
         self.assertEqual(data.get('submitter_name'), 'Andy')
 
         # visible should be true by default
-        self.assert_(data.get('visible'))
+        self.assertTrue(data.get('visible'))
 
         # private-secrets is not special, but is private, so should not come
         # back down
@@ -2922,7 +2922,7 @@ class TestDataSetSubmissionListView (APITestMixin, TestCase):
 
         # Check that there are ATM features
         self.assertStatusCode(response, 200)
-        self.assert_(all([result.get('baz') == 'bar' for result in data['results']]))
+        self.assertTrue(all([result.get('baz') == 'bar' for result in data['results']]))
         self.assertEqual(len(data['results']), 2)
 
         request = self.factory.get(self.path + '?baz=qux')
@@ -3679,7 +3679,7 @@ class TestDataSetListView (APITestMixin, TestCase):
         # self.assertEqual(data['places']['length'], 0)
         # self.assertEqual(data['submission_sets'], {})
         self.assertEqual(data['display_name'], self.dataset.display_name)
-        self.assert_(data['slug'].startswith(self.dataset.slug))
+        self.assertTrue(data['slug'].startswith(self.dataset.slug))
 
         # Check that we actually created a dataset
         final_num_datasets = DataSet.objects.all().count()

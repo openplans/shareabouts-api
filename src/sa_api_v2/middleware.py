@@ -49,7 +49,7 @@ class JSEnableAllCookies (object):
     """
     def process_response(self, request, response):
         if response.cookies:
-            for morsel in response.cookies.values():
+            for morsel in list(response.cookies.values()):
                 morsel['httponly'] = ''
 
         return response

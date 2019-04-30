@@ -1,6 +1,6 @@
 # From http://docs.dotcloud.com/0.4/tutorials/python/django/#add-postgresql-database
 
-from __future__ import print_function
+
 
 import os
 
@@ -13,7 +13,7 @@ def create_dbs():
     if not databases:
         raise RuntimeError(
             "No databases in %s" % os.environ['DJANGO_SETTINGS_MODULE'])
-    for name, db in databases.iteritems():
+    for name, db in databases.items():
         host = db['HOST']
         user = db['USER']
         password = db['PASSWORD']

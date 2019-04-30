@@ -1,5 +1,5 @@
 import json
-from StringIO import StringIO
+from io import StringIO
 from django.test import TestCase
 from sa_api_v2.parsers import GeoJSONParser
 

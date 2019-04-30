@@ -10,7 +10,7 @@ class Migration(SchemaMigration):
     def forwards(self, orm):
         # Adding field 'DataSet.slug'
         db.add_column('sa_api_dataset', 'slug',
-                      self.gf('django.db.models.fields.SlugField')(default=u'', max_length=128),
+                      self.gf('django.db.models.fields.SlugField')(default='', max_length=128),
                       keep_default=False)
 
 

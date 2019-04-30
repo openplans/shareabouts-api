@@ -2,6 +2,7 @@ import operator
 import ujson as json
 from django.db import models
 from .mixins import CloneableModelMixin
+from functools import reduce
 
 
 class DataIndex (CloneableModelMixin, models.Model):
@@ -46,7 +47,7 @@ class IndexedValueManager (models.Manager):
             except IndexedValue.DoesNotExist:
                 value = IndexedValue(thing_id=thing.id, index_id=index.id)
 
-            new_indexable_value = unicode(data[index.attr_name])
+            new_indexable_value = str(data[index.attr_name])
             if value.value != new_indexable_value:
                 value.value = new_indexable_value
                 value.save()

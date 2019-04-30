@@ -8,7 +8,7 @@ import base64
 import json
 import mock
 import responses
-from StringIO import StringIO
+from io import StringIO
 from ..models import User, DataSet, Place, Submission, Attachment, Group, Webhook
 from ..cache import cache_buffer
 from ..apikey.models import ApiKey

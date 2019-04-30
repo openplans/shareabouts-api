@@ -1,4 +1,4 @@
-from __future__ import unicode_literals
+
 
 import requests
 import ujson as json
@@ -36,7 +36,7 @@ def generate_bulk_content(dataset, submission_set_name, **flags):
 
     # Construct a request for the serializer context
     r_data = {}
-    for flag_attr, flag_val in flags.iteritems():
+    for flag_attr, flag_val in flags.items():
         if flag_val: r_data[flag_attr] = 'true'
     r = RequestFactory().get('', data=r_data)
     r.get_dataset = lambda: dataset
@@ -45,7 +45,7 @@ def generate_bulk_content(dataset, submission_set_name, **flags):
     serializer.context['request'] = r
     data = serializer.data
     content = {}
-    for format, renderer_class in renderer_classes.items():
+    for format, renderer_class in list(renderer_classes.items()):
         renderer = renderer_class()
         content[format] = renderer.render(data)
     return content
@@ -191,7 +191,7 @@ def preload_users(data):
 
     for place_data in data.get('features', []):
         collect_username(place_data['properties'])
-        for _, submissions_data in place_data['properties'].get('submission_sets', {}).iteritems():
+        for _, submissions_data in place_data['properties'].get('submission_sets', {}).items():
             for submission_data in submissions_data:
                 collect_username(submission_data)
 
@@ -201,13 +201,13 @@ def preload_users(data):
 
 def list_errors(errors):
     errors_list = []
-    for key, l in errors.items():
+    for key, l in list(errors.items()):
         if isinstance(l, list):
             for msg in l:
-                errors_list.append('%s: %s' % (key, unicode(msg)))
+                errors_list.append('%s: %s' % (key, str(msg)))
         else:
             msg = l
-            errors_list.append('%s: %s' % (key, unicode(msg)))
+            errors_list.append('%s: %s' % (key, str(msg)))
     return errors_list
 
 
@@ -252,7 +252,7 @@ def load_dataset_archive(dataset_id, archive_url):
                 place.submitter = get_or_create_user(submitter_data, users_map)
                 place.save(silent=True, reindex=False)
 
-                for set_name, submissions_data in submission_sets_data.iteritems():
+                for set_name, submissions_data in submission_sets_data.items():
                     for submission_data in submissions_data:
                         submission_data.pop('id', None)
                         submission_data.pop('place', None)

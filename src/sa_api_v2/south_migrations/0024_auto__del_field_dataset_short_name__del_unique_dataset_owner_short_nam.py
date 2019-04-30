@@ -24,7 +24,7 @@ class Migration(SchemaMigration):
 
         # Adding field 'DataSet.short_name'
         db.add_column('sa_api_dataset', 'short_name',
-                      self.gf('django.db.models.fields.SlugField')(default=u'', max_length=128),
+                      self.gf('django.db.models.fields.SlugField')(default='', max_length=128),
                       keep_default=False)
 
         # Adding unique constraint on 'DataSet', fields ['owner', 'short_name']
