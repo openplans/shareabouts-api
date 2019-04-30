@@ -902,7 +902,7 @@ class PlaceInstanceView (CachedResourceMixin, LocatedResourceMixin, OwnedResourc
             return self.model.objects\
                 .filter(pk=pk)\
                 .select_related('dataset', 'dataset__owner', 'submitter')\
-                .prefetch_related('submitter__social_auth',
+                .prefetch_related(# TODO: Bring back with social_auth #'submitter__social_auth',
                                   'submissions',
                                   'submissions__attachments',
                                   'attachments')\
@@ -1046,7 +1046,7 @@ class PlaceListView (CachedResourceMixin, LocatedResourceMixin, OwnedResourceMix
         queryset = queryset.filter(dataset=dataset)\
             .select_related('dataset', 'dataset__owner', 'submitter')\
             .prefetch_related(
-                'submitter__social_auth',
+                # TODO: Bring back with social_auth # 'submitter__social_auth',
                 'submitter___groups',
                 'submitter___groups__dataset',
                 'submitter___groups__dataset__owner',
@@ -1057,7 +1057,7 @@ class PlaceListView (CachedResourceMixin, LocatedResourceMixin, OwnedResourceMix
             queryset = queryset.prefetch_related(
                 'submissions',
                 'submissions__submitter',
-                'submissions__submitter__social_auth',
+                # TODO: Bring back with social_auth # 'submissions__submitter__social_auth',
                 'submissions__submitter___groups',
                 'submissions__attachments')
 
@@ -1157,7 +1157,8 @@ class SubmissionInstanceView (CachedResourceMixin, OwnedResourceMixin, generics.
                     'place__dataset',
                     'place__dataset__owner',
                     'submitter')\
-                .prefetch_related('attachments', 'submitter__social_auth')\
+                .prefetch_related('attachments', # TODO: Bring back with social_auth # 'submitter__social_auth'
+                    )\
                 .get()
         except self.model.DoesNotExist:
             raise Http404
@@ -1261,7 +1262,9 @@ class SubmissionListView (CachedResourceMixin, OwnedResourceMixin, FilteredResou
                 'place__dataset',
                 'place__dataset__owner',
                 'submitter')\
-            .prefetch_related('attachments', 'submitter__social_auth', 'submitter___groups')
+            .prefetch_related('attachments',
+                # TODO: Bring back with social_auth # 'submitter__social_auth',
+                'submitter___groups')
 
     def get_serializer(self, instance=None, data=None,
                        files=None, many=False, partial=False):
@@ -1341,7 +1344,9 @@ class DataSetSubmissionListView (CachedResourceMixin, OwnedResourceMixin, Filter
                 'place__dataset',
                 'place__dataset__owner',
                 'submitter')\
-            .prefetch_related('attachments', 'submitter__social_auth', 'submitter___groups')
+            .prefetch_related('attachments',
+                # TODO: Bring back with social_auth # 'submitter__social_auth',
+                'submitter___groups')
 
 
 class DataSetInstanceView (ProtectedOwnedResourceMixin, generics.RetrieveUpdateDestroyAPIView):
@@ -1766,7 +1771,7 @@ class ActionListView (CachedResourceMixin, OwnedResourceMixin, generics.ListAPIV
                 'thing__dataset__owner')\
             .prefetch_related(
                 'thing__submitter___groups__dataset__owner',
-                'thing__submitter__social_auth',
+                # TODO: Bring back with social_auth # 'thing__submitter__social_auth',
 
                 'thing__place__attachments',
                 'thing__submission__attachments',
@@ -1830,8 +1835,8 @@ class UserInstanceView (OwnedResourceMixin, generics.RetrieveAPIView):
     SAFE_CORS_METHODS = ('GET', 'HEAD', 'TRACE', 'OPTIONS')
 
     def get_queryset(self):
-        return models.User.objects.all()\
-            .prefetch_related('social_auth')
+        return models.User.objects.all()#\
+            # TODO: Bring back with social_auth # .prefetch_related('social_auth')
 
     def get_object(self, queryset=None):
         owner_username = self.kwargs[self.owner_username_kwarg]
