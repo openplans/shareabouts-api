@@ -1,5 +1,5 @@
 from django.forms import CharField
-from django.forms import IPAddressField
+from django.forms import GenericIPAddressField
 from django.forms import ModelForm
 from .models import KEY_SIZE
 from .models import ApiKey
@@ -18,7 +18,7 @@ class ApiKeyForm(ModelForm):
     key = CharField(max_length=KEY_SIZE, required=False,
                     help_text='If not provided, a random key will be generated.')
 
-    logged_ip = IPAddressField(required=False)
+    logged_ip = GenericIPAddressField(required=False)
 
     def clean(self):
         apikey = self.cleaned_data.get('key') or ''
