@@ -513,11 +513,10 @@ class BaseUserSerializer (serializers.ModelSerializer):
         exclude = ('first_name', 'last_name', 'email', 'password', 'is_staff', 'is_active', 'is_superuser', 'last_login', 'date_joined', 'user_permissions')
 
     def get_strategy(self, obj):
-        # # TODO: Bring back with social_auth
-        # for social_auth in obj.social_auth.all():
-        #     provider = social_auth.provider
-        #     if provider in self.strategies:
-        #         return social_auth.extra_data, self.strategies[provider]
+        for social_auth in obj.social_auth.all():
+            provider = social_auth.provider
+            if provider in self.strategies:
+                return social_auth.extra_data, self.strategies[provider]
 
         return None, self.default_strategy
 
@@ -530,17 +529,15 @@ class BaseUserSerializer (serializers.ModelSerializer):
         return strategy.extract_avatar_url(user_data)
 
     def get_provider_type(self, obj):
-        # # TODO: Bring back with social_auth
-        # for social_auth in obj.social_auth.all():
-        #     return social_auth.provider
-        # else:
+        for social_auth in obj.social_auth.all():
+            return social_auth.provider
+        else:
             return ''
 
     def get_provider_id(self, obj):
-        # # TODO: Bring back with social_auth
-        # for social_auth in obj.social_auth.all():
-        #     return social_auth.uid
-        # else:
+        for social_auth in obj.social_auth.all():
+            return social_auth.uid
+        else:
             return None
 
     def to_native(self, obj):
