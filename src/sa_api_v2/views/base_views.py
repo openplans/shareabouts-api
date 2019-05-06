@@ -892,7 +892,7 @@ class PlaceInstanceView (CachedResourceMixin, LocatedResourceMixin, OwnedResourc
     ------------------------------------------------------------
     """
 
-    model = models.Place
+    queryset = models.Place.objects.all()
     serializer_class = serializers.PlaceSerializer
     renderer_classes = (renderers.GeoJSONRenderer, renderers.GeoJSONPRenderer) + OwnedResourceMixin.renderer_classes[2:]
     parser_classes = (parsers.GeoJSONParser,) + OwnedResourceMixin.parser_classes[1:]
@@ -999,7 +999,8 @@ class PlaceListView (CachedResourceMixin, LocatedResourceMixin, OwnedResourceMix
     ------------------------------------------------------------
     """
 
-    model = models.Place
+    # queryset = models.Place.objects.all()
+    queryset = models.Place.objects.all()
     serializer_class = serializers.PlaceSerializer
     pagination_serializer_class = serializers.FeatureCollectionSerializer
     renderer_classes = (renderers.GeoJSONRenderer, renderers.GeoJSONPRenderer) + OwnedResourceMixin.renderer_classes[2:]
@@ -1142,7 +1143,7 @@ class SubmissionInstanceView (CachedResourceMixin, OwnedResourceMixin, generics.
     ------------------------------------------------------------
     """
 
-    model = models.Submission
+    queryset = models.Submission.objects.all()
     serializer_class = serializers.SubmissionSerializer
     submission_set_name_kwarg = 'submission_set_name' # Set here so that the data permission checker has access
 
@@ -1209,7 +1210,7 @@ class SubmissionListView (CachedResourceMixin, OwnedResourceMixin, FilteredResou
     ------------------------------------------------------------
     """
 
-    model = models.Submission
+    queryset = models.Submission.objects.all()
     serializer_class = serializers.SubmissionSerializer
     pagination_serializer_class = serializers.PaginatedResultsSerializer
 
@@ -1311,7 +1312,7 @@ class DataSetSubmissionListView (CachedResourceMixin, OwnedResourceMixin, Filter
     ------------------------------------------------------------
     """
 
-    model = models.Submission
+    queryset = models.Submission.objects.all()
     serializer_class = serializers.SubmissionSerializer
     pagination_serializer_class = serializers.PaginatedResultsSerializer
 
@@ -1379,7 +1380,7 @@ class DataSetInstanceView (ProtectedOwnedResourceMixin, generics.RetrieveUpdateD
     ------------------------------------------------------------
     """
 
-    model = models.DataSet
+    queryset = models.DataSet.objects.all
     serializer_class = serializers.DataSetSerializer
     authentication_classes = (authentication.BasicAuthentication, ShareaboutsSessionAuth)
     client_authentication_classes = ()
@@ -1426,7 +1427,7 @@ class DataSetMetadataView (ProtectedOwnedResourceMixin, generics.RetrieveAPIView
     ------------------------------------------------------------
     """
 
-    model = models.DataSet
+    queryset = models.DataSet.objects.all()
     serializer_class = serializers.SimpleDataSetSerializer
     authentication_classes = (authentication.BasicAuthentication, ShareaboutsSessionAuth)
     client_authentication_classes = ()
@@ -1479,7 +1480,7 @@ class DataSetListMixin (object):
     Common aspects for dataset list views.
     """
 
-    model = models.DataSet
+    queryset = models.DataSet.objects.all()
     serializer_class = serializers.DataSetSerializer
     pagination_serializer_class = serializers.PaginatedResultsSerializer
     authentication_classes = (authentication.BasicAuthentication, ShareaboutsSessionAuth)
@@ -1706,7 +1707,7 @@ class AttachmentListView (OwnedResourceMixin, FilteredResourceMixin, generics.Li
     ------------------------------------------------------------
     """
 
-    model = models.Attachment
+    queryset = models.Attachment.objects.all()
     serializer_class = serializers.AttachmentSerializer
 
     thing_id_kwarg = 'thing_id'
@@ -1750,7 +1751,7 @@ class ActionListView (CachedResourceMixin, OwnedResourceMixin, generics.ListAPIV
 
     ------------------------------------------------------------
     """
-    model = models.Action
+    queryset = models.Action.objects.all()
     serializer_class = serializers.ActionSerializer
     pagination_serializer_class = serializers.PaginatedResultsSerializer
 
@@ -1828,7 +1829,7 @@ class OriginListView (ClientAuthListView):
 #
 
 class UserInstanceView (OwnedResourceMixin, generics.RetrieveAPIView):
-    model = models.User
+    queryset = models.User.objects.all()
     client_authentication_classes = ()
     always_allow_options = True
     serializer_class = serializers.FullUserSerializer

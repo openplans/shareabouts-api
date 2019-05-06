@@ -3,7 +3,7 @@ DjangoRestFramework resources for the Shareabouts REST API.
 """
 import ujson as json
 import re
-from collections import defaultdict
+from collections import defaultdict, OrderedDict
 from itertools import chain
 from django.conf import settings
 if settings.USE_GEODB:
@@ -31,7 +31,7 @@ log = logging.getLogger(__name__)
 # ------------------
 #
 
-class GeometryField(serializers.WritableField):
+class GeometryField(serializers.Field):
     def __init__(self, format='dict', *args, **kwargs):
         self.format = format
 
@@ -40,7 +40,7 @@ class GeometryField(serializers.WritableField):
 
         super(GeometryField, self).__init__(*args, **kwargs)
 
-    def to_native(self, obj):
+    def to_representation(self, obj):
         if self.format == 'json':
             return obj.json
         elif self.format == 'wkt':
@@ -50,7 +50,7 @@ class GeometryField(serializers.WritableField):
         else:
             raise ValueError('Cannot output as %s' % self.format)
 
-    def from_native(self, data):
+    def to_internal_value(self, data):
         if not isinstance(data, str):
             data = json.dumps(data)
 
@@ -138,9 +138,13 @@ class ShareaboutsRelatedField (ShareaboutsFieldMixin, serializers.HyperlinkedRel
     def __init__(self, *args, **kwargs):
         if self.view_name is not None:
             kwargs['view_name'] = self.view_name
+        kwargs.setdefault('read_only', self.read_only)
         super(ShareaboutsRelatedField, self).__init__(*args, **kwargs)
 
-    def to_native(self, obj):
+    def use_pk_only_optimization(self):
+        return False
+
+    def to_representation(self, obj):
         view_name = self.view_name
         request = self.context.get('request', None)
         format = self.format or self.context.get('format', None)
@@ -185,7 +189,7 @@ class ShareaboutsIdentityField (ShareaboutsFieldMixin, serializers.HyperlinkedId
         view_name = kwargs.pop('view_name', None) or getattr(self, 'view_name', None)
         super(ShareaboutsIdentityField, self).__init__(view_name=view_name, *args, **kwargs)
 
-    def field_to_native(self, obj, field_name):
+    def to_representation(self, obj):
         if obj.pk is None: return None
 
         request = self.context.get('request', None)
@@ -202,6 +206,7 @@ class ShareaboutsIdentityField (ShareaboutsFieldMixin, serializers.HyperlinkedId
 
 class PlaceIdentityField (ShareaboutsIdentityField):
     url_arg_names = ('owner_username', 'dataset_slug', 'place_id')
+    view_name = 'place-detail'
 
 
 class SubmissionSetIdentityField (ShareaboutsIdentityField):
@@ -221,14 +226,16 @@ class DataSetSubmissionSetIdentityField (ShareaboutsIdentityField):
 
 class SubmissionIdentityField (ShareaboutsIdentityField):
     url_arg_names = ('owner_username', 'dataset_slug', 'place_id', 'submission_set_name', 'submission_id')
+    view_name = 'submission-detail'
 
 
 class DataSetIdentityField (ShareaboutsIdentityField):
     url_arg_names = ('owner_username', 'dataset_slug')
+    view_name = 'dataset-detail'
 
 
 class AttachmentFileField (serializers.FileField):
-    def to_native(self, obj):
+    def to_representation(self, obj):
         return obj.storage.url(obj.name)
 
 
@@ -251,7 +258,7 @@ class ActivityGenerator (object):
 class EmptyModelSerializer (object):
     """
     A simple mixin that constructs an in-memory model when None is passed in
-    as the object to to_native.
+    as the object to to_representation.
     """
     def ensure_obj(self, obj):
         if obj is None: obj = self.opts.model()
@@ -325,9 +332,9 @@ class DataBlobProcessor (EmptyModelSerializer):
         data.update(blob_data)
         return data
 
-    def to_native(self, obj):
+    def to_representation(self, obj):
         obj = self.ensure_obj(obj)
-        data = super(DataBlobProcessor, self).to_native(obj)
+        data = super(DataBlobProcessor, self).to_representation(obj)
         self.explode_data_blob(data)
         return data
 
@@ -420,8 +427,9 @@ class AttachmentSerializer (EmptyModelSerializer, serializers.ModelSerializer):
     class Meta:
         model = models.Attachment
         exclude = ('id', 'thing',)
+        validators = []
 
-    def to_native(self, obj):
+    def to_representation(self, obj):
         obj = self.ensure_obj(obj)
         data = {
             'created_datetime': obj.created_datetime,
@@ -431,12 +439,13 @@ class AttachmentSerializer (EmptyModelSerializer, serializers.ModelSerializer):
         }
         fields = self.get_fields()
 
-        # Construct a SortedDictWithMetaData to get the brosable API form
-        ret = self._dict_class(data)
-        ret.fields = self._dict_class()
+        # Construct a OrderedDict to get the brosable API form
+        ret = OrderedDict(data)
+        ret.fields = OrderedDict()
         for field_name, field in fields.items():
             value = data[field_name]
-            ret.fields[field_name] = self.augment_field(field, field_name, field_name, value)
+            ret[field_name] = field.to_representation(value)
+            # ret.fields[field_name] = self.augment_field(field, field_name, field_name, value)
         return ret
 
 
@@ -496,10 +505,10 @@ class GroupSerializer (BaseGroupSerializer):
 
 # User serializers
 class BaseUserSerializer (serializers.ModelSerializer):
-    name = serializers.SerializerMethodField('get_name')
-    avatar_url = serializers.SerializerMethodField('get_avatar_url')
-    provider_type = serializers.SerializerMethodField('get_provider_type')
-    provider_id = serializers.SerializerMethodField('get_provider_id')
+    name = serializers.SerializerMethodField()
+    avatar_url = serializers.SerializerMethodField()
+    provider_type = serializers.SerializerMethodField()
+    provider_id = serializers.SerializerMethodField()
 
     strategies = {
         'twitter': TwitterUserDataStrategy(),
@@ -540,7 +549,7 @@ class BaseUserSerializer (serializers.ModelSerializer):
         else:
             return None
 
-    def to_native(self, obj):
+    def to_representation(self, obj):
         return {
             "name": self.get_name(obj),
             "avatar_url": self.get_avatar_url(obj),
@@ -578,12 +587,12 @@ class FullUserSerializer (BaseUserSerializer):
     class Meta (BaseUserSerializer.Meta):
         pass
 
-    def to_native(self, obj):
-        data = super(FullUserSerializer, self).to_native(obj)
+    def to_representation(self, obj):
+        data = super(FullUserSerializer, self).to_representation(obj)
         if obj:
             group_field = self.base_fields['groups']
             group_field.initialize(parent=self, field_name='groups')
-            data['groups'] = group_field.field_to_native(obj, 'groups')
+            data['groups'] = group_field.to_representation(obj, 'groups')
         return data
 
 
@@ -604,7 +613,7 @@ class DataSetPlaceSetSummarySerializer (serializers.HyperlinkedModelSerializer):
         # This will currently do a query for every dataset, not a single query
         # for all datasets. Generally a bad idea, but not a huge problem
         # considering the number of datasets at the moment. In the future,
-        # we should perhaps use some kind of many_to_native function.
+        # we should perhaps use some kind of many_to_representation function.
 
         # if self.many:
         #     include_invisible = INCLUDE_INVISIBLE_PARAM in self.context['request'].GET
@@ -625,10 +634,10 @@ class DataSetPlaceSetSummarySerializer (serializers.HyperlinkedModelSerializer):
             places = places.filter(visible=True)
         return {obj.pk: places.count()}
 
-    def to_native(self, obj):
+    def to_representation(self, obj):
         place_count_map = self.get_place_counts(obj)
         obj.places_length = place_count_map.get(obj.pk, 0)
-        data = super(DataSetPlaceSetSummarySerializer, self).to_native(obj)
+        data = super(DataSetPlaceSetSummarySerializer, self).to_representation(obj)
         return data
 
 
@@ -655,7 +664,7 @@ class DataSetSubmissionSetSummarySerializer (serializers.HyperlinkedModelSeriali
                 submission_sets[set_name].append(submission)
         return {dataset.id: submission_sets}
 
-    def to_native(self, obj):
+    def to_representation(self, obj):
         request = self.context['request']
         submission_sets_map = self.get_submission_sets(obj)
         sets = submission_sets_map.get(obj.id, {})
@@ -670,7 +679,7 @@ class DataSetSubmissionSetSummarySerializer (serializers.HyperlinkedModelSeriali
 
             obj.submission_set_name = set_name
             obj.submission_set_length = len(submission_set)
-            summaries[set_name] = super(DataSetSubmissionSetSummarySerializer, self).to_native(obj)
+            summaries[set_name] = super(DataSetSubmissionSetSummarySerializer, self).to_representation(obj)
         return summaries
 
 
@@ -718,7 +727,7 @@ class BasePlaceSerializer (SubmittedThingSerializer, serializers.ModelSerializer
                 submission_sets[set_name].append(submission)
         return submission_sets
 
-    def summary_to_native(self, set_name, submissions):
+    def summary_to_representation(self, set_name, submissions):
         return {
             'name': set_name,
             'length': len(submissions)
@@ -741,11 +750,11 @@ class BasePlaceSerializer (SubmittedThingSerializer, serializers.ModelSerializer
             if not check_data_permission(user, client, 'retrieve', dataset, set_name):
                 continue
 
-            summaries[set_name] = self.summary_to_native(set_name, submissions)
+            summaries[set_name] = self.summary_to_representation(set_name, submissions)
 
         return summaries
 
-    def set_to_native(self, set_name, submissions):
+    def set_to_representation(self, set_name, submissions):
         serializer = SimpleSubmissionSerializer(submissions, many=True)
         serializer.initialize(parent=self, field_name=None)
         return serializer.data
@@ -772,17 +781,17 @@ class BasePlaceSerializer (SubmittedThingSerializer, serializers.ModelSerializer
             for submission in submissions:
                 submission.dataset = place.dataset
 
-            details[set_name] = self.set_to_native(set_name, submissions)
+            details[set_name] = self.set_to_representation(set_name, submissions)
 
         return details
 
-    def attachments_to_native(self, obj):
+    def attachments_to_representation(self, obj):
         return [AttachmentSerializer(a).data for a in obj.attachments.all()]
 
-    def submitter_to_native(self, obj):
+    def submitter_to_representation(self, obj):
         return SimpleUserSerializer(obj.submitter).data if obj.submitter else None
 
-    def to_native(self, obj):
+    def to_representation(self, obj):
         obj = self.ensure_obj(obj)
         fields = self.get_fields()
 
@@ -790,8 +799,8 @@ class BasePlaceSerializer (SubmittedThingSerializer, serializers.ModelSerializer
             'id': obj.pk,  # = serializers.PrimaryKeyRelatedField(read_only=True)
             'geometry': str(obj.geometry or 'POINT(0 0)'),  # = GeometryField(format='wkt')
             'dataset': obj.dataset_id,  # = DataSetRelatedField()
-            'attachments': self.attachments_to_native(obj),  # = AttachmentSerializer(read_only=True)
-            'submitter': self.submitter_to_native(obj),
+            'attachments': self.attachments_to_representation(obj),  # = AttachmentSerializer(read_only=True)
+            'submitter': self.submitter_to_representation(obj),
             'data': obj.data,
             'visible': obj.visible,
             'created_datetime': obj.created_datetime.isoformat() if obj.created_datetime else None,
@@ -799,11 +808,11 @@ class BasePlaceSerializer (SubmittedThingSerializer, serializers.ModelSerializer
         }
 
         if 'url' in fields:
-            data['url'] = fields['url'].field_to_native(obj, 'pk')
+            data['url'] = fields['url'].field_to_representation(obj, 'pk')
 
         data = self.explode_data_blob(data)
 
-        # data = super(PlaceSerializer, self).to_native(obj)
+        # data = super(PlaceSerializer, self).to_representation(obj)
 
         # TODO: Put this flag value directly in to the serializer context,
         #       instead of relying on the request query parameters.
@@ -831,10 +840,10 @@ class PlaceSerializer (BasePlaceSerializer, serializers.HyperlinkedModelSerializ
     class Meta (BasePlaceSerializer.Meta):
         pass
 
-    def summary_to_native(self, set_name, submissions):
+    def summary_to_representation(self, set_name, submissions):
         url_field = SubmissionSetIdentityField()
         url_field.initialize(parent=self, field_name=None)
-        set_url = url_field.field_to_native(submissions[0], None)
+        set_url = url_field.field_to_representation(submissions[0], None)
 
         return {
             'name': set_name,
@@ -842,12 +851,12 @@ class PlaceSerializer (BasePlaceSerializer, serializers.HyperlinkedModelSerializ
             'url': set_url,
         }
 
-    def set_to_native(self, set_name, submissions):
+    def set_to_representation(self, set_name, submissions):
         serializer = SubmissionSerializer(submissions, many=True)
         serializer.initialize(parent=self, field_name=None)
         return serializer.data
 
-    def submitter_to_native(self, obj):
+    def submitter_to_representation(self, obj):
         return UserSerializer(obj.submitter).data if obj.submitter else None
 
 
@@ -881,40 +890,41 @@ class BaseDataSetSerializer (EmptyModelSerializer, serializers.ModelSerializer):
     class Meta:
         model = models.DataSet
 
-    def to_native(self, obj):
+    def to_representation(self, obj):
         obj = self.ensure_obj(obj)
         fields = self.get_fields()
+
+        for field in fields.values():
+            field._context = self.context
 
         data = {
             'id': obj.pk,
             'slug': obj.slug,
             'display_name': obj.display_name,
-            'owner': fields['owner'].field_to_native(obj, 'owner') if obj.owner_id else None,
+            'owner': fields['owner'].to_representation(obj.owner) if obj.owner_id else None,
         }
 
-        if 'places' in fields:
-            fields['places'].context = self.context
-            data['places'] = fields['places'].field_to_native(obj, 'places')
+        # Patch the context of certain child fields. NOTE: the _context attr is
+        # not a public API and is subject to change in future versions of DRF.
+        contextual_fields = (
+            'places', 'submission_sets', 'url', 'keys', 'origins', 'groups',
+            'permissions',
+        )
 
-        if 'submission_sets' in fields:
-            fields['submission_sets'].context = self.context
-            data['submission_sets'] = fields['submission_sets'].field_to_native(obj, 'submission_sets')
+        for field_name in contextual_fields:
+            if field_name not in fields:
+                continue
+            field = fields[field_name]
+            field._context = self.context  # <-- uses a non-public API
+            data[field_name] = fields[field_name].to_representation(obj)
 
-        if 'url' in fields:
-            data['url'] = fields['url'].field_to_native(obj, 'url')
-
-        if 'keys' in fields: data['keys'] = fields['keys'].field_to_native(obj, 'keys')
-        if 'origins' in fields: data['origins'] = fields['origins'].field_to_native(obj, 'origins')
-        if 'groups' in fields: data['groups'] = fields['groups'].field_to_native(obj, 'groups')
-        if 'permissions' in fields: data['permissions'] = fields['permissions'].field_to_native(obj, 'permissions')
-
-        # Construct a SortedDictWithMetaData to get the brosable API form
-        ret = self._dict_class(data)
-        ret.fields = self._dict_class()
+        # Construct an OrderedDict to get the browsable API form in the right
+        # and expected order.
+        ret = OrderedDict(data)
         for field_name, field in fields.items():
             default = getattr(field, 'get_default_value', lambda: None)()
             value = data.get(field_name, default)
-            ret.fields[field_name] = self.augment_field(field, field_name, field_name, value)
+            ret[field_name] = value
         return ret
 
 class SimpleDataSetSerializer (BaseDataSetSerializer, serializers.ModelSerializer):
@@ -930,8 +940,8 @@ class DataSetSerializer (BaseDataSetSerializer, serializers.HyperlinkedModelSeri
     url = DataSetIdentityField()
     owner = UserRelatedField()
 
-    places = DataSetPlaceSetSummarySerializer(source='*', read_only=True, many=True)
-    submission_sets = DataSetSubmissionSetSummarySerializer(source='*', read_only=True, many=True)
+    places = DataSetPlaceSetSummarySerializer(source='*', read_only=True)
+    submission_sets = DataSetSubmissionSetSummarySerializer(source='*', read_only=True)
 
     load_from_url = serializers.URLField(write_only=True, required=False)
 
@@ -969,8 +979,8 @@ class DataSetSerializer (BaseDataSetSerializer, serializers.HyperlinkedModelSeri
 
 # Action serializer
 class ActionSerializer (EmptyModelSerializer, serializers.ModelSerializer):
-    target_type = serializers.SerializerMethodField('get_target_type')
-    target = serializers.SerializerMethodField('get_target')
+    target_type = serializers.SerializerMethodField()
+    target = serializers.SerializerMethodField()
 
     class Meta:
         model = models.Action
@@ -1005,11 +1015,11 @@ class ActionSerializer (EmptyModelSerializer, serializers.ModelSerializer):
 #
 
 class PaginationMetadataSerializer (serializers.Serializer):
-    length = serializers.Field(source='paginator.count')
+    length = serializers.IntegerField(source='paginator.count')
     next = pagination.NextPageField(source='*')
     previous = pagination.PreviousPageField(source='*')
-    page = serializers.Field(source='number')
-    num_pages = serializers.Field(source='paginator.num_pages')
+    page = serializers.IntegerField(source='number')
+    num_pages = serializers.IntegerField(source='paginator.num_pages')
 
 
 class PaginatedResultsSerializer (pagination.BasePaginationSerializer):
@@ -1020,7 +1030,7 @@ class PaginatedResultsSerializer (pagination.BasePaginationSerializer):
 class FeatureCollectionSerializer (PaginatedResultsSerializer):
     results_field = 'features'
 
-    def to_native(self, obj):
-        data = super(FeatureCollectionSerializer, self).to_native(obj)
+    def to_representation(self, obj):
+        data = super(FeatureCollectionSerializer, self).to_representation(obj)
         data['type'] = 'FeatureCollection'
         return data
