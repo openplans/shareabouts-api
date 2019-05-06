@@ -655,7 +655,7 @@ class OwnedResourceMixin (ClientAuthenticationMixin, CorsEnabledMixin):
 
     def is_verified_object(self, obj, ObjType=None):
         # Get the instance parameters from the cache
-        ObjType = ObjType or self.model
+        ObjType = ObjType or self.queryset.model
         params = ObjType.cache.get_cached_instance_params(obj.pk, lambda: obj)
 
         # Make sure that the instance parameters match what we got in the URL.
@@ -899,7 +899,7 @@ class PlaceInstanceView (CachedResourceMixin, LocatedResourceMixin, OwnedResourc
 
     def get_object_or_404(self, pk):
         try:
-            return self.model.objects\
+            return self.queryset.model.objects\
                 .filter(pk=pk)\
                 .select_related('dataset', 'dataset__owner', 'submitter')\
                 .prefetch_related('submitter__social_auth',
@@ -907,7 +907,7 @@ class PlaceInstanceView (CachedResourceMixin, LocatedResourceMixin, OwnedResourc
                                   'submissions__attachments',
                                   'attachments')\
                 .get()
-        except self.model.DoesNotExist:
+        except self.queryset.model.DoesNotExist:
             raise Http404
 
     def get_object(self, queryset=None):
@@ -1149,7 +1149,7 @@ class SubmissionInstanceView (CachedResourceMixin, OwnedResourceMixin, generics.
 
     def get_object_or_404(self, pk):
         try:
-            return self.model.objects\
+            return self.queryset.model.objects\
                 .filter(pk=pk)\
                 .select_related(
                     'dataset',
@@ -1161,7 +1161,7 @@ class SubmissionInstanceView (CachedResourceMixin, OwnedResourceMixin, generics.
                 .prefetch_related('attachments', 'submitter__social_auth'
                     )\
                 .get()
-        except self.model.DoesNotExist:
+        except self.queryset.model.DoesNotExist:
             raise Http404
 
     def get_object(self, queryset=None):
@@ -1380,7 +1380,7 @@ class DataSetInstanceView (ProtectedOwnedResourceMixin, generics.RetrieveUpdateD
     ------------------------------------------------------------
     """
 
-    queryset = models.DataSet.objects.all
+    queryset = models.DataSet.objects.all()
     serializer_class = serializers.DataSetSerializer
     authentication_classes = (authentication.BasicAuthentication, ShareaboutsSessionAuth)
     client_authentication_classes = ()
@@ -1388,10 +1388,10 @@ class DataSetInstanceView (ProtectedOwnedResourceMixin, generics.RetrieveUpdateD
 
     def get_object_or_404(self, owner_username, dataset_slug):
         try:
-            return self.model.objects\
+            return self.queryset.model.objects\
                 .filter(slug=dataset_slug, owner__username=owner_username)\
                 .get()
-        except self.model.DoesNotExist:
+        except self.queryset.model.DoesNotExist:
             raise Http404
 
     def get_serializer_context(self):
@@ -1436,7 +1436,7 @@ class DataSetMetadataView (ProtectedOwnedResourceMixin, generics.RetrieveAPIView
 
     def get_object_or_404(self, owner_username, dataset_slug):
         try:
-            return self.model.objects\
+            return self.queryset.model.objects\
                 .filter(slug=dataset_slug, owner__username=owner_username)\
                 .prefetch_related(
                     'permissions',
@@ -1447,7 +1447,7 @@ class DataSetMetadataView (ProtectedOwnedResourceMixin, generics.RetrieveAPIView
                     'origins',
                     'origins__permissions')\
                 .get()
-        except self.model.DoesNotExist:
+        except self.queryset.model.DoesNotExist:
             raise Http404
 
     def get_object(self, queryset=None):
