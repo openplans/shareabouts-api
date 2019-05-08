@@ -202,7 +202,7 @@ CELERY_ACCEPT_CONTENT = ['json', 'msgpack', 'yaml', 'pickle']
 #
 
 AUTHENTICATION_BACKENDS = (
-    # See https://python-social-auth.readthedocs.io/en/latest/configuration/django.html
+    # See https://python-social-auth.readthedocs.io/en/latest/backends/index.html#supported-backends
     # for list of available backends.
     'social_core.backends.twitter.TwitterOAuth',
     'social_core.backends.facebook.FacebookOAuth2',
