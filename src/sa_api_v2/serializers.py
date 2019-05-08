@@ -996,7 +996,7 @@ class ActionSerializer (EmptyModelSerializer, serializers.ModelSerializer):
         except models.Place.DoesNotExist:
             serializer = SubmissionSerializer(obj.thing.submission)
 
-        serializer.context = self.context
+        serializer.bind(parent=self, field_name='target')
         return serializer.data
 
 
