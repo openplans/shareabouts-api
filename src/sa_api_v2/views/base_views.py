@@ -1064,18 +1064,6 @@ class PlaceListView (CachedResourceMixin, LocatedResourceMixin, OwnedResourceMix
 
         return queryset
 
-    def get_serializer(self, instance=None, data=None,
-                       files=None, many=False, partial=False):
-        """
-        Override GenericAPIView.get_serializer to pass in allow_add_remove
-        """
-        serializer_class = self.get_serializer_class()
-        context = self.get_serializer_context()
-        kwargs = {'allow_add_remove': True} if many else {}
-        return serializer_class(instance, data=data, files=files,
-                                many=many, partial=partial, context=context,
-                                **kwargs)
-
     def trigger_webhooks(self, webhooks, obj):
         """
         Serializes the place object to GeoJSON and POSTs it to each webhook
@@ -1266,18 +1254,6 @@ class SubmissionListView (CachedResourceMixin, OwnedResourceMixin, FilteredResou
             .prefetch_related('attachments',
                 'submitter__social_auth',
                 'submitter___groups')
-
-    def get_serializer(self, instance=None, data=None,
-                       files=None, many=False, partial=False):
-        """
-        Override GenericAPIView.get_serializer to pass in allow_add_remove
-        """
-        serializer_class = self.get_serializer_class()
-        context = self.get_serializer_context()
-        kwargs = {'allow_add_remove': True} if many else {}
-        return serializer_class(instance, data=data, files=files,
-                                many=many, partial=partial, context=context,
-                                **kwargs)
 
 
 class DataSetSubmissionListView (CachedResourceMixin, OwnedResourceMixin, FilteredResourceMixin, generics.ListAPIView):

@@ -144,17 +144,15 @@ class ShareaboutsRelatedField (ShareaboutsFieldMixin, serializers.HyperlinkedRel
     def use_pk_only_optimization(self):
         return False
 
-    def to_representation(self, obj):
-        view_name = self.view_name
-        request = self.context.get('request', None)
-        format = self.format or self.context.get('format', None)
-
+    def get_url(self, obj, view_name, request, format):
+        # Unsaved objects will not yet have a valid URL.
         pk = getattr(obj, 'pk', None)
         if pk is None:
             return
 
+        lookup_value = getattr(obj, self.lookup_field)
         kwargs = self.get_url_kwargs(obj)
-        return api_reverse(view_name, kwargs=kwargs, request=request, format=format)
+        return self.reverse(view_name, kwargs=kwargs, request=request, format=format)
 
 
 class DataSetRelatedField (ShareaboutsRelatedField):
@@ -189,19 +187,13 @@ class ShareaboutsIdentityField (ShareaboutsFieldMixin, serializers.HyperlinkedId
         view_name = kwargs.pop('view_name', None) or getattr(self, 'view_name', None)
         super(ShareaboutsIdentityField, self).__init__(view_name=view_name, *args, **kwargs)
 
-    def to_representation(self, obj):
+    def get_url(self, obj, view_name, request, format):
+        # Unsaved objects will not yet have a valid URL.
         if obj.pk is None: return None
 
-        request = self.context.get('request', None)
-        format = self.context.get('format', None)
-        view_name = self.view_name or self.parent.opts.view_name
-
+        lookup_value = getattr(obj, self.lookup_field)
         kwargs = self.get_url_kwargs(obj)
-
-        if format and self.format and self.format != format:
-            format = self.format
-
-        return api_reverse(view_name, kwargs=kwargs, request=request, format=format)
+        return self.reverse(view_name, kwargs=kwargs, request=request, format=format)
 
 
 class PlaceIdentityField (ShareaboutsIdentityField):
@@ -437,7 +429,7 @@ class AttachmentSerializer (EmptyModelSerializer, serializers.ModelSerializer):
             'file': obj.file.storage.url(obj.file.name),
             'name': obj.name
         }
-        fields = self.get_fields()
+        fields = self.fields
 
         # Construct a OrderedDict to get the brosable API form
         ret = OrderedDict(data)
@@ -793,7 +785,7 @@ class BasePlaceSerializer (SubmittedThingSerializer, serializers.ModelSerializer
 
     def to_representation(self, obj):
         obj = self.ensure_obj(obj)
-        fields = self.get_fields()
+        fields = self.fields
 
         data = {
             'id': obj.pk,  # = serializers.PrimaryKeyRelatedField(read_only=True)
@@ -808,7 +800,7 @@ class BasePlaceSerializer (SubmittedThingSerializer, serializers.ModelSerializer
         }
 
         if 'url' in fields:
-            data['url'] = fields['url'].field_to_representation(obj, 'pk')
+            data['url'] = fields['url'].to_representation(obj)
 
         data = self.explode_data_blob(data)
 
@@ -842,8 +834,8 @@ class PlaceSerializer (BasePlaceSerializer, serializers.HyperlinkedModelSerializ
 
     def summary_to_representation(self, set_name, submissions):
         url_field = SubmissionSetIdentityField()
-        url_field.initialize(parent=self, field_name=None)
-        set_url = url_field.field_to_representation(submissions[0], None)
+        url_field.bind(parent=self, field_name='url')
+        set_url = url_field.to_representation(submissions[0])
 
         return {
             'name': set_name,
@@ -853,7 +845,7 @@ class PlaceSerializer (BasePlaceSerializer, serializers.HyperlinkedModelSerializ
 
     def set_to_representation(self, set_name, submissions):
         serializer = SubmissionSerializer(submissions, many=True)
-        serializer.initialize(parent=self, field_name=None)
+        serializer.bind(parent=self, field_name='submission_set')
         return serializer.data
 
     def submitter_to_representation(self, obj):
@@ -892,7 +884,7 @@ class BaseDataSetSerializer (EmptyModelSerializer, serializers.ModelSerializer):
 
     def to_representation(self, obj):
         obj = self.ensure_obj(obj)
-        fields = self.get_fields()
+        fields = self.fields
 
         for field in fields.values():
             field._context = self.context
