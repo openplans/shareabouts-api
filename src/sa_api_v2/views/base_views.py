@@ -16,14 +16,14 @@ from rest_framework import (views, permissions, mixins, authentication,
 from rest_framework.negotiation import DefaultContentNegotiation
 from rest_framework.parsers import JSONParser, FormParser, MultiPartParser
 from rest_framework.response import Response
-from rest_framework.renderers import JSONRenderer, JSONPRenderer, BrowsableAPIRenderer
+from rest_framework.renderers import JSONRenderer, BrowsableAPIRenderer
 from rest_framework.request import Request
 from rest_framework.exceptions import APIException
 from rest_framework_bulk import generics as bulk_generics
 #from social.apps.django_app import views as social_views
 from mock import patch
-from .. import apikey
-from .. import cors
+from ..apikey import auth as apikey_auth
+from ..cors import auth as cors_auth
 from .. import models
 from .. import serializers
 from .. import utils
@@ -565,11 +565,11 @@ class OwnedResourceMixin (ClientAuthenticationMixin, CorsEnabledMixin):
     logged in directly is allowed to read invisible resources or private data
     attributes on visible resources.
     """
-    renderer_classes = (JSONRenderer, JSONPRenderer, BrowsableAPIRenderer, renderers.PaginatedCSVRenderer)
+    renderer_classes = (JSONRenderer, renderers.JSONPRenderer, BrowsableAPIRenderer, renderers.PaginatedCSVRenderer)
     parser_classes = (JSONParser, FormParser, MultiPartParser)
     permission_classes = (IsOwnerOrReadOnly, IsAllowedByDataPermissions)
     authentication_classes = (authentication.BasicAuthentication, ShareaboutsSessionAuth)
-    client_authentication_classes = (apikey.auth.ApiKeyAuthentication, cors.auth.OriginAuthentication)
+    client_authentication_classes = (apikey_auth.ApiKeyAuthentication, cors_auth.OriginAuthentication)
     content_negotiation_class = ShareaboutsContentNegotiation
 
     owner_username_kwarg = 'owner_username'
@@ -1002,7 +1002,7 @@ class PlaceListView (CachedResourceMixin, LocatedResourceMixin, OwnedResourceMix
     # queryset = models.Place.objects.all()
     queryset = models.Place.objects.all()
     serializer_class = serializers.PlaceSerializer
-    pagination_serializer_class = serializers.FeatureCollectionSerializer
+    pagination_class = serializers.FeatureCollectionPagination
     renderer_classes = (renderers.GeoJSONRenderer, renderers.GeoJSONPRenderer) + OwnedResourceMixin.renderer_classes[2:]
     parser_classes = (parsers.GeoJSONParser,) + OwnedResourceMixin.parser_classes[1:]
 
@@ -1200,7 +1200,7 @@ class SubmissionListView (CachedResourceMixin, OwnedResourceMixin, FilteredResou
 
     queryset = models.Submission.objects.all()
     serializer_class = serializers.SubmissionSerializer
-    pagination_serializer_class = serializers.PaginatedResultsSerializer
+    pagination_class = serializers.PaginatedResultsPagination
 
     place_id_kwarg = 'place_id'
     submission_set_name_kwarg = 'submission_set_name'
@@ -1290,7 +1290,7 @@ class DataSetSubmissionListView (CachedResourceMixin, OwnedResourceMixin, Filter
 
     queryset = models.Submission.objects.all()
     serializer_class = serializers.SubmissionSerializer
-    pagination_serializer_class = serializers.PaginatedResultsSerializer
+    pagination_class = serializers.PaginatedResultsPagination
 
     submission_set_name_kwarg = 'submission_set_name'
 
@@ -1458,7 +1458,7 @@ class DataSetListMixin (object):
 
     queryset = models.DataSet.objects.all()
     serializer_class = serializers.DataSetSerializer
-    pagination_serializer_class = serializers.PaginatedResultsSerializer
+    pagination_class = serializers.PaginatedResultsPagination
     authentication_classes = (authentication.BasicAuthentication, ShareaboutsSessionAuth)
     client_authentication_classes = ()
     always_allow_options = True
@@ -1729,7 +1729,7 @@ class ActionListView (CachedResourceMixin, OwnedResourceMixin, generics.ListAPIV
     """
     queryset = models.Action.objects.all()
     serializer_class = serializers.ActionSerializer
-    pagination_serializer_class = serializers.PaginatedResultsSerializer
+    pagination_class = serializers.PaginatedResultsPagination
 
     def get_queryset(self):
         dataset = self.get_dataset()
@@ -1872,7 +1872,7 @@ class CurrentUserInstanceView (CorsEnabledMixin, views.APIView):
 
 
 class SessionKeyView (CorsEnabledMixin, views.APIView):
-    renderer_classes = (JSONRenderer, JSONPRenderer, BrowsableAPIRenderer)
+    renderer_classes = (JSONRenderer, renderers.JSONPRenderer, BrowsableAPIRenderer)
     content_negotiation_class = ShareaboutsContentNegotiation
 
     def get(self, request):

@@ -88,7 +88,7 @@ class DataPermission (CloneableModelMixin, CacheClearingModel, models.Model):
 
 
 class DataSetPermission (DataPermission):
-    dataset = models.ForeignKey('DataSet', related_name='permissions')
+    dataset = models.ForeignKey('DataSet', on_delete=models.CASCADE, related_name='permissions')
     parent_attr = 'dataset'
 
     class Meta:
@@ -99,7 +99,7 @@ class DataSetPermission (DataPermission):
 
 
 class GroupPermission (DataPermission):
-    group = models.ForeignKey('Group', related_name='permissions')
+    group = models.ForeignKey('Group', on_delete=models.CASCADE, related_name='permissions')
     parent_attr = 'group'
 
     class Meta:
@@ -110,7 +110,7 @@ class GroupPermission (DataPermission):
 
 
 class KeyPermission (DataPermission):
-    key = models.ForeignKey('sa_api_v2.ApiKey', related_name='permissions')
+    key = models.ForeignKey('sa_api_v2.ApiKey', on_delete=models.CASCADE, related_name='permissions')
     parent_attr = 'key'
 
     class Meta:
@@ -121,7 +121,7 @@ class KeyPermission (DataPermission):
 
 
 class OriginPermission (DataPermission):
-    origin = models.ForeignKey('sa_api_v2.Origin', related_name='permissions')
+    origin = models.ForeignKey('sa_api_v2.Origin', on_delete=models.CASCADE, related_name='permissions')
     parent_attr = 'origin'
 
     class Meta:

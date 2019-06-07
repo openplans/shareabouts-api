@@ -27,7 +27,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='action',
             name='thing',
-            field=models.ForeignKey(db_column='data_id', related_name='actions', to='sa_api_v2.SubmittedThing'),
+            field=models.ForeignKey(on_delete=models.CASCADE, db_column='data_id', related_name='actions', to='sa_api_v2.SubmittedThing'),
         ),
         migrations.AlterField(
             model_name='apikey',
@@ -62,7 +62,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='group',
             name='dataset',
-            field=models.ForeignKey(help_text='Which dataset does this group apply to?', related_name='groups', to='sa_api_v2.DataSet'),
+            field=models.ForeignKey(on_delete=models.CASCADE, help_text='Which dataset does this group apply to?', related_name='groups', to='sa_api_v2.DataSet'),
         ),
         migrations.AlterField(
             model_name='group',

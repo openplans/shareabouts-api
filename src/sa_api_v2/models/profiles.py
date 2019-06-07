@@ -114,7 +114,7 @@ class Group (CloneableModelMixin, models.Model):
     """
     A group of submitters within a dataset.
     """
-    dataset = models.ForeignKey('DataSet', help_text='Which dataset does this group apply to?', related_name='groups')
+    dataset = models.ForeignKey('DataSet', on_delete=models.CASCADE, help_text='Which dataset does this group apply to?', related_name='groups')
     name = models.CharField(max_length=32, help_text='What is the name of the group to which users with this group belong? For example: "judges", "administrators", "winners", ...')
     submitters = models.ManyToManyField(User, related_name='_groups', blank=True)
 

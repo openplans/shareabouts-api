@@ -5,13 +5,13 @@ from django.db import models
 
 class DataSnapshotRequest (models.Model):
     # Describe the data requested
-    dataset = models.ForeignKey('DataSet')
+    dataset = models.ForeignKey('DataSet', on_delete=models.CASCADE)
     submission_set = models.CharField(max_length=128)
     include_private = models.BooleanField(default=False)
     include_invisible = models.BooleanField(default=False)
     include_submissions = models.BooleanField(default=False)
     # Describe the requester
-    requester = models.ForeignKey('User', null=True)
+    requester = models.ForeignKey('User', null=True, on_delete=models.CASCADE)
     requested_at = models.DateTimeField(auto_now_add=True)
     # Describe the fulfillment status
     status = models.TextField(default='', blank=True)
@@ -32,7 +32,7 @@ class DataSnapshotRequest (models.Model):
 
 
 class DataSnapshot (models.Model):
-    request = models.OneToOneField('DataSnapshotRequest', related_name='fulfillment')
+    request = models.OneToOneField('DataSnapshotRequest', related_name='fulfillment', on_delete=models.CASCADE)
     json = models.TextField()
     csv = models.TextField()
 

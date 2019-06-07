@@ -10,7 +10,7 @@ class DataIndex (CloneableModelMixin, models.Model):
         ('string', 'String'),
     )
 
-    dataset = models.ForeignKey('DataSet', related_name='indexes')
+    dataset = models.ForeignKey('DataSet', on_delete=models.CASCADE, related_name='indexes')
     attr_name = models.CharField(max_length=100, db_index=True, verbose_name='Attribute name')
     attr_type = models.CharField(max_length=10, choices=ATTR_TYPE_CHOICES, default='string', verbose_name='Attribute type')
 
@@ -58,8 +58,8 @@ class IndexedValueManager (models.Manager):
 
 
 class IndexedValue (models.Model):
-    index = models.ForeignKey('DataIndex', related_name='values')
-    thing = models.ForeignKey('SubmittedThing', related_name='indexed_values')
+    index = models.ForeignKey('DataIndex', on_delete=models.CASCADE, related_name='values')
+    thing = models.ForeignKey('SubmittedThing', on_delete=models.CASCADE, related_name='indexed_values')
 
     value = models.CharField(max_length=100, null=True, db_index=True)
     # TODO: This might be better as:

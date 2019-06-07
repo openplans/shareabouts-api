@@ -51,8 +51,8 @@ class SubmittedThing (CloneableModelMixin, CacheClearingModel, ModelWithDataBlob
     comment, a vote, etc.
 
     """
-    submitter = models.ForeignKey(User, related_name='things', null=True, blank=True)
-    dataset = models.ForeignKey('DataSet', related_name='things', blank=True)
+    submitter = models.ForeignKey(User, on_delete=models.CASCADE, related_name='things', null=True, blank=True)
+    dataset = models.ForeignKey('DataSet', on_delete=models.CASCADE, related_name='things', blank=True)
     visible = models.BooleanField(default=True, blank=True, db_index=True)
 
     objects = SubmittedThingManager()
@@ -99,7 +99,7 @@ class DataSet (CloneableModelMixin, CacheClearingModel, models.Model):
     A DataSet is a named collection of data, eg. Places, owned by a user,
     and intended for a coherent purpose, eg. display on a single map.
     """
-    owner = models.ForeignKey(User, related_name='datasets')
+    owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='datasets')
     display_name = models.CharField(max_length=128)
     slug = models.SlugField(max_length=128, default='')
 
@@ -185,7 +185,7 @@ class Webhook (TimeStampedModel):
         ('add', 'On add'),
     )
 
-    dataset = models.ForeignKey('DataSet', related_name='webhooks')
+    dataset = models.ForeignKey('DataSet', on_delete=models.CASCADE, related_name='webhooks')
     submission_set = models.CharField(max_length=128)
     event = models.CharField(max_length=128, choices=EVENT_CHOICES, default='add')
     url = models.URLField(max_length=2048)
@@ -200,30 +200,20 @@ class Webhook (TimeStampedModel):
 
 
 
-if settings.USE_GEODB:
-    class GeoBaseManager (models.GeoManager, SubmittedThingManager): pass
-    class GeoSubmittedThingQuerySet (query.GeoQuerySet, SubmittedThingQuerySet): pass
-else:
-    GeoBaseManager = SubmittedThingManager
-    GeoSubmittedThingQuerySet = SubmittedThingQuerySet
-
-class GeoSubmittedThingManager (GeoBaseManager):
-    def get_queryset(self):
-        return GeoSubmittedThingQuerySet(self.model, using=self._db)
-
-
 class Place (SubmittedThing):
     """
     A Place is a submitted thing with some geographic information, to which
     other submissions such as comments or surveys can be attached.
 
     """
+    submittedthing_ptr = models.OneToOneField('SubmittedThing', on_delete=models.CASCADE, related_name='full_place_self')
+
     if settings.USE_GEODB:
         geometry = models.GeometryField()
     else:
         geometry = models.TextField()
 
-    objects = GeoSubmittedThingManager()
+    objects = SubmittedThingManager()
     cache = cache.PlaceCache()
     # previous_version = 'sa_api_v1.models.Place'
 
@@ -247,7 +237,8 @@ class Submission (SubmittedThing):
     It belongs to a Place.
     Used for representing eg. comments, votes, ...
     """
-    place = models.ForeignKey(Place, related_name='submissions')
+    submittedthing_ptr = models.OneToOneField('SubmittedThing', on_delete=models.CASCADE, related_name='full_submission_self')
+    place = models.ForeignKey(Place, on_delete=models.CASCADE, related_name='submissions')
     set_name = models.TextField(db_index=True)
 
     objects = SubmittedThingManager()
@@ -266,7 +257,7 @@ class Action (CacheClearingModel, TimeStampedModel):
     what happened when.
     """
     action = models.CharField(max_length=16, default='create')
-    thing = models.ForeignKey(SubmittedThing, db_column='data_id', related_name='actions')
+    thing = models.ForeignKey(SubmittedThing, on_delete=models.CASCADE, db_column='data_id', related_name='actions')
     source = models.TextField(blank=True, null=True)
 
     cache = cache.ActionCache()
@@ -296,7 +287,7 @@ class Attachment (CacheClearingModel, TimeStampedModel):
     """
     file = models.FileField(upload_to=timestamp_filename, storage=AttachmentStorage())
     name = models.CharField(max_length=128, null=True, blank=True)
-    thing = models.ForeignKey('SubmittedThing', related_name='attachments')
+    thing = models.ForeignKey('SubmittedThing', on_delete=models.CASCADE, related_name='attachments')
 
     cache = cache.AttachmentCache()
     # previous_version = 'sa_api_v1.models.Attachment'

@@ -1,10 +1,12 @@
-from django.conf.urls import patterns, url, include
+from django.conf.urls import url, include
 from django.contrib.auth.views import login
 from django.http import HttpResponse
 from . import views
+import rest_framework.urls
+import social_django.urls
 
 
-urlpatterns = patterns('sa_api_v2',
+urlpatterns = [
     url(r'^$',
         views.ShareaboutsAPIRootView.as_view(),
         name='api-root'),
@@ -92,9 +94,9 @@ urlpatterns = patterns('sa_api_v2',
     # url(r'^users/login/(?P<backend>[^/]+)/$', views.remote_social_login, name='remote-social-login'),
     # url(r'^users/logout/$', views.remote_logout, name='remote-logout'),
 
-    url('^users/', include('social_django.urls', namespace='social')),
+    url('^users/', include(social_django.urls)),
 
-    url(r'^forms/', include('rest_framework.urls', namespace='rest_framework')),
+    url(r'^forms/', include(rest_framework.urls)),
 
     # Utility routes
 
@@ -102,7 +104,7 @@ urlpatterns = patterns('sa_api_v2',
     url(r'^utils/session-key', views.SessionKeyView.as_view(), name='session-key'),
     url(r'^utils/noop/?$', lambda request: HttpResponse(''), name='noop-route'),
 
-)
+]
 
 #places_base_regex = r'^(?P<dataset__owner__username>[^/]+)/datasets/(?P<dataset__slug>[^/]+)/places/'
 

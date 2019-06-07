@@ -1006,23 +1006,29 @@ class ActionSerializer (EmptyModelSerializer, serializers.ModelSerializer):
 # ----------------------
 #
 
-class PaginationMetadataSerializer (serializers.Serializer):
-    length = serializers.IntegerField(source='paginator.count')
-    next = pagination.NextPageField(source='*')
-    previous = pagination.PreviousPageField(source='*')
-    page = serializers.IntegerField(source='number')
-    num_pages = serializers.IntegerField(source='paginator.num_pages')
+class PaginatedMetadataMixin:
+    def get_pagination_metadata(self, data):
+        return OrderedDict([
+            ('length', self.page.paginator.count),
+            ('next', self.get_next_link()),
+            ('previous', self.get_previous_link()),
+            ('page', self.page.number),
+            ('num_pages', self.page.paginator.num_pages),
+        ])
 
 
-class PaginatedResultsSerializer (pagination.BasePaginationSerializer):
-    metadata = PaginationMetadataSerializer(source='*')
-    many = True
+class PaginatedResultsPagination (PaginatedMetadataMixin, pagination.PageNumberPagination):
+    def get_paginated_response(self, data):
+        return Response(OrderedDict([
+            ('metadata', self.get_pagination_metadata(data)),
+            ('results', data),
+        ]))
 
 
-class FeatureCollectionSerializer (PaginatedResultsSerializer):
-    results_field = 'features'
-
-    def to_representation(self, obj):
-        data = super(FeatureCollectionSerializer, self).to_representation(obj)
-        data['type'] = 'FeatureCollection'
-        return data
+class FeatureCollectionPagination (PaginatedMetadataMixin, pagination.PageNumberPagination):
+    def get_paginated_response(self, data):
+        return Response(OrderedDict([
+            ('metadata', self.get_pagination_metadata(data)),
+            ('type', 'FeatureCollection'),
+            ('features', data),
+        ]))
