@@ -12,6 +12,7 @@ from django.core.exceptions import ValidationError
 from django.utils.http import urlquote_plus
 from rest_framework import pagination
 from rest_framework import serializers
+from rest_framework import response
 # from rest_framework.reverse import reverse
 
 from . import apikey
@@ -1007,6 +1008,8 @@ class ActionSerializer (EmptyModelSerializer, serializers.ModelSerializer):
 #
 
 class PaginatedMetadataMixin:
+    page_size_query_param = 'page_size'
+
     def get_pagination_metadata(self, data):
         return OrderedDict([
             ('length', self.page.paginator.count),
@@ -1019,7 +1022,7 @@ class PaginatedMetadataMixin:
 
 class PaginatedResultsPagination (PaginatedMetadataMixin, pagination.PageNumberPagination):
     def get_paginated_response(self, data):
-        return Response(OrderedDict([
+        return response.Response(OrderedDict([
             ('metadata', self.get_pagination_metadata(data)),
             ('results', data),
         ]))
@@ -1027,7 +1030,7 @@ class PaginatedResultsPagination (PaginatedMetadataMixin, pagination.PageNumberP
 
 class FeatureCollectionPagination (PaginatedMetadataMixin, pagination.PageNumberPagination):
     def get_paginated_response(self, data):
-        return Response(OrderedDict([
+        return response.Response(OrderedDict([
             ('metadata', self.get_pagination_metadata(data)),
             ('type', 'FeatureCollection'),
             ('features', data),

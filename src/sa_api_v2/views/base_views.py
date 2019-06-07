@@ -69,7 +69,7 @@ class JSONPCallbackNegotiation (DefaultContentNegotiation):
     """
 
     def select_renderer(self, request, renderers, format_suffix=None):
-        if 'callback' in request.QUERY_PARAMS:
+        if 'callback' in request.query_params:
             format_suffix = 'jsonp'
         return super(JSONPCallbackNegotiation, self).select_renderer(request, renderers, format_suffix)
 

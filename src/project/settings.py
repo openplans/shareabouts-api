@@ -99,7 +99,7 @@ ATTACHMENT_STORAGE = 'django.core.files.storage.FileSystemStorage'
 # Django Rest Framework
 #
 REST_FRAMEWORK = {
-    'PAGINATE_BY': 100,
+    'PAGE_SIZE': 100,
     'PAGINATE_BY_PARAM': 'page_size'
 }
 
