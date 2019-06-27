@@ -2,6 +2,7 @@
 
 from django.test import TestCase
 from django.test.client import RequestFactory
+from django.contrib.gis.geos import GEOSGeometry
 from django.core.files.base import ContentFile
 from rest_framework.reverse import reverse
 from nose.tools import istest
@@ -258,6 +259,22 @@ class TestPlaceSerializer (TestCase):
 
         self.assertIn('public-attr', serializer.data)
         self.assertIn('private-attr', serializer.data)
+
+    def test_place_partial_update(self):
+        request = RequestFactory().get('')
+        request.get_dataset = lambda: self.dataset
+
+        serializer = PlaceSerializer(
+            self.place,
+            context={'request': request, 'include_private': True},
+            data={'private-attr': 4, 'new-attr': 5, 'geometry': 'POINT(4 5)'},
+            partial=True,
+        )
+
+        self.assert_(serializer.is_valid())
+        serializer.save()
+        self.assertEqual(json.loads(self.place.data), {'public-attr': 1, 'private-attr': 4, 'new-attr': 5})
+        self.assertEqual(self.place.geometry, GEOSGeometry('POINT(4 5)'))
 
 
 class TestSubmissionSerializer (TestCase):

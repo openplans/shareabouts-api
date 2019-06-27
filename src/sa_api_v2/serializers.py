@@ -264,30 +264,16 @@ class DataBlobProcessor (EmptyModelSerializer):
     'data' JSON blob of arbitrary key/value pairs.
     """
 
-    def convert_object(self, obj):
-        attrs = super(DataBlobProcessor, self).convert_object(obj)
-
-        data = json.loads(obj.data)
-        del attrs['data']
-        attrs.update(data)
-
-        return attrs
-
-    def restore_fields(self, data, files):
+    def to_internal_value(self, data):
         """
         Converts a dictionary of data into a dictionary of deserialized fields.
         """
-        model = self.opts.model
-        blob = json.loads(self.object.data) if self.partial else {}
-        data_copy = {}
+        blob = json.loads(self.instance.data) if self.partial else {}
+        structured_attrs = {}
 
-        # Pull off any fields that the model doesn't know about directly
+        # Pull off any fields that the serlializer doesn't know about directly
         # and put them into the data blob.
-        known_fields = set(model._meta.get_all_field_names())
-
-        # Also ignore the following field names (treat them like reserved
-        # words).
-        known_fields.update(list(self.base_fields.keys()))
+        known_fields = set(self.fields.keys())
 
         # And allow an arbitrary value field named 'data' (don't let the
         # data blob get in the way).
@@ -297,24 +283,26 @@ class DataBlobProcessor (EmptyModelSerializer):
         # preexisting fields, and stuff that will go into the data blob.
         for key in data:
             if key in known_fields:
-                data_copy[key] = data[key]
+                structured_attrs[key] = data[key]
             else:
                 blob[key] = data[key]
 
-        data_copy['data'] = json.dumps(blob)
+        structured_attrs['data'] = json.dumps(blob)
 
         if not self.partial:
             for field_name, field in list(self.base_fields.items()):
-                if (not field.read_only and field_name not in data_copy):
-                    data_copy[field_name] = field.default
+                if not field.read_only:
+                    structured_attrs.set_default(field_name, field.default)
 
-        return super(DataBlobProcessor, self).restore_fields(data_copy, files)
+        return super(DataBlobProcessor, self).to_internal_value(structured_attrs)
 
     def explode_data_blob(self, data):
+        """
+        Pull the 'data' attribute off of the representation, parse it, and add
+        its attributes directly into the representation.
+        """
         blob = data.pop('data')
-
         blob_data = json.loads(blob)
-        request = self.context['request']
 
         # Did the user not ask for private data? Remove it!
         if not self.is_flag_on(INCLUDE_PRIVATE_PARAM):
@@ -971,12 +959,12 @@ class DataSetSerializer (BaseDataSetSerializer, serializers.HyperlinkedModelSeri
             load_dataset_archive.apply_async(args=(obj.id, self.load_url,))
 
 
-    def from_native(self, data, files=None):
+    def to_internal_value(self, data, files=None):
         if data and 'load_from_url' in data:
             self.load_url = data.pop('load_from_url')
             if self.load_url and isinstance(self.load_url, list):
                 self.load_url = str(self.load_url[0])
-        return super(DataSetSerializer, self).from_native(data, files)
+        return super(DataSetSerializer, self).to_internal_value(data, files)
 
 
 # Action serializer
