@@ -583,9 +583,8 @@ class FullUserSerializer (BaseUserSerializer):
     def to_representation(self, obj):
         data = super(FullUserSerializer, self).to_representation(obj)
         if obj:
-            group_field = self.base_fields['groups']
-            group_field.initialize(parent=self, field_name='groups')
-            data['groups'] = group_field.to_representation(obj, 'groups')
+            group_field = self.fields['groups']
+            data['groups'] = group_field.to_representation(obj._groups)
         return data
 
 
