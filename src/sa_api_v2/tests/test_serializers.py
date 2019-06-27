@@ -78,7 +78,7 @@ class TestActionSerializer (TestCase):
 
     def test_prejoined_place_action_attributes(self):
         action = Action.objects.all()\
-            .select_related('thing__full_place_self' ,'thing__full_submission_self')\
+            .select_related('thing__full_place' ,'thing__full_submission')\
             .filter(thing=self.place_action.thing)[0]
 
         serializer = ActionSerializer(action, context={
@@ -93,7 +93,7 @@ class TestActionSerializer (TestCase):
 
     def test_prejoined_submission_action_attributes(self):
         action = Action.objects.all()\
-            .select_related('thing__full_place_self' ,'thing__full_submission_self')\
+            .select_related('thing__full_place' ,'thing__full_submission')\
             .filter(thing=self.comment_action.thing)[0]
 
         serializer = ActionSerializer(action, context={

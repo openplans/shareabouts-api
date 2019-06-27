@@ -17,12 +17,12 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='place',
             name='submittedthing_ptr',
-            field=models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, primary_key=True, related_name='full_place_self', serialize=False, to='sa_api_v2.SubmittedThing'),
+            field=models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, primary_key=True, related_name='full_place', serialize=False, to='sa_api_v2.SubmittedThing'),
         ),
         migrations.AlterField(
             model_name='submission',
             name='submittedthing_ptr',
-            field=models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, primary_key=True, related_name='full_submission_self', serialize=False, to='sa_api_v2.SubmittedThing'),
+            field=models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, primary_key=True, related_name='full_submission', serialize=False, to='sa_api_v2.SubmittedThing'),
         ),
         migrations.AlterField(
             model_name='user',
