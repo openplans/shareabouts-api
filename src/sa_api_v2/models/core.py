@@ -152,7 +152,7 @@ class DataSet (CloneableModelMixin, CacheClearingModel, models.Model):
         # Clone all the places. Submissions will be cloned as part of the
         # places.
         for thing in self.things.all():
-            try: place = thing.place
+            try: place = thing.full_place
             except Place.DoesNotExist: continue
             if place:
                 place.clone(overrides={'dataset': onto})

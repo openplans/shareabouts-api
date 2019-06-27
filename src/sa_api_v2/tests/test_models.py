@@ -73,8 +73,8 @@ class TestDataIndexes (TestCase):
         User.objects.all().delete()  # Everything should cascade from owner
 
     def test_indexed_values_are_indexed_when_thing_is_saved(self):
-        self.dataset.indexes.add(DataIndex(attr_name='index1'))
-        self.dataset.indexes.add(DataIndex(attr_name='index2'))
+        self.dataset.indexes.add(DataIndex(attr_name='index1'), bulk=False)
+        self.dataset.indexes.add(DataIndex(attr_name='index2'), bulk=False)
 
         st1 = SubmittedThing(dataset=self.dataset)
         st1.data = '{"index1": "value1", "index2": 2, "freetext": "This is an unindexed value."}'
@@ -89,8 +89,8 @@ class TestDataIndexes (TestCase):
         st1.data = '{"index1": "value1", "index2": 2, "freetext": "This is an unindexed value."}'
         st1.save()
 
-        self.dataset.indexes.add(DataIndex(attr_name='index1'))
-        self.dataset.indexes.add(DataIndex(attr_name='index2'))
+        self.dataset.indexes.add(DataIndex(attr_name='index1'), bulk=False)
+        self.dataset.indexes.add(DataIndex(attr_name='index2'), bulk=False)
 
         indexed_values = IndexedValue.objects.filter(index__dataset=self.dataset)
         self.assertEqual(indexed_values.count(), 2)
@@ -109,8 +109,8 @@ class TestDataIndexes (TestCase):
         st3.data = '{"index1": "value1", "index2": 2}'
         st3.save()
 
-        self.dataset.indexes.add(DataIndex(attr_name='index1'))
-        self.dataset.indexes.add(DataIndex(attr_name='index2'))
+        self.dataset.indexes.add(DataIndex(attr_name='index1'), bulk=False)
+        self.dataset.indexes.add(DataIndex(attr_name='index2'), bulk=False)
 
         # index1 only has one value matching 'value1' in self.dataset
         qs = self.dataset.things.filter_by_index('index1', 'value1')
@@ -154,7 +154,7 @@ class TestDataIndexes (TestCase):
             indexed_value.get()
 
     def test_data_values_are_updated_when_saved(self):
-        self.dataset.indexes.add(DataIndex(attr_name='index'))
+        self.dataset.indexes.add(DataIndex(attr_name='index'), bulk=False)
 
         st1 = SubmittedThing(dataset=self.dataset)
         st1.data = '{"index": "value1", "freetext": "This is an unindexed value."}'
@@ -179,7 +179,7 @@ class TestDataIndexes (TestCase):
         st3.data = '{"index": "value1"}'
         st3.save()
 
-        self.dataset.indexes.add(DataIndex(attr_name='index'))
+        self.dataset.indexes.add(DataIndex(attr_name='index'), bulk=False)
         num_indexed_values = IndexedValue.objects.all().count()
 
         # At first, index with 'value1' should match two things.
@@ -307,19 +307,19 @@ class CloningTests (TestCase):
 
         # Make sure the clone and the original have no actual submissions in
         # common.
-        clone_submissions = clone.things.filter(submission__isnull=False)
-        orgnl_submissions = dataset.things.filter(submission__isnull=False)
+        clone_submissions = clone.things.filter(full_submission__isnull=False)
+        orgnl_submissions = dataset.things.filter(full_submission__isnull=False)
 
-        clone_submission_set_names = sorted([s.submission.set_name for s in clone_submissions])
-        orgnl_submission_set_names = sorted([s.submission.set_name for s in orgnl_submissions])
+        clone_submission_set_names = sorted([s.full_submission.set_name for s in clone_submissions])
+        orgnl_submission_set_names = sorted([s.full_submission.set_name for s in orgnl_submissions])
         self.assertEqual(clone_submission_set_names, orgnl_submission_set_names)
 
         clone_submission_ids = set([s.id for s in clone_submissions])
         orgnl_submission_ids = set([s.id for s in orgnl_submissions])
         self.assertEqual(clone_submission_ids & orgnl_submission_ids, set())
 
-        clone_places = clone.things.filter(place__isnull=False)
-        orgnl_places = dataset.things.filter(place__isnull=False)
+        clone_places = clone.things.filter(full_place__isnull=False)
+        orgnl_places = dataset.things.filter(full_place__isnull=False)
 
         clone_place_ids = set([s.id for s in clone_places])
         orgnl_place_ids = set([s.id for s in orgnl_places])
@@ -465,7 +465,7 @@ class DataPermissionTests (TestCase):
 
         places_perm = DataSetPermission(submission_set='places')
         places_perm.can_retrieve = False
-        dataset.permissions.add(places_perm)
+        dataset.permissions.add(places_perm, bulk=False)
 
         # Make sure anonymous can read comments, but not places.
         has_permission = check_data_permission(None, None, 'retrieve', dataset, 'comments')
