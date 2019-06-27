@@ -981,21 +981,21 @@ class ActionSerializer (EmptyModelSerializer, serializers.ModelSerializer):
 
     def get_target_type(self, obj):
         try:
-            if obj.thing.place is not None:
+            if obj.thing.full_place_self is not None:
                 return 'place'
         except models.Place.DoesNotExist:
             pass
 
-        return obj.thing.submission.set_name
+        return obj.thing.full_submission_self.set_name
 
     def get_target(self, obj):
         try:
-            if obj.thing.place is not None:
-                serializer = PlaceSerializer(obj.thing.place)
+            if obj.thing.full_place_self is not None:
+                serializer = PlaceSerializer(obj.thing.full_place_self)
             else:
-                serializer = SubmissionSerializer(obj.thing.submission)
+                serializer = SubmissionSerializer(obj.thing.full_submission_self)
         except models.Place.DoesNotExist:
-            serializer = SubmissionSerializer(obj.thing.submission)
+            serializer = SubmissionSerializer(obj.thing.full_submission_self)
 
         serializer.bind(parent=self, field_name='target')
         return serializer.data
