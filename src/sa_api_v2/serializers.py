@@ -643,6 +643,11 @@ class DataSetSubmissionSetSummarySerializer (serializers.HyperlinkedModelSeriali
         fields = ('length', 'url')
 
     def is_flag_on(self, flagname):
+        # Check the context for the flag
+        if self.context.get(flagname, False):
+            return True
+
+        # Otherwise, check the request parameters for the flag
         request = self.context['request']
         param = request.GET.get(flagname, 'false')
         return param.lower() not in ('false', 'no', 'off')
@@ -677,6 +682,11 @@ class DataSetSubmissionSetSummarySerializer (serializers.HyperlinkedModelSeriali
 
 class SubmittedThingSerializer (ActivityGenerator, DataBlobProcessor):
     def is_flag_on(self, flagname):
+        # Check the context for the flag
+        if self.context.get(flagname, False):
+            return True
+
+        # Otherwise, check the request parameters for the flag
         request = self.context['request']
         param = request.GET.get(flagname, 'false')
         return param.lower() not in ('false', 'no', 'off')
