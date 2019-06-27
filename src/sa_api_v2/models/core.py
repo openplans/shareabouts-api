@@ -206,7 +206,7 @@ class Place (SubmittedThing):
     other submissions such as comments or surveys can be attached.
 
     """
-    submittedthing_ptr = models.OneToOneField('SubmittedThing', on_delete=models.CASCADE, related_name='full_place')
+    submittedthing_ptr = models.OneToOneField('SubmittedThing', parent_link=True, on_delete=models.CASCADE, related_name='full_place')
 
     if settings.USE_GEODB:
         geometry = models.GeometryField()
@@ -237,7 +237,7 @@ class Submission (SubmittedThing):
     It belongs to a Place.
     Used for representing eg. comments, votes, ...
     """
-    submittedthing_ptr = models.OneToOneField('SubmittedThing', on_delete=models.CASCADE, related_name='full_submission')
+    submittedthing_ptr = models.OneToOneField('SubmittedThing', parent_link=True, on_delete=models.CASCADE, related_name='full_submission')
     place = models.ForeignKey(Place, on_delete=models.CASCADE, related_name='submissions')
     set_name = models.TextField(db_index=True)
 
