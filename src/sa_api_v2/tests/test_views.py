@@ -18,6 +18,7 @@ from ..cors.models import Origin
 from ..views import (PlaceInstanceView, PlaceListView, SubmissionInstanceView,
     SubmissionListView, DataSetSubmissionListView, DataSetInstanceView,
     DataSetListView, AttachmentListView, ActionListView)
+from ..serializers import FeatureCollectionPagination
 
 
 class APITestMixin (object):
@@ -1137,9 +1138,13 @@ class TestPlaceListView (APITestMixin, TestCase):
 
     def test_GET_paginated_response(self):
         # Create a view with pagination configuration set, for consistency
+        class OverrideFeatureCollectionPagination (FeatureCollectionPagination):
+            page_size = 50
+            page_size_param = 'page_size'
+
         class OverridePlaceListView (PlaceListView):
-            paginate_by = 50
-            paginate_by_param = 'page_size'
+            pagination_class = OverrideFeatureCollectionPagination
+
         self.view = OverridePlaceListView.as_view()
 
         for _ in range(30):
@@ -1147,6 +1152,9 @@ class TestPlaceListView (APITestMixin, TestCase):
             Place.objects.create(dataset=self.dataset, geometry='POINT(1 0)', data=json.dumps({'foo': 'bar', 'name': 2})),
             Place.objects.create(dataset=self.dataset, geometry='POINT(2 0)', data=json.dumps({'foo': 'baz', 'name': 3})),
             Place.objects.create(dataset=self.dataset, geometry='POINT(3 0)', data=json.dumps({'name': 4})),
+
+        # There should be 121 visible places in the dataset
+        self.assert_(Place.objects.filter(dataset=self.dataset, visible=True).count(), 121)
 
         # Check that we have items on the 2nd page
         request = self.factory.get(self.path + '?page=2')
@@ -1863,7 +1871,7 @@ class TestSubmissionInstanceView (APITestMixin, TestCase):
         self.assertEqual(data['attachments'][0]['name'], 'my_file_name')
 
         a = self.submissions[0].attachments.all()[0]
-        self.assertEqual(a.file.read(), 'This is test content in a "file"')
+        self.assertEqual(a.file.read(), b'This is test content in a "file"')
 
     def test_GET_response_with_private_data(self):
         #

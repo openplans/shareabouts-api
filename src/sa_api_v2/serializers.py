@@ -301,16 +301,15 @@ class DataBlobProcessor (EmptyModelSerializer):
         Pull the 'data' attribute off of the representation, parse it, and add
         its attributes directly into the representation.
         """
-        blob = data.pop('data')
-        blob_data = json.loads(blob)
+        blob = json.loads(data.pop('data'))
 
         # Did the user not ask for private data? Remove it!
         if not self.is_flag_on(INCLUDE_PRIVATE_PARAM):
-            for key in list(blob_data.keys()):
+            for key in list(blob.keys()):
                 if key.startswith('private'):
-                    del blob_data[key]
+                    del blob[key]
 
-        data.update(blob_data)
+        data.update(blob)
         return data
 
     def to_representation(self, obj):
