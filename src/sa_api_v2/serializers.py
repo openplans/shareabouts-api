@@ -427,7 +427,7 @@ class AttachmentSerializer (EmptyModelSerializer, serializers.ModelSerializer):
         data = {
             'created_datetime': obj.created_datetime,
             'updated_datetime': obj.updated_datetime,
-            'file': obj.file.storage.url(obj.file.name),
+            'file': obj.file,
             'name': obj.name
         }
         fields = self.fields
