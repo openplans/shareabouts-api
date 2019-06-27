@@ -715,7 +715,7 @@ class SubmittedThingSerializer (ActivityGenerator, DataBlobProcessor):
 class BasePlaceSerializer (SubmittedThingSerializer, serializers.ModelSerializer):
     geometry = GeometryField(format='wkt')
     attachments = AttachmentSerializer(read_only=True, many=True)
-    submitter = SimpleUserSerializer(read_only=False)
+    submitter = SimpleUserSerializer(read_only=False, required=False)
 
     class Meta:
         model = models.Place
@@ -837,7 +837,7 @@ class SimplePlaceSerializer (BasePlaceSerializer):
 class PlaceSerializer (BasePlaceSerializer, serializers.HyperlinkedModelSerializer):
     url = PlaceIdentityField()
     dataset = DataSetRelatedField()
-    submitter = UserSerializer(read_only=False)
+    submitter = UserSerializer(read_only=False, required=False)
 
     class Meta (BasePlaceSerializer.Meta):
         pass
@@ -866,7 +866,7 @@ class PlaceSerializer (BasePlaceSerializer, serializers.HyperlinkedModelSerializ
 class BaseSubmissionSerializer (SubmittedThingSerializer, serializers.ModelSerializer):
     id = serializers.IntegerField(read_only=True)
     attachments = AttachmentSerializer(read_only=True, many=True)
-    submitter = SimpleUserSerializer()
+    submitter = SimpleUserSerializer(required=False)
 
     class Meta:
         model = models.Submission
@@ -881,7 +881,7 @@ class SubmissionSerializer (BaseSubmissionSerializer, serializers.HyperlinkedMod
     dataset = DataSetRelatedField()
     set = SubmissionSetRelatedField(source='*')
     place = PlaceRelatedField()
-    submitter = UserSerializer()
+    submitter = UserSerializer(required=False)
 
     class Meta (BaseSubmissionSerializer.Meta):
         pass
