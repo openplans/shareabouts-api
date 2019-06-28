@@ -290,9 +290,9 @@ class DataBlobProcessor (EmptyModelSerializer):
         structured_attrs['data'] = json.dumps(blob)
 
         if not self.partial:
-            for field_name, field in list(self.base_fields.items()):
+            for field_name, field in list(self.fields.items()):
                 if not field.read_only:
-                    structured_attrs.set_default(field_name, field.default)
+                    structured_attrs.setdefault(field_name, field.default)
 
         return super(DataBlobProcessor, self).to_internal_value(structured_attrs)
 
