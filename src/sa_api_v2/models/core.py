@@ -41,6 +41,16 @@ class SubmittedThingQuerySet (FilterByIndexMixin, query.QuerySet):
 class SubmittedThingManager (FilterByIndexMixin, models.Manager):
     use_for_related_fields = True
 
+    def create(self, silent=False, source='', reindex=True, *args, **kwargs):
+        """
+        Creates a new object with the given kwargs, saving it to the database
+        and returning the created object.
+        """
+        obj = self.model(**kwargs)
+        self._for_write = True
+        obj.save(silent=silent, source=source, reindex=reindex, force_insert=True, using=self.db)
+        return obj
+
     def get_queryset(self):
         return SubmittedThingQuerySet(self.model, using=self._db)
 
@@ -75,6 +85,15 @@ class SubmittedThing (CloneableModelMixin, CacheClearingModel, ModelWithDataBlob
     def get_clone_save_kwargs(self):
         return {'silent': True, 'reindex': False, 'clear_cache': False}
 
+    def emit_action(self, source='', is_new=None):
+        action = Action()
+        action.action = 'create' if is_new else 'update'
+        action.thing = self
+        action.source = source
+        action.save()
+
+        return self
+
     def save(self, silent=False, source='', reindex=True, *args, **kwargs):
         is_new = (self.id == None)
 
@@ -85,11 +104,7 @@ class SubmittedThing (CloneableModelMixin, CacheClearingModel, ModelWithDataBlob
 
         # All submitted things generate an action if not silent.
         if not silent:
-            action = Action()
-            action.action = 'create' if is_new else 'update'
-            action.thing = self
-            action.source = source
-            action.save()
+            self.emit_action(is_new=is_new, source=source)
 
         return ret
 

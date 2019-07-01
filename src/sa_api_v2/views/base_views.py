@@ -1695,10 +1695,10 @@ class AttachmentListView (OwnedResourceMixin, FilteredResourceMixin, generics.Li
         thing = get_object_or_404(models.SubmittedThing, dataset=dataset, id=thing_id)
 
         if self.submission_set_name_kwarg in self.kwargs:
-            obj = thing.submission
+            obj = thing.full_submission
             ObjType = models.Submission
         else:
-            obj = thing.place
+            obj = thing.full_place
             ObjType = models.Place
         self.verify_object(obj, ObjType)
 
@@ -1737,11 +1737,11 @@ class ActionListView (CachedResourceMixin, OwnedResourceMixin, generics.ListAPIV
             .filter(thing__dataset=dataset)\
             .select_related(
                 'thing',
-                'thing__place',       # It will have this if it's a place
-                'thing__submission',  # It will have this if it's a submission
-                'thing__submission__place',
-                'thing__submission__place__dataset',
-                'thing__submission__place__dataset__owner',
+                'thing__full_place',       # It will have this if it's a place
+                'thing__full_submission',  # It will have this if it's a submission
+                'thing__full_submission__place',
+                'thing__full_submission__place__dataset',
+                'thing__full_submission__place__dataset__owner',
 
                 'thing__submitter',
                 'thing__dataset',
@@ -1750,15 +1750,15 @@ class ActionListView (CachedResourceMixin, OwnedResourceMixin, generics.ListAPIV
                 'thing__submitter___groups__dataset__owner',
                 'thing__submitter__social_auth',
 
-                'thing__place__attachments',
-                'thing__submission__attachments',
+                'thing__full_place__attachments',
+                'thing__full_submission__attachments',
 
-                'thing__place__submissions')
+                'thing__full_place__submissions')
 
         if INCLUDE_INVISIBLE_PARAM not in self.request.GET:
             queryset = queryset.filter(thing__visible=True)\
-                .filter(Q(thing__place__isnull=False) |
-                        Q(thing__submission__place__visible=True))
+                .filter(Q(thing__full_place__isnull=False) |
+                        Q(thing__full_submission__place__visible=True))
 
         return queryset
 

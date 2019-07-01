@@ -13,6 +13,7 @@ from django.utils.http import urlquote_plus
 from rest_framework import pagination
 from rest_framework import serializers
 from rest_framework import response
+from rest_framework_bulk import serializers as bulk_serializers
 # from rest_framework.reverse import reverse
 
 from . import apikey
@@ -667,7 +668,7 @@ class DataSetSubmissionSetSummarySerializer (serializers.HyperlinkedModelSeriali
         return summaries
 
 
-class SubmittedThingSerializer (ActivityGenerator, DataBlobProcessor):
+class SubmittedThingSerializer (bulk_serializers.BulkSerializerMixin, ActivityGenerator, DataBlobProcessor):
     def is_flag_on(self, flagname):
         # Check the context for the flag
         if self.context.get(flagname, False):
@@ -706,6 +707,8 @@ class BasePlaceSerializer (SubmittedThingSerializer, serializers.ModelSerializer
 
     class Meta:
         model = models.Place
+        list_serializer_class = bulk_serializers.BulkListSerializer
+        update_lookup_field = 'url'
 
     def get_submission_sets(self, place):
         include_invisible = self.is_flag_on(INCLUDE_INVISIBLE_PARAM)
@@ -858,6 +861,8 @@ class BaseSubmissionSerializer (SubmittedThingSerializer, serializers.ModelSeria
     class Meta:
         model = models.Submission
         exclude = ('set_name',)
+        list_serializer_class = bulk_serializers.BulkListSerializer
+        update_lookup_field = 'url'
 
 class SimpleSubmissionSerializer (BaseSubmissionSerializer):
     class Meta (BaseSubmissionSerializer.Meta):
@@ -878,6 +883,8 @@ class SubmissionSerializer (BaseSubmissionSerializer, serializers.HyperlinkedMod
 class BaseDataSetSerializer (EmptyModelSerializer, serializers.ModelSerializer):
     class Meta:
         model = models.DataSet
+        list_serializer_class = bulk_serializers.BulkListSerializer
+        update_lookup_field = 'url'
 
     def to_representation(self, obj):
         obj = self.ensure_obj(obj)

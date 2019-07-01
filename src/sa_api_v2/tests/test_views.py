@@ -98,6 +98,7 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
         Place.objects.all().delete()
         Submission.objects.all().delete()
         ApiKey.objects.all().delete()
+        Action.objects.all().delete()
 
         cache_buffer.reset()
         django_cache.clear()
