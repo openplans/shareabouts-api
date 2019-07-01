@@ -795,6 +795,24 @@ class CachedResourceMixin (object):
         return response
 
 
+class SaveKwargsMixin:
+    def get_save_kwargs(self):
+        return {}
+
+    def post_save(self, instance, created=False):
+        return instance
+
+    def perform_create(self, serializer):
+        instance = serializer.save(**self.get_save_kwargs())
+        self.post_save(instance, created=True)
+        return instance
+
+    def perform_update(self, serializer):
+        instance = serializer.save(**self.get_save_kwargs())
+        self.post_save(instance)
+        return instance
+
+
 ###############################################################################
 #
 # Exceptions
@@ -932,7 +950,7 @@ class PlaceListMixin (object):
     pass
 
 
-class PlaceListView (CachedResourceMixin, LocatedResourceMixin, OwnedResourceMixin, FilteredResourceMixin, bulk_generics.ListCreateBulkUpdateAPIView):
+class PlaceListView (CachedResourceMixin, SaveKwargsMixin, LocatedResourceMixin, OwnedResourceMixin, FilteredResourceMixin, bulk_generics.ListCreateBulkUpdateAPIView):
     """
 
     GET
@@ -1012,9 +1030,8 @@ class PlaceListView (CachedResourceMixin, LocatedResourceMixin, OwnedResourceMix
         prefix = reverse('place-list', kwargs=metakey_kwargs)
         return prefix + '_keys'
 
-    def pre_save(self, obj):
-        super(PlaceListView, self).pre_save(obj)
-        obj.dataset = self.get_dataset()
+    def get_save_kwargs(self):
+        return {'dataset': self.get_dataset()}
 
     def post_save(self, obj, created):
         super(PlaceListView, self).post_save(obj)
@@ -1159,7 +1176,7 @@ class SubmissionInstanceView (CachedResourceMixin, OwnedResourceMixin, generics.
         return obj
 
 
-class SubmissionListView (CachedResourceMixin, OwnedResourceMixin, FilteredResourceMixin, bulk_generics.ListCreateBulkUpdateAPIView):
+class SubmissionListView (CachedResourceMixin, SaveKwargsMixin, OwnedResourceMixin, FilteredResourceMixin, bulk_generics.ListCreateBulkUpdateAPIView):
     """
 
     GET
@@ -1216,11 +1233,10 @@ class SubmissionListView (CachedResourceMixin, OwnedResourceMixin, FilteredResou
         place = get_object_or_404(models.Place, dataset=dataset, id=place_id)
         return place
 
-    def pre_save(self, obj):
-        super(SubmissionListView, self).pre_save(obj)
-        obj.dataset = self.get_dataset()
-        obj.place = self.get_place(obj.dataset)
-        obj.set_name = self.kwargs[self.submission_set_name_kwarg]
+    def get_save_kwargs(self):
+        ds = self.get_dataset()
+        set_name = self.kwargs[self.submission_set_name_kwarg]
+        return {'dataset': ds, 'place': self.get_place(ds), 'set_name': set_name}
 
     def get_queryset(self):
         dataset = self.get_dataset()
@@ -1487,7 +1503,7 @@ class DataSetListMixin (object):
         return dict(list(sets.items()))
 
 
-class DataSetListView (DataSetListMixin, ProtectedOwnedResourceMixin, generics.ListCreateAPIView):
+class DataSetListView (DataSetListMixin, SaveKwargsMixin, ProtectedOwnedResourceMixin, generics.ListCreateAPIView):
     """
 
     GET
@@ -1531,8 +1547,10 @@ class DataSetListView (DataSetListMixin, ProtectedOwnedResourceMixin, generics.L
 
     client_authentication_classes = ()
 
+    def get_save_kwargs(self):
+        return {'owner': self.get_owner()}
+
     def pre_save(self, obj):
-        super(DataSetListView, self).pre_save(obj)
         obj.owner = self.get_owner()
 
     def post_save(self, obj, created=False):
@@ -1709,8 +1727,8 @@ class AttachmentListView (OwnedResourceMixin, FilteredResourceMixin, generics.Li
         queryset = super(AttachmentListView, self).get_queryset()
         return queryset.filter(thing=thing)
 
-    def pre_save(self, obj):
-        super(AttachmentListView, self).pre_save(obj)
+    def perform_create(self, serializer):
+        instance = super().perform_create(serializer)
         thing = self.get_thing()
         obj.thing = thing
 

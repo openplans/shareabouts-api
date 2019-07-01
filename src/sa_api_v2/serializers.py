@@ -954,9 +954,17 @@ class DataSetSerializer (BaseDataSetSerializer, serializers.HyperlinkedModelSeri
                 raise ValidationError('There was an error reading from the URL: %s' % head_response.content)
         return attrs
 
-    def save_object(self, obj, **kwargs):
-        obj.save(**kwargs)
+    def create(self, validated_data):
+        instance = super().create(validated_data)
+        self.post_save(instance)
+        return instance
 
+    def update(self, instance, validated_data):
+        instance = super().update(instance, validated_data)
+        self.post_save(instance)
+        return instance
+
+    def post_save(self, obj):
         # Load any bulk dataset definition supplied
         if hasattr(self, 'load_url') and self.load_url:
             # Somehow, make sure there's not already some loading going on.
@@ -965,12 +973,12 @@ class DataSetSerializer (BaseDataSetSerializer, serializers.HyperlinkedModelSeri
             load_dataset_archive.apply_async(args=(obj.id, self.load_url,))
 
 
-    def to_internal_value(self, data, files=None):
+    def to_internal_value(self, data):
         if data and 'load_from_url' in data:
             self.load_url = data.pop('load_from_url')
             if self.load_url and isinstance(self.load_url, list):
                 self.load_url = str(self.load_url[0])
-        return super(DataSetSerializer, self).to_internal_value(data, files)
+        return super(DataSetSerializer, self).to_internal_value(data)
 
 
 # Action serializer
