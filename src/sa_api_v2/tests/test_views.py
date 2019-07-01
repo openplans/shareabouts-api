@@ -356,7 +356,8 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
         # View should return private data when owner is logged in (Basic Auth)
         #
         request = self.factory.get(self.path + '?include_private')
-        request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(':'.join([self.owner.username, '123']))
+        credentials = ':'.join([self.owner.username, '123']).encode()
+        request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(credentials).decode()
         response = self.view(request, **self.request_kwargs)
         data = json.loads(response.rendered_content)
 
@@ -447,7 +448,8 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
         # View should return private data when owner is logged in (Basic Auth)
         #
         request = self.factory.get(self.invisible_path + '?include_invisible')
-        request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(':'.join([self.owner.username, '123']))
+        credentials = ':'.join([self.owner.username, '123']).encode()
+        request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(credentials).decode()
         response = self.view(request, **self.invisible_request_kwargs)
         data = json.loads(response.rendered_content)
 
@@ -844,7 +846,8 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
         # View should update the place when owner is directly authenticated
         #
         request = self.factory.put(self.invisible_path + '?include_invisible', data=place_data, content_type='application/json')
-        request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(':'.join([self.owner.username, '123']))
+        credentials = ':'.join([self.owner.username, '123']).encode()
+        request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(credentials).decode()
         response = self.view(request, **self.invisible_request_kwargs)
 
         data = json.loads(response.rendered_content)
@@ -1266,7 +1269,8 @@ class TestPlaceListView (APITestMixin, TestCase):
         # View should return private data when owner is logged in (Basic Auth)
         #
         request = self.factory.get(self.path + '?include_private')
-        request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(':'.join([self.owner.username, '123']))
+        credentials = ':'.join([self.owner.username, '123']).encode()
+        request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(credentials).decode()
         response = self.view(request, **self.request_kwargs)
         data = json.loads(response.rendered_content)
 
@@ -1644,7 +1648,8 @@ class TestPlaceListView (APITestMixin, TestCase):
         # View should return private data when owner is logged in (Basic Auth)
         #
         request = self.factory.get(self.path + '?include_invisible')
-        request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(':'.join([self.owner.username, '123']))
+        credentials = ':'.join([self.owner.username, '123']).encode()
+        request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(credentials).decode()
         response = self.view(request, **self.request_kwargs)
         data = json.loads(response.rendered_content)
 
@@ -1948,7 +1953,8 @@ class TestSubmissionInstanceView (APITestMixin, TestCase):
         # View should return private data when owner is logged in (Basic Auth)
         #
         request = self.factory.get(self.path + '?include_private')
-        request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(':'.join([self.owner.username, '123']))
+        credentials = ':'.join([self.owner.username, '123']).encode()
+        request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(credentials).decode()
         response = self.view(request, **self.request_kwargs)
         data = json.loads(response.rendered_content)
 
@@ -2360,7 +2366,8 @@ class TestSubmissionListView (APITestMixin, TestCase):
         # View should return private data when owner is logged in (Basic Auth)
         #
         request = self.factory.get(self.path + '?include_private')
-        request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(':'.join([self.owner.username, '123']))
+        credentials = ':'.join([self.owner.username, '123']).encode()
+        request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(credentials).decode()
         response = self.view(request, **self.request_kwargs)
         data = json.loads(response.rendered_content)
 
@@ -2689,7 +2696,8 @@ class TestSubmissionListView (APITestMixin, TestCase):
         # View should return private data when owner is logged in (Basic Auth)
         #
         request = self.factory.get(self.path + '?include_invisible')
-        request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(':'.join([self.owner.username, '123']))
+        credentials = ':'.join([self.owner.username, '123']).encode()
+        request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(credentials).decode()
         response = self.view(request, **self.request_kwargs)
         data = json.loads(response.rendered_content)
 
@@ -3025,7 +3033,8 @@ class TestDataSetSubmissionListView (APITestMixin, TestCase):
         # View should return private data when owner is logged in (Basic Auth)
         #
         request = self.factory.get(self.path + '?include_private')
-        request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(':'.join([self.owner.username, '123']))
+        credentials = ':'.join([self.owner.username, '123']).encode()
+        request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(credentials).decode()
         response = self.view(request, **self.request_kwargs)
         data = json.loads(response.rendered_content)
 
@@ -3121,7 +3130,8 @@ class TestDataSetSubmissionListView (APITestMixin, TestCase):
         # View should return private data when owner is logged in (Basic Auth)
         #
         request = self.factory.get(self.path + '?include_invisible')
-        request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(':'.join([self.owner.username, '123']))
+        credentials = ':'.join([self.owner.username, '123']).encode()
+        request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(credentials).decode()
         response = self.view(request, **self.request_kwargs)
         data = json.loads(response.rendered_content)
 
@@ -3291,7 +3301,8 @@ class TestDataSetInstanceView (APITestMixin, TestCase):
         # View should delete the dataset when owner is directly authenticated
         #
         request = self.factory.delete(self.path)
-        request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(':'.join([self.owner.username, '123']))
+        credentials = ':'.join([self.owner.username, '123']).encode()
+        request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(credentials).decode()
         response = self.view(request, **self.request_kwargs)
 
         # Check that the request was successful
@@ -3371,7 +3382,8 @@ class TestDataSetInstanceView (APITestMixin, TestCase):
         # View should return private data when owner is logged in (Basic Auth)
         #
         request = self.factory.get(self.path + '?include_invisible')
-        request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(':'.join([self.owner.username, '123']))
+        credentials = ':'.join([self.owner.username, '123']).encode()
+        request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(credentials).decode()
         response = self.view(request, **self.request_kwargs)
         data = json.loads(response.rendered_content)
 
@@ -3404,7 +3416,8 @@ class TestDataSetInstanceView (APITestMixin, TestCase):
         # View should update the place and 301 when owner is authenticated
         #
         request = self.factory.put(self.path, data=dataset_data, content_type='application/json')
-        request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(':'.join([self.owner.username, '123']))
+        credentials = ':'.join([self.owner.username, '123']).encode()
+        request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(credentials).decode()
 
         response = self.view(request, **self.request_kwargs)
 
@@ -3562,7 +3575,8 @@ class TestDataSetListView (APITestMixin, TestCase):
         # View should create the submission and set when owner is authenticated
         #
         request = self.factory.post(self.path, data=dataset_data, content_type='application/json')
-        request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(':'.join([self.owner.username, '123']))
+        credentials = ':'.join([self.owner.username, '123']).encode()
+        request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(credentials).decode()
 
         response = self.view(request, **self.request_kwargs)
 
@@ -3589,7 +3603,8 @@ class TestDataSetListView (APITestMixin, TestCase):
         # View should create the submission and set when owner is authenticated
         #
         request = self.factory.post(self.path, data=dataset_data, content_type='application/json')
-        request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(':'.join([self.owner.username, '123']))
+        credentials = ':'.join([self.owner.username, '123']).encode()
+        request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(credentials).decode()
         request.META['HTTP_X_SHAREABOUTS_CLONE'] = ','.join([self.owner.username, self.dataset.slug])
 
         response = self.view(request, **self.request_kwargs)
@@ -3618,7 +3633,8 @@ class TestDataSetListView (APITestMixin, TestCase):
         # View should create the submission and set when owner is authenticated
         #
         request = self.factory.post(self.path, data=dataset_data, content_type='application/json')
-        request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(':'.join([self.owner.username, '123']))
+        credentials = ':'.join([self.owner.username, '123']).encode()
+        request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(credentials).decode()
         request.META['HTTP_X_SHAREABOUTS_CLONE'] = 'http://testserver' + reverse('dataset-detail', args=[self.owner.username, self.dataset.slug])
 
         response = self.view(request, **self.request_kwargs)
@@ -3647,7 +3663,8 @@ class TestDataSetListView (APITestMixin, TestCase):
         # View should create the submission and set when owner is authenticated
         #
         request = self.factory.post(self.path, data=dataset_data, content_type='application/json')
-        request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(':'.join([self.owner.username, '123']))
+        credentials = ':'.join([self.owner.username, '123']).encode()
+        request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(credentials).decode()
         request.META['HTTP_X_SHAREABOUTS_CLONE'] = str(self.dataset.id)
 
         response = self.view(request, **self.request_kwargs)
@@ -3674,7 +3691,8 @@ class TestDataSetListView (APITestMixin, TestCase):
         # View should create the submission and set when owner is authenticated
         #
         request = self.factory.post(self.path, data=dataset_data, content_type='application/json')
-        request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(':'.join([self.owner.username, '123']))
+        credentials = ':'.join([self.owner.username, '123']).encode()
+        request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(credentials).decode()
         request.META['HTTP_X_SHAREABOUTS_CLONE'] = str(self.dataset.id)
 
         response = self.view(request, **self.request_kwargs)
@@ -3777,7 +3795,8 @@ class TestDataSetListView (APITestMixin, TestCase):
         # View should return private data when owner is logged in (Basic Auth)
         #
         request = self.factory.get(self.path + '?include_invisible')
-        request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(':'.join([self.owner.username, '123']))
+        credentials = ':'.join([self.owner.username, '123']).encode()
+        request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(credentials).decode()
         response = self.view(request, **self.request_kwargs)
         data = json.loads(response.rendered_content)
 
@@ -3907,7 +3926,8 @@ class TestPlaceAttachmentListView (APITestMixin, TestCase):
         f.name = 'myfile.txt'
         request = self.factory.post(self.path, data={'file': f, 'name': 'my-file'})
         User.objects.create_user(username='new_user', password='password')
-        request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(':'.join(['new_user', 'password']))
+        credentials =  ':'.join(['new_user', 'password']).encode()
+        request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(credentials).decode()
         response = self.view(request, **self.request_kwargs)
 
         # Check that the request was successful
@@ -3921,7 +3941,8 @@ class TestPlaceAttachmentListView (APITestMixin, TestCase):
         f = StringIO('This is test content in a "file"')
         f.name = 'myfile.txt'
         request = self.factory.post(self.path, data={'file': f, 'name': 'my-file'})
-        request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(':'.join([self.owner.username, '123']))
+        credentials = ':'.join([self.owner.username, '123']).encode()
+        request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(credentials).decode()
         response = self.view(request, **self.request_kwargs)
 
         # Check that the request was successful
@@ -3971,7 +3992,8 @@ class TestPlaceAttachmentListView (APITestMixin, TestCase):
         f.name = 'myfile.txt'
         request = self.factory.post(self.invisible_path + '?include_invisible', data={'file': f, 'name': 'my-file'})
         User.objects.create_user(username='new_user', password='password')
-        request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(':'.join(['new_user', 'password']))
+        credentials =  ':'.join(['new_user', 'password']).encode()
+        request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(credentials).decode()
         response = self.view(request, **self.invisible_request_kwargs)
 
         # Check that the request was successful
@@ -3985,7 +4007,8 @@ class TestPlaceAttachmentListView (APITestMixin, TestCase):
         f = StringIO('This is test content in a "file"')
         f.name = 'myfile.txt'
         request = self.factory.post(self.invisible_path, data={'file': f, 'name': 'my-file'})
-        request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(':'.join([self.owner.username, '123']))
+        credentials = ':'.join([self.owner.username, '123']).encode()
+        request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(credentials).decode()
         response = self.view(request, **self.invisible_request_kwargs)
         self.assertStatusCode(response, 400, response.render())
 
@@ -3997,7 +4020,8 @@ class TestPlaceAttachmentListView (APITestMixin, TestCase):
         f = StringIO('This is test content in a "file"')
         f.name = 'myfile.txt'
         request = self.factory.post(self.invisible_path + '?include_invisible', data={'file': f, 'name': 'my-file'})
-        request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(':'.join([self.owner.username, '123']))
+        credentials = ':'.join([self.owner.username, '123']).encode()
+        request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(credentials).decode()
         response = self.view(request, **self.invisible_request_kwargs)
 
         # Check that the request was successful
@@ -4071,7 +4095,8 @@ class TestPlaceAttachmentListView (APITestMixin, TestCase):
         # View should return private data when owner is logged in (Basic Auth)
         #
         request = self.factory.get(self.invisible_path + '?include_invisible')
-        request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(':'.join([self.owner.username, '123']))
+        credentials = ':'.join([self.owner.username, '123']).encode()
+        request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(credentials).decode()
         response = self.view(request, **self.invisible_request_kwargs)
         data = json.loads(response.rendered_content)
 
@@ -4248,7 +4273,8 @@ class TestSubmissionAttachmentListView (APITestMixin, TestCase):
         # View should return private data when owner is logged in (Basic Auth)
         #
         request = self.factory.get(self.invisible_path + '?include_invisible')
-        request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(':'.join([self.owner.username, '123']))
+        credentials = ':'.join([self.owner.username, '123']).encode()
+        request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(credentials).decode()
         response = self.view(request, **self.invisible_request_kwargs)
         data = json.loads(response.rendered_content)
 
@@ -4307,7 +4333,8 @@ class TestSubmissionAttachmentListView (APITestMixin, TestCase):
         f.name = 'myfile.txt'
         request = self.factory.post(self.path, data={'file': f, 'name': 'my-file'})
         User.objects.create_user(username='new_user', password='password')
-        request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(':'.join(['new_user', 'password']))
+        credentials =  ':'.join(['new_user', 'password']).encode()
+        request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(credentials).decode()
         response = self.view(request, **self.request_kwargs)
 
         # Check that the request was successful
@@ -4321,7 +4348,8 @@ class TestSubmissionAttachmentListView (APITestMixin, TestCase):
         f = StringIO('This is test content in a "file"')
         f.name = 'myfile.txt'
         request = self.factory.post(self.path, data={'file': f, 'name': 'my-file'})
-        request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(':'.join([self.owner.username, '123']))
+        credentials = ':'.join([self.owner.username, '123']).encode()
+        request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(credentials).decode()
         response = self.view(request, **self.request_kwargs)
 
         # Check that the request was successful
@@ -4371,7 +4399,8 @@ class TestSubmissionAttachmentListView (APITestMixin, TestCase):
         f.name = 'myfile.txt'
         request = self.factory.post(self.invisible_path + '?include_invisible', data={'file': f, 'name': 'my-file'})
         User.objects.create_user(username='new_user', password='password')
-        request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(':'.join(['new_user', 'password']))
+        credentials =  ':'.join(['new_user', 'password']).encode()
+        request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(credentials).decode()
         response = self.view(request, **self.invisible_request_kwargs)
 
         # Check that the request was successful
@@ -4385,7 +4414,8 @@ class TestSubmissionAttachmentListView (APITestMixin, TestCase):
         f = StringIO('This is test content in a "file"')
         f.name = 'myfile.txt'
         request = self.factory.post(self.invisible_path, data={'file': f, 'name': 'my-file'})
-        request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(':'.join([self.owner.username, '123']))
+        credentials = ':'.join([self.owner.username, '123']).encode()
+        request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(credentials).decode()
         response = self.view(request, **self.invisible_request_kwargs)
         self.assertStatusCode(response, 400, response.render())
 
@@ -4397,7 +4427,8 @@ class TestSubmissionAttachmentListView (APITestMixin, TestCase):
         f = StringIO('This is test content in a "file"')
         f.name = 'myfile.txt'
         request = self.factory.post(self.invisible_path + '?include_invisible', data={'file': f, 'name': 'my-file'})
-        request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(':'.join([self.owner.username, '123']))
+        credentials = ':'.join([self.owner.username, '123']).encode()
+        request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(credentials).decode()
         response = self.view(request, **self.invisible_request_kwargs)
 
         # Check that the request was successful
@@ -4511,7 +4542,9 @@ class TestActivityView(APITestMixin, TestCase):
         # View should return private data when owner is logged in (Basic Auth)
         #
         request = self.factory.get(self.url + '?include_invisible')
-        request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(':'.join([self.owner.username, '123']))
+        credentials = ':'.join([self.owner.username, '123'])
+        encoded_credentials = base64.b64encode(credentials.encode())
+        request.META['HTTP_AUTHORIZATION'] = 'Basic ' + encoded_credentials.decode()
         response = self.view(request, **self.kwargs)
 
         # Check that the request was successful
