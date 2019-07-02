@@ -261,7 +261,7 @@ class IsAllowedByDataPermissions(permissions.BasePermission):
             return True
 
         # DataSets are protected by other means
-        if hasattr(view, 'model') and issubclass(view.model, models.DataSet):
+        if hasattr(view, 'queryset') and issubclass(view.queryset.model, models.DataSet):
             return True
 
         if hasattr(view, 'get_method_actions'):
