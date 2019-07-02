@@ -2913,7 +2913,7 @@ class TestDataSetSubmissionListView (APITestMixin, TestCase):
         request = self.factory.get(self.path + '?format=csv')
         response = self.view(request, **self.request_kwargs)
 
-        rows = list(csv.reader(StringIO(response.rendered_content)))
+        rows = list(csv.reader(StringIO(response.rendered_content.decode())))
         headers = rows[0]
 
         # Check that the request was successful

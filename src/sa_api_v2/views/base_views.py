@@ -813,8 +813,9 @@ class SerializerParamsMixin:
         # Set read_only on each override field so that the default is forced
         # to be respected.
         for key, val in overrides.items():
-            serializer_to_patch.fields[key].default = val
-            serializer_to_patch.fields[key].read_only = True
+            if key in serializer_to_patch.fields:
+                serializer_to_patch.fields[key].default = val
+                serializer_to_patch.fields[key].read_only = True
 
         return serializer
 
@@ -822,12 +823,14 @@ class SerializerParamsMixin:
         return instance
 
     def perform_create(self, serializer):
-        instance = serializer.save()
+        attrs = self.get_serializer_overrides()
+        instance = serializer.save(**attrs)
         self.post_save(instance, created=True)
         return instance
 
     def perform_update(self, serializer):
-        instance = serializer.save(**self.get_serializer_overrides())
+        attrs = self.get_serializer_overrides()
+        instance = serializer.save(**attrs)
         self.post_save(instance)
         return instance
 
@@ -1701,7 +1704,7 @@ class AdminDataSetListView (CachedResourceMixin, DataSetListMixin, generics.List
     content_negotiation_class = ShareaboutsContentNegotiation
 
 
-class AttachmentListView (OwnedResourceMixin, FilteredResourceMixin, generics.ListCreateAPIView):
+class AttachmentListView (OwnedResourceMixin, SerializerParamsMixin, FilteredResourceMixin, generics.ListCreateAPIView):
     """
 
     GET
@@ -1746,10 +1749,8 @@ class AttachmentListView (OwnedResourceMixin, FilteredResourceMixin, generics.Li
         queryset = super(AttachmentListView, self).get_queryset()
         return queryset.filter(thing=thing)
 
-    def perform_create(self, serializer):
-        instance = super().perform_create(serializer)
-        thing = self.get_thing()
-        obj.thing = thing
+    def get_serializer_overrides(self):
+        return {'thing': self.get_thing()}
 
 
 class ActionListView (CachedResourceMixin, OwnedResourceMixin, generics.ListAPIView):

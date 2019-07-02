@@ -487,15 +487,15 @@ class ThingWithAttachmentCache (Cache):
 
     def get_instance_params(self, thing_obj):
         try:
-            return self.place_cache.get_instance_params(thing_obj.place)
+            return self.place_cache.get_instance_params(thing_obj.full_place)
         except ObjectDoesNotExist:
-            return self.submission_cache.get_instance_params(thing_obj.submission)
+            return self.submission_cache.get_instance_params(thing_obj.full_submission)
 
     def get_serialized_data_keys(self, thing_obj):
         try:
-            return self.place_cache.get_instance_params(thing_obj.place)
+            return self.place_cache.get_instance_params(thing_obj.full_place)
         except ObjectDoesNotExist:
-            return self.submission_cache.get_instance_params(thing_obj.submission)
+            return self.submission_cache.get_instance_params(thing_obj.full_submission)
 
     def get_attachments_key(self, dataset_id):
         return 'dataset:%s:%s' % (dataset_id, 'attachments-by-thing_id')
