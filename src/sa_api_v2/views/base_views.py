@@ -795,20 +795,39 @@ class CachedResourceMixin (object):
         return response
 
 
-class SaveKwargsMixin:
-    def get_save_kwargs(self):
+class SerializerParamsMixin:
+    def get_serializer_overrides(self):
         return {}
+
+    def get_serializer(self, *args, **kwargs):
+        overrides = self.get_serializer_overrides()
+        serializer = super().get_serializer(*args, **kwargs)
+
+        # List serializers won't have any `fields`, but will instead have a
+        # `child` serializer with fields.
+        if hasattr(serializer, 'fields'):
+            serializer_to_patch = serializer
+        elif hasattr(serializer, 'child'):
+            serializer_to_patch = serializer.child
+
+        # Set read_only on each override field so that the default is forced
+        # to be respected.
+        for key, val in overrides.items():
+            serializer_to_patch.fields[key].default = val
+            serializer_to_patch.fields[key].read_only = True
+
+        return serializer
 
     def post_save(self, instance, created=False):
         return instance
 
     def perform_create(self, serializer):
-        instance = serializer.save(**self.get_save_kwargs())
+        instance = serializer.save()
         self.post_save(instance, created=True)
         return instance
 
     def perform_update(self, serializer):
-        instance = serializer.save(**self.get_save_kwargs())
+        instance = serializer.save(**self.get_serializer_overrides())
         self.post_save(instance)
         return instance
 
@@ -950,7 +969,7 @@ class PlaceListMixin (object):
     pass
 
 
-class PlaceListView (CachedResourceMixin, SaveKwargsMixin, LocatedResourceMixin, OwnedResourceMixin, FilteredResourceMixin, bulk_generics.ListCreateBulkUpdateAPIView):
+class PlaceListView (CachedResourceMixin, SerializerParamsMixin, LocatedResourceMixin, OwnedResourceMixin, FilteredResourceMixin, bulk_generics.ListCreateBulkUpdateAPIView):
     """
 
     GET
@@ -1030,7 +1049,7 @@ class PlaceListView (CachedResourceMixin, SaveKwargsMixin, LocatedResourceMixin,
         prefix = reverse('place-list', kwargs=metakey_kwargs)
         return prefix + '_keys'
 
-    def get_save_kwargs(self):
+    def get_serializer_overrides(self):
         return {'dataset': self.get_dataset()}
 
     def post_save(self, obj, created):
@@ -1176,7 +1195,7 @@ class SubmissionInstanceView (CachedResourceMixin, OwnedResourceMixin, generics.
         return obj
 
 
-class SubmissionListView (CachedResourceMixin, SaveKwargsMixin, OwnedResourceMixin, FilteredResourceMixin, bulk_generics.ListCreateBulkUpdateAPIView):
+class SubmissionListView (CachedResourceMixin, SerializerParamsMixin, OwnedResourceMixin, FilteredResourceMixin, bulk_generics.ListCreateBulkUpdateAPIView):
     """
 
     GET
@@ -1233,7 +1252,7 @@ class SubmissionListView (CachedResourceMixin, SaveKwargsMixin, OwnedResourceMix
         place = get_object_or_404(models.Place, dataset=dataset, id=place_id)
         return place
 
-    def get_save_kwargs(self):
+    def get_serializer_overrides(self):
         ds = self.get_dataset()
         set_name = self.kwargs[self.submission_set_name_kwarg]
         return {'dataset': ds, 'place': self.get_place(ds), 'set_name': set_name}
@@ -1503,7 +1522,7 @@ class DataSetListMixin (object):
         return dict(list(sets.items()))
 
 
-class DataSetListView (DataSetListMixin, SaveKwargsMixin, ProtectedOwnedResourceMixin, generics.ListCreateAPIView):
+class DataSetListView (DataSetListMixin, SerializerParamsMixin, ProtectedOwnedResourceMixin, generics.ListCreateAPIView):
     """
 
     GET
@@ -1547,7 +1566,7 @@ class DataSetListView (DataSetListMixin, SaveKwargsMixin, ProtectedOwnedResource
 
     client_authentication_classes = ()
 
-    def get_save_kwargs(self):
+    def get_serializer_overrides(self):
         return {'owner': self.get_owner()}
 
     def pre_save(self, obj):
