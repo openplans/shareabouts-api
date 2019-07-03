@@ -232,7 +232,7 @@ SOCIAL_AUTH_LOGIN_ERROR_URL = 'remote-social-login-error'
 #
 
 # Tests (nose)
-TEST_RUNNER = 'django_nose.NoseTestSuiteRunner'
+# TEST_RUNNER = 'django_nose.NoseTestSuiteRunner'
 
 # Debug toolbar
 def custom_show_toolbar(request):
@@ -304,11 +304,11 @@ LOGGING = {
             'propagate': True,
         },
 
-        'django.db.backends': {
-            'handlers': ['console'],
-            'level': 'DEBUG',
-            'propagate': True,
-        },
+        # 'django.db.backends': {
+        #     'handlers': ['console'],
+        #     'level': 'DEBUG',
+        #     'propagate': True,
+        # },
 
         'utils.request_timer': {
             'handlers': ['console'],
