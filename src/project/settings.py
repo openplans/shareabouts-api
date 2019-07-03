@@ -438,10 +438,10 @@ if BROKER_URL == 'django://':
 # Do this after all the settings files have been processed, in case the
 # SHOW_DEBUG_TOOLBAR setting is set.
 
-# if SHOW_DEBUG_TOOLBAR:
-#     INSTALLED_APPS += ('debug_toolbar',)
-#     MIDDLEWARE_CLASSES = (
-#         MIDDLEWARE_CLASSES[:2] +
-#         ('debug_toolbar.middleware.DebugToolbarMiddleware',) +
-#         MIDDLEWARE_CLASSES[2:]
-#     )
+if SHOW_DEBUG_TOOLBAR:
+    INSTALLED_APPS += ('debug_toolbar',)
+    MIDDLEWARE = (
+        MIDDLEWARE[:2] +
+        ['debug_toolbar.middleware.DebugToolbarMiddleware'] +
+        MIDDLEWARE[2:]
+    )
