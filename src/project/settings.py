@@ -1,7 +1,6 @@
 from os import environ
 
 DEBUG = True
-TEMPLATE_DEBUG = DEBUG
 SHOW_DEBUG_TOOLBAR = DEBUG
 DEBUG_TOOLBAR_PATCH_SETTINGS = False
 
@@ -75,22 +74,26 @@ STATICFILES_FINDERS = (
 )
 STATICFILES_DIRS = ()
 
-TEMPLATE_LOADERS = (
-    'django.template.loaders.filesystem.Loader',
-    'django.template.loaders.app_directories.Loader',
-)
-TEMPLATE_DIRS = ()
-
-TEMPLATE_CONTEXT_PROCESSORS = (
-    "django.contrib.auth.context_processors.auth",
-    "django.core.context_processors.debug",
-    "django.core.context_processors.i18n",
-    "django.core.context_processors.media",
-    "django.core.context_processors.static",
-    "django.core.context_processors.tz",
-    "django.contrib.messages.context_processors.messages",
-    'django.core.context_processors.request',
-)
+TEMPLATES = [
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [],
+        'APP_DIRS': True,
+        'OPTIONS': {
+            'context_processors': [
+                "django.contrib.auth.context_processors.auth",
+                "django.core.context_processors.debug",
+                "django.core.context_processors.i18n",
+                "django.core.context_processors.media",
+                "django.core.context_processors.static",
+                "django.core.context_processors.tz",
+                "django.contrib.messages.context_processors.messages",
+                'django.core.context_processors.request',
+            ],
+            'debug': DEBUG,
+        },
+    },
+]
 
 ATTACHMENT_STORAGE = 'django.core.files.storage.FileSystemStorage'
 
@@ -343,7 +346,7 @@ if 'DATABASE_URL' in environ:
 
 if 'DEBUG' in environ:
     DEBUG = (environ['DEBUG'].lower() == 'true')
-    TEMPLATE_DEBUG = DEBUG
+    TEMPLATES[0]['OPTIONS']['debug'] = DEBUG
     SHOW_DEBUG_TOOLBAR = DEBUG
 
 # Look for the following redis environment variables, in order
