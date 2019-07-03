@@ -45,6 +45,7 @@ django-storages
 django-loginas
 social-auth-core
 social-auth-app-django
+python-social-auth==0.2.21  # <-- Just for the migrations
 django-cors-headers
 
 

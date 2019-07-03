@@ -10,7 +10,7 @@ from sa_api_v2.cache import cache_buffer
 from sa_api_v2.models import Attachment, Action, User, DataSet, Place, Submission, Group
 from sa_api_v2.serializers import AttachmentSerializer, ActionSerializer, UserSerializer, FullUserSerializer, PlaceSerializer, DataSetSerializer, SubmissionSerializer
 from sa_api_v2.views import PlaceInstanceView
-# from social.apps.django_app.default.models import UserSocialAuth
+from social_django.models import UserSocialAuth
 import json
 from os import path
 from mock import patch
@@ -109,61 +109,61 @@ class TestActionSerializer (TestCase):
         self.assertNotIn('thing', serializer.data)
 
 
-# class TestSocialUserSerializer (TestCase):
-#
-#     def setUp(self):
-#         test_dir = path.dirname(__file__)
-#         fixture_dir = path.join(test_dir, 'fixtures')
-#         twitter_user_data_file = path.join(fixture_dir, 'twitter_user.json')
-#         facebook_user_data_file = path.join(fixture_dir, 'facebook_user.json')
-#
-#         self.twitter_user = User.objects.create_user(
-#             username='my_twitter_user', password='mypassword')
-#         self.twitter_social_auth = UserSocialAuth.objects.create(
-#             user=self.twitter_user, provider='twitter', uid='1234',
-#             extra_data=json.load(open(twitter_user_data_file)))
-#
-#         self.facebook_user = User.objects.create_user(
-#             username='my_facebook_user', password='mypassword')
-#         self.facebook_social_auth = UserSocialAuth.objects.create(
-#             user=self.facebook_user, provider='facebook', uid='1234',
-#             extra_data=json.load(open(facebook_user_data_file)))
-#
-#         self.no_social_user = User.objects.create_user(
-#             username='my_antisocial_user', password='password')
-#
-#     def tearDown(self):
-#         User.objects.all().delete()
-#         UserSocialAuth.objects.all().delete()
-#
-#     def test_twitter_user_attributes(self):
-#         serializer = UserSerializer(self.twitter_user)
-#         self.assertNotIn('password', serializer.data)
-#         self.assertIn('name', serializer.data)
-#         self.assertIn('avatar_url', serializer.data)
-#
-#         self.assertEqual(serializer.data['name'], 'Mjumbe Poe')
-#         self.assertEqual(serializer.data['avatar_url'], 'http://a0.twimg.com/profile_images/1101892515/dreadlocked_browntwitterbird-248x270_bigger.png')
-#
-#     def test_facebook_user_attributes(self):
-#         serializer = UserSerializer(self.facebook_user)
-#         self.assertNotIn('password', serializer.data)
-#         self.assertIn('name', serializer.data)
-#         self.assertIn('avatar_url', serializer.data)
-#
-#         self.assertEqual(serializer.data['name'], 'Mjumbe Poe')
-#         self.assertEqual(serializer.data['avatar_url'], 'https://fbcdn-profile-a.akamaihd.net/hprofile-ak-ash4/c17.0.97.97/55_512302020614_7565_s.jpg')
-#
-#     def test_no_social_user_attributes(self):
-#         serializer = UserSerializer(self.no_social_user)
-#         self.assertNotIn('password', serializer.data)
-#         self.assertIn('name', serializer.data)
-#         self.assertIn('avatar_url', serializer.data)
-#
-#         self.assertEqual(serializer.data['name'], '')
-#         self.assertEqual(serializer.data['avatar_url'], '')
-#
-#
+class TestSocialUserSerializer (TestCase):
+
+    def setUp(self):
+        test_dir = path.dirname(__file__)
+        fixture_dir = path.join(test_dir, 'fixtures')
+        twitter_user_data_file = path.join(fixture_dir, 'twitter_user.json')
+        facebook_user_data_file = path.join(fixture_dir, 'facebook_user.json')
+
+        self.twitter_user = User.objects.create_user(
+            username='my_twitter_user', password='mypassword')
+        self.twitter_social_auth = UserSocialAuth.objects.create(
+            user=self.twitter_user, provider='twitter', uid='1234',
+            extra_data=json.load(open(twitter_user_data_file)))
+
+        self.facebook_user = User.objects.create_user(
+            username='my_facebook_user', password='mypassword')
+        self.facebook_social_auth = UserSocialAuth.objects.create(
+            user=self.facebook_user, provider='facebook', uid='1234',
+            extra_data=json.load(open(facebook_user_data_file)))
+
+        self.no_social_user = User.objects.create_user(
+            username='my_antisocial_user', password='password')
+
+    def tearDown(self):
+        User.objects.all().delete()
+        UserSocialAuth.objects.all().delete()
+
+    def test_twitter_user_attributes(self):
+        serializer = UserSerializer(self.twitter_user)
+        self.assertNotIn('password', serializer.data)
+        self.assertIn('name', serializer.data)
+        self.assertIn('avatar_url', serializer.data)
+
+        self.assertEqual(serializer.data['name'], 'Mjumbe Poe')
+        self.assertEqual(serializer.data['avatar_url'], 'http://a0.twimg.com/profile_images/1101892515/dreadlocked_browntwitterbird-248x270_bigger.png')
+
+    def test_facebook_user_attributes(self):
+        serializer = UserSerializer(self.facebook_user)
+        self.assertNotIn('password', serializer.data)
+        self.assertIn('name', serializer.data)
+        self.assertIn('avatar_url', serializer.data)
+
+        self.assertEqual(serializer.data['name'], 'Mjumbe Poe')
+        self.assertEqual(serializer.data['avatar_url'], 'https://fbcdn-profile-a.akamaihd.net/hprofile-ak-ash4/c17.0.97.97/55_512302020614_7565_s.jpg')
+
+    def test_no_social_user_attributes(self):
+        serializer = UserSerializer(self.no_social_user)
+        self.assertNotIn('password', serializer.data)
+        self.assertIn('name', serializer.data)
+        self.assertIn('avatar_url', serializer.data)
+
+        self.assertEqual(serializer.data['name'], '')
+        self.assertEqual(serializer.data['avatar_url'], '')
+
+
 class TestUserSerializer (TestCase):
 
     def setUp(self):

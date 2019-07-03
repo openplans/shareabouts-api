@@ -94,7 +94,7 @@ urlpatterns = [
     # url(r'^users/login/(?P<backend>[^/]+)/$', views.remote_social_login, name='remote-social-login'),
     # url(r'^users/logout/$', views.remote_logout, name='remote-logout'),
 
-    url('^users/', include(social_django.urls)),
+    url('^users/', include(social_django.urls, namespace='social')),
 
     url(r'^forms/', include(rest_framework.urls)),
 
