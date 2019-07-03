@@ -1,7 +1,8 @@
 import time
 import logging
+from django.utils.deprecation import MiddlewareMixin
 
-class RequestTimeLogger (object):
+class RequestTimeLogger (MiddlewareMixin):
     def process_request(self, request):
         self.start_time = time.time()
 
@@ -24,7 +25,7 @@ class RequestTimeLogger (object):
         return response
 
 
-class CookiesLogger (object):
+class CookiesLogger (MiddlewareMixin):
     """
     Logs in the request and response.
     """
@@ -36,14 +37,14 @@ class CookiesLogger (object):
             'Request cookies: %s\n'
             '\n'
             'Response cookies: %s' % (
-                response.status_code, 
-                request.COOKIES, 
+                response.status_code,
+                request.COOKIES,
                 response.cookies or {}
         ))
         return response
 
 
-class JSEnableAllCookies (object):
+class JSEnableAllCookies (MiddlewareMixin):
     """
     Removes the httponly flag from all the cookies being set.
     """
@@ -55,7 +56,7 @@ class JSEnableAllCookies (object):
         return response
 
 
-class UniversalP3PHeader (object):
+class UniversalP3PHeader (MiddlewareMixin):
     """
     Sets P3P headers on the response. This header does not specify
     a valid P3P policy, but it is enough to get past IE.

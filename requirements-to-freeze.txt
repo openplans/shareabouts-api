@@ -2,7 +2,7 @@
 # Web server
 # ==============================
 
-Django<1.10,>1.9
+Django<1.11,>1.10
 gevent
 gunicorn
 dj_static
