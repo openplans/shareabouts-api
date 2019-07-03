@@ -278,7 +278,7 @@ class TestPlaceSerializer (TestCase):
         self.assert_(serializer.is_valid())
         serializer.save()
         self.assertEqual(json.loads(self.place.data), {'public-attr': 1, 'private-attr': 4, 'new-attr': 5})
-        self.assertEqual(self.place.geometry, GEOSGeometry('POINT(4 5)'))
+        self.assertEqual(self.place.geometry.wkt, GEOSGeometry('POINT(4 5)').wkt)
 
 
 class TestSubmissionSerializer (TestCase):
