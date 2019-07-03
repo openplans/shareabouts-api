@@ -25,7 +25,7 @@ class TestGeoJSONRenderer (TestCase):
         data = None
 
         result = renderer.render(data)
-        self.assertEqual(result, '')
+        self.assertEqual(result, b'')
 
 # class TestCSVRenderer (TestCase):
 

@@ -29,7 +29,7 @@ class CurrentUserViewTests (APITestMixin, TestCase):
         response = self.client.get('/api/v2/users/current?param=value')
 
         self.assertStatusCode(response, 302, 303)
-        self.assertEqual(response['Location'], 'http://testserver/api/v2/mjumbewu?param=value')
+        self.assertEqual(response['Location'], '/api/v2/mjumbewu?param=value')
 
     def test_POST_authenticates_user(self):
         User.objects.create_user(username='mjumbewu', password='abc123')

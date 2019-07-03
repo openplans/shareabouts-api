@@ -1,5 +1,5 @@
 import json
-from io import StringIO
+from io import BytesIO
 from django.test import TestCase
 from sa_api_v2.parsers import GeoJSONParser
 
@@ -16,7 +16,7 @@ class TestGeoJSONParser (TestCase):
         })
 
         parser = GeoJSONParser()
-        data = parser.parse(StringIO(geojson), 'application/json', {})
+        data = parser.parse(BytesIO(geojson.encode()), 'application/json', {})
 
         self.assertNotIn('type', data)
         self.assertNotIn('properties', data)

@@ -9,6 +9,7 @@ from nose.tools import istest
 from sa_api_v2.cache import cache_buffer
 from sa_api_v2.models import Attachment, Action, User, DataSet, Place, Submission, Group
 from sa_api_v2.serializers import AttachmentSerializer, ActionSerializer, UserSerializer, FullUserSerializer, PlaceSerializer, DataSetSerializer, SubmissionSerializer
+from sa_api_v2.views import PlaceInstanceView
 # from social.apps.django_app.default.models import UserSocialAuth
 import json
 from os import path
@@ -264,9 +265,12 @@ class TestPlaceSerializer (TestCase):
         request = RequestFactory().get('')
         request.get_dataset = lambda: self.dataset
 
+        view = PlaceInstanceView()
+        view.request = request
+
         serializer = PlaceSerializer(
             self.place,
-            context={'request': request, 'include_private': True},
+            context={'view': view, 'request': request, 'include_private': True},
             data={'private-attr': 4, 'new-attr': 5, 'geometry': 'POINT(4 5)'},
             partial=True,
         )

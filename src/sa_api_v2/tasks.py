@@ -9,7 +9,7 @@ from django.test.client import RequestFactory
 from django.utils.timezone import now
 from itertools import chain
 #from social.apps.django_app.default.models import UserSocialAuth
-from .models import DataSnapshotRequest, DataSnapshot, DataSet, User
+from .models import DataSnapshotRequest, DataSnapshot, DataSet, User, Place, Submission
 from .serializers import SimplePlaceSerializer, SimpleSubmissionSerializer, SimpleDataSetSerializer
 from .renderers import CSVRenderer, JSONRenderer, GeoJSONRenderer
 
@@ -233,6 +233,14 @@ def load_dataset_archive(dataset_id, archive_url):
                 assert serializer.is_valid, list_errors(serializer.errors)
                 serializer.save()
 
+            # Create a stub view object to use in serializer contexts.
+            class Stub: pass
+            view = Stub()
+            view.request = Stub()
+            view.request.META = {'HTTP_X_SHAREABOUTS_SILENT': 'True'}
+            view.request.user = Stub()
+            view.request.user.is_authenticated = lambda: False
+
             # Construct each place and submission individually
             for place_data in data.get('features'):
                 place_data.pop('type', None)
@@ -245,9 +253,13 @@ def load_dataset_archive(dataset_id, archive_url):
                 submission_sets_data = place_data.pop('submission_sets', {})
                 submitter_data = place_data.pop('submitter', None)
 
-                serializer = SimplePlaceSerializer(data=place_data)
+                serializer_context = {'view': view, 'request': view.request}
+                serializer = SimplePlaceSerializer(data=place_data, context=serializer_context)
                 assert serializer.is_valid(), list_errors(serializer.errors)
-                place = serializer.object
+
+                place = Place()
+                for attr, value in serializer.validated_data.items():
+                    setattr(place, attr, value)
                 place.dataset = dataset
                 place.submitter = get_or_create_user(submitter_data, users_map)
                 place.save(silent=True, reindex=False)
@@ -262,9 +274,13 @@ def load_dataset_archive(dataset_id, archive_url):
                         submission_data.pop('updated_datetime', None)
                         submitter_data = submission_data.pop('submitter', None)
 
-                        serializer = SimpleSubmissionSerializer(data=submission_data)
+                        serializer_context = {'view': view, 'request': view.request}
+                        serializer = SimpleSubmissionSerializer(data=submission_data, context=serializer_context)
                         assert serializer.is_valid(), list_errors(serializer.errors)
-                        submission = serializer.object
+
+                        submission = Submission()
+                        for attr, value in serializer.validated_data.items():
+                            setattr(submission, attr, value)
                         submission.set_name = set_name
                         submission.place = place
                         submission.dataset = dataset
