@@ -43,10 +43,11 @@ from itertools import groupby, count
 from collections import defaultdict
 try:
     # Python 2
-    from urllib.parse import urlencode
+    from urlparse import urlparse
+    from urllib import urlencode
 except:
     # Python 3
-    from urllib.parse import urlencode
+    from urllib.parse import urlencode, urlparse
 import re
 import requests
 import ujson as json
@@ -797,7 +798,7 @@ class CachedResourceMixin (object):
         return response
 
 
-class SerializerParamsMixin:
+class SerializerParamsMixin (object):
     def get_serializer_defaults(self):
         return {}
 
@@ -807,7 +808,7 @@ class SerializerParamsMixin:
     def get_serializer(self, *args, **kwargs):
         defaults = self.get_serializer_defaults()
         overrides = self.get_serializer_overrides()
-        serializer = super().get_serializer(*args, **kwargs)
+        serializer = super(SerializerParamsMixin, self).get_serializer(*args, **kwargs)
 
         # List serializers won't have any `fields`, but will instead have a
         # `child` serializer with fields.
@@ -1064,7 +1065,7 @@ class PlaceListView (CachedResourceMixin, SerializerParamsMixin, LocatedResource
         return prefix + '_keys'
 
     def get_serializer_overrides(self):
-        return {**super().get_serializer_overrides(), 'dataset': self.get_dataset()}
+        return {'dataset': self.get_dataset()}
 
     def post_save(self, obj, created):
         super(PlaceListView, self).post_save(obj)
@@ -1268,7 +1269,7 @@ class SubmissionListView (CachedResourceMixin, SerializerParamsMixin, OwnedResou
     def get_serializer_overrides(self):
         ds = self.get_dataset()
         set_name = self.kwargs[self.submission_set_name_kwarg]
-        return {**super().get_serializer_overrides(), 'dataset': ds, 'place': self.get_place(ds), 'set_name': set_name}
+        return {'dataset': ds, 'place': self.get_place(ds), 'set_name': set_name}
 
     def get_queryset(self):
         dataset = self.get_dataset()
@@ -1580,7 +1581,7 @@ class DataSetListView (DataSetListMixin, SerializerParamsMixin, ProtectedOwnedRe
     client_authentication_classes = ()
 
     def get_serializer_overrides(self):
-        return {**super().get_serializer_overrides(), 'owner': self.get_owner()}
+        return {'owner': self.get_owner()}
 
     def pre_save(self, obj):
         obj.owner = self.get_owner()
@@ -1622,7 +1623,6 @@ class DataSetListView (DataSetListMixin, SerializerParamsMixin, ProtectedOwnedRe
                 pass
 
             # Try to parse it as a full URL
-            from urllib.parse import urlparse
             url = urlparse(clone_header)
             if url.scheme and url.netloc and url.path:
                 match = re.match(r'^/api/v2/(?P<owner_username>[^/]+)/datasets/(?P<dataset_slug>[^/]+)$', url.path)
@@ -1760,7 +1760,7 @@ class AttachmentListView (OwnedResourceMixin, SerializerParamsMixin, FilteredRes
         return queryset.filter(thing=thing)
 
     def get_serializer_overrides(self):
-        return {**super().get_serializer_overrides(), 'thing': self.get_thing()}
+        return {'thing': self.get_thing()}
 
 
 class ActionListView (CachedResourceMixin, OwnedResourceMixin, generics.ListAPIView):

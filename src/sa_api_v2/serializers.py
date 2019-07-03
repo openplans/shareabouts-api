@@ -698,11 +698,11 @@ class SubmittedThingSerializer (bulk_serializers.BulkSerializerMixin, ActivityGe
 
     def create(self, validated_data):
         validated_data = self._patch_submitter(data=validated_data)
-        return super().create(validated_data)
+        return super(SubmittedThingSerializer, self).create(validated_data)
 
     def update(self, instance, validated_data):
         validated_data = self._patch_submitter(instance=instance, data=validated_data)
-        return super().update(instance, validated_data)
+        return super(SubmittedThingSerializer, self).update(instance, validated_data)
 
 
 # Place serializers
@@ -961,12 +961,12 @@ class DataSetSerializer (BaseDataSetSerializer, serializers.HyperlinkedModelSeri
         return attrs
 
     def create(self, validated_data):
-        instance = super().create(validated_data)
+        instance = super(DataSetSerializer, self).create(validated_data)
         self.post_save(instance)
         return instance
 
     def update(self, instance, validated_data):
-        instance = super().update(instance, validated_data)
+        instance = super(DataSetSerializer, self).update(instance, validated_data)
         self.post_save(instance)
         return instance
 
@@ -1024,7 +1024,7 @@ class ActionSerializer (EmptyModelSerializer, serializers.ModelSerializer):
 # ----------------------
 #
 
-class PaginatedMetadataMixin:
+class PaginatedMetadataMixin (object):
     page_size_query_param = 'page_size'
 
     def get_pagination_metadata(self, data):
