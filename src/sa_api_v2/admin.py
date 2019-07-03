@@ -15,7 +15,7 @@ else:
     from django.contrib import admin
 from django.contrib import messages
 from django.core.urlresolvers import reverse
-from django.forms import ValidationError
+from django.forms import ValidationError, ModelForm
 from django.http import HttpResponseRedirect
 from django.utils.html import escape
 from django_ace import AceWidget
@@ -124,8 +124,16 @@ class SubmittedThingAdmin(BaseGeoAdmin):
         obj.save(silent=True)
 
 
+class AlwaysChangedModelForm (ModelForm):
+    def has_changed(self):
+        """ Should returns True if data differs from initial.
+        By always returning true even unchanged inlines will get validated and saved."""
+        return True
+
+
 class InlineApiKeyAdmin(admin.StackedInline):
     model = ApiKey
+    form = AlwaysChangedModelForm
     # raw_id_fields = ['apikey']
     extra = 0
     readonly_fields = ('edit_url',)
@@ -149,6 +157,7 @@ class InlineApiKeyAdmin(admin.StackedInline):
 
 class InlineOriginAdmin(admin.StackedInline):
     model = Origin
+    form = AlwaysChangedModelForm
     # raw_id_fields = ['origin']
     extra = 0
     readonly_fields = ('edit_url',)
