@@ -1,12 +1,11 @@
 import ujson as json
 from django.conf import settings
+from django.db.models import query
 
 if settings.USE_GEODB:
     from django.contrib.gis.db import models
-    from django.contrib.gis.db.models import query
 else:
     from django.db import models
-    from django.db.models import query
 
 from django.core.files.storage import get_storage_class
 from django.db.models.signals import post_save

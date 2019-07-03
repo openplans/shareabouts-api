@@ -29,12 +29,12 @@ dj-database-url
 django-object-actions
 
 # Caching
-django-redis<4.9.0  # For Django 1.8
+django-redis
 django-cache-url
 
 # File Storage
 boto
-django-storages<1.7  # For Django 1.8
+django-storages
 
 
 
@@ -45,7 +45,7 @@ django-storages<1.7  # For Django 1.8
 django-loginas
 social-auth-core
 social-auth-app-django
-django-cors-headers<2.5.0  # For Django 1.8
+django-cors-headers
 
 
 
@@ -63,7 +63,7 @@ ujson
 Pillow
 
 # The Django admin interface
-django-ace<1.0.4  # For Django 1.8
+django-ace
 
 # The manager interface
 requests

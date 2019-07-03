@@ -2,7 +2,7 @@ from collections import defaultdict
 from django.conf import settings
 from django.core import cache as django_cache
 from django.core.exceptions import ObjectDoesNotExist
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from . import utils
 
 import logging
