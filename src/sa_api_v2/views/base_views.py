@@ -528,7 +528,9 @@ class LocatedResourceMixin (object):
                 reference = utils.to_geom(self.request.GET[NEAR_PARAM])
             except ValueError:
                 raise QueryError(detail='Invalid parameter for "%s": %r' % (NEAR_PARAM, self.request.GET[NEAR_PARAM]))
-            queryset = queryset.distance(reference).order_by('distance')
+
+            from django.contrib.gis.db.models.functions import Distance
+            queryset = queryset.annotate(distance=Distance('geometry', reference)).order_by('distance')
 
         if DISTANCE_PARAM in self.request.GET:
             if NEAR_PARAM not in self.request.GET:
@@ -796,10 +798,14 @@ class CachedResourceMixin (object):
 
 
 class SerializerParamsMixin:
+    def get_serializer_defaults(self):
+        return {}
+
     def get_serializer_overrides(self):
         return {}
 
     def get_serializer(self, *args, **kwargs):
+        defaults = self.get_serializer_defaults()
         overrides = self.get_serializer_overrides()
         serializer = super().get_serializer(*args, **kwargs)
 
@@ -810,12 +816,17 @@ class SerializerParamsMixin:
         elif hasattr(serializer, 'child'):
             serializer_to_patch = serializer.child
 
+        # Set the default value on each field that we've specified.
+        for key, val in defaults.items():
+            if key in serializer_to_patch.fields:
+                serializer_to_patch.fields[key].default = val
+
         # Set read_only on each override field so that the default is forced
         # to be respected.
         for key, val in overrides.items():
             if key in serializer_to_patch.fields:
-                serializer_to_patch.fields[key].default = val
                 serializer_to_patch.fields[key].read_only = True
+                serializer_to_patch.fields[key].default = val
 
         return serializer
 
@@ -823,14 +834,14 @@ class SerializerParamsMixin:
         return instance
 
     def perform_create(self, serializer):
-        attrs = self.get_serializer_overrides()
-        instance = serializer.save(**attrs)
+        overrides = self.get_serializer_overrides()
+        instance = serializer.save(**overrides)
         self.post_save(instance, created=True)
         return instance
 
     def perform_update(self, serializer):
-        attrs = self.get_serializer_overrides()
-        instance = serializer.save(**attrs)
+        overrides = self.get_serializer_overrides()
+        instance = serializer.save(**overrides)
         self.post_save(instance)
         return instance
 
@@ -1053,7 +1064,7 @@ class PlaceListView (CachedResourceMixin, SerializerParamsMixin, LocatedResource
         return prefix + '_keys'
 
     def get_serializer_overrides(self):
-        return {'dataset': self.get_dataset()}
+        return {**super().get_serializer_overrides(), 'dataset': self.get_dataset()}
 
     def post_save(self, obj, created):
         super(PlaceListView, self).post_save(obj)
@@ -1258,7 +1269,7 @@ class SubmissionListView (CachedResourceMixin, SerializerParamsMixin, OwnedResou
     def get_serializer_overrides(self):
         ds = self.get_dataset()
         set_name = self.kwargs[self.submission_set_name_kwarg]
-        return {'dataset': ds, 'place': self.get_place(ds), 'set_name': set_name}
+        return {**super().get_serializer_overrides(), 'dataset': ds, 'place': self.get_place(ds), 'set_name': set_name}
 
     def get_queryset(self):
         dataset = self.get_dataset()
@@ -1570,7 +1581,7 @@ class DataSetListView (DataSetListMixin, SerializerParamsMixin, ProtectedOwnedRe
     client_authentication_classes = ()
 
     def get_serializer_overrides(self):
-        return {'owner': self.get_owner()}
+        return {**super().get_serializer_overrides(), 'owner': self.get_owner()}
 
     def pre_save(self, obj):
         obj.owner = self.get_owner()
@@ -1750,7 +1761,7 @@ class AttachmentListView (OwnedResourceMixin, SerializerParamsMixin, FilteredRes
         return queryset.filter(thing=thing)
 
     def get_serializer_overrides(self):
-        return {'thing': self.get_thing()}
+        return {**super().get_serializer_overrides(), 'thing': self.get_thing()}
 
 
 class ActionListView (CachedResourceMixin, OwnedResourceMixin, generics.ListAPIView):

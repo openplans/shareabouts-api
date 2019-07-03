@@ -679,31 +679,37 @@ class SubmittedThingSerializer (bulk_serializers.BulkSerializerMixin, ActivityGe
         param = request.GET.get(flagname, 'false')
         return param.lower() not in ('false', 'no', 'off')
 
-    def restore_fields(self, data, files):
+    def _patch_submitter(self, instance=None, data={}):
         """
-        Converts a dictionary of data into a dictionary of deserialized fields.
+        Patch the validated_data with an appropriate submitter.
         """
-        result = super(SubmittedThingSerializer, self).restore_fields(data, files)
-
         if 'submitter' not in data:
             # If the thing exists already, use the existing submitter
-            if hasattr(self, 'object') and self.object is not None:
-                result['submitter'] = self.object.submitter
+            if instance is not None:
+                data['submitter'] = instance.submitter
 
             # Otherwise, set the submitter to the current user
             else:
                 request = self.context.get('request')
                 if request and request.user.is_authenticated():
-                    result['submitter'] = request.user
+                    data['submitter'] = request.user
 
-        return result
+        return data
+
+    def create(self, validated_data):
+        validated_data = self._patch_submitter(data=validated_data)
+        return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        validated_data = self._patch_submitter(instance=instance, data=validated_data)
+        return super().update(instance, validated_data)
 
 
 # Place serializers
 class BasePlaceSerializer (SubmittedThingSerializer, serializers.ModelSerializer):
     geometry = GeometryField(format='wkt')
     attachments = AttachmentSerializer(read_only=True, many=True)
-    submitter = SimpleUserSerializer(read_only=False, required=False)
+    submitter = SimpleUserSerializer(read_only=False, required=False, allow_null=True)
 
     class Meta:
         model = models.Place
@@ -827,7 +833,7 @@ class SimplePlaceSerializer (BasePlaceSerializer):
 class PlaceSerializer (BasePlaceSerializer, serializers.HyperlinkedModelSerializer):
     url = PlaceIdentityField()
     dataset = DataSetRelatedField()
-    submitter = UserSerializer(read_only=False, required=False)
+    submitter = UserSerializer(read_only=False, required=False, allow_null=True)
 
     class Meta (BasePlaceSerializer.Meta):
         pass
@@ -856,7 +862,7 @@ class PlaceSerializer (BasePlaceSerializer, serializers.HyperlinkedModelSerializ
 class BaseSubmissionSerializer (SubmittedThingSerializer, serializers.ModelSerializer):
     id = serializers.IntegerField(read_only=True)
     attachments = AttachmentSerializer(read_only=True, many=True)
-    submitter = SimpleUserSerializer(required=False)
+    submitter = SimpleUserSerializer(required=False, allow_null=True)
 
     class Meta:
         model = models.Submission
@@ -873,7 +879,7 @@ class SubmissionSerializer (BaseSubmissionSerializer, serializers.HyperlinkedMod
     dataset = DataSetRelatedField()
     set = SubmissionSetRelatedField(source='*')
     place = PlaceRelatedField()
-    submitter = UserSerializer(required=False)
+    submitter = UserSerializer(required=False, allow_null=True)
 
     class Meta (BaseSubmissionSerializer.Meta):
         pass

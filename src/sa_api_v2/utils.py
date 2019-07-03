@@ -51,6 +51,11 @@ def to_geom(string):
             )
         else:
             geom = Point(lng, lat)
+
+    # Assume WGS84 (lat/lng) if no SRID is attached yet.
+    if not geom.srid:
+        geom.set_srid(4326)
+
     return geom
 
 def memo(f):

@@ -21,7 +21,7 @@ class DataPermissionManager (models.Manager):
             can_update=can_update,
             can_destroy=can_destroy,
             can_access_protected=can_access_protected,
-            priority=priority))
+            priority=priority), bulk=False)
 
 
 class DataPermission (CloneableModelMixin, CacheClearingModel, models.Model):
