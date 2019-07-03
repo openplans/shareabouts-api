@@ -120,7 +120,7 @@ class DataSet (CloneableModelMixin, CacheClearingModel, models.Model):
     cache = cache.DataSetCache()
     # previous_version = 'sa_api_v1.models.DataSet'
 
-    def __unicode__(self):
+    def __str__(self):
         return self.slug
 
     class Meta:
@@ -208,7 +208,7 @@ class Webhook (TimeStampedModel):
         app_label = 'sa_api_v2'
         db_table = 'sa_api_webhook'
 
-    def __unicode__(self):
+    def __str__(self):
         return 'On %s data in %s' % (self.event, self.submission_set)
 
 
@@ -241,7 +241,7 @@ class Place (SubmittedThing):
         for submission in self.submissions.all():
             submission.clone(overrides=data_overrides)
 
-    def __unicode__(self):
+    def __str__(self):
         return str(self.id)
 
 

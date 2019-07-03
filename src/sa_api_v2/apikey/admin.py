@@ -15,6 +15,7 @@ class ApiKeyAdmin(ModelAdmin):
     inlines = [InlineKeyPermissionAdmin]
     form = ApiKeyForm
     list_display = ('key', 'dataset', 'logged_ip', 'last_used')
+    raw_id_fields = ['dataset']
 
     class Media:
         js = (

@@ -67,7 +67,7 @@ class ApiKey(CloneableModelMixin, models.Model):
         except AttributeError:
             return None
 
-    def __unicode__(self):
+    def __str__(self):
         return self.key
 
     def clone_related(self, onto):

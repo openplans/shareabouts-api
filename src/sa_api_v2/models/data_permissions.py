@@ -94,7 +94,7 @@ class DataSetPermission (DataPermission):
     class Meta:
         app_label = 'sa_api_v2'
 
-    def __unicode__(self):
+    def __str__(self):
         return '%s %s' % ('submitters', self.abilities())
 
 
@@ -105,7 +105,7 @@ class GroupPermission (DataPermission):
     class Meta:
         app_label = 'sa_api_v2'
 
-    def __unicode__(self):
+    def __str__(self):
         return '%s %s' % (self.group, self.abilities())
 
 
@@ -116,7 +116,7 @@ class KeyPermission (DataPermission):
     class Meta:
         app_label = 'sa_api_v2'
 
-    def __unicode__(self):
+    def __str__(self):
         return 'submitters %s' % (self.abilities(),)
 
 
@@ -127,7 +127,7 @@ class OriginPermission (DataPermission):
     class Meta:
         app_label = 'sa_api_v2'
 
-    def __unicode__(self):
+    def __str__(self):
         return 'submitters %s' % (self.abilities(),)
 
 
