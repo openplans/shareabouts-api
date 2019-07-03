@@ -234,7 +234,7 @@ def load_dataset_archive(dataset_id, archive_url):
                 serializer.save()
 
             # Create a stub view object to use in serializer contexts.
-            class Stub (objects): pass
+            class Stub (object): pass
             view = Stub()
             view.request = Stub()
             view.request.META = {'HTTP_X_SHAREABOUTS_SILENT': 'True'}

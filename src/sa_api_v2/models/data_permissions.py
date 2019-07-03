@@ -95,6 +95,9 @@ class DataSetPermission (DataPermission):
         app_label = 'sa_api_v2'
 
     def __str__(self):
+        return self.__unicode__()
+
+    def __unicode__(self):
         return '%s %s' % ('submitters', self.abilities())
 
 

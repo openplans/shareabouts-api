@@ -44,7 +44,7 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
             'private-secrets': 42
           }),
         )
-        f = StringIO('This is test content in a "file"')
+        f = StringIO(u'This is test content in a "file"')
         f.name = 'myfile.txt'
         f.size = 20
         self.attachments = Attachment.objects.create(
@@ -1802,7 +1802,7 @@ class TestSubmissionInstanceView (APITestMixin, TestCase):
           Submission.objects.create(place=self.place, set_name='likes', dataset=self.dataset, data='{"bar": 3}', visible=False),
         ]
 
-        f = StringIO('This is test content in a "file"')
+        f = StringIO(u'This is test content in a "file"')
         f.name = 'myfile.txt'
         f.size = 20
         self.attachments = Attachment.objects.create(
@@ -3843,7 +3843,7 @@ class TestPlaceAttachmentListView (APITestMixin, TestCase):
           }),
         )
 
-        self.file = StringIO('This is test content in a "file"')
+        self.file = StringIO(u'This is test content in a "file"')
         self.file.name = 'myfile.txt'
         self.file.size = 20
         # self.attachments = Attachment.objects.create(
@@ -3899,7 +3899,7 @@ class TestPlaceAttachmentListView (APITestMixin, TestCase):
         #
         # Can't write if not authenticated
         #
-        f = StringIO('This is test content in a "file"')
+        f = StringIO(u'This is test content in a "file"')
         f.name = 'myfile.txt'
         request = self.factory.post(self.path, data={'file': f, 'name': 'my-file'})
         response = self.view(request, **self.request_kwargs)
@@ -3910,7 +3910,7 @@ class TestPlaceAttachmentListView (APITestMixin, TestCase):
         #
         # Can write with the API key.
         #
-        f = StringIO('This is test content in a "file"')
+        f = StringIO(u'This is test content in a "file"')
         f.name = 'myfile.txt'
         request = self.factory.post(self.path, data={'file': f, 'name': 'my-file'})
         request.META[KEY_HEADER] = self.apikey.key
@@ -3930,7 +3930,7 @@ class TestPlaceAttachmentListView (APITestMixin, TestCase):
         #
         # Can not write when logged in as not owner.
         #
-        f = StringIO('This is test content in a "file"')
+        f = StringIO(u'This is test content in a "file"')
         f.name = 'myfile.txt'
         request = self.factory.post(self.path, data={'file': f, 'name': 'my-file'})
         User.objects.create_user(username='new_user', password='password')
@@ -3946,7 +3946,7 @@ class TestPlaceAttachmentListView (APITestMixin, TestCase):
         #
         # Can write when logged in as owner.
         #
-        f = StringIO('This is test content in a "file"')
+        f = StringIO(u'This is test content in a "file"')
         f.name = 'myfile.txt'
         request = self.factory.post(self.path, data={'file': f, 'name': 'my-file'})
         credentials = ':'.join([self.owner.username, '123']).encode()
@@ -3960,7 +3960,7 @@ class TestPlaceAttachmentListView (APITestMixin, TestCase):
         #
         # Can't write if not authenticated
         #
-        f = StringIO('This is test content in a "file"')
+        f = StringIO(u'This is test content in a "file"')
         f.name = 'myfile.txt'
         request = self.factory.post(self.invisible_path + '?include_invisible', data={'file': f, 'name': 'my-file'})
         response = self.view(request, **self.invisible_request_kwargs)
@@ -3971,7 +3971,7 @@ class TestPlaceAttachmentListView (APITestMixin, TestCase):
         #
         # Can't write with the API key/include_invisible. (400)
         #
-        f = StringIO('This is test content in a "file"')
+        f = StringIO(u'This is test content in a "file"')
         f.name = 'myfile.txt'
         request = self.factory.post(self.invisible_path, data={'file': f, 'name': 'my-file'})
         request.META[KEY_HEADER] = self.apikey.key
@@ -3984,7 +3984,7 @@ class TestPlaceAttachmentListView (APITestMixin, TestCase):
         #
         # Can't write with the API key (403).
         #
-        f = StringIO('This is test content in a "file"')
+        f = StringIO(u'This is test content in a "file"')
         f.name = 'myfile.txt'
         request = self.factory.post(self.invisible_path + '?include_invisible', data={'file': f, 'name': 'my-file'})
         request.META[KEY_HEADER] = self.apikey.key
@@ -3996,7 +3996,7 @@ class TestPlaceAttachmentListView (APITestMixin, TestCase):
         #
         # Can not write when logged in as not owner.
         #
-        f = StringIO('This is test content in a "file"')
+        f = StringIO(u'This is test content in a "file"')
         f.name = 'myfile.txt'
         request = self.factory.post(self.invisible_path + '?include_invisible', data={'file': f, 'name': 'my-file'})
         User.objects.create_user(username='new_user', password='password')
@@ -4012,7 +4012,7 @@ class TestPlaceAttachmentListView (APITestMixin, TestCase):
         #
         # Can't write when logged in as owner without include_invisible (400).
         #
-        f = StringIO('This is test content in a "file"')
+        f = StringIO(u'This is test content in a "file"')
         f.name = 'myfile.txt'
         request = self.factory.post(self.invisible_path, data={'file': f, 'name': 'my-file'})
         credentials = ':'.join([self.owner.username, '123']).encode()
@@ -4025,7 +4025,7 @@ class TestPlaceAttachmentListView (APITestMixin, TestCase):
         #
         # Can write when logged in as owner.
         #
-        f = StringIO('This is test content in a "file"')
+        f = StringIO(u'This is test content in a "file"')
         f.name = 'myfile.txt'
         request = self.factory.post(self.invisible_path + '?include_invisible', data={'file': f, 'name': 'my-file'})
         credentials = ':'.join([self.owner.username, '123']).encode()
@@ -4159,7 +4159,7 @@ class TestSubmissionAttachmentListView (APITestMixin, TestCase):
           Submission.objects.create(place=self.place, set_name='comments', dataset=self.dataset, data='{"foo": 3}', visible=False),
         ]
 
-        self.file = StringIO('This is test content in a "file"')
+        self.file = StringIO(u'This is test content in a "file"')
         self.file.name = 'myfile.txt'
         self.file.size = 20
 
@@ -4306,7 +4306,7 @@ class TestSubmissionAttachmentListView (APITestMixin, TestCase):
         #
         # Can't write if not authenticated
         #
-        f = StringIO('This is test content in a "file"')
+        f = StringIO(u'This is test content in a "file"')
         f.name = 'myfile.txt'
         request = self.factory.post(self.path, data={'file': f, 'name': 'my-file'})
         response = self.view(request, **self.request_kwargs)
@@ -4317,7 +4317,7 @@ class TestSubmissionAttachmentListView (APITestMixin, TestCase):
         #
         # Can write with the API key.
         #
-        f = StringIO('This is test content in a "file"')
+        f = StringIO(u'This is test content in a "file"')
         f.name = 'myfile.txt'
         request = self.factory.post(self.path, data={'file': f, 'name': 'my-file'})
         request.META[KEY_HEADER] = self.apikey.key
@@ -4337,7 +4337,7 @@ class TestSubmissionAttachmentListView (APITestMixin, TestCase):
         #
         # Can not write when logged in as not owner.
         #
-        f = StringIO('This is test content in a "file"')
+        f = StringIO(u'This is test content in a "file"')
         f.name = 'myfile.txt'
         request = self.factory.post(self.path, data={'file': f, 'name': 'my-file'})
         User.objects.create_user(username='new_user', password='password')
@@ -4353,7 +4353,7 @@ class TestSubmissionAttachmentListView (APITestMixin, TestCase):
         #
         # Can write when logged in as owner.
         #
-        f = StringIO('This is test content in a "file"')
+        f = StringIO(u'This is test content in a "file"')
         f.name = 'myfile.txt'
         request = self.factory.post(self.path, data={'file': f, 'name': 'my-file'})
         credentials = ':'.join([self.owner.username, '123']).encode()
@@ -4367,7 +4367,7 @@ class TestSubmissionAttachmentListView (APITestMixin, TestCase):
         #
         # Can't write if not authenticated
         #
-        f = StringIO('This is test content in a "file"')
+        f = StringIO(u'This is test content in a "file"')
         f.name = 'myfile.txt'
         request = self.factory.post(self.invisible_path + '?include_invisible', data={'file': f, 'name': 'my-file'})
         response = self.view(request, **self.invisible_request_kwargs)
@@ -4378,7 +4378,7 @@ class TestSubmissionAttachmentListView (APITestMixin, TestCase):
         #
         # Can't write with the API key/include_invisible. (400)
         #
-        f = StringIO('This is test content in a "file"')
+        f = StringIO(u'This is test content in a "file"')
         f.name = 'myfile.txt'
         request = self.factory.post(self.invisible_path, data={'file': f, 'name': 'my-file'})
         request.META[KEY_HEADER] = self.apikey.key
@@ -4391,7 +4391,7 @@ class TestSubmissionAttachmentListView (APITestMixin, TestCase):
         #
         # Can't write with the API key (403).
         #
-        f = StringIO('This is test content in a "file"')
+        f = StringIO(u'This is test content in a "file"')
         f.name = 'myfile.txt'
         request = self.factory.post(self.invisible_path + '?include_invisible', data={'file': f, 'name': 'my-file'})
         request.META[KEY_HEADER] = self.apikey.key
@@ -4403,7 +4403,7 @@ class TestSubmissionAttachmentListView (APITestMixin, TestCase):
         #
         # Can not write when logged in as not owner.
         #
-        f = StringIO('This is test content in a "file"')
+        f = StringIO(u'This is test content in a "file"')
         f.name = 'myfile.txt'
         request = self.factory.post(self.invisible_path + '?include_invisible', data={'file': f, 'name': 'my-file'})
         User.objects.create_user(username='new_user', password='password')
@@ -4419,7 +4419,7 @@ class TestSubmissionAttachmentListView (APITestMixin, TestCase):
         #
         # Can't write when logged in as owner without include_invisible (400).
         #
-        f = StringIO('This is test content in a "file"')
+        f = StringIO(u'This is test content in a "file"')
         f.name = 'myfile.txt'
         request = self.factory.post(self.invisible_path, data={'file': f, 'name': 'my-file'})
         credentials = ':'.join([self.owner.username, '123']).encode()
@@ -4432,7 +4432,7 @@ class TestSubmissionAttachmentListView (APITestMixin, TestCase):
         #
         # Can write when logged in as owner.
         #
-        f = StringIO('This is test content in a "file"')
+        f = StringIO(u'This is test content in a "file"')
         f.name = 'myfile.txt'
         request = self.factory.post(self.invisible_path + '?include_invisible', data={'file': f, 'name': 'my-file'})
         credentials = ':'.join([self.owner.username, '123']).encode()

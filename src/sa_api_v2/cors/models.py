@@ -52,6 +52,9 @@ class Origin(CloneableModelMixin, models.Model):
             return None
 
     def __str__(self):
+        return self.__unicode__()
+
+    def __unicode__(self):
         return self.pattern
 
     @staticmethod

@@ -121,6 +121,9 @@ class DataSet (CloneableModelMixin, CacheClearingModel, models.Model):
     # previous_version = 'sa_api_v1.models.DataSet'
 
     def __str__(self):
+        return self.__unicode__()
+
+    def __unicode__(self):
         return self.slug
 
     class Meta:
