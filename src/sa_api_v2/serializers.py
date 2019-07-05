@@ -677,11 +677,18 @@ class TruthyBooleanField (serializers.BooleanField):
     FALSE_VALUES = {'off', 'Off', 'no', 'No', 'f', 'F', 'false', 'False', 'FALSE', '0', 0, 0.0, False}
 
 
+def updated_copy(d1, d2=None, **dargs):
+    newd = d1.copy()
+    newd.update(d2 or {})
+    newd.update(dargs)
+    return newd
+
+
 class SubmittedThingSerializer (bulk_serializers.BulkSerializerMixin, ActivityGenerator, DataBlobProcessor):
-    serializer_field_mapping = {
-        **serializers.ModelSerializer.serializer_field_mapping,
-        django.db.models.BooleanField: TruthyBooleanField
-    }
+    serializer_field_mapping = updated_copy(
+        serializers.ModelSerializer.serializer_field_mapping,
+        {django.db.models.BooleanField: TruthyBooleanField}
+    )
 
     def is_flag_on(self, flagname):
         # Check the context for the flag
