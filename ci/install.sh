@@ -8,7 +8,7 @@ sudo apt-get install libevent-dev
 # Install GeoDjango dependencies -- see
 # https://docs.djangoproject.com/en/dev/ref/contrib/gis/install/#ubuntu
 sudo apt-get install binutils gdal-bin libgdal-dev libproj-dev \
-     postgresql-9.6-postgis postgresql-server-dev-9.6
+     postgresql-9.5-postgis-2.2 postgresql-server-dev-9.5
 
 # Install the python requirements
 sudo pip install -r requirements.txt
