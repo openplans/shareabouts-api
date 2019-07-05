@@ -9,6 +9,7 @@ from django.conf import settings
 if settings.USE_GEODB:
     from django.contrib.gis.geos import GEOSGeometry
 from django.core.exceptions import ValidationError
+import django.db.models
 from django.utils.http import urlquote_plus
 from rest_framework import pagination
 from rest_framework import serializers
@@ -668,7 +669,20 @@ class DataSetSubmissionSetSummarySerializer (serializers.HyperlinkedModelSeriali
         return summaries
 
 
+class TruthyBooleanField (serializers.BooleanField):
+    """
+    A BooleanField with more options for true/false values
+    """
+    TRUE_VALUES = {'on', 'On', 'yes', 'Yes', 't', 'T', 'true', 'True', 'TRUE', '1', 1, True}
+    FALSE_VALUES = {'off', 'Off', 'no', 'No', 'f', 'F', 'false', 'False', 'FALSE', '0', 0, 0.0, False}
+
+
 class SubmittedThingSerializer (bulk_serializers.BulkSerializerMixin, ActivityGenerator, DataBlobProcessor):
+    serializer_field_mapping = {
+        **serializers.ModelSerializer.serializer_field_mapping,
+        django.db.models.BooleanField: TruthyBooleanField
+    }
+
     def is_flag_on(self, flagname):
         # Check the context for the flag
         if self.context.get(flagname, False):

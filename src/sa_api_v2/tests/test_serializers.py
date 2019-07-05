@@ -280,6 +280,34 @@ class TestPlaceSerializer (TestCase):
         self.assertEqual(json.loads(self.place.data), {'public-attr': 1, 'private-attr': 4, 'new-attr': 5})
         self.assertEqual(self.place.geometry.wkt, GEOSGeometry('POINT(4 5)').wkt)
 
+    def test_visible_has_truthy_boolean_values(self):
+        # You should be able to use case-insensitive "on", "yes" and "true" for
+        # the visible value (primarily for backwards compatibility).
+        request = RequestFactory().get('')
+        request.get_dataset = lambda: self.dataset
+
+        view = PlaceInstanceView()
+        view.request = request
+
+        self.place.visible = False
+        self.place.save()
+        self.place.refresh_from_db()
+
+        self.assert_(not self.place.visible)
+
+        serializer = PlaceSerializer(
+            self.place,
+            context={'view': view, 'request': request},
+            data={'visible': 'On'},
+            partial=True,
+        )
+
+        self.assert_(serializer.is_valid())
+        serializer.save()
+        self.place.refresh_from_db()
+
+        self.assert_(self.place.visible)
+
 
 class TestSubmissionSerializer (TestCase):
 
