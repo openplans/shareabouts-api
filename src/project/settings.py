@@ -164,12 +164,19 @@ INSTALLED_APPS = (
     'rest_framework',
     'django_nose',
     'storages',
-    'social_django',
     'raven.contrib.django.raven_compat',
     'django_ace',
     'django_object_actions',
     'djcelery',
     'loginas',
+
+    # The old-style social.apps.django_app below is needed just for migrations.
+    # Uncomment the first of the following two lines and run manage.py migrate. After
+    # that, comment out the old-style social app again. Note that exactly one of the
+    # following lines should be uncommented at a time.
+    #
+    # 'social.apps.django_app.default',  # <-- Just for migrations; replaced by social_django
+    'social_django',
 
     # CORS
     'corsheaders',

@@ -8,6 +8,14 @@ and exporting your data.
 
 [![Deploy](https://www.herokucdn.com/deploy/button.png)](https://heroku.com/deploy)
 
+
+Upgrading to Python 3
+---------------------
+Upgrading is fairly straightforward, except that migrations need to be run twice. First, in settings.py, uncomment the `'social.apps.django_app.default'` line, comment out the `'social_django'` line, and run the `manage.py migrate`.
+
+After that, switch the lines back (comment out the first and uncomment the second) and run `manage.py migrate` again.
+
+
 Documentation
 -------------
 All of our documentation is is our `doc` directory. Use it to learn more about:
