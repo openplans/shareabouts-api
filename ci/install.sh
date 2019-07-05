@@ -10,6 +10,11 @@ sudo apt-get install libevent-dev
 sudo apt-get install binutils gdal-bin libgdal-dev libproj-dev \
      postgresql-9.5-postgis-2.2 postgresql-server-dev-9.5
 
+# Update the versions of pip and setup tools that we're using to the latest
+sudo pip -V
+sudo pip install -U pip setuptools
+sudo pip -V
+
 # Install the python requirements
 sudo pip install -r requirements.txt
 
