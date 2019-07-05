@@ -20,7 +20,7 @@ from rest_framework.renderers import JSONRenderer, BrowsableAPIRenderer
 from rest_framework.request import Request
 from rest_framework.exceptions import APIException
 from rest_framework_bulk import generics as bulk_generics
-#from social.apps.django_app import views as social_views
+from social_django import views as social_views
 from mock import patch
 from ..apikey import auth as apikey_auth
 from ..cors import auth as cors_auth
@@ -1963,7 +1963,7 @@ def capture_referer(view_func):
 
     return wrapper
 
-#remote_social_login = capture_referer(social_views.auth)
+remote_social_login = capture_referer(social_views.auth)
 remote_logout = capture_referer(auth_views.logout)
 
 def remote_social_login_error(request):
