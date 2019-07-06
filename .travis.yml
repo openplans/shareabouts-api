@@ -1,5 +1,7 @@
 # https://github.com/travis-ci/travis-ci/wiki/.travis.yml-options
 
+dist: xenial
+language: python
 install: "ci/install.sh"
 #script: "src/manage.py test project sa_api_v2 remote_client_user --with-coverage --cover-package=sa_api_v2 --cover-package=remote_client_user"
 script: "src/manage.py test project sa_api_v2 --with-coverage --cover-package=sa_api_v2"
