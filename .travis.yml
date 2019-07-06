@@ -1,7 +1,19 @@
 # https://github.com/travis-ci/travis-ci/wiki/.travis.yml-options
 
 dist: xenial
+
+# Set the language to Python
 language: python
+
+# Configure PostgreSQL and PostGIS
+services:
+  - postgresql
+addons:
+  postgresql: 9.6
+  apt:
+    packages:
+    - postgresql-9.6-postgis-2.4
+
 install: "ci/install.sh"
 #script: "src/manage.py test project sa_api_v2 remote_client_user --with-coverage --cover-package=sa_api_v2 --cover-package=remote_client_user"
 script: "src/manage.py test project sa_api_v2 --with-coverage --cover-package=sa_api_v2"
