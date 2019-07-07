@@ -19,5 +19,3 @@ psql -U postgres <<EOF
 EOF
 
 psql -U postgres -d shareabouts -c "CREATE EXTENSION postgis;"
-
-# Set any project environment variables below here...

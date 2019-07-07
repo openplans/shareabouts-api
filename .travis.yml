@@ -25,6 +25,10 @@ addons:
     - libgdal-dev
     - libproj-dev
 
+# Set any project environment variables below here...
+env:
+  - DATABASE_URL=postgis://postgres:postgres@localhost:5432/shareabouts
+
 install: "ci/install.sh"
 #script: "src/manage.py test project sa_api_v2 remote_client_user --with-coverage --cover-package=sa_api_v2 --cover-package=remote_client_user"
 script: "coverage run --include 'src/sa_api_v2/*' src/manage.py test project sa_api_v2"
