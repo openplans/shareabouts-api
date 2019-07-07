@@ -1,5 +1,6 @@
 # https://github.com/travis-ci/travis-ci/wiki/.travis.yml-options
 
+# Set the distribution to Ubuntu 16.04
 dist: xenial
 
 # Set the language to Python
@@ -14,12 +15,20 @@ addons:
     packages:
     - postgresql-9.6-postgis-2.4
 
+    # libevent development files are required for gevent
+    - libevent-dev
+
+    # Install GeoDjango dependencies -- see
+    # https://docs.djangoproject.com/en/dev/ref/contrib/gis/install/#ubuntu
+    - binutils
+    - gdal-bin
+    - libgdal-dev
+    - libproj-dev
+
 install: "ci/install.sh"
 #script: "src/manage.py test project sa_api_v2 remote_client_user --with-coverage --cover-package=sa_api_v2 --cover-package=remote_client_user"
-script:
-  - python -V
-  - pip freeze
-  - "src/manage.py test project sa_api_v2 --with-coverage --cover-package=sa_api_v2"
+script: "coverage run --include 'src/sa_api_v2/*' src/manage.py test project sa_api_v2"
+after_success: "coverage report"
 python:
   - "2.7"
   - "3.6"

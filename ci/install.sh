@@ -1,23 +1,12 @@
 #!/bin/sh
 
-# libevent development files are required for gevent
-echo
-echo "** Updating libevent"
-sudo apt-get install libevent-dev -y
-
-# Install GeoDjango dependencies -- see
-# https://docs.djangoproject.com/en/dev/ref/contrib/gis/install/#ubuntu
-echo
-echo "** Installing system-level project dependencies"
-sudo apt-get install -y binutils gdal-bin libgdal-dev libproj-dev
-
 # Install the python requirements
 echo
 echo "** Installing Python requirements"
-sudo pip install -r requirements.txt
+pip install -r requirements.txt
 
 # ... and this, optional testing stuff
-sudo pip install coverage
+pip install coverage
 
 # Initialize the database
 echo
