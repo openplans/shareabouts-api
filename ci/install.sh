@@ -20,5 +20,4 @@ EOF
 
 psql -U postgres -d shareabouts -c "CREATE EXTENSION postgis;"
 
-# Initialize the project settings
-cp src/project/local_settings.py.template src/project/local_settings.py
+# Set any project environment variables below here...
