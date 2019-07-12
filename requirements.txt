@@ -23,8 +23,6 @@ django-storages==1.7.1
 djangorestframework==3.3.3
 git+https://github.com/mjumbewu/django-rest-framework-bulk.git@492d76237dca99373d958daa68c9b3641bc7bbc5#egg=djangorestframework-bulk==0.2.1-m1
 djangorestframework-csv==1.3.0
-gevent==1.4.0
-greenlet==0.4.15
 gunicorn==19.9.0
 idna==2.8
 kombu==3.0.37
@@ -35,7 +33,6 @@ nose==1.3.7
 oauthlib==2.0.1
 pbr==5.1.3
 Pillow==5.4.1
-psycogreen==1.0.1
 psycopg2-binary==2.7.7
 PyJWT==1.7.1
 python-dateutil==2.8.0

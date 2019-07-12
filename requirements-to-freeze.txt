@@ -3,7 +3,6 @@
 # ==============================
 
 Django<2.0,>1.11
-gevent
 gunicorn
 dj_static
 
@@ -24,7 +23,6 @@ django-celery
 
 # DB Settings and Management
 psycopg2-binary
-psycogreen
 dj-database-url
 django-object-actions
 
