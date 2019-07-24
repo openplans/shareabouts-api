@@ -404,16 +404,6 @@ if 'SHAREABOUTS_ADMIN_EMAIL' in environ:
 if 'CONSOLE_LOG_LEVEL' in environ:
     LOGGING['handlers']['console']['level'] = environ.get('CONSOLE_LOG_LEVEL')
 
-##############################################################################
-# Local GEOS/GDAL installations (for Heroku)
-
-import os.path
-
-if os.path.exists('/app/.geodjango/geos/lib/libgeos_c.so'):
-    GEOS_LIBRARY_PATH = '/app/.geodjango/geos/lib/libgeos_c.so'
-
-if os.path.exists('/app/.geodjango/gdal/lib/libgdal.so'):
-    GDAL_LIBRARY_PATH = '/app/.geodjango/gdal/lib/libgdal.so'
 
 ##############################################################################
 # Local settings overrides

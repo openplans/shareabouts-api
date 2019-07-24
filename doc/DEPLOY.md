@@ -75,6 +75,7 @@ Deploying to Heroku
         SHAREABOUTS_TWITTER_KEY:     aB1cd2EFGhi3JK4lMn5oP
         SHAREABOUTS_TWITTER_SECRET:  ABcDE1FgHIjKlmN2o3pQrsTUVW4X5Cy67zabCdEFGHi
         WORKERS: 4
+        BUILD_WITH_GEO_LIBRARIES: 1
 
 5. Connect the app with the repository (add a git remote)
 6. Push to Heroku
