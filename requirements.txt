@@ -53,5 +53,5 @@ social-auth-core==3.1.0
 sqlparse==0.3.0
 static3==0.7.0
 ujson==1.35
-urllib3==1.24.1
+urllib3==1.24.3
 URLObject==2.4.3
