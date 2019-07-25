@@ -242,12 +242,15 @@ class AttachmentFileField (serializers.FileField):
 
 
 class ActivityGenerator (object):
-    def save(self, **kwargs):
+    def _set_silent_flag(self, attrs):
         request = self.context['request']
         silent_header = request.META.get('HTTP_X_SHAREABOUTS_SILENT', 'False')
         is_silent = silent_header.lower() in ('true', 't', 'yes', 'y')
-        request_source = request.META.get('HTTP_REFERER', '')
-        return super(ActivityGenerator, self).save(silent=is_silent, source=request_source, **kwargs)
+        attrs['silent'] = is_silent
+
+    def validate(self, attrs):
+        self._set_silent_flag(attrs)
+        return attrs
 
 
 class EmptyModelSerializer (object):

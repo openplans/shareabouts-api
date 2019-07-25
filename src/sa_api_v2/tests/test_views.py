@@ -694,6 +694,27 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
         # Check that no data was returned
         self.assertIsNone(response.data)
 
+    def test_PUT_with_silent_creates_no_activity(self):
+        Action.objects.all().delete()
+        assert Action.objects.all().count() == 0
+
+        place_data = json.dumps({
+          'type': 'Feature',
+          'properties': {
+            'type': 'Park Bench',
+            'private-secrets': 'The mayor loves this bench',
+            'submitter': None
+          },
+          'geometry': {"type": "Point", "coordinates": [-73.99, 40.75]},
+        })
+
+        request = self.factory.put(self.path, data=place_data, content_type='application/json', HTTP_X_SHAREABOUTS_SILENT='true')
+        request.META[KEY_HEADER] = self.apikey.key
+        response = self.view(request, **self.request_kwargs)
+        self.assertStatusCode(response, 200)
+
+        self.assertEqual(Action.objects.all().count(), 0)
+
     def test_PUT_response_as_owner(self):
         place_data = json.dumps({
           'type': 'Feature',
@@ -1563,6 +1584,27 @@ class TestPlaceListView (APITestMixin, TestCase):
         # Check that we actually created a place
         final_num_places = Place.objects.all().count()
         self.assertEqual(final_num_places, start_num_places + 1)
+
+    def test_POST_with_silent_creates_no_activity(self):
+        Action.objects.all().delete()
+        assert Action.objects.all().count() == 0
+
+        place_data = json.dumps({
+          'type': 'Feature',
+          'properties': {
+            'type': 'Park Bench',
+            'private-secrets': 'The mayor loves this bench',
+            'submitter': None
+          },
+          'geometry': {"type": "Point", "coordinates": [-73.99, 40.75]},
+        })
+
+        request = self.factory.post(self.path, data=place_data, content_type='application/json', HTTP_X_SHAREABOUTS_SILENT='true')
+        request.META[KEY_HEADER] = self.apikey.key
+        response = self.view(request, **self.request_kwargs)
+        self.assertStatusCode(response, 201)
+
+        self.assertEqual(Action.objects.all().count(), 0)
 
     def test_GET_response_with_invisible_data(self):
         #

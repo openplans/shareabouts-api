@@ -102,7 +102,7 @@ class SubmittedThing (CloneableModelMixin, CacheClearingModel, ModelWithDataBlob
             self.index_values()
 
         # All submitted things generate an action if not silent.
-        if not silent:
+        if not (silent or getattr(self, 'silent', False)):
             self.emit_action(is_new=is_new, source=source)
 
         return ret
