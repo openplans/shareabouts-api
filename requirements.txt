@@ -11,7 +11,7 @@ Django==1.11.22
 django-ace==1.0.5
 django-braces==1.13.0
 django-cache-url==3.0.0
-git+https://github.com/celery/django-celery.git@ae23b518cfa3c05a1e27e73ddf1a62274e42ecac#egg=django-celery==3.3.0
+django-celery==3.3.1
 django-cors-headers==3.0.2
 django-debug-toolbar==1.11
 django-loginas==0.3.6
