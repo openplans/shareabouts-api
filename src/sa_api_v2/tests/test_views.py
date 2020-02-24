@@ -3,6 +3,7 @@ from django.test.client import RequestFactory
 from django.core.urlresolvers import reverse
 from django.core.cache import cache as django_cache
 from django.core.files import File
+from django.conf import settings
 from django.contrib.auth.models import AnonymousUser
 from django.contrib.gis import geos
 import base64
@@ -1220,6 +1221,36 @@ class TestPlaceListView (APITestMixin, TestCase):
         self.assertEqual([feature['properties']['name'] for feature in data['features']],
                          [3,2,4,1])
         self.assertIn('distance', data['features'][0]['properties'])
+
+    def test_GET_response_with_paginated_data(self):
+        for _ in range(150):
+            Place.objects.create(
+              dataset=self.dataset,
+              geometry='POINT(2 3)',
+              submitter=self.submitter,
+              data=json.dumps({
+                'type': 'ATM',
+                'name': 'K-Mart',
+                'private-secrets': 42
+              }),
+            )
+
+        # Log-in with session auth
+        request = self.factory.get(self.path + '?include_private=True')
+        request.user = self.owner
+
+        # Request the first page
+        response = self.view(request, **self.request_kwargs)
+        data = json.loads(response.rendered_content)
+
+        # Check that the request was successful
+        self.assertStatusCode(response, 200)
+
+        # Check that the page has the right number of features
+        self.assertEqual(len(data['features']), settings.REST_FRAMEWORK['PAGE_SIZE'])
+
+        # Check that the next page is asking for private data
+        self.assertIn('include_private=True', data['metadata']['next'])
 
     def test_GET_response_with_private_data(self):
         #
