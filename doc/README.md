@@ -88,7 +88,7 @@ Creating your first dataset
 
 1. Each map instance stores the surveys submitted through the interface in a "dataset". Here we will create a dataset to use for testing and development purposes. With your API server running, browse to http://localhost:8001/admin. Log in with your superuser username and password. Scroll down to click on **Data sets** under the *SA_API_V2* heading.
 
-  Then, in the top-right of the screen, click button labeled **ADD DATA SET**.
+   Then, in the top-right of the screen, click button labeled **ADD DATA SET**.
 
 2. On the next screen, click the magnifying glass next to the *Owner* box. Click the username of your superuser in the window that pops up. Next, enter a *Display name* for the dataset -- something like "My Test Dataset". The *Slug* should populate automatically. Scroll all the way to the bottom of the page and click the **Save and continue editing** button.
 
