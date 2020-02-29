@@ -420,7 +420,9 @@ class AttachmentSerializer (EmptyModelSerializer, serializers.ModelSerializer):
             'created_datetime': obj.created_datetime,
             'updated_datetime': obj.updated_datetime,
             'file': obj.file,
-            'name': obj.name
+            'name': obj.name,
+            'height': obj.height,
+            'width': obj.width,
         }
         fields = self.fields
 
@@ -429,7 +431,10 @@ class AttachmentSerializer (EmptyModelSerializer, serializers.ModelSerializer):
         ret.fields = OrderedDict()
         for field_name, field in fields.items():
             value = data[field_name]
-            ret[field_name] = field.to_representation(value)
+            if value is not None:
+                ret[field_name] = field.to_representation(value)
+            else:
+                ret[field_name] = None
             # ret.fields[field_name] = self.augment_field(field, field_name, field_name, value)
         return ret
 
