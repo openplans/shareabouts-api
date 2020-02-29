@@ -86,13 +86,15 @@ terminal session.
 Creating your first dataset
 ---------------------------
 
-With your API server running, browse to http://localhost:8001/admin. Log in with your superuser username and password. Scroll down to click on "Data sets" under "SA_API_V2". Then, in the top-right of the screen, click "ADD DATA SET".
+1. Each map instance stores the surveys submitted through the interface in a "dataset". Here we will create a dataset to use for testing and development purposes. With your API server running, browse to http://localhost:8001/admin. Log in with your superuser username and password. Scroll down to click on **Data sets** under the *SA_API_V2* heading.
 
-On the next screen, click the magnifying glass next to the "Owner" box. Select your superuser. Enter a "Display name" for the dataset -- something like "My Test Dataset". The "Slug" should be populate automatically. Scroll all the way to the bottom of the page and click "Save and continue editing".
+  Then, in the top-right of the screen, click button labeled **ADD DATA SET**.
 
-now we create an API key for the dataset by clicking "Add another Api key" under the "API KEYS" section. Then, scroll to the bottom of the page and click "Save and continue editing" again. Your dataset is now ready to receive submissions.
+2. On the next screen, click the magnifying glass next to the *Owner* box. Click the username of your superuser in the window that pops up. Next, enter a *Display name* for the dataset -- something like "My Test Dataset". The *Slug* should populate automatically. Scroll all the way to the bottom of the page and click the **Save and continue editing** button.
 
-If you want to point a Shareabouts client at your new dataset, copy the "Key" from your API key, find the `SHAREABOUTS` dictionary in your client `local_settings.py` file and change the `DATASET_KEY` the key that your copied.
+3. Now create an API key for the dataset by clicking **Add another Api key** under the *API KEYS* section. Then, scroll to the bottom of the page and click **Save and continue editing** again. Your dataset is now ready to receive submissions.
+
+If you want to point a Shareabouts client at your new dataset, copy the *Key* from your API key, find the `SHAREABOUTS` dictionary in your client `local_settings.py` file and change the `DATASET_KEY` the key that your copied.
 
 Next, copy the _link address_ of the "Api path" from your dataset admin page, and find the `DATASET_ROOT` in the client `local_settings.py`. Place the API path link address value there.
 
