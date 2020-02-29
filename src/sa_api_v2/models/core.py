@@ -305,6 +305,8 @@ class Attachment (CacheClearingModel, TimeStampedModel):
     file = models.FileField(upload_to=timestamp_filename, storage=AttachmentStorage())
     name = models.CharField(max_length=128, null=True, blank=True)
     thing = models.ForeignKey('SubmittedThing', on_delete=models.CASCADE, related_name='attachments')
+    height = models.IntegerField(blank=True, null=True)
+    width = models.IntegerField(blank=True, null=True)
 
     cache = cache.AttachmentCache()
     # previous_version = 'sa_api_v1.models.Attachment'
