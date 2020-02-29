@@ -51,10 +51,7 @@ NOTE: If you run in to trouble with gevent, you can safely comment it out of
 the requirements.txt file.  It is not needed for local development.  To comment
 it out, just add a hash to the beginning of the line for `gevent`. Same for `psycogreen`.
 
-Copy the file
-`.env.template` to `.env` and fill in the
-credentials for connecting to your development database.  This file will not be
-checked in to the repository.
+Copy the file `.env.template` to `.env` and fill in the credentials for connecting to your development database. This file will not be checked in to the repository. Remember to replace the `YOUR_USERNAME_HERE` in `.env` with your actual username. you can get your username by running `whoami` on the command line.
 
 Install `honcho`, which we use to pass variables into the server's environment.
 
