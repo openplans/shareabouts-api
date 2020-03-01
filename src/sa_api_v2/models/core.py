@@ -16,6 +16,7 @@ from .caching import CacheClearingModel
 from .data_indexes import IndexedValue, FilterByIndexMixin
 from .mixins import CloneableModelMixin
 from .profiles import User
+from PIL import Image
 
 
 class TimeStampedModel (models.Model):
@@ -310,6 +311,20 @@ class Attachment (CacheClearingModel, TimeStampedModel):
 
     cache = cache.AttachmentCache()
     # previous_version = 'sa_api_v1.models.Attachment'
+
+    def save(self, *args, **kwargs):
+        try:
+            image = Image.open(self.file)
+            width, height = image.size
+        except (ValueError, EOFError) as e:
+            height = None
+            width = None
+
+        self.width = width
+        self.height = height
+
+        super(Attachment, self).save(*args, **kwargs)
+
 
     class Meta:
         app_label = 'sa_api_v2'
