@@ -1,3 +1,4 @@
+import os.path
 from os import environ
 
 DEBUG = True
@@ -63,8 +64,9 @@ USE_L10N = True
 # Templates and Static Assets
 #
 
-MEDIA_ROOT = ''
-MEDIA_URL = ''
+BASE_DIR = os.path.join(os.path.dirname(__file__), '..')
+MEDIA_ROOT = BASE_DIR
+MEDIA_URL = 'http://localhost:8001/media/'
 
 STATIC_ROOT = 'staticfiles'
 STATIC_URL = '/static/'
