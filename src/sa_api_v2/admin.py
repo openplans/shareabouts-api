@@ -3,6 +3,7 @@ Basic behind-the-scenes maintenance for superusers,
 via django.contrib.admin.
 """
 
+import os
 import itertools
 import json
 from django.conf import settings
@@ -238,7 +239,7 @@ class DataSetAdmin(DjangoObjectActions, admin.ModelAdmin):
 
     objectactions = ('clone_dataset', 'clear_cache')
     raw_id_fields = ('owner',)
-    readonly_fields = ('api_path',)
+    readonly_fields = ('api_path','places')
     inlines = [InlineDataIndexAdmin, InlineDataSetPermissionAdmin, InlineApiKeyAdmin, InlineOriginAdmin, InlineGroupAdmin, InlineWebhookAdmin]
 
     def clear_cache(self, request, obj):
@@ -262,6 +263,12 @@ class DataSetAdmin(DjangoObjectActions, admin.ModelAdmin):
             return HttpResponseRedirect(new_obj_edit_url)
         except Exception as e:
             messages.error(request, 'Failed to clone dataset: %s (%s)' % (e, type(e).__name__))
+
+    def places(self, instance):
+        path = '/admin/sa_api_v2/place/?dataset={}'
+        path = path.format(instance.slug)
+        return '<a href="{0}">{0}</a>'.format(path)
+    places.allow_tags = True
 
     def api_path(self, instance):
         path = reverse('dataset-detail', args=[instance.owner, instance.slug])
