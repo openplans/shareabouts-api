@@ -312,17 +312,21 @@ class Attachment (CacheClearingModel, TimeStampedModel):
     cache = cache.AttachmentCache()
     # previous_version = 'sa_api_v1.models.Attachment'
 
-    def save(self, *args, **kwargs):
+    def apply_image_dimensions(self):
+        """
+        Returns True if the image could be opened and the size extracted.
+        Otherwise returns False.
+        """
         try:
             image = Image.open(self.file)
-            width, height = image.size
+            self.width, self.height = image.size
+            return True
         except (ValueError, EOFError) as e:
-            height = None
-            width = None
+            return False
 
-        self.width = width
-        self.height = height
-
+    def save(self, *args, **kwargs):
+        if self.width is None or self.height is None:
+            self.apply_image_dimensions()
         super(Attachment, self).save(*args, **kwargs)
 
 
