@@ -3,7 +3,6 @@ Basic behind-the-scenes maintenance for superusers,
 via django.contrib.admin.
 """
 
-import os
 import itertools
 import json
 from django.conf import settings
