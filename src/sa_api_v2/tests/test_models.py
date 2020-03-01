@@ -8,7 +8,7 @@ from django.core.urlresolvers import reverse
 # from mock import patch
 # from nose.tools import (istest, assert_equal, assert_not_equal, assert_in,
 #                         assert_raises)
-from ..models import (DataSet, User, Group, SubmittedThing, Action, Place, Submission,
+from ..models import (Attachment, DataSet, User, Group, SubmittedThing, Action, Place, Submission,
     DataSetPermission, check_data_permission, DataIndex, IndexedValue)
 from ..apikey.models import ApiKey
 # from ..views import SubmissionCollectionView
@@ -18,6 +18,51 @@ from ..apikey.models import ApiKey
 # import json
 import mock
 from mock import patch
+
+
+import os.path
+FIXTURE_PATH = os.path.join(os.path.dirname(__file__), 'fixtures')
+
+class TestAttachment (TestCase):
+    def setUp(self):
+        self.owner = User.objects.create(username='user')
+        self.dataset = DataSet.objects.create(slug='data', owner=self.owner)
+        self.place = Place.objects.create(dataset=self.dataset, geometry='POINT(0 0)')
+
+        from django.core.files.images import ImageFile
+        image_path = os.path.join(FIXTURE_PATH, 'Automated-Testing.jpg')
+        self.image_file = ImageFile(open(image_path, mode='rb'), name='Automated-Testing.jpg')
+
+        from django.core.files.base import ContentFile
+        self.non_image_file = ContentFile('This is not an image.')
+
+    def tearDown(self):
+        User.objects.all().delete()  # Cascades.
+        self.image_file.close()
+
+    def test_save_sets_image_dims_when_none_is_provided(self):
+        a = Attachment(thing=self.place, file=self.image_file)
+
+        self.assertIsNone(a.width)
+        self.assertIsNone(a.height)
+        a.save()
+        self.assertIsNotNone(a.width)
+        self.assertIsNotNone(a.height)
+
+    def test_save_leaves_image_dims_when_already_set(self):
+        IMAGE_DIM = 23049
+        a = Attachment(thing=self.place, file=self.image_file, width=IMAGE_DIM, height=IMAGE_DIM)
+
+        a.save()
+        self.assertEqual(a.width, IMAGE_DIM)
+        self.assertEqual(a.height, IMAGE_DIM)
+
+    def test_save_ignores_image_dims_when_not_an_image_file(self):
+        a = Attachment(thing=self.place, file=self.non_image_file)
+
+        a.save()
+        self.assertIsNone(a.width)
+        self.assertIsNone(a.height)
 
 
 class TestSubmittedThing (TestCase):
