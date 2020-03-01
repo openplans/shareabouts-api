@@ -65,8 +65,8 @@ USE_L10N = True
 #
 
 BASE_DIR = os.path.join(os.path.dirname(__file__), '..')
-MEDIA_ROOT = BASE_DIR
-MEDIA_URL = 'http://localhost:8001/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, '..')
+MEDIA_URL = '/media/'
 
 STATIC_ROOT = 'staticfiles'
 STATIC_URL = '/static/'

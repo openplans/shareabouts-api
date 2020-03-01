@@ -231,7 +231,8 @@ class DataSetIdentityField (ShareaboutsIdentityField):
 
 class AttachmentFileField (serializers.FileField):
     def to_representation(self, obj):
-        return obj.storage.url(obj.name)
+        request = self.context.get('request')
+        return request.build_absolute_uri(obj.storage.url(obj.name))
 
 
 ###############################################################################
@@ -807,8 +808,13 @@ class BasePlaceSerializer (SubmittedThingSerializer, serializers.ModelSerializer
 
         return details
 
+    def make_attachment_serializer(self, attachment):
+        ser = AttachmentSerializer(attachment)
+        ser.parent = self
+        return ser
+
     def attachments_to_representation(self, obj):
-        return [AttachmentSerializer(a).data for a in obj.attachments.all()]
+        return [self.make_attachment_serializer(a).data for a in obj.attachments.all()]
 
     def submitter_to_representation(self, obj):
         return SimpleUserSerializer(obj.submitter).data if obj.submitter else None
