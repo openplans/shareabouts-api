@@ -16,7 +16,7 @@ from .caching import CacheClearingModel
 from .data_indexes import IndexedValue, FilterByIndexMixin
 from .mixins import CloneableModelMixin
 from .profiles import User
-from PIL import Image
+from PIL import Image, UnidentifiedImageError
 
 
 class TimeStampedModel (models.Model):
@@ -321,7 +321,7 @@ class Attachment (CacheClearingModel, TimeStampedModel):
             image = Image.open(self.file)
             self.width, self.height = image.size
             return True
-        except (ValueError, EOFError) as e:
+        except (ValueError, EOFError, UnidentifiedImageError) as e:
             return False
 
     def save(self, *args, **kwargs):

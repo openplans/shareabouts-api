@@ -29,7 +29,7 @@ dj-database-url
 django-object-actions
 
 # Caching
-django-redis
+django-redis<4.12
 django-cache-url
 
 # File Storage
