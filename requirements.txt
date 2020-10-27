@@ -6,7 +6,7 @@ celery==3.1.26.post2
 certifi==2020.6.20
 cffi==1.14.2
 chardet==3.0.4
-cryptography==3.0
+cryptography==3.2
 defusedxml==0.7.0rc1
 dj-database-url==0.5.0
 dj-static==0.0.6
