@@ -16,7 +16,7 @@ django-braces==1.13.0
 django-cache-url==3.0.0
 django-celery==3.3.1
 django-cors-headers==3.0.2
-django-debug-toolbar==1.11
+django-debug-toolbar==1.11.1
 django-loginas==0.3.6
 django-nose==1.4.6
 django-oauth2-provider==0.2.6.1
