@@ -22,6 +22,7 @@ django-nose==1.4.6
 django-oauth2-provider==0.2.6.1
 django-object-actions==3.0.1
 django-redis==4.11.0
+django-samesite-none==0.0.3
 django-storages==1.7.1
 djangorestframework==3.3.3
 djangorestframework-bulk @ git+https://github.com/mjumbewu/django-rest-framework-bulk.git@492d76237dca99373d958daa68c9b3641bc7bbc5
