@@ -336,27 +336,18 @@ class ActionAdmin(admin.ModelAdmin):
     list_display = ('id', 'created_datetime', 'action', 'type_of_thing', 'submitter_name', 'source')
     raw_id_fields = ('thing',)
 
-    # Pre-Django 1.6
-    def queryset(self, request):
-        qs = super(ActionAdmin, self).queryset(request)
-        user = request.user
-        if not user.is_superuser:
-            qs = qs.filter(thing__dataset__owner=user)
-        return qs.select_related('submitter', 'thing', 'thing__place')
-
-    # Django 1.6+
     def get_queryset(self, request):
         qs = super(ActionAdmin, self).get_queryset(request)
         user = request.user
         if not user.is_superuser:
             qs = qs.filter(thing__dataset__owner=user)
-        return qs.select_related('submitter', 'thing', 'thing__place')
+        return qs.select_related('thing', 'thing__full_place')
 
     def submitter_name(self, obj):
         return obj.submitter.username if obj.submitter else None
 
     def type_of_thing(self, obj):
-        if obj.thing.place:
+        if obj.thing.full_place:
             return 'place'
         else:
             return 'submission'
