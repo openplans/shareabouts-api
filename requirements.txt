@@ -41,7 +41,7 @@ Pillow==7.2.0
 psycogreen==1.0.2
 psycopg2-binary==2.8.5
 pycparser==2.20
-PyJWT==1.7.1
+PyJWT==2.4.0
 python-dateutil==2.8.1
 python-social-auth==0.2.21
 python3-openid==3.2.0
