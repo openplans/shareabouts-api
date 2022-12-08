@@ -3,7 +3,7 @@ anyjson==0.3.3
 billiard==3.3.0.23
 boto==2.49.0
 celery==3.1.26.post2
-certifi==2020.6.20
+certifi==2022.12.7
 cffi==1.14.2
 chardet==3.0.4
 cryptography==3.0
