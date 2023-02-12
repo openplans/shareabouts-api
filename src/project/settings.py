@@ -443,8 +443,11 @@ except NameError:
 
 if SHOW_DEBUG_TOOLBAR:
     INSTALLED_APPS += ('debug_toolbar',)
+    # Add the debug toolbar middleware after the GZip middleware, but before
+    # everything else.
+    DEBUG_TOOLBAR_MIDDLWARE_INDEX = MIDDLEWARE.index('django.middleware.gzip.GZipMiddleware') + 1
     MIDDLEWARE = (
-        MIDDLEWARE[:2] +
+        MIDDLEWARE[:DEBUG_TOOLBAR_MIDDLWARE_INDEX] +
         ['debug_toolbar.middleware.DebugToolbarMiddleware'] +
-        MIDDLEWARE[2:]
+        MIDDLEWARE[DEBUG_TOOLBAR_MIDDLWARE_INDEX:]
     )
