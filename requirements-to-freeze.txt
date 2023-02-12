@@ -14,9 +14,9 @@ django-samesite-none  # Middleware to work around https://code.djangoproject.com
 # Background processing
 # ==============================
 
-celery<4.0  # For Django 1.8
+celery
+importlib-metadata<5  # https://stackoverflow.com/a/74125067/123776
 django-celery-results
-# django-celery
 
 
 
