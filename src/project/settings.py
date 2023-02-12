@@ -168,7 +168,7 @@ INSTALLED_APPS = (
     'raven.contrib.django.raven_compat',
     'django_ace',
     'django_object_actions',
-    'djcelery',
+    'django_celery_results',
     'loginas',
 
     # The old-style social.apps.django_app below is needed just for migrations.
@@ -205,7 +205,8 @@ if USE_GEODB:
 # Background task processing
 #
 
-CELERY_RESULT_BACKEND='djcelery.backends.database:DatabaseBackend'
+CELERY_RESULT_BACKEND = 'django_celery_results.backends:DatabaseBackend'
+CELERY_CACHE_BACKEND = 'default'
 CELERY_ACCEPT_CONTENT = ['json', 'msgpack', 'yaml', 'pickle']
 
 
@@ -372,7 +373,7 @@ if REDIS_URL_ENVVAR:
     SESSION_ENGINE = "django.contrib.sessions.backends.cache"
 
     # Celery broker
-    BROKER_URL = environ[REDIS_URL_ENVVAR].strip('/') + '/1'
+    CELERY_BROKER_URL = environ[REDIS_URL_ENVVAR].strip('/') + '/1'
 
 if all([key in environ for key in ('SHAREABOUTS_AWS_KEY',
                                    'SHAREABOUTS_AWS_SECRET',
@@ -422,12 +423,16 @@ except ImportError:
 #
 
 try:
-    BROKER_URL
+    CELERY_BROKER_URL
 except NameError:
-    BROKER_URL = 'django://'
-
-if BROKER_URL == 'django://':
-    INSTALLED_APPS += ('kombu.transport.django', )
+    from django.core.exceptions import ImproperlyConfigured
+    raise ImproperlyConfigured(  # pylint: disable=raise-missing-from
+        'Expected CELERY_BROKER_URL or REDIS_URL\n'
+        '\n'
+        'Since Celery 4, Django backend is no longer supported. Specify a '
+        'broker URL in your environment with CELERY_BROKER_URL, or by setting '
+        'the REDIS_URL environment variable to use Redis as the broker.'
+    )
 
 
 ##############################################################################
