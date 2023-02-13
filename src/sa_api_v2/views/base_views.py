@@ -3,7 +3,7 @@ from django.contrib.auth import views as auth_views
 if settings.USE_GEODB:
     from django.contrib.gis.geos import GEOSGeometry, Point, Polygon
 from django.core import cache as django_cache
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.db.models import Count, Q
 from django.http import Http404, HttpResponse, HttpResponseBadRequest, HttpResponseRedirect
 from django.shortcuts import get_object_or_404
@@ -1732,8 +1732,7 @@ class AttachmentListView (OwnedResourceMixin, SerializerParamsMixin, FilteredRes
 
     ------------------------------------------------------------
     """
-
-    queryset = models.Attachment.objects.all()
+    queryset = models.Attachment.objects.all().order_by('-created_datetime')
     serializer_class = serializers.AttachmentSerializer
 
     thing_id_kwarg = 'thing_id'

@@ -14,7 +14,7 @@ if settings.USE_GEODB:
 else:
     from django.contrib import admin
 from django.contrib import messages
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.forms import ValidationError, ModelForm
 from django.http import HttpResponseRedirect
 from django.utils.html import escape

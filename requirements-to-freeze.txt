@@ -2,7 +2,7 @@
 # Web server
 # ==============================
 
-Django<2.0,>1.11
+Django>1.11,<2.0
 gevent
 gunicorn
 dj_static
@@ -56,7 +56,7 @@ django-cors-headers
 # REST API
 # ==============================
 
-djangorestframework>3.3,<3.4
+djangorestframework>3.5,<3.6
 djangorestframework-csv==1.3.0
 
 --extra-index-url https://us-central1-python.pkg.dev/poepublic-shareabouts/pypi/simple/

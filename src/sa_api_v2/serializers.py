@@ -857,6 +857,7 @@ class BasePlaceSerializer (SubmittedThingSerializer, serializers.ModelSerializer
 
 class SimplePlaceSerializer (BasePlaceSerializer):
     class Meta (BasePlaceSerializer.Meta):
+        fields = '__all__'
         read_only_fields = ('dataset',)
 
 class PlaceSerializer (BasePlaceSerializer, serializers.HyperlinkedModelSerializer):
@@ -865,7 +866,7 @@ class PlaceSerializer (BasePlaceSerializer, serializers.HyperlinkedModelSerializ
     submitter = UserSerializer(read_only=False, required=False, allow_null=True)
 
     class Meta (BasePlaceSerializer.Meta):
-        pass
+        fields = '__all__'
 
     def summary_to_representation(self, set_name, submissions):
         url_field = SubmissionSetIdentityField()
@@ -965,7 +966,7 @@ class SimpleDataSetSerializer (BaseDataSetSerializer, serializers.ModelSerialize
     permissions = DataSetPermissionSerializer(many=True, read_only=False)
 
     class Meta (BaseDataSetSerializer.Meta):
-        pass
+        fields = '__all__'
 
 class DataSetSerializer (BaseDataSetSerializer, serializers.HyperlinkedModelSerializer):
     url = DataSetIdentityField()
@@ -977,7 +978,7 @@ class DataSetSerializer (BaseDataSetSerializer, serializers.HyperlinkedModelSeri
     load_from_url = serializers.URLField(write_only=True, required=False)
 
     class Meta (BaseDataSetSerializer.Meta):
-        pass
+        fields = '__all__'
 
     def validate_load_from_url(self, attrs, source):
         url = attrs.get(source)

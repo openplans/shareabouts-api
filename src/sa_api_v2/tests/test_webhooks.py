@@ -1,6 +1,6 @@
 from django.test import TestCase
 from django.test.client import RequestFactory
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.core.cache import cache as django_cache
 from django.core.files import File
 from django.contrib.auth.models import AnonymousUser
