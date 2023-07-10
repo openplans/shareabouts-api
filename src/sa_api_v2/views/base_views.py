@@ -154,7 +154,7 @@ def is_origin_auth(auth):
 
 def is_really_logged_in(user, request):
     auth = getattr(request, 'auth', None)
-    return (user.is_authenticated() and
+    return (user.is_authenticated and
             not is_apikey_auth(auth) and
             not is_origin_auth(auth))
 
@@ -453,7 +453,7 @@ class CorsEnabledMixin (object):
             response['Access-Control-Allow-Origin'] = request.META.get('HTTP_ORIGIN')
 
         # Allow AJAX requests only from trusted domains for unsafe methods.
-        elif isinstance(request.client, cors.models.Origin) or request.user.is_authenticated():
+        elif isinstance(request.client, cors.models.Origin) or request.user.is_authenticated:
             response['Access-Control-Allow-Origin'] = request.META.get('HTTP_ORIGIN')
 
         else:
@@ -590,7 +590,7 @@ class OwnedResourceMixin (ClientAuthenticationMixin, CorsEnabledMixin):
 
     def get_submitter(self):
         user = self.request.user
-        return user if user.is_authenticated() else None
+        return user if user.is_authenticated else None
 
     def get_owner(self, force=False):
         if force or not hasattr(self, '_owner'):
@@ -749,7 +749,7 @@ class CachedResourceMixin (object):
         querystring = request.META.get('QUERY_STRING', '')
         contenttype = request.META.get('HTTP_ACCEPT', '')
 
-        if not hasattr(request, 'user') or not request.user.is_authenticated():
+        if not hasattr(request, 'user') or not request.user.is_authenticated:
             groups = ''
         else:
             dataset = None
@@ -888,7 +888,7 @@ class ShareaboutsAPIRootView (views.APIView):
 
         response_data = {}
 
-        if user.is_authenticated():
+        if user.is_authenticated:
             response_data['your datasets'] = request.build_absolute_uri(
                 reverse('dataset-list', kwargs={'owner_username': user.username})
             )
@@ -1878,7 +1878,7 @@ class CurrentUserInstanceView (CorsEnabledMixin, views.APIView):
     SAFE_CORS_METHODS = ('GET', 'HEAD', 'TRACE', 'OPTIONS', 'POST', 'DELETE')
 
     def get(self, request):
-        if request.user.is_authenticated():
+        if request.user.is_authenticated:
             user_url = reverse('user-detail', args=[request.user.username])
             return HttpResponseRedirect(user_url + '?' + request.GET.urlencode(), status=303)
         else:

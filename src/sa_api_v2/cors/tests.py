@@ -91,12 +91,12 @@ class TestOriginClientAuth (TestCase):
 #                               'META': {'REMOTE_ADDR': ip},
 #                               'GET': {}, 'POST': {}})
 #        # Starts logged out...
-#        self.assertEqual(request.user.is_authenticated(), False)
+#        self.assertEqual(request.user.is_authenticated, False)
 #        self.assertRaises(PermissionDenied, check_api_authorization,
 #                          request)
 #        self.assertEqual(None, ApiKeyAuthentication(None).authenticate(request))
 #        # Still logged out.
-#        self.assertEqual(request.user.is_authenticated(), False)
+#        self.assertEqual(request.user.is_authenticated, False)
 
 #    def test_check_api_auth__logged_in(self):
 #        from .auth import check_api_authorization
@@ -107,12 +107,12 @@ class TestOriginClientAuth (TestCase):
 #                               'META': {'REMOTE_ADDR': ip},
 #                               'GET': {}, 'POST': {}})
 #        # Starts logged in...
-#        self.assertEqual(request.user.is_authenticated(), True)
+#        self.assertEqual(request.user.is_authenticated, True)
 #        self.assertEqual(True, check_api_authorization(request))
 #        self.assertEqual(request.user,
 #                         ApiKeyAuthentication(None).authenticate(request))
 #        # And still logged in.
-#        self.assertEqual(request.user.is_authenticated(), True)
+#        self.assertEqual(request.user.is_authenticated, True)
 
 #    def test_check_api_auth__logged_in_but_disabled(self):
 #        from .auth import check_api_authorization
@@ -124,14 +124,14 @@ class TestOriginClientAuth (TestCase):
 #                                   'META': {'REMOTE_ADDR': ip},
 #                                   'GET': {}, 'POST': {}})
 #        # User is logged in...
-#        self.assertEqual(get_request.user.is_authenticated(), True)
+#        self.assertEqual(get_request.user.is_authenticated, True)
 #        # ... but still denied.
 #        self.assertRaises(PermissionDenied, check_api_authorization,
 #                          get_request)
 #        self.assertEqual(None,
 #                         ApiKeyAuthentication(None).authenticate(get_request))
 #        # Still logged in.
-#        self.assertEqual(get_request.user.is_authenticated(), True)
+#        self.assertEqual(get_request.user.is_authenticated, True)
 
 #    def test_check_api_auth__key_invalid(self):
 #        from .auth import check_api_authorization, KEY_HEADER
@@ -145,13 +145,13 @@ class TestOriginClientAuth (TestCase):
 #                                            KEY_HEADER: key},
 #                                   'GET': {}, 'POST': {}})
 #        # Starts logged out...
-#        self.assertEqual(get_request.user.is_authenticated(), False)
+#        self.assertEqual(get_request.user.is_authenticated, False)
 #        self.assertRaises(PermissionDenied, check_api_authorization,
 #                          get_request)
 #        self.assertEqual(None,
 #                         ApiKeyAuthentication(None).authenticate(get_request))
 #        # Still logged out.
-#        self.assertEqual(get_request.user.is_authenticated(), False)
+#        self.assertEqual(get_request.user.is_authenticated, False)
 
 #    def test_check_api_auth__key(self):
 #        from .auth import check_api_authorization, KEY_HEADER
@@ -170,12 +170,12 @@ class TestOriginClientAuth (TestCase):
 #                                   'GET': {}, 'POST': {}})
 
 #        # Starts logged out...
-#        self.assertEqual(get_request.user.is_authenticated(), False)
+#        self.assertEqual(get_request.user.is_authenticated, False)
 #        self.assertEqual(True, check_api_authorization(get_request))
 #        self.assertEqual(get_request.user,
 #                         ApiKeyAuthentication(None).authenticate(get_request))
 #        # And now logged in.
-#        self.assertEqual(get_request.user.is_authenticated(), True)
+#        self.assertEqual(get_request.user.is_authenticated, True)
 
 #    def test_check_api_auth__key__with_disabled_user(self):
 #        from .auth import check_api_authorization, KEY_HEADER
@@ -192,11 +192,11 @@ class TestOriginClientAuth (TestCase):
 #                                            KEY_HEADER: key},
 #                                   'GET': {}, 'POST': {}})
 #        # User is logged out...
-#        self.assertEqual(get_request.user.is_authenticated(), False)
+#        self.assertEqual(get_request.user.is_authenticated, False)
 #        # ... and denied.
 #        self.assertRaises(PermissionDenied, check_api_authorization,
 #                          get_request)
 #        self.assertEqual(None,
 #                         ApiKeyAuthentication(None).authenticate(get_request))
 #        # Still logged out.
-#        self.assertEqual(get_request.user.is_authenticated(), False)
+#        self.assertEqual(get_request.user.is_authenticated, False)

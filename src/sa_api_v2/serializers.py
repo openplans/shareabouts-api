@@ -720,7 +720,7 @@ class SubmittedThingSerializer (bulk_serializers.BulkSerializerMixin, ActivityGe
             # Otherwise, set the submitter to the current user
             else:
                 request = self.context.get('request')
-                if request and request.user.is_authenticated():
+                if request and request.user.is_authenticated:
                     data['submitter'] = request.user
 
         return data

@@ -185,7 +185,7 @@ def check_data_permission(user, client, do_action, dataset, submission_set, prot
             return True
 
     # Next, check the user's groups
-    if user is not None and user.is_authenticated():
+    if user is not None and user.is_authenticated:
         for group in user._groups.all():
             if (dataset and group.dataset_id == dataset.id and
                 any_allow(group.permissions.all(), do_action, submission_set, protected)):

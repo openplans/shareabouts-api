@@ -94,7 +94,7 @@ class DataSnapshotRequestListView (DataSnapshotMixin, OwnedResourceMixin, views.
     def initiate_data_request(self, characteristic_params):
         # Create a new data request
         datarequest = DataSnapshotRequest(**characteristic_params)
-        datarequest.requester = self.request.user if self.request.user.is_authenticated() else None
+        datarequest.requester = self.request.user if self.request.user.is_authenticated else None
         datarequest.status = 'pending'
         datarequest.save()
 
