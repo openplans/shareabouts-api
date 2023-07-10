@@ -1,5 +1,6 @@
 from django.conf.urls import include, url
 from django.conf import settings
+from django.urls import path
 
 # Uncomment the next two lines to enable the admin:
 from django.contrib import admin
@@ -22,8 +23,8 @@ urlpatterns = [
     # url(r'^admin/doc/', include('django.contrib.admindocs.urls')),
 
     # Uncomment the next line to enable the admin:
-    url(r'^admin/', include(admin.site.urls)),
-    url(r'^admin/', include(loginas.urls)),
+    path(r'admin/', include(loginas.urls)),
+    path(r'admin/', admin.site.urls),
 
     # For now, use basic auth.
     url(r'^accounts/', include('django.contrib.auth.urls')),
