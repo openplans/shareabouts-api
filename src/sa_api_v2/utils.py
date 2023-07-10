@@ -54,7 +54,7 @@ def to_geom(string):
 
     # Assume WGS84 (lat/lng) if no SRID is attached yet.
     if not geom.srid:
-        geom.set_srid(4326)
+        geom.srid = 4326
 
     return geom
 
