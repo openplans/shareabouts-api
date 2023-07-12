@@ -325,10 +325,9 @@ class TestSubmissionSerializer (TestCase):
         self.submission = Submission.objects.create(dataset=self.dataset, place=self.place, set_name='comments', data=json.dumps({'public-attr': 1, 'private-attr': 2}))
 
     def test_can_serlialize_a_null_instance(self):
-        serializer = SubmissionSerializer(None)
-        serializer.context = {
+        serializer = SubmissionSerializer(None, context={
             'request': RequestFactory().get('')
-        }
+        })
 
         data = serializer.data
         self.assertIsInstance(data, dict)
@@ -369,12 +368,11 @@ class TestDataSetSerializer (TestCase):
         Submission.objects.create(dataset=self.dataset, place=self.place, set_name='comments')
 
     def test_can_serlialize_a_null_instance(self):
-        serializer = DataSetSerializer(None)
-        serializer.context = {
+        serializer = DataSetSerializer(None, context={
             'request': RequestFactory().get(''),
             'place_count_map_getter': (lambda: {}),
             'submission_sets_map_getter': (lambda: {})
-        }
+        })
 
         data = serializer.data
         self.assertIsInstance(data, dict)
