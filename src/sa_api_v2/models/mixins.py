@@ -1,3 +1,6 @@
+from django.db import models
+
+
 class CloneableModelMixin (object):
     """
     Mixin providing a clone method that copies all of a models instance's
@@ -5,19 +8,15 @@ class CloneableModelMixin (object):
 
     """
     def get_ignore_fields(self, ModelClass):
-        fields = ModelClass._meta.fields
-        pk_name = ModelClass._meta.pk.name
+        pk_fld = ModelClass._meta.pk
+        pk_name = pk_fld.name
 
         ignore_field_names = set([pk_name])
-        for fld in fields:
-            if fld.name == pk_name:
-                pk_fld = fld
-                break
-        else:
-            raise Exception('Model %s somehow has no PK field' % (ModelClass,))
 
-        if pk_fld.rel and pk_fld.rel.parent_link:
-            parent_ignore_fields = self.get_ignore_fields(pk_fld.rel.to)
+        # For OneToOneFields, ignore the reverse relation field
+        if isinstance(pk_fld, models.OneToOneField):
+            ParentModelClass = pk_fld.related_model
+            parent_ignore_fields = self.get_ignore_fields(ParentModelClass)
             ignore_field_names.update(parent_ignore_fields)
 
         return ignore_field_names
