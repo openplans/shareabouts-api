@@ -117,17 +117,19 @@ class TestSocialUserSerializer (TestCase):
         twitter_user_data_file = path.join(fixture_dir, 'twitter_user.json')
         facebook_user_data_file = path.join(fixture_dir, 'facebook_user.json')
 
-        self.twitter_user = User.objects.create_user(
-            username='my_twitter_user', password='mypassword')
-        self.twitter_social_auth = UserSocialAuth.objects.create(
-            user=self.twitter_user, provider='twitter', uid='1234',
-            extra_data=json.load(open(twitter_user_data_file)))
+        with open(twitter_user_data_file) as f:
+            self.twitter_user = User.objects.create_user(
+                username='my_twitter_user', password='mypassword')
+            self.twitter_social_auth = UserSocialAuth.objects.create(
+                user=self.twitter_user, provider='twitter', uid='1234',
+                extra_data=json.load(f))
 
-        self.facebook_user = User.objects.create_user(
-            username='my_facebook_user', password='mypassword')
-        self.facebook_social_auth = UserSocialAuth.objects.create(
-            user=self.facebook_user, provider='facebook', uid='1234',
-            extra_data=json.load(open(facebook_user_data_file)))
+        with open(facebook_user_data_file) as f:
+            self.facebook_user = User.objects.create_user(
+                username='my_facebook_user', password='mypassword')
+            self.facebook_social_auth = UserSocialAuth.objects.create(
+                user=self.facebook_user, provider='facebook', uid='1234',
+                extra_data=json.load(f))
 
         self.no_social_user = User.objects.create_user(
             username='my_antisocial_user', password='password')
@@ -275,7 +277,7 @@ class TestPlaceSerializer (TestCase):
             partial=True,
         )
 
-        self.assert_(serializer.is_valid())
+        self.assertTrue(serializer.is_valid())
         serializer.save()
         self.assertEqual(json.loads(self.place.data), {'public-attr': 1, 'private-attr': 4, 'new-attr': 5})
         self.assertEqual(self.place.geometry.wkt, GEOSGeometry('POINT(4 5)').wkt)
@@ -293,7 +295,7 @@ class TestPlaceSerializer (TestCase):
         self.place.save()
         self.place.refresh_from_db()
 
-        self.assert_(not self.place.visible)
+        self.assertTrue(not self.place.visible)
 
         serializer = PlaceSerializer(
             self.place,
@@ -302,11 +304,11 @@ class TestPlaceSerializer (TestCase):
             partial=True,
         )
 
-        self.assert_(serializer.is_valid())
+        self.assertTrue(serializer.is_valid())
         serializer.save()
         self.place.refresh_from_db()
 
-        self.assert_(self.place.visible)
+        self.assertTrue(self.place.visible)
 
 
 class TestSubmissionSerializer (TestCase):

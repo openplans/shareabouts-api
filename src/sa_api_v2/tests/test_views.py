@@ -1185,7 +1185,7 @@ class TestPlaceListView (APITestMixin, TestCase):
             Place.objects.create(dataset=self.dataset, geometry='POINT(3 0)', data=json.dumps({'name': 4})),
 
         # There should be 121 visible places in the dataset
-        self.assert_(Place.objects.filter(dataset=self.dataset, visible=True).count(), 121)
+        self.assertTrue(Place.objects.filter(dataset=self.dataset, visible=True).count(), 121)
 
         # Check that we have items on the 2nd page
         request = self.factory.get(self.path + '?page=2')
