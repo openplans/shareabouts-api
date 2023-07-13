@@ -1912,9 +1912,7 @@ class CurrentUserInstanceView (CorsEnabledMixin, views.APIView):
             return HttpResponseRedirect(user_url, status=303)
 
     def delete(self, request):
-        from django.contrib.auth import logout
-
-        logout(request)
+        auth_views.LogoutView.as_view()(request)
         return HttpResponse(status=204)
 
 
@@ -1963,7 +1961,7 @@ def capture_referer(view_func):
     return wrapper
 
 remote_social_login = capture_referer(social_views.auth)
-remote_logout = capture_referer(auth_views.logout)
+remote_logout = capture_referer(auth_views.LogoutView.as_view())
 
 def remote_social_login_error(request):
     error_redirect_url = request.session.get('client_error_next')
