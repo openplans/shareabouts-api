@@ -270,7 +270,6 @@ DEBUG_TOOLBAR_PANELS = (
     'debug_toolbar.panels.staticfiles.StaticFilesPanel',
     'debug_toolbar.panels.cache.CachePanel',  # Disabled by default
     'debug_toolbar.panels.signals.SignalsPanel',
-    'debug_toolbar.panels.logging.LoggingPanel',
 )
 # (See the very end of the file for more debug toolbar settings)
 
