@@ -1,6 +1,6 @@
-from django.conf.urls import include, url
+from django.conf.urls import include
 from django.conf import settings
-from django.urls import path
+from django.urls import path, re_path
 
 # Uncomment the next two lines to enable the admin:
 from django.contrib import admin
@@ -13,27 +13,27 @@ admin.autodiscover()
 
 urlpatterns = [
     # Examples:
-    # url(r'^$', 'project.views.home', name='home'),
-    # url(r'^project/', include('project.foo.urls')),
+    # re_path(r'^$', 'project.views.home', name='home'),
+    # re_path(r'^project/', include('project.foo.urls')),
 
     # NOTE: Redirect all manager urls until the manager is fixed.
-    url(r'^$', lambda x: HttpResponseRedirect(resolve_url(settings.ROOT_REDIRECT_TO))),
+    re_path(r'^$', lambda x: HttpResponseRedirect(resolve_url(settings.ROOT_REDIRECT_TO))),
 
     # Uncomment the admin/doc line below to enable admin documentation:
-    # url(r'^admin/doc/', include('django.contrib.admindocs.urls')),
+    # re_path(r'^admin/doc/', include('django.contrib.admindocs.urls')),
 
     # Uncomment the next line to enable the admin:
     path(r'admin/', include(loginas.urls)),
     path(r'admin/', admin.site.urls),
 
     # For now, use basic auth.
-    url(r'^accounts/', include('django.contrib.auth.urls')),
-    url(r'^accounts/logout/$', django.contrib.auth.views.logout_then_login,
+    re_path(r'^accounts/', include('django.contrib.auth.urls')),
+    re_path(r'^accounts/logout/$', django.contrib.auth.views.logout_then_login,
         name='manager_logout'),
 
     # For now, the API and the management console are hosted together.
-    url(r'^api/v2/', include('sa_api_v2.urls')),
-    url(r'^api/v1/', lambda x: HttpResponse(status=410)),
+    re_path(r'^api/v2/', include('sa_api_v2.urls')),
+    re_path(r'^api/v1/', lambda x: HttpResponse(status=410)),
 
 ]
 
@@ -42,5 +42,5 @@ from django.conf import settings
 if settings.SHOW_DEBUG_TOOLBAR:
     import debug_toolbar
     urlpatterns += [
-        url(r'^__debug__/', include(debug_toolbar.urls)),
+        re_path(r'^__debug__/', include(debug_toolbar.urls)),
     ]
