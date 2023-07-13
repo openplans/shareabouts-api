@@ -253,7 +253,7 @@ def custom_show_toolbar(request):
 
 DEBUG_TOOLBAR_CONFIG = {
     'SHOW_TOOLBAR_CALLBACK': 'project.settings.custom_show_toolbar',
-    'INTERCEPT_REDIRECTS': False
+    'DISABLE_PANELS': {}
 }
 
 INTERNAL_IPS = ('127.0.0.1',)
