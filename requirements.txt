@@ -2,7 +2,8 @@ amqp==5.1.1
 asgiref==3.7.2
 async-timeout==4.0.2
 billiard==3.6.4.0
-boto==2.49.0
+boto3==1.28.3
+botocore==1.31.3
 cached-property==1.5.2
 celery==5.2.7
 certifi==2022.12.7
@@ -35,6 +36,7 @@ greenlet==2.0.2
 gunicorn==20.1.0
 idna==3.4
 importlib-metadata==4.13.0
+jmespath==1.0.1
 kombu==5.2.4
 Markdown==2.6.11
 mock==5.0.1
@@ -59,6 +61,7 @@ responses==0.22.0
 # The following line is important to keep, as it tells pip where to find the
 # shareabouts-djangorestframework-bulk package.
 --extra-index-url https://us-central1-python.pkg.dev/poepublic-shareabouts/pypi/simple/
+s3transfer==0.6.1
 shareabouts-djangorestframework-bulk==0.2.1
 six==1.16.0
 social-auth-app-django==5.2.0

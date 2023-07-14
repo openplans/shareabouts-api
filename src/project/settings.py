@@ -384,7 +384,7 @@ if all([key in environ for key in ('SHAREABOUTS_AWS_KEY',
     AWS_QUERYSTRING_AUTH = False
     AWS_PRELOAD_METADATA = True
 
-    DEFAULT_FILE_STORAGE = 'storages.backends.s3boto.S3BotoStorage'
+    DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
     ATTACHMENT_STORAGE = DEFAULT_FILE_STORAGE
 
 if 'SHAREABOUTS_TWITTER_KEY' in environ \

@@ -35,7 +35,7 @@ django-redis<4.12
 django-cache-url
 
 # File Storage
-boto
+boto3
 django-storages
 
 
