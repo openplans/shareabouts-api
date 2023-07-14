@@ -373,12 +373,12 @@ if REDIS_URL_ENVVAR:
     CACHE_CONFIG = django_cache_url.config(env=REDIS_URL_ENVVAR)
 
     if environ.get('REDIS_USE_TLS', 'false').lower() == 'true':
-        CACHE_CONFIG['OPTIONS'] = {
+        CACHE_CONFIG.setdefault('OPTIONS', {}).update({
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
             "CONNECTION_POOL_KWARGS": {
                 "ssl_cert_reqs": None
             },
-        }
+        })
     CACHES = {'default': CACHE_CONFIG}
 
     # Django sessions
