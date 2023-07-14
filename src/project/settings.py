@@ -166,7 +166,6 @@ INSTALLED_APPS = (
     'rest_framework',
     'django_nose',
     'storages',
-    'raven.contrib.django.raven_compat',
     'django_ace',
     'django_object_actions',
     'django_celery_results',
@@ -345,6 +344,10 @@ LOGGING = {
 
 ##############################################################################
 # Environment loading
+
+if 'SENTRY_DSN' in environ:
+    import sentry_sdk
+    sentry_sdk.init()
 
 if 'DATABASE_URL' in environ:
     import dj_database_url
