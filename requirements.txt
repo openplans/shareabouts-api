@@ -13,7 +13,7 @@ click==8.1.3
 click-didyoumean==0.3.0
 click-plugins==1.1.1
 click-repl==0.2.0
-cryptography==39.0.1
+cryptography==41.0.3
 defusedxml==0.7.1
 dj-database-url==0.5.0
 dj-static==0.0.6
