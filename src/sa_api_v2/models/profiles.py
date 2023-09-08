@@ -8,7 +8,7 @@ from ..models.mixins import CloneableModelMixin
 
 class ShareaboutsUserManager (UserManager):
     def get_queryset(self):
-        return super(ShareaboutsUserManager, self).get_queryset().prefetch_related('_groups')
+        return super().get_queryset().prefetch_related('_groups')
 
     def get_twitter_access_token(self):
         from django.conf import settings

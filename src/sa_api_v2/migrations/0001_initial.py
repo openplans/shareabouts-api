@@ -1,6 +1,3 @@
-# -*- coding: utf-8 -*-
-
-
 from django.db import models, migrations
 import sa_api_v2.models.caching
 import django.contrib.gis.db.models.fields
@@ -324,7 +321,7 @@ class Migration(migrations.Migration):
         ),
         migrations.AlterUniqueTogether(
             name='group',
-            unique_together=set([('name', 'dataset')]),
+            unique_together={('name', 'dataset')},
         ),
         migrations.AddField(
             model_name='datasnapshot',
@@ -334,7 +331,7 @@ class Migration(migrations.Migration):
         ),
         migrations.AlterUniqueTogether(
             name='dataset',
-            unique_together=set([('owner', 'slug')]),
+            unique_together={('owner', 'slug')},
         ),
         migrations.AddField(
             model_name='dataindex',

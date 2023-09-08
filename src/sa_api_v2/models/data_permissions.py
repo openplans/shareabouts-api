@@ -84,7 +84,7 @@ class DataPermission (CloneableModelMixin, CacheClearingModel, models.Model):
             except IndexError:
                 self.priority = 0
 
-        return super(DataPermission, self).save(*args, **kwargs)
+        return super().save(*args, **kwargs)
 
 
 class DataSetPermission (DataPermission):

@@ -1,5 +1,3 @@
-#-*- coding:utf-8 -*-
-
 from django.test import TestCase
 from django.test.client import RequestFactory
 from django.contrib.gis.geos import GEOSGeometry
@@ -13,7 +11,7 @@ from sa_api_v2.views import PlaceInstanceView
 from social_django.models import UserSocialAuth
 import json
 from os import path
-from mock import patch
+from unittest.mock import patch
 
 
 class TestAttachmentSerializer (TestCase):

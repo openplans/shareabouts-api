@@ -1,6 +1,3 @@
-# -*- coding: utf-8 -*-
-
-
 from django.db import migrations, models
 import sa_api_v2.models.profiles
 import django.core.validators

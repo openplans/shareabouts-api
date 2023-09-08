@@ -97,7 +97,7 @@ class SubmittedThing (CloneableModelMixin, CacheClearingModel, ModelWithDataBlob
     def save(self, silent=False, source='', reindex=True, *args, **kwargs):
         is_new = (self.id == None)
 
-        ret = super(SubmittedThing, self).save(*args, **kwargs)
+        ret = super().save(*args, **kwargs)
 
         if reindex:
             self.index_values()
@@ -327,7 +327,7 @@ class Attachment (CacheClearingModel, TimeStampedModel):
     def save(self, *args, **kwargs):
         if self.width is None or self.height is None:
             self.apply_image_dimensions()
-        super(Attachment, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
 
     class Meta:

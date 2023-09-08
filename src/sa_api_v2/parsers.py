@@ -6,7 +6,7 @@ class GeoJSONParser (JSONParser):
     renderer_class = GeoJSONRenderer
 
     def parse(self, stream, media_type, parser_context):
-        data = super(GeoJSONParser, self).parse(stream, media_type, parser_context)
+        data = super().parse(stream, media_type, parser_context)
 
         if isinstance(data, dict):
             data = self.process_object(data)

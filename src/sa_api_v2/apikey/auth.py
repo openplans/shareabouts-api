@@ -6,7 +6,7 @@ from .models import ApiKey
 KEY_HEADER = 'HTTP_X_SHAREABOUTS_KEY'
 
 
-class APIKeyBackend(object):
+class APIKeyBackend:
     """
     Django authentication backend purely by API key.
     """

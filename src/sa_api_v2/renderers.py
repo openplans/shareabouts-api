@@ -34,7 +34,7 @@ class JSONPRenderer (JSONRenderer):
         """
         renderer_context = renderer_context or {}
         callback = self.get_callback(renderer_context)
-        json = super(JSONPRenderer, self).render(data, accepted_media_type, renderer_context)
+        json = super().render(data, accepted_media_type, renderer_context)
         return callback.encode(self.charset) + b'(' + json + b');'
 
 
@@ -42,7 +42,7 @@ class PaginatedCSVRenderer (CSVRenderer):
     def render(self, data, media_type=None, renderer_context=None):
         if not isinstance(data, list):
             data = data.get('results') or data.get('features')
-        return super(PaginatedCSVRenderer, self).render(data, media_type, renderer_context)
+        return super().render(data, media_type, renderer_context)
 
 
 class GeoJSONRenderer(JSONRenderer):
@@ -62,7 +62,7 @@ class GeoJSONRenderer(JSONRenderer):
         # Let error codes slip through to the super class method.
         response = (renderer_context or {}).get('response')
         if response and response.status_code >= 400:
-            return super(GeoJSONRenderer, self).render(data, media_type, renderer_context)
+            return super().render(data, media_type, renderer_context)
 
         # Assume everything else is a successful geometry.
         if isinstance(data, list):
@@ -78,7 +78,7 @@ class GeoJSONRenderer(JSONRenderer):
         else:
             new_data = self.get_feature(data) or data
 
-        return super(GeoJSONRenderer, self).render(new_data, media_type, renderer_context)
+        return super().render(new_data, media_type, renderer_context)
 
     def get_feature(self, data):
         if 'geometry' not in data:
@@ -121,8 +121,8 @@ class NullJSONRenderer(JSONRenderer):
     """
     def render(self, data, media_type=None, renderer_context=None):
         if data is None:
-            return bytes('null'.encode('utf-8'))
-        return super(NullJSONRenderer, self).render(data, media_type, renderer_context)
+            return bytes(b'null')
+        return super().render(data, media_type, renderer_context)
 
 
 class NullJSONPRenderer(JSONPRenderer, NullJSONRenderer):

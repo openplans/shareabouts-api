@@ -78,7 +78,7 @@ class ApiKey(CloneableModelMixin, models.Model):
             permission.clone(overrides={'key': onto})
 
     def get_ignore_fields(self, ModelClass):
-        fields = super(ApiKey, self).get_ignore_fields(ModelClass)
+        fields = super().get_ignore_fields(ModelClass)
         # Do not copy over the actual key value
         if ModelClass == ApiKey:
             fields.add('key')
@@ -87,7 +87,7 @@ class ApiKey(CloneableModelMixin, models.Model):
     def save(self, *args, **kwargs):
         if self.logged_ip == '':
             self.logged_ip = None
-        return super(ApiKey, self).save(*args, **kwargs)
+        return super().save(*args, **kwargs)
 
 
 def create_data_permissions(sender, instance, created, **kwargs):

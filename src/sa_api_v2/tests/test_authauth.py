@@ -4,7 +4,7 @@ from ..models import User
 from ..views import CurrentUserInstanceView
 
 
-class APITestMixin (object):
+class APITestMixin:
     def assertStatusCode(self, response, *expected):
         if hasattr(response, 'rendered_content'):
             content = response.rendered_content

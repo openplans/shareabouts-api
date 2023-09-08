@@ -16,8 +16,8 @@ from ..apikey.models import ApiKey
 # from ..views import ApiKeyCollectionView
 # from ..views import OwnerPasswordView
 # import json
-import mock
-from mock import patch
+from unittest import mock
+from unittest.mock import patch
 
 
 import os.path
@@ -127,7 +127,7 @@ class TestDataIndexes (TestCase):
 
         indexed_values = IndexedValue.objects.filter(index__dataset=self.dataset)
         self.assertEqual(indexed_values.count(), 2)
-        self.assertEqual(set([value.value for value in indexed_values]), set(['value1', '2']))
+        self.assertEqual({value.value for value in indexed_values}, {'value1', '2'})
 
     def test_indexed_values_are_indexed_when_index_is_saved(self):
         st1 = SubmittedThing(dataset=self.dataset)
@@ -139,7 +139,7 @@ class TestDataIndexes (TestCase):
 
         indexed_values = IndexedValue.objects.filter(index__dataset=self.dataset)
         self.assertEqual(indexed_values.count(), 2)
-        self.assertEqual(set([value.value for value in indexed_values]), set(['value1', '2']))
+        self.assertEqual({value.value for value in indexed_values}, {'value1', '2'})
 
     def test_user_can_query_by_indexed_value(self):
         st1 = SubmittedThing(dataset=self.dataset)
@@ -183,7 +183,7 @@ class TestDataIndexes (TestCase):
 
         indexed_values = IndexedValue.objects.filter(index__dataset=self.dataset)
         self.assertEqual(indexed_values.count(), 2)
-        self.assertEqual(set([value.get() for value in indexed_values]), set(['value1', 2]))
+        self.assertEqual({value.get() for value in indexed_values}, {'value1', 2})
 
     def test_indexed_value_get_raises_KeyError_if_value_is_not_found(self):
         st = SubmittedThing(dataset=self.dataset)
@@ -209,7 +209,7 @@ class TestDataIndexes (TestCase):
 
         indexed_values = IndexedValue.objects.filter(index__dataset=self.dataset)
         self.assertEqual(indexed_values.count(), 1)
-        self.assertEqual(set([value.value for value in indexed_values]), set(['value2']))
+        self.assertEqual({value.value for value in indexed_values}, {'value2'})
 
     def test_data_values_are_deleted_when_removed(self):
         st1 = SubmittedThing(dataset=self.dataset)
@@ -309,8 +309,8 @@ class CloningTests (TestCase):
         place_submission_set_names = sorted([s.set_name for s in place_submissions])
         self.assertEqual(clone_submission_set_names, place_submission_set_names)
 
-        clone_submission_ids = set([s.id for s in clone_submissions])
-        place_submission_ids = set([s.id for s in place_submissions])
+        clone_submission_ids = {s.id for s in clone_submissions}
+        place_submission_ids = {s.id for s in place_submissions}
         self.assertEqual(clone_submission_ids & place_submission_ids, set())
 
         # Change a property on the clone and make sure that they're different
@@ -359,15 +359,15 @@ class CloningTests (TestCase):
         orgnl_submission_set_names = sorted([s.full_submission.set_name for s in orgnl_submissions])
         self.assertEqual(clone_submission_set_names, orgnl_submission_set_names)
 
-        clone_submission_ids = set([s.id for s in clone_submissions])
-        orgnl_submission_ids = set([s.id for s in orgnl_submissions])
+        clone_submission_ids = {s.id for s in clone_submissions}
+        orgnl_submission_ids = {s.id for s in orgnl_submissions}
         self.assertEqual(clone_submission_ids & orgnl_submission_ids, set())
 
         clone_places = clone.things.filter(full_place__isnull=False)
         orgnl_places = dataset.things.filter(full_place__isnull=False)
 
-        clone_place_ids = set([s.id for s in clone_places])
-        orgnl_place_ids = set([s.id for s in orgnl_places])
+        clone_place_ids = {s.id for s in clone_places}
+        orgnl_place_ids = {s.id for s in orgnl_places}
         self.assertEqual(clone_place_ids & orgnl_place_ids, set())
 
         # Make sure the clone and the original have the same values (but not
@@ -376,12 +376,12 @@ class CloningTests (TestCase):
         self.assertEqual(dataset.keys.count(), clone.keys.count())
         self.assertEqual(dataset.origins.count(), clone.origins.count())
 
-        clone_key_ids = set([k.id for k in clone.keys.all()])
-        orgnl_key_ids = set([k.id for k in dataset.keys.all()])
+        clone_key_ids = {k.id for k in clone.keys.all()}
+        orgnl_key_ids = {k.id for k in dataset.keys.all()}
         self.assertEqual(clone_key_ids & orgnl_key_ids, set())
 
-        clone_orgn_ids = set([o.id for o in clone.origins.all()])
-        orgnl_orgn_ids = set([o.id for o in dataset.origins.all()])
+        clone_orgn_ids = {o.id for o in clone.origins.all()}
+        orgnl_orgn_ids = {o.id for o in dataset.origins.all()}
         self.assertEqual(clone_orgn_ids & orgnl_orgn_ids, set())
 
         clonekey = dataset.keys.get(key=apikey.key)
@@ -407,8 +407,8 @@ class CloningTests (TestCase):
         clone_submitters = clone.submitters.all()
         group_submitters = group.submitters.all()
 
-        clone_submitter_ids = set([s.id for s in clone_submitters])
-        group_submitter_ids = set([s.id for s in group_submitters])
+        clone_submitter_ids = {s.id for s in clone_submitters}
+        group_submitter_ids = {s.id for s in group_submitters}
         self.assertEqual(clone_submitter_ids, group_submitter_ids)
 
     def test_apikey_can_be_cloned(self):

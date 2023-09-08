@@ -1,5 +1,3 @@
-#-*- coding:utf-8 -*-
-
 from django.test import TestCase
 from nose.tools import istest
 from sa_api_v2.renderers import GeoJSONRenderer

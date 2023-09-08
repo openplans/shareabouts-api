@@ -52,7 +52,7 @@ def get_authed_user(request):
     return user
 
 
-class RemoteClientMiddleware(object):
+class RemoteClientMiddleware:
     def process_request(self, request):
         user = get_authed_user(request)
 
