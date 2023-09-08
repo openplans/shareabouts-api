@@ -22,7 +22,7 @@ class OriginAdmin(ModelAdmin):
         )
 
     def get_queryset(self, request):
-        qs = super(OriginAdmin, self).get_queryset(request)
+        qs = super().get_queryset(request)
         user = request.user
         if not user.is_superuser:
             qs = qs.filter(dataset__owner=user)
@@ -31,6 +31,6 @@ class OriginAdmin(ModelAdmin):
     def save_model(self, request, obj, form, change):
         if obj.logged_ip == '':
             obj.logged_ip = None
-        super(OriginAdmin, self).save_model(request, obj, form, change)
+        super().save_model(request, obj, form, change)
 
 admin.site.register(Origin, OriginAdmin)

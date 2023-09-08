@@ -1,6 +1,6 @@
 from django.urls import reverse
 from django.http import HttpResponse
-from mock import patch
+from unittest.mock import patch
 from rest_framework import views, permissions
 from rest_framework.negotiation import DefaultContentNegotiation
 from rest_framework.parsers import JSONParser, FormParser, MultiPartParser
@@ -26,7 +26,7 @@ log = logging.getLogger('sa_api_v2.views')
 # --------------
 #
 
-class DataSnapshotMixin (object):
+class DataSnapshotMixin:
     response_messages = {
         'pending': 'You can download the data at the given URL when it is done being generated.',
         'success': 'You can download the data at the given URL.',

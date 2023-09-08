@@ -86,7 +86,7 @@ class Origin(CloneableModelMixin, models.Model):
     def save(self, *args, **kwargs):
         if self.logged_ip == '':
             self.logged_ip = None
-        return super(Origin, self).save(*args, **kwargs)
+        return super().save(*args, **kwargs)
 
 
 def create_data_permissions(sender, instance, created, **kwargs):

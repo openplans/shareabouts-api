@@ -1,7 +1,7 @@
 from django.test import TestCase
 from ..models import DataSet, User
 from ..tasks import load_dataset_archive
-from mock import patch
+from unittest.mock import patch
 
 from .. import tasks
 

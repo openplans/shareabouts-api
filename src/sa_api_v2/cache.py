@@ -12,7 +12,7 @@ logger = logging.getLogger('sa_api_v2.cache')
 # A sentinel object to differentiate from None
 Undefined = object()
 
-class CacheBuffer (object):
+class CacheBuffer:
     def __init__(self, initial_buffer=None):
         # When we get a value from the remote cache, it goes in to the buffer
         # so that we can retrieve it quickly on our next try.
@@ -45,7 +45,7 @@ class CacheBuffer (object):
 
         # TODO: Is this what's supposed to happen? get_many returns None for
         #       each key that wasn't found?
-        all_results = dict([(key, Undefined) for key in set(keys) - set(results.keys())])
+        all_results = {key: Undefined for key in set(keys) - set(results.keys())}
         self.buffer.update(all_results)
         return results
 
@@ -165,7 +165,7 @@ class CacheBuffer (object):
 cache_buffer = CacheBuffer()
 
 
-class Cache (object):
+class Cache:
     """
     The base class for objects responsible for caching Shareabouts data
     structure information
@@ -285,7 +285,7 @@ class Cache (object):
         meta_key = self.get_serialized_data_meta_key(inst_key)
         if meta_key is not None:
             keys = cache_buffer.get(meta_key)
-            return (keys or set()) | set([meta_key])
+            return (keys or set()) | {meta_key}
         else:
             return set()
 
@@ -301,7 +301,7 @@ class Cache (object):
         #Serialized data keys
         data_keys = self.get_serialized_data_keys(obj)
         # Collect other related keys
-        other_keys = self.get_other_keys(**params) | set([self.get_instance_params_key(obj.pk)])
+        other_keys = self.get_other_keys(**params) | {self.get_instance_params_key(obj.pk)}
         # Clear all the keys
         self.clear_keys(*(prefixed_keys | data_keys | other_keys))
 
@@ -336,7 +336,7 @@ class UserCache (Cache):
 
     @classmethod
     def get_other_keys(cls, **params):
-        return set([cls.get_instance_key(**params)])
+        return {cls.get_instance_key(**params)}
 
 
 class DataSetCache (Cache):
@@ -384,7 +384,7 @@ class DataSetCache (Cache):
     # == Cache invalidation
     def get_request_prefixes(self, **params):
         owner, dataset = list(map(params.get, ('owner_username', 'dataset_slug')))
-        prefixes = super(DataSetCache, self).get_request_prefixes(**params)
+        prefixes = super().get_request_prefixes(**params)
 
         instance_path = reverse('dataset-detail', args=[owner, dataset])
         collection_path = reverse('dataset-list', args=[owner])
@@ -393,7 +393,7 @@ class DataSetCache (Cache):
         return prefixes
 
     def get_other_keys(self, **params):
-        return set([self.get_instance_key(**params), self.get_permissions_key(**params)])
+        return {self.get_instance_key(**params), self.get_permissions_key(**params)}
 
 
 class PlaceCache (Cache):
@@ -411,7 +411,7 @@ class PlaceCache (Cache):
 
     def get_request_prefixes(self, **params):
         owner, dataset, place = list(map(params.get, ('owner_username', 'dataset_slug', 'place_id')))
-        prefixes = super(PlaceCache, self).get_request_prefixes(**params)
+        prefixes = super().get_request_prefixes(**params)
 
         instance_path = reverse('place-detail', args=[owner, dataset, place])
         collection_path = reverse('place-list', args=[owner, dataset])
@@ -447,7 +447,7 @@ class SubmissionCache (Cache):
 
     def get_request_prefixes(self, **params):
         owner, dataset, place, submission_set_name, submission = list(map(params.get, ['owner_username', 'dataset_slug', 'place_id', 'submission_set_name', 'submission_id']))
-        prefixes = super(SubmissionCache, self).get_request_prefixes(**params)
+        prefixes = super().get_request_prefixes(**params)
 
         # TODO: it's pretty clear that a developer should be able to register
         # a URL with or cache key or prefix or something to be cleared. How
@@ -516,7 +516,7 @@ class AttachmentCache (Cache):
         return params
 
     def get_request_prefixes(self, **params):
-        prefixes = super(AttachmentCache, self).get_request_prefixes(**params)
+        prefixes = super().get_request_prefixes(**params)
         if params['thing_type'] == 'submission':
             return prefixes | self.get_submission_attachment_request_prefixes(**params)
         else:
@@ -563,4 +563,4 @@ class AttachmentCache (Cache):
             thing_serialized_data_keys = self.place_cache.get_serialized_data_keys(thing_id)
 
         # Union the two sets
-        return set([thing_attachments_key]) | thing_serialized_data_keys
+        return {thing_attachments_key} | thing_serialized_data_keys

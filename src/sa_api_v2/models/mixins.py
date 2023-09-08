@@ -1,7 +1,7 @@
 from django.db import models
 
 
-class CloneableModelMixin (object):
+class CloneableModelMixin:
     """
     Mixin providing a clone method that copies all of a models instance's
     fields to a new instance of the model, allowing overrides.
@@ -11,7 +11,7 @@ class CloneableModelMixin (object):
         pk_fld = ModelClass._meta.pk
         pk_name = pk_fld.name
 
-        ignore_field_names = set([pk_name])
+        ignore_field_names = {pk_name}
 
         # For OneToOneFields, ignore the reverse relation field
         if isinstance(pk_fld, models.OneToOneField):

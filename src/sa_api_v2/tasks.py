@@ -1,5 +1,3 @@
-
-
 import requests
 import ujson as json
 from celery import shared_task
@@ -196,7 +194,7 @@ def preload_users(data):
                 collect_username(submission_data)
 
     users = User.objects.filter(username__in=usernames)
-    users_map = dict([(user.username, user) for user in users])
+    users_map = {user.username: user for user in users}
     return users_map
 
 def list_errors(errors):
@@ -234,7 +232,8 @@ def load_dataset_archive(dataset_id, archive_url):
                 serializer.save()
 
             # Create a stub view object to use in serializer contexts.
-            class Stub (object): pass
+            class Stub:
+                pass
             view = Stub()
             view.request = Stub()
             view.request.META = {'HTTP_X_SHAREABOUTS_SILENT': 'True'}

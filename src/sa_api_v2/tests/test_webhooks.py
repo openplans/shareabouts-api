@@ -6,7 +6,7 @@ from django.core.files import File
 from django.contrib.auth.models import AnonymousUser
 import base64
 import json
-import mock
+from unittest import mock
 import responses
 from io import StringIO
 from ..models import User, DataSet, Place, Submission, Attachment, Group, Webhook
@@ -19,7 +19,7 @@ from ..views import (PlaceInstanceView, PlaceListView, SubmissionInstanceView,
     DataSetListView, AttachmentListView, ActionListView, requests)
 
 
-class APITestMixin (object):
+class APITestMixin:
     def assertStatusCode(self, response, *expected):
         self.assertIn(response.status_code, expected,
             'Status code not in %s response: (%s) %s' %

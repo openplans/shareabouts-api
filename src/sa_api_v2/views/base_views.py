@@ -21,7 +21,7 @@ from rest_framework.request import Request
 from rest_framework.exceptions import APIException
 from rest_framework_bulk import generics as bulk_generics
 from social_django import views as social_views
-from mock import patch
+from unittest.mock import patch
 from ..apikey import auth as apikey_auth
 from ..cors import auth as cors_auth
 from .. import models
@@ -72,7 +72,7 @@ class JSONPCallbackNegotiation (DefaultContentNegotiation):
     def select_renderer(self, request, renderers, format_suffix=None):
         if 'callback' in request.query_params:
             format_suffix = 'jsonp'
-        return super(JSONPCallbackNegotiation, self).select_renderer(request, renderers, format_suffix)
+        return super().select_renderer(request, renderers, format_suffix)
 
 
 class XDomainRequestCompatNegotiation (DefaultContentNegotiation):
@@ -92,7 +92,7 @@ class XDomainRequestCompatNegotiation (DefaultContentNegotiation):
             # Also set this semi-hidden variable on the request, as it has
             # already been set and needs to be calculated again.
             request._content_type = 'application/json'
-        return super(XDomainRequestCompatNegotiation, self).select_parser(request, parsers)
+        return super().select_parser(request, parsers)
 
 
 class ShareaboutsContentNegotiation (JSONPCallbackNegotiation, XDomainRequestCompatNegotiation):
@@ -316,7 +316,7 @@ class ShareaboutsAPIRequest (Request):
     def __init__(self, request, parsers=None, authenticators=None,
                  client_authenticators=None, negotiator=None,
                  parser_context=None):
-        super(ShareaboutsAPIRequest, self).__init__(request,
+        super().__init__(request,
             parsers=parsers, authenticators=authenticators,
             negotiator=negotiator, parser_context=parser_context)
         self.client_authenticators = client_authenticators
@@ -362,7 +362,7 @@ class ShareaboutsAPIRequest (Request):
         Return the instance of the authentication instance class that was used
         to authenticate the request, or `None`.
         """
-        authenticator = super(ShareaboutsAPIRequest, self).successful_authenticator
+        authenticator = super().successful_authenticator
 
         if not authenticator:
             if not hasattr(self, '_client_authenticator'):
@@ -401,7 +401,7 @@ class ShareaboutsAPIRequest (Request):
         self._client_auth = None
 
 
-class ClientAuthenticationMixin (object):
+class ClientAuthenticationMixin:
     """
     A view mixin that uses a ShareaboutsAPIRequest instead of a conventional
     DRF Request object.
@@ -428,7 +428,7 @@ class ClientAuthenticationMixin (object):
             parser_context=parser_context)
 
 
-class CorsEnabledMixin (object):
+class CorsEnabledMixin:
     """
     A view that puts Access-Control headers on the response.
     """
@@ -436,7 +436,7 @@ class CorsEnabledMixin (object):
     SAFE_CORS_METHODS = ('GET', 'HEAD', 'TRACE')
 
     def finalize_response(self, request, response, *args, **kwargs):
-        response = super(CorsEnabledMixin, self).finalize_response(request, response, *args, **kwargs)
+        response = super().finalize_response(request, response, *args, **kwargs)
 
         # Allow AJAX requests from anywhere for safe methods. Though OPTIONS
         # is also a safe method in that it does not modify data on the server,
@@ -466,13 +466,13 @@ class CorsEnabledMixin (object):
         return response
 
 
-class FilteredResourceMixin (object):
+class FilteredResourceMixin:
     """
     A view mixin that filters queryset of ModelWithDataBlob results based on
     the URL query parameters.
     """
     def get_queryset(self):
-        queryset = super(FilteredResourceMixin, self).get_queryset()
+        queryset = super().get_queryset()
 
         # Filter by any provided primary keys
         pk_list = self.kwargs.get('pk_list', None)
@@ -481,10 +481,10 @@ class FilteredResourceMixin (object):
             queryset = queryset.filter(pk__in=pk_list)
 
         # These filters will have been applied when constructing the queryset
-        special_filters = set([FORMAT_PARAM, PAGE_PARAM, PAGE_SIZE_PARAM(),
+        special_filters = {FORMAT_PARAM, PAGE_PARAM, PAGE_SIZE_PARAM(),
             INCLUDE_SUBMISSIONS_PARAM, INCLUDE_PRIVATE_PARAM,
             INCLUDE_INVISIBLE_PARAM, NEAR_PARAM, DISTANCE_PARAM,
-            TEXTSEARCH_PARAM, BBOX_PARAM, CALLBACK_PARAM(self)])
+            TEXTSEARCH_PARAM, BBOX_PARAM, CALLBACK_PARAM(self)}
 
         # Filter by full-text search
         textsearch_filter = self.request.GET.get(TEXTSEARCH_PARAM, None)
@@ -516,13 +516,13 @@ class FilteredResourceMixin (object):
         return queryset
 
 
-class LocatedResourceMixin (object):
+class LocatedResourceMixin:
     """
     A view mixin that orders queryset results by distance from a geometry, if
     requested.
     """
     def get_queryset(self):
-        queryset = super(LocatedResourceMixin, self).get_queryset()
+        queryset = super().get_queryset()
 
         if NEAR_PARAM in self.request.GET:
             try:
@@ -586,7 +586,7 @@ class OwnedResourceMixin (ClientAuthenticationMixin, CorsEnabledMixin):
         # authentication must check against it.
         request.get_dataset = self.get_dataset
 
-        return super(OwnedResourceMixin, self).dispatch(request, *args, **kwargs)
+        return super().dispatch(request, *args, **kwargs)
 
     def get_submitter(self):
         user = self.request.user
@@ -689,7 +689,7 @@ class ProtectedOwnedResourceMixin (OwnedResourceMixin):
     permission_classes = (IsLoggedInOwnerOrPublicDataOnly,) + OwnedResourceMixin.permission_classes
 
 
-class CachedResourceMixin (object):
+class CachedResourceMixin:
     @property
     def cache_prefix(self):
         return self.request.path
@@ -705,7 +705,7 @@ class CachedResourceMixin (object):
     def dispatch(self, request, *args, **kwargs):
         # Only do the cache for GET, OPTIONS, or HEAD method.
         if request.method.upper() not in permissions.SAFE_METHODS:
-            return super(CachedResourceMixin, self).dispatch(request, *args, **kwargs)
+            return super().dispatch(request, *args, **kwargs)
 
         self.request = request
 
@@ -729,9 +729,9 @@ class CachedResourceMixin (object):
 
             # Patch the HTTP method
             with patch.object(self, handler_name, new=cached_handler):
-                response = super(CachedResourceMixin, self).dispatch(request, *args, **kwargs)
+                response = super().dispatch(request, *args, **kwargs)
         else:
-            response = super(CachedResourceMixin, self).dispatch(request, *args, **kwargs)
+            response = super().dispatch(request, *args, **kwargs)
 
             # Only cache on OK resposne
             if response.status_code == 200:
@@ -798,7 +798,7 @@ class CachedResourceMixin (object):
         return response
 
 
-class SerializerParamsMixin (object):
+class SerializerParamsMixin:
     def get_serializer_defaults(self):
         return {}
 
@@ -808,7 +808,7 @@ class SerializerParamsMixin (object):
     def get_serializer(self, *args, **kwargs):
         defaults = self.get_serializer_defaults()
         overrides = self.get_serializer_overrides()
-        serializer = super(SerializerParamsMixin, self).get_serializer(*args, **kwargs)
+        serializer = super().get_serializer(*args, **kwargs)
 
         # List serializers won't have any `fields`, but will instead have a
         # `child` serializer with fields.
@@ -976,11 +976,11 @@ class CompletePlaceListRequestView (OwnedResourceMixin, generics.RetrieveAPIView
             include_submissions=(INCLUDE_SUBMISSIONS_PARAM in request.GET),
             include_private=(INCLUDE_PRIVATE_PARAM in request.GET),
             include_invisible=(INCLUDE_INVISIBLE_PARAM in request.GET))
-        result = super(CompletePlaceListRequestView, self).get(request, *args, **kwargs)
+        result = super().get(request, *args, **kwargs)
         return result
 
 
-class PlaceListMixin (object):
+class PlaceListMixin:
     pass
 
 
@@ -1068,7 +1068,7 @@ class PlaceListView (CachedResourceMixin, SerializerParamsMixin, LocatedResource
         return {'dataset': self.get_dataset()}
 
     def post_save(self, obj, created):
-        super(PlaceListView, self).post_save(obj)
+        super().post_save(obj)
 
         # Get all place/add webhooks since we just added a place.
         if not created:
@@ -1081,7 +1081,7 @@ class PlaceListView (CachedResourceMixin, SerializerParamsMixin, LocatedResource
 
     def get_queryset(self):
         dataset = self.get_dataset()
-        queryset = super(PlaceListView, self).get_queryset()
+        queryset = super().get_queryset()
 
         # If the user is not allowed to request invisible data then we won't
         # be here in the first place.
@@ -1275,7 +1275,7 @@ class SubmissionListView (CachedResourceMixin, SerializerParamsMixin, OwnedResou
         dataset = self.get_dataset()
         place = self.get_place(dataset)
         submission_set_name = self.kwargs[self.submission_set_name_kwarg]
-        queryset = super(SubmissionListView, self).get_queryset()
+        queryset = super().get_queryset()
 
         if submission_set_name != 'submissions':
             queryset = queryset.filter(set_name=submission_set_name)
@@ -1352,7 +1352,7 @@ class DataSetSubmissionListView (CachedResourceMixin, OwnedResourceMixin, Filter
     def get_queryset(self):
         dataset = self.get_dataset()
         submission_set_name = self.kwargs[self.submission_set_name_kwarg]
-        queryset = super(DataSetSubmissionListView, self).get_queryset()
+        queryset = super().get_queryset()
 
         if submission_set_name != 'submissions':
             queryset = queryset.filter(set_name=submission_set_name)
@@ -1420,7 +1420,7 @@ class DataSetInstanceView (ProtectedOwnedResourceMixin, generics.RetrieveUpdateD
             raise Http404
 
     def get_serializer_context(self):
-        context = super(DataSetInstanceView, self).get_serializer_context()
+        context = super().get_serializer_context()
         include_invisible = INCLUDE_INVISIBLE_PARAM in self.request.GET
 
         return context
@@ -1433,7 +1433,7 @@ class DataSetInstanceView (ProtectedOwnedResourceMixin, generics.RetrieveUpdateD
         return obj
 
     def put(self, request, owner_username, dataset_slug):
-        response = super(DataSetInstanceView, self).put(request, owner_username=owner_username, dataset_slug=dataset_slug)
+        response = super().put(request, owner_username=owner_username, dataset_slug=dataset_slug)
         if 'slug' in response.data and response.data['slug'] != dataset_slug:
             response.status_code = 301
             response['Location'] = response.data['url']
@@ -1496,11 +1496,11 @@ class DataSetKeyListView (ProtectedOwnedResourceMixin, generics.ListAPIView):
 
     def get_queryset(self):
         dataset = self.get_dataset()
-        queryset = super(DataSetKeyListView, self).get_queryset()
+        queryset = super().get_queryset()
         return queryset.filter(dataset=dataset)
 
 
-class DataSetListMixin (object):
+class DataSetListMixin:
     """
     Common aspects for dataset list views.
     """
@@ -1595,14 +1595,14 @@ class DataSetListView (DataSetListMixin, SerializerParamsMixin, ProtectedOwnedRe
 
     def get_queryset(self):
         owner = self.get_owner()
-        queryset = super(DataSetListView, self).get_queryset()
+        queryset = super().get_queryset()
         return queryset.filter(owner=owner).order_by('id')
 
     def create(self, request, owner_username):
         if 'HTTP_X_SHAREABOUTS_CLONE' in request.META or 'clone' in request.GET:
             return self.clone(request, owner_username=owner_username)
         else:
-            return super(DataSetListView, self).create(request, owner_username=owner_username)
+            return super().create(request, owner_username=owner_username)
 
     def get_object_to_clone(self, clone_header):
         try:
@@ -1672,7 +1672,7 @@ class DataSetListView (DataSetListMixin, SerializerParamsMixin, ProtectedOwnedRe
             else:
                 return Response({'errors': {'slug': 'DataSet with this slug already exists'}}, status=409)
         else:
-            slugs = set([ds.slug for ds in queryset])
+            slugs = {ds.slug for ds in queryset}
             unique_slug = original.slug
             for uniquifier in count(2):
                 if unique_slug not in slugs: break
@@ -1755,7 +1755,7 @@ class AttachmentListView (OwnedResourceMixin, SerializerParamsMixin, FilteredRes
 
     def get_queryset(self):
         thing = self.get_thing()
-        queryset = super(AttachmentListView, self).get_queryset()
+        queryset = super().get_queryset()
         return queryset.filter(thing=thing)
 
     def get_serializer_overrides(self):
@@ -1780,7 +1780,7 @@ class ActionListView (CachedResourceMixin, OwnedResourceMixin, generics.ListAPIV
 
     def get_queryset(self):
         dataset = self.get_dataset()
-        queryset = super(ActionListView, self).get_queryset()\
+        queryset = super().get_queryset()\
             .filter(thing__dataset=dataset)\
             .select_related(
                 'thing',
@@ -1822,7 +1822,7 @@ class ClientAuthListView (OwnedResourceMixin, generics.ListCreateAPIView):
     permission_classes = (IsLoggedInOwner,)
 
     def get_queryset(self):
-        qs = super(ClientAuthListView, self).get_queryset()
+        qs = super().get_queryset()
         dataset = self.get_dataset()
         return qs.filter(dataset=dataset)
 
@@ -1832,7 +1832,7 @@ class ClientAuthListView (OwnedResourceMixin, generics.ListCreateAPIView):
             dataset = self.get_dataset()
             data = data.copy()
             data['dataset'] = dataset.id
-        return super(ClientAuthListView, self).get_serializer(
+        return super().get_serializer(
             instance=instance, data=data, files=files, many=many,
             partial=partial)
 

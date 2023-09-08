@@ -2,7 +2,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from importlib import import_module
 
 
-class CacheClearingModel (object):
+class CacheClearingModel:
     @classmethod
     def resolve_attr(cls, attr):
         if hasattr(cls, attr):
@@ -43,7 +43,7 @@ class CacheClearingModel (object):
             pass
 
     def save(self, clear_cache=True, *args, **kwargs):
-        result = super(CacheClearingModel, self).save(*args, **kwargs)
+        result = super().save(*args, **kwargs)
         if clear_cache:
             self.clear_instance_cache()
         return result
@@ -51,4 +51,4 @@ class CacheClearingModel (object):
     def delete(self, clear_cache=True, *args, **kwargs):
         if clear_cache:
             self.clear_instance_cache()
-        return super(CacheClearingModel, self).delete(*args, **kwargs)
+        return super().delete(*args, **kwargs)

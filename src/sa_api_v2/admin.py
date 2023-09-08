@@ -78,7 +78,7 @@ class PrettyAceWidget (AceWidget):
             except ValueError:
                 # If we cannot, then we should still display the value
                 pass
-        return super(PrettyAceWidget, self).render(name, value, attrs=attrs)
+        return super().render(name, value, attrs=attrs)
 
 
 BaseGeoAdmin = admin.OSMGeoAdmin if settings.USE_GEODB else admin.ModelAdmin
@@ -98,14 +98,14 @@ class SubmittedThingAdmin(BaseGeoAdmin):
         return obj.submitter.username if obj.submitter else None
 
     def get_queryset(self, request):
-        qs = super(SubmittedThingAdmin, self).get_queryset(request)
+        qs = super().get_queryset(request)
         user = request.user
         if not user.is_superuser:
             qs = qs.filter(dataset__owner=user)
         return qs
 
     def get_form(self, request, obj=None, **kwargs):
-        FormWithJSONCleaning = super(SubmittedThingAdmin, self).get_form(request, obj=obj, **kwargs)
+        FormWithJSONCleaning = super().get_form(request, obj=obj, **kwargs)
 
         def clean_json_blob(form):
             data = form.cleaned_data['data']
@@ -223,7 +223,7 @@ class WebhookAdmin(admin.ModelAdmin):
     # list_filter = ('name',)
 
     def get_queryset(self, request):
-        qs = super(WebhookAdmin, self).get_queryset(request)
+        qs = super().get_queryset(request)
         user = request.user
         if not user.is_superuser:
             qs = qs.filter(dataset__owner=user)
@@ -246,7 +246,7 @@ class DataSetAdmin(DjangoObjectActions, admin.ModelAdmin):
 
     def clone_dataset(self, request, obj):
         siblings = models.DataSet.objects.filter(owner=obj.owner)
-        slugs = set([ds.slug for ds in siblings])
+        slugs = {ds.slug for ds in siblings}
 
         for uniquifier in itertools.count(2):
             unique_slug = '-'.join([obj.slug, str(uniquifier)])
@@ -275,7 +275,7 @@ class DataSetAdmin(DjangoObjectActions, admin.ModelAdmin):
     api_path.allow_tags = True
 
     def get_queryset(self, request):
-        qs = super(DataSetAdmin, self).get_queryset(request)
+        qs = super().get_queryset(request)
         user = request.user
         if not user.is_superuser:
             qs = qs.filter(owner=user)
@@ -286,7 +286,7 @@ class DataSetAdmin(DjangoObjectActions, admin.ModelAdmin):
         # user should be assumed to be owned by themselves.
         if not request.user.is_superuser:
             self.exclude = (self.exclude or ()) + ('owner',)
-        return super(DataSetAdmin, self).get_form(request, obj, **kwargs)
+        return super().get_form(request, obj, **kwargs)
 
     def save_model(self, request, obj, form, change):
         # Set the current user as the owner if the object has no owner and the
@@ -295,7 +295,7 @@ class DataSetAdmin(DjangoObjectActions, admin.ModelAdmin):
         if not user.is_superuser:
             if obj.owner_id is None:
                 obj.owner = user
-        super(DataSetAdmin, self).save_model(request, obj, form, change)
+        super().save_model(request, obj, form, change)
 
 
 class PlaceAdmin(SubmittedThingAdmin):
@@ -338,7 +338,7 @@ class ActionAdmin(admin.ModelAdmin):
 
     # Pre-Django 1.6
     def queryset(self, request):
-        qs = super(ActionAdmin, self).queryset(request)
+        qs = super().queryset(request)
         user = request.user
         if not user.is_superuser:
             qs = qs.filter(thing__dataset__owner=user)
@@ -346,7 +346,7 @@ class ActionAdmin(admin.ModelAdmin):
 
     # Django 1.6+
     def get_queryset(self, request):
-        qs = super(ActionAdmin, self).get_queryset(request)
+        qs = super().get_queryset(request)
         user = request.user
         if not user.is_superuser:
             qs = qs.filter(thing__dataset__owner=user)
@@ -380,7 +380,7 @@ class GroupAdmin(admin.ModelAdmin):
         )
 
     def get_queryset(self, request):
-        qs = super(GroupAdmin, self).get_queryset(request)
+        qs = super().get_queryset(request)
         user = request.user
         if not user.is_superuser:
             qs = qs.filter(dataset__owner=user)
@@ -401,7 +401,7 @@ class UserAdmin(BaseUserAdmin):
     )
 
     def get_queryset(self, request):
-        qs = super(UserAdmin, self).get_queryset(request)
+        qs = super().get_queryset(request)
         user = request.user
         if not user.is_superuser:
             # Only show users that have contributed to the owner's datasets

@@ -41,7 +41,7 @@ class GeometryField(serializers.Field):
         if self.format not in ('json', 'wkt', 'dict'):
             raise ValueError('Invalid format: %s' % self.format)
 
-        super(GeometryField, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def to_representation(self, obj):
         if self.format == 'json':
@@ -68,7 +68,7 @@ class GeometryField(serializers.Field):
 # ---------------------------
 #
 
-class ShareaboutsFieldMixin (object):
+class ShareaboutsFieldMixin:
 
     # These names should match the names of the cache parameters, and should be
     # in the same order as the corresponding URL arguments.
@@ -123,7 +123,7 @@ def api_reverse(view_name, kwargs={}, request=None, format=None):
     except KeyError:
         raise ValueError('No API route named {} formatted.'.format(view_name))
 
-    url_params = dict([(key, urlquote_plus(val)) for key,val in kwargs.items()])
+    url_params = {key: urlquote_plus(val) for key,val in kwargs.items()}
     url += route_template_string.format(**url_params)
 
     if format is not None:
@@ -142,7 +142,7 @@ class ShareaboutsRelatedField (ShareaboutsFieldMixin, serializers.HyperlinkedRel
         if self.view_name is not None:
             kwargs['view_name'] = self.view_name
         kwargs.setdefault('read_only', self.read_only)
-        super(ShareaboutsRelatedField, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def use_pk_only_optimization(self):
         return False
@@ -188,7 +188,7 @@ class ShareaboutsIdentityField (ShareaboutsFieldMixin, serializers.HyperlinkedId
 
     def __init__(self, *args, **kwargs):
         view_name = kwargs.pop('view_name', None) or getattr(self, 'view_name', None)
-        super(ShareaboutsIdentityField, self).__init__(view_name=view_name, *args, **kwargs)
+        super().__init__(view_name=view_name, *args, **kwargs)
 
     def get_url(self, obj, view_name, request, format):
         # Unsaved objects will not yet have a valid URL.
@@ -241,7 +241,7 @@ class AttachmentFileField (serializers.FileField):
 #
 
 
-class ActivityGenerator (object):
+class ActivityGenerator:
     def _set_silent_flag(self, attrs):
         request = self.context['request']
         silent_header = request.META.get('HTTP_X_SHAREABOUTS_SILENT', 'False')
@@ -253,7 +253,7 @@ class ActivityGenerator (object):
         return attrs
 
 
-class EmptyModelSerializer (object):
+class EmptyModelSerializer:
     """
     A simple mixin that constructs an in-memory model when None is passed in
     as the object to to_representation.
@@ -299,7 +299,7 @@ class DataBlobProcessor (EmptyModelSerializer):
                 if not field.read_only:
                     structured_attrs.setdefault(field_name, field.default)
 
-        return super(DataBlobProcessor, self).to_internal_value(structured_attrs)
+        return super().to_internal_value(structured_attrs)
 
     def explode_data_blob(self, data):
         """
@@ -319,7 +319,7 @@ class DataBlobProcessor (EmptyModelSerializer):
 
     def to_representation(self, obj):
         obj = self.ensure_obj(obj)
-        data = super(DataBlobProcessor, self).to_representation(obj)
+        data = super().to_representation(obj)
         self.explode_data_blob(data)
         return data
 
@@ -332,7 +332,7 @@ class DataBlobProcessor (EmptyModelSerializer):
 # objects.
 #
 
-class DefaultUserDataStrategy (object):
+class DefaultUserDataStrategy:
     def extract_avatar_url(self, user_info):
         return ''
 
@@ -343,11 +343,11 @@ class DefaultUserDataStrategy (object):
         return ''
 
 
-class TwitterUserDataStrategy (object):
+class TwitterUserDataStrategy:
     def extract_avatar_url(self, user_info):
         url = user_info['profile_image_url']
 
-        url_pattern = '^(?P<path>.*?)(?:_normal|_mini|_bigger|)(?P<ext>\.[^\.]*)$'
+        url_pattern = r'^(?P<path>.*?)(?:_normal|_mini|_bigger|)(?P<ext>\.[^\.]*)$'
         match = re.match(url_pattern, url)
         if match:
             return match.group('path') + '_bigger' + match.group('ext')
@@ -361,7 +361,7 @@ class TwitterUserDataStrategy (object):
         return user_info['description']
 
 
-class FacebookUserDataStrategy (object):
+class FacebookUserDataStrategy:
     def extract_avatar_url(self, user_info):
         url = user_info['picture']['data']['url']
         return url
@@ -373,7 +373,7 @@ class FacebookUserDataStrategy (object):
         return user_info['about']
 
 
-class ShareaboutsUserDataStrategy (object):
+class ShareaboutsUserDataStrategy:
     """
     This strategy exists so that we can add avatars and full names to users
     that already exist in the system without them creating a Twitter or
@@ -578,7 +578,7 @@ class FullUserSerializer (BaseUserSerializer):
         pass
 
     def to_representation(self, obj):
-        data = super(FullUserSerializer, self).to_representation(obj)
+        data = super().to_representation(obj)
         if obj:
             group_field = self.fields['groups']
             data['groups'] = group_field.to_representation(obj._groups)
@@ -626,7 +626,7 @@ class DataSetPlaceSetSummarySerializer (serializers.HyperlinkedModelSerializer):
     def to_representation(self, obj):
         place_count_map = self.get_place_counts(obj)
         obj.places_length = place_count_map.get(obj.pk, 0)
-        data = super(DataSetPlaceSetSummarySerializer, self).to_representation(obj)
+        data = super().to_representation(obj)
         return data
 
 
@@ -673,7 +673,7 @@ class DataSetSubmissionSetSummarySerializer (serializers.HyperlinkedModelSeriali
 
             obj.submission_set_name = set_name
             obj.submission_set_length = len(submission_set)
-            summaries[set_name] = super(DataSetSubmissionSetSummarySerializer, self).to_representation(obj)
+            summaries[set_name] = super().to_representation(obj)
         return summaries
 
 
@@ -727,11 +727,11 @@ class SubmittedThingSerializer (bulk_serializers.BulkSerializerMixin, ActivityGe
 
     def create(self, validated_data):
         validated_data = self._patch_submitter(data=validated_data)
-        return super(SubmittedThingSerializer, self).create(validated_data)
+        return super().create(validated_data)
 
     def update(self, instance, validated_data):
         validated_data = self._patch_submitter(instance=instance, data=validated_data)
-        return super(SubmittedThingSerializer, self).update(instance, validated_data)
+        return super().update(instance, validated_data)
 
 
 # Place serializers
@@ -991,12 +991,12 @@ class DataSetSerializer (BaseDataSetSerializer, serializers.HyperlinkedModelSeri
         return attrs
 
     def create(self, validated_data):
-        instance = super(DataSetSerializer, self).create(validated_data)
+        instance = super().create(validated_data)
         self.post_save(instance)
         return instance
 
     def update(self, instance, validated_data):
-        instance = super(DataSetSerializer, self).update(instance, validated_data)
+        instance = super().update(instance, validated_data)
         self.post_save(instance)
         return instance
 
@@ -1014,7 +1014,7 @@ class DataSetSerializer (BaseDataSetSerializer, serializers.HyperlinkedModelSeri
             self.load_url = data.pop('load_from_url')
             if self.load_url and isinstance(self.load_url, list):
                 self.load_url = str(self.load_url[0])
-        return super(DataSetSerializer, self).to_internal_value(data)
+        return super().to_internal_value(data)
 
 
 # Action serializer
@@ -1054,7 +1054,7 @@ class ActionSerializer (EmptyModelSerializer, serializers.ModelSerializer):
 # ----------------------
 #
 
-class PaginatedMetadataMixin (object):
+class PaginatedMetadataMixin:
     page_size_query_param = 'page_size'
 
     def get_pagination_metadata(self, data):

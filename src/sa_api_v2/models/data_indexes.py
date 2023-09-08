@@ -29,7 +29,7 @@ class DataIndex (CloneableModelMixin, models.Model):
         return {'reindex': False}
 
     def save(self, reindex=True, *args, **kwargs):
-        ret = super(DataIndex, self).save(*args, **kwargs)
+        ret = super().save(*args, **kwargs)
         if reindex:
             self.index_things()
         return ret
@@ -85,7 +85,7 @@ class IndexedValue (models.Model):
             raise KeyError('The thing %s has no data attribute %s' % (self.thing, self.index.attr_name))
 
 
-class FilterByIndexMixin (object):
+class FilterByIndexMixin:
     """
     Mixin for model managers of indexed models.
     """
