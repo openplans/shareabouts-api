@@ -17,7 +17,8 @@ from django.contrib import messages
 from django.urls import reverse
 from django.forms import ValidationError, ModelForm
 from django.http import HttpResponseRedirect
-from django.utils.html import escape
+from django.utils.html import escape, format_html
+from django.utils.safestring import mark_safe
 from django_ace import AceWidget
 from django_object_actions import DjangoObjectActions
 from . import models
@@ -140,7 +141,13 @@ class InlineApiKeyAdmin(admin.StackedInline):
 
     def permissions_list(self, instance):
         if instance.pk:
-            return '<ul>%s</ul>' % ''.join(['<li>%s</li>' % (escape(permission),) for permission in instance.permissions.all()])
+            return format_html(
+                '<ul>{}</ul>',
+                mark_safe(''.join([
+                    format_html('<li>{}</li>', escape(permission))
+                    for permission in instance.permissions.all()
+                ]))
+            )
         else:
             return ''
 
@@ -148,11 +155,11 @@ class InlineApiKeyAdmin(admin.StackedInline):
         if instance.pk is None:
             return '(You must save your dataset before you can edit the permissions on your API key.)'
         else:
-            return (
-                '<a href="%s"><strong>Edit permissions</strong></a>' % (reverse('admin:sa_api_v2_apikey_change', args=[instance.pk]))
-                + self.permissions_list(instance)
+            return format_html(
+                '<a href="{}"><strong>Edit permissions</strong></a>{}',
+                reverse('admin:sa_api_v2_apikey_change', args=[instance.pk]),
+                self.permissions_list(instance)
             )
-    edit_url.allow_tags = True
 
 
 class InlineOriginAdmin(admin.StackedInline):
@@ -164,7 +171,13 @@ class InlineOriginAdmin(admin.StackedInline):
 
     def permissions_list(self, instance):
         if instance.pk:
-            return '<ul>%s</ul>' % ''.join(['<li>%s</li>' % (escape(permission),) for permission in instance.permissions.all()])
+            return format_html(
+                '<ul>{}</ul>',
+                mark_safe(''.join([
+                    format_html('<li>{}</li>', escape(permission))
+                    for permission in instance.permissions.all()
+                ]))
+            )
         else:
             return ''
 
@@ -172,11 +185,11 @@ class InlineOriginAdmin(admin.StackedInline):
         if instance.pk is None:
             return '(You must save your dataset before you can edit the permissions on your origin.)'
         else:
-            return (
-                '<a href="%s"><strong>Edit permissions</strong></a>' % (reverse('admin:sa_api_v2_origin_change', args=[instance.pk]))
-                + self.permissions_list(instance)
+            return format_html(
+                '<a href="{}"><strong>Edit permissions</strong></a>{}',
+                reverse('admin:sa_api_v2_origin_change', args=[instance.pk]),
+                self.permissions_list(instance)
             )
-    edit_url.allow_tags = True
 
 
 class InlineGroupAdmin(admin.StackedInline):
@@ -187,7 +200,13 @@ class InlineGroupAdmin(admin.StackedInline):
 
     def permissions_list(self, instance):
         if instance.pk:
-            return '<ul>%s</ul>' % ''.join(['<li>%s</li>' % (escape(permission),) for permission in instance.permissions.all()])
+            return format_html(
+                '<ul>{}</ul>',
+                mark_safe(''.join([
+                    format_html('<li>{}</li>', escape(permission))
+                    for permission in instance.permissions.all()
+                ]))
+            )
         else:
             return ''
 
@@ -195,11 +214,11 @@ class InlineGroupAdmin(admin.StackedInline):
         if instance.pk is None:
             return '(You must save your dataset before you can edit the permissions on your API key.)'
         else:
-            return (
-                '<a href="%s"><strong>Edit permissions</strong></a>' % (reverse('admin:sa_api_v2_group_change', args=[instance.pk]))
-                + self.permissions_list(instance)
+            return format_html(
+                '<a href="{}"><strong>Edit permissions</strong></a>{}',
+                reverse('admin:sa_api_v2_group_change', args=[instance.pk]),
+                self.permissions_list(instance)
             )
-    edit_url.allow_tags = True
 
 
 class InlineDataSetPermissionAdmin(admin.TabularInline):
@@ -266,13 +285,11 @@ class DataSetAdmin(DjangoObjectActions, admin.ModelAdmin):
     def places(self, instance):
         path = '/admin/sa_api_v2/place/?dataset={}'
         path = path.format(instance.slug)
-        return '<a href="{0}">{0}</a>'.format(path)
-    places.allow_tags = True
+        return format_html('<a href="{0}">{0}</a>', path)
 
     def api_path(self, instance):
         path = reverse('dataset-detail', args=[instance.owner, instance.slug])
-        return '<a href="{0}">{0}</a>'.format(path)
-    api_path.allow_tags = True
+        return format_html('<a href="{0}">{0}</a>', path)
 
     def get_queryset(self, request):
         qs = super(DataSetAdmin, self).get_queryset(request)
@@ -303,8 +320,7 @@ class PlaceAdmin(SubmittedThingAdmin):
 
     def api_path(self, instance):
         path = reverse('place-detail', args=[instance.dataset.owner, instance.dataset.slug, instance.id])
-        return '<a href="{0}">{0}</a>'.format(path)
-    api_path.allow_tags = True
+        return format_html('<a href="{0}">{0}</a>', path)
 
 
 class SubmissionAdmin(SubmittedThingAdmin):
@@ -327,8 +343,7 @@ class SubmissionAdmin(SubmittedThingAdmin):
 
     def api_path(self, instance):
         path = reverse('submission-detail', args=[instance.dataset.owner, instance.dataset.slug, instance.place.id, instance.set_name, instance.id])
-        return '<a href="{0}">{0}</a>'.format(path)
-    api_path.allow_tags = True
+        return format_html('<a href="{0}">{0}</a>', path)
 
 
 class ActionAdmin(admin.ModelAdmin):
