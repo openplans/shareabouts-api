@@ -70,7 +70,7 @@ class InlineAttachmentAdmin(admin.StackedInline):
 
 
 class PrettyAceWidget (AceWidget):
-    def render(self, name, value, attrs=None):
+    def render(self, name, value, attrs=None, renderer=None):
         if value:
             try:
                 # If we can prettify the JSON, we should
@@ -78,7 +78,7 @@ class PrettyAceWidget (AceWidget):
             except ValueError:
                 # If we cannot, then we should still display the value
                 pass
-        return super(PrettyAceWidget, self).render(name, value, attrs=attrs)
+        return super(PrettyAceWidget, self).render(name, value, attrs=attrs, renderer=renderer)
 
 
 BaseGeoAdmin = admin.OSMGeoAdmin if settings.USE_GEODB else admin.ModelAdmin
