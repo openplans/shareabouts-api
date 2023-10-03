@@ -73,7 +73,7 @@ toml==0.10.2
 types-toml==0.10.8.3
 typing_extensions==4.4.0
 ujson==5.7.0
-urllib3==1.26.14
+urllib3==1.26.17
 URLObject==2.4.3
 vine==5.0.0
 wcwidth==0.2.6
