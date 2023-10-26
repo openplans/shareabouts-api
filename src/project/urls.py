@@ -4,7 +4,6 @@ from django.urls import path, re_path
 
 # Uncomment the next two lines to enable the admin:
 from django.contrib import admin
-import django.contrib.auth.views
 from django.http import HttpResponseRedirect, HttpResponse
 from django.shortcuts import resolve_url
 import loginas.urls
@@ -28,8 +27,6 @@ urlpatterns = [
 
     # For now, use basic auth.
     re_path(r'^accounts/', include('django.contrib.auth.urls')),
-    re_path(r'^accounts/logout/$', django.contrib.auth.views.logout_then_login,
-        name='manager_logout'),
 
     # For now, the API and the management console are hosted together.
     re_path(r'^api/v2/', include('sa_api_v2.urls')),
