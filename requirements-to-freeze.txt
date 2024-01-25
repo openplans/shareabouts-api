@@ -2,7 +2,7 @@
 # Web server
 # ==============================
 
-Django>4.1,<4.2
+Django>4.2,<5
 gevent
 gunicorn
 dj_static
@@ -56,7 +56,7 @@ django-cors-headers
 # REST API
 # ==============================
 
-djangorestframework>3.12,<3.13  # We can probably safely upgrade beyond 3.12. Refer to https://www.django-rest-framework.org/community/3.13-announcement/
+djangorestframework>=3.14,<3.15
 djangorestframework-csv==1.3.0
 
 --extra-index-url https://us-central1-python.pkg.dev/poepublic-shareabouts/pypi/simple/
