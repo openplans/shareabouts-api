@@ -3,7 +3,6 @@
 # ==============================
 
 Django>4.2,<5
-gevent
 gunicorn
 dj_static
 django-samesite-none  # Middleware to work around https://code.djangoproject.com/ticket/30862
@@ -25,8 +24,7 @@ django-celery-results
 # ==============================
 
 # DB Settings and Management
-psycopg2-binary>=2.9
-psycogreen
+psycopg[binary]
 dj-database-url
 django-object-actions>=3  # https://github.com/crccheck/django-object-actions/releases
 
