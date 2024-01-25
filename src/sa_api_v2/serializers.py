@@ -5,12 +5,12 @@ import ujson as json
 import re
 from collections import defaultdict, OrderedDict
 from itertools import chain
+from urllib.parse import quote_plus
 from django.conf import settings
 if settings.USE_GEODB:
     from django.contrib.gis.geos import GEOSGeometry
 from django.core.exceptions import ValidationError
 import django.db.models
-from django.utils.http import urlquote_plus
 from rest_framework import pagination
 from rest_framework import serializers
 from rest_framework import response
@@ -123,7 +123,7 @@ def api_reverse(view_name, kwargs={}, request=None, format=None):
     except KeyError:
         raise ValueError('No API route named {} formatted.'.format(view_name))
 
-    url_params = dict([(key, urlquote_plus(val)) for key,val in kwargs.items()])
+    url_params = dict([(key, quote_plus(val)) for key,val in kwargs.items()])
     url += route_template_string.format(**url_params)
 
     if format is not None:

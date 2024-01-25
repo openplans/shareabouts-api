@@ -47,7 +47,7 @@ ROOT_REDIRECT_TO = 'api-root'
 # Time Zones
 #
 
-TIME_ZONE = 'Universal'
+TIME_ZONE = 'UTC'
 USE_TZ = True
 
 ###############################################################################
