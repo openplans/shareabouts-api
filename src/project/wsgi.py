@@ -29,10 +29,6 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "project.settings")
 from django.core.wsgi import get_wsgi_application
 application = get_wsgi_application()
 
-# Send errors to Sentry
-from raven.contrib.django.raven_compat.middleware.wsgi import Sentry
-application = Sentry(application)
-
 from dj_static import Cling
 application = Cling(application)
 

@@ -347,7 +347,7 @@ LOGGING = {
 
 if 'SENTRY_DSN' in environ:
     import sentry_sdk
-    sentry_sdk.init()
+    sentry_sdk.init(enable_tracing=True)
 
 if 'DATABASE_URL' in environ:
     import dj_database_url

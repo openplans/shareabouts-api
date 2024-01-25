@@ -24,7 +24,7 @@ django-celery-results
 # ==============================
 
 # DB Settings and Management
-psycopg[binary]
+psycopg[binary]==3.1.17
 dj-database-url
 django-object-actions>=3  # https://github.com/crccheck/django-object-actions/releases
 
