@@ -111,4 +111,19 @@ class OAuth2Provider (models.Model):
             REDIRECT_STATE = self.redirect_state
             # USE_BASIC_AUTH = self.use_basic_auth
 
+            def get_key_and_secret(self):
+                # Python-social-auth attaches the strategy to a backend on
+                # creation:
+                # https://github.com/python-social-auth/social-core/blob/4bb29b1eaa60cb0288606c703e7e9aeea2a8184d/social_core/strategy.py#L176-L177
+                strategy = self.strategy
+
+                # The request_data function is defined in the DjangoStrategy
+                # class:
+                # https://github.com/python-social-auth/social-app-django/blob/4047ba4b3a3df887d395263a25fef17bcb21e60d/social_django/strategy.py#L48
+                request_data = strategy.request_data()
+
+                client_id = request_data.get('client_id')
+                client_secret = request_data.get('client_secret')
+                return client_id, client_secret
+
         return DynamicOAuth2

@@ -3,7 +3,7 @@ from django.http import HttpResponse
 from django.urls import re_path
 from . import views
 import rest_framework.urls
-import social_django.urls
+import dynamic_social_auth.urls
 
 
 urlpatterns = [
@@ -94,7 +94,7 @@ urlpatterns = [
     # re_path(r'^users/login/(?P<backend>[^/]+)/$', views.remote_social_login, name='remote-social-login'),
     # re_path(r'^users/logout/$', views.remote_logout, name='remote-logout'),
 
-    re_path('^users/', include(social_django.urls, namespace='social')),
+    re_path('^users/', include(dynamic_social_auth.urls)),
 
     re_path(r'^forms/', include(rest_framework.urls)),
 

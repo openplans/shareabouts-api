@@ -46,3 +46,19 @@ class DynamicAuthProviderTests (TestCase):
         response = client.get('/api/v2/users/login/provider2/')
         self.assertEqual(response.status_code, 302)
         self.assertEqual(response.headers['Location'][:len(login_url2)], login_url2)
+
+
+class DynamicClientRequestTests (TestCase):
+
+    def test_client_id_secret_used(self):
+        login_url = 'https://example1.com/login'
+        OAuth2Provider.objects.create(
+            name='provider',
+            authorization_url=login_url,
+            access_token_url='https://example.com/access-token',
+        )
+
+        client = Client()
+        response = client.get('/api/v2/users/login/provider/?client_id=abc&client_secret=123')
+        self.assertIn('client_id=abc', response.headers['Location'])
+        self.assertNotIn('client_secret', response.headers['Location'])
