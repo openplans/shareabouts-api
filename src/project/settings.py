@@ -123,14 +123,9 @@ MIDDLEWARE = [
     'django.middleware.gzip.GZipMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    # TODO: Update to use dajngo-oauth-tools
-    # 'toolbar_client_user.middleware.RemoteClientMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
-    # 'social.apps.django_app.middleware.SocialAuthExceptionMiddleware',
-    # Uncomment the next line for simple clickjacking protection:
-    # 'django.middleware.clickjacking.XFrameOptionsMiddleware',
 
     'sa_api_v2.middleware.RequestTimeLogger',
     'sa_api_v2.middleware.UniversalP3PHeader',
@@ -185,6 +180,7 @@ INSTALLED_APPS = (
     # =================================
     # Project apps
     # =================================
+    'dynamic_social_auth',
     'beta_signup',
     'sa_api_v2',
     'sa_api_v2.apikey',
@@ -223,7 +219,12 @@ AUTHENTICATION_BACKENDS = (
     'sa_api_v2.auth_backends.CachedModelBackend',
 )
 
+# In addition to the backends listed above, we use a dynamic strategy to take
+# into account providers defined in database models.
+SOCIAL_AUTH_STRATEGY = 'dynamic_social_auth.strategy.DjangoModelStrategy'
+
 AUTH_USER_MODEL = 'sa_api_v2.User'
+
 # TODO: Enable after Django 1.11 update # SOCIAL_AUTH_POSTGRES_JSONFIELD = True
 SOCIAL_AUTH_URL_NAMESPACE = 'social'
 
