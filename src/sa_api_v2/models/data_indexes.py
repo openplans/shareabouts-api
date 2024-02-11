@@ -96,5 +96,3 @@ class FilterByIndexMixin (object):
         return self\
             .filter(indexed_values__index__attr_name=key)\
             .filter(matches_any_values_clause)
-
-

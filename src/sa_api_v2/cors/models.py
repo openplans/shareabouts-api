@@ -14,7 +14,6 @@ from django.db.models.signals import post_save
 from django.utils.timezone import now
 from ..models import DataSet, OriginPermission
 from ..models.mixins import CloneableModelMixin
-from .. import utils
 import re
 
 
@@ -96,4 +95,6 @@ def create_data_permissions(sender, instance, created, **kwargs):
     if created:
         OriginPermission.objects.create(origin=instance, submission_set='*',
             can_retrieve=True, can_create=True, can_update=True, can_destroy=True)
+
+
 post_save.connect(create_data_permissions, sender=Origin, dispatch_uid="origin-create-permissions")

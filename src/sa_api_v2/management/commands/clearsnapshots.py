@@ -1,9 +1,10 @@
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import BaseCommand
 from django.utils.timezone import now, timedelta
 from sa_api_v2.models import DataSnapshotRequest
 
 import logging
 log = logging.getLogger(__name__)
+
 
 class Command(BaseCommand):
     help = 'Clear any bulk data snapshots (and requests) older than a day.'

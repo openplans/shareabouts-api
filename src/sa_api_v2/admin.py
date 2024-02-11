@@ -83,6 +83,8 @@ class PrettyAceWidget (AceWidget):
 
 
 BaseGeoAdmin = admin.OSMGeoAdmin if settings.USE_GEODB else admin.ModelAdmin
+
+
 class SubmittedThingAdmin(BaseGeoAdmin):
     date_hierarchy = 'created_datetime'
     inlines = (InlineAttachmentAdmin,)
@@ -249,7 +251,6 @@ class WebhookAdmin(admin.ModelAdmin):
         return qs
 
 
-
 class DataSetAdmin(DjangoObjectActions, admin.ModelAdmin):
     list_display = ('display_name', 'slug', 'owner')
     prepopulated_fields = {'slug': ['display_name']}
@@ -257,7 +258,7 @@ class DataSetAdmin(DjangoObjectActions, admin.ModelAdmin):
 
     objectactions = ('clone_dataset', 'clear_cache')
     raw_id_fields = ('owner',)
-    readonly_fields = ('api_path','places')
+    readonly_fields = ('api_path', 'places')
     inlines = [InlineDataIndexAdmin, InlineDataSetPermissionAdmin, InlineApiKeyAdmin, InlineOriginAdmin, InlineGroupAdmin, InlineWebhookAdmin]
 
     def clear_cache(self, request, obj):

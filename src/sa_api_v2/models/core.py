@@ -8,7 +8,6 @@ else:
     from django.db import models
 
 from django.core.files.storage import get_storage_class
-from django.db.models.signals import post_save
 from django.utils.timezone import now
 from .. import cache
 from .. import utils
@@ -95,7 +94,7 @@ class SubmittedThing (CloneableModelMixin, CacheClearingModel, ModelWithDataBlob
         return self
 
     def save(self, silent=False, source='', reindex=True, *args, **kwargs):
-        is_new = (self.id == None)
+        is_new = (self.id is None)
 
         ret = super(SubmittedThing, self).save(*args, **kwargs)
 
@@ -216,8 +215,6 @@ class Webhook (TimeStampedModel):
         return 'On %s data in %s' % (self.event, self.submission_set)
 
 
-
-
 class Place (SubmittedThing):
     """
     A Place is a submitted thing with some geographic information, to which
@@ -296,6 +293,7 @@ def timestamp_filename(attachment, filename):
     # Django 1.4 tries to convert the function to a string when we do that.
     return ''.join(['attachments/', utils.base62_time(), '-', filename])
 
+
 AttachmentStorage = get_storage_class(settings.ATTACHMENT_STORAGE)
 
 
@@ -321,7 +319,7 @@ class Attachment (CacheClearingModel, TimeStampedModel):
             image = Image.open(self.file)
             self.width, self.height = image.size
             return True
-        except (ValueError, EOFError, UnidentifiedImageError) as e:
+        except (ValueError, EOFError, UnidentifiedImageError):
             return False
 
     def save(self, *args, **kwargs):
@@ -329,10 +327,6 @@ class Attachment (CacheClearingModel, TimeStampedModel):
             self.apply_image_dimensions()
         super(Attachment, self).save(*args, **kwargs)
 
-
     class Meta:
         app_label = 'sa_api_v2'
         db_table = 'sa_api_attachment'
-
-
-#

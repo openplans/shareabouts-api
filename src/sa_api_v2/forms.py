@@ -1,5 +1,4 @@
 from django import forms
-from dateutil.parser import parse
 from . import models
 
 # class IsoDateTimeField (forms.DateTimeField):

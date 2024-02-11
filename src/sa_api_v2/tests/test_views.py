@@ -375,7 +375,6 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
         #
         request = self.factory.get(self.invisible_path)
         response = self.view(request, **self.invisible_request_kwargs)
-        data = json.loads(response.rendered_content)
 
         # Check that the request was successful
         self.assertStatusCode(response, 400)
@@ -387,7 +386,6 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
         #
         request = self.factory.get(self.invisible_path + '?include_invisible')
         response = self.view(request, **self.invisible_request_kwargs)
-        data = json.loads(response.rendered_content)
 
         # Check that the request was restricted
         self.assertStatusCode(response, 401)
@@ -400,7 +398,6 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
         request = self.factory.get(self.invisible_path + '?include_invisible')
         request.META[KEY_HEADER] = self.apikey.key
         response = self.view(request, **self.invisible_request_kwargs)
-        data = json.loads(response.rendered_content)
 
         # Check that the request was restricted
         self.assertStatusCode(response, 403)
@@ -413,7 +410,6 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
         request = self.factory.get(self.invisible_path + '?include_invisible')
         request.META['HTTP_ORIGIN'] = self.ds_origin.pattern
         response = self.view(request, **self.invisible_request_kwargs)
-        data = json.loads(response.rendered_content)
 
         # Check that the request was restricted
         self.assertStatusCode(response, 403)
@@ -426,7 +422,6 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
         request = self.factory.get(self.invisible_path + '?include_invisible')
         request.user = User.objects.create(username='new_user', password='password')
         response = self.view(request, **self.invisible_request_kwargs)
-        data = json.loads(response.rendered_content)
 
         # Check that the request was restricted
         self.assertStatusCode(response, 403)
@@ -439,7 +434,6 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
         request = self.factory.get(self.invisible_path + '?include_invisible')
         request.user = self.owner
         response = self.view(request, **self.invisible_request_kwargs)
-        data = json.loads(response.rendered_content)
 
         # Check that the request was successful
         self.assertStatusCode(response, 200)
@@ -453,7 +447,6 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
         credentials = ':'.join([self.owner.username, '123']).encode()
         request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(credentials).decode()
         response = self.view(request, **self.invisible_request_kwargs)
-        data = json.loads(response.rendered_content)
 
         # Check that the request was successful
         self.assertStatusCode(response, 200)
@@ -466,7 +459,6 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
         request = self.factory.get(self.invisible_path)
         request.user = self.owner
         response = self.view(request, **self.invisible_request_kwargs)
-        data = json.loads(response.rendered_content)
 
         # Check that the request was successful
         self.assertStatusCode(response, 400)
@@ -734,9 +726,9 @@ class TestPlaceInstanceView (APITestMixin, TestCase):
         response = self.view(request, **self.request_kwargs)
         self.assertStatusCode(response, 401)
 
-        ## TODO: Use the SubmittedThingSerializer to implement the commented
-        ##       out permission structure instead.
-        ##
+        # TODO: Use the SubmittedThingSerializer to implement the commented
+        #       out permission structure instead.
+        #
 
         #
         # View should update the place when client is authenticated (apikey)
@@ -932,7 +924,7 @@ class TestPlaceListView (APITestMixin, TestCase):
         self.ds_origin = Origin.objects.create(pattern='http://openplans.github.com', dataset=self.dataset)
 
         dataset2 = DataSet.objects.create(slug='ds2', owner=self.owner)
-        place2 = Place.objects.create(
+        Place.objects.create(
           dataset=dataset2,
           geometry='POINT(3 4)',
         )
@@ -1145,7 +1137,7 @@ class TestPlaceListView (APITestMixin, TestCase):
 
         qs = Place.objects.all()
 
-        from  sa_api_v2.models.core import SubmittedThingQuerySet
+        from sa_api_v2.models.core import SubmittedThingQuerySet
         with mock.patch.object(SubmittedThingQuerySet, 'filter_by_index', return_value=qs) as patched_filter:
             request = self.factory.get(self.path + '?foo=bar')
             self.view(request, **self.request_kwargs)
@@ -1161,7 +1153,7 @@ class TestPlaceListView (APITestMixin, TestCase):
 
         qs = Place.objects.all()
 
-        from  sa_api_v2.models.core import SubmittedThingQuerySet
+        from sa_api_v2.models.core import SubmittedThingQuerySet
         with mock.patch.object(SubmittedThingQuerySet, 'filter_by_index', return_value=qs) as patched_filter:
             request = self.factory.get(self.path + '?name=1')
             self.view(request, **self.request_kwargs)
@@ -1219,7 +1211,7 @@ class TestPlaceListView (APITestMixin, TestCase):
         self.assertStatusCode(response, 200)
         self.assertEqual(len(data['features']), 4)
         self.assertEqual([feature['properties']['name'] for feature in data['features']],
-                         [3,2,4,1])
+                         [3, 2, 4, 1])
         self.assertIn('distance', data['features'][0]['properties'])
 
     def test_GET_response_with_paginated_data(self):
@@ -1470,7 +1462,7 @@ class TestPlaceListView (APITestMixin, TestCase):
         self.assertStatusCode(response, 200)
         self.assertEqual(len(data_list), 2)
 
-        ### Check that we actually created the places
+        # Check that we actually created the places
         final_num_places = Place.objects.all().count()
         self.assertEqual(final_num_places, start_num_places + 2)
 
@@ -1531,7 +1523,7 @@ class TestPlaceListView (APITestMixin, TestCase):
         self.assertStatusCode(response, 200)
         self.assertEqual(len(data_list), 2)
 
-        ### Check the updated item
+        # Check the updated item
         data = [item for item in data_list if item['id'] == place.id][0]
 
         # Check that the data attributes have been incorporated into the
@@ -1556,7 +1548,7 @@ class TestPlaceListView (APITestMixin, TestCase):
         final_num_places = Place.objects.all().count()
         self.assertEqual(final_num_places, start_num_places + 1)
 
-        ### Check the created item
+        # Check the created item
         data = [item for item in data_list if item['id'] != place.id][0]
 
         # Check that the data attributes have been incorporated into the
@@ -1564,7 +1556,7 @@ class TestPlaceListView (APITestMixin, TestCase):
         self.assertEqual(data['properties'].get('type'), 'Street Light')
         self.assertEqual(data['properties'].get('submitter_name'), 'Mjumbe')
 
-        ### Check that we actually created the places
+        # Check that we actually created the places
         final_num_places = Place.objects.all().count()
         self.assertEqual(final_num_places, start_num_places + 1)
 
@@ -2216,11 +2208,9 @@ class TestSubmissionListView (APITestMixin, TestCase):
           dataset=dataset2,
           geometry='POINT(3 4)',
         )
-        submissions2 = [
-          Submission.objects.create(place=place2, set_name='comments', dataset=dataset2, data='{"comment": "Wow!", "private-email": "abc@example.com", "foo": 3}'),
-          Submission.objects.create(place=place2, set_name='comments', dataset=dataset2, data='{"foo": 3}'),
-          Submission.objects.create(place=place2, set_name='comments', dataset=dataset2, data='{"foo": 3}', visible=False),
-        ]
+        Submission.objects.create(place=place2, set_name='comments', dataset=dataset2, data='{"comment": "Wow!", "private-email": "abc@example.com", "foo": 3}'),
+        Submission.objects.create(place=place2, set_name='comments', dataset=dataset2, data='{"foo": 3}'),
+        Submission.objects.create(place=place2, set_name='comments', dataset=dataset2, data='{"foo": 3}', visible=False),
 
         self.apikey = ApiKey.objects.create(key='abc', dataset=self.dataset)
 
@@ -2522,7 +2512,6 @@ class TestSubmissionListView (APITestMixin, TestCase):
           'private-email': 'abc@example.com',
           'foo': 'bar'
         })
-        start_num_submissions = Submission.objects.all().count()
 
         # Disable create permission
         key_permission = self.apikey.permissions.all().get()
@@ -2628,7 +2617,7 @@ class TestSubmissionListView (APITestMixin, TestCase):
 
         self.assertEqual(len(data_list), 2)
 
-        ### Check that we actually created the places
+        # Check that we actually created the places
         final_num_submissions = Submission.objects.all().count()
         self.assertEqual(final_num_submissions, start_num_submissions + 2)
 
@@ -2680,7 +2669,7 @@ class TestSubmissionListView (APITestMixin, TestCase):
 
         self.assertEqual(len(data_list), 2)
 
-        ### Check the updated item
+        # Check the updated item
         data = [item for item in data_list if item['id'] == submission.id][0]
 
         # Check that the data attributes have been incorporated into the
@@ -2695,7 +2684,7 @@ class TestSubmissionListView (APITestMixin, TestCase):
         # back down
         self.assertNotIn('private-email', data)
 
-        ### Check the created item
+        # Check the created item
         data = [item for item in data_list if item['id'] != submission.id][0]
 
         # Check that the data attributes have been incorporated into the
@@ -2703,7 +2692,7 @@ class TestSubmissionListView (APITestMixin, TestCase):
         self.assertEqual(data.get('foo'), 'baz')
         self.assertEqual(data.get('submitter_name'), 'Mjumbe')
 
-        ### Check that we actually created the places
+        # Check that we actually created the places
         final_num_submissions = Submission.objects.all().count()
         self.assertEqual(final_num_submissions, start_num_submissions + 1)
 
@@ -2934,11 +2923,9 @@ class TestDataSetSubmissionListView (APITestMixin, TestCase):
           dataset=dataset2,
           geometry='POINT(3 4)',
         )
-        submissions3 = [
-          Submission.objects.create(place=place3, set_name='comments', dataset=dataset2, data='{"comment": "Wow!", "private-email": "abc@example.com", "foo": 3}'),
-          Submission.objects.create(place=place3, set_name='comments', dataset=dataset2, data='{"foo": 3}'),
-          Submission.objects.create(place=place3, set_name='comments', dataset=dataset2, data='{"foo": 3}', visible=False),
-        ]
+        Submission.objects.create(place=place3, set_name='comments', dataset=dataset2, data='{"comment": "Wow!", "private-email": "abc@example.com", "foo": 3}'),
+        Submission.objects.create(place=place3, set_name='comments', dataset=dataset2, data='{"foo": 3}'),
+        Submission.objects.create(place=place3, set_name='comments', dataset=dataset2, data='{"foo": 3}', visible=False),
 
         self.apikey = ApiKey.objects.create(key='abc', dataset=self.dataset)
 
@@ -3246,7 +3233,6 @@ class TestDataSetInstanceView (APITestMixin, TestCase):
           Submission.objects.create(place=self.place, set_name='likes', dataset=self.dataset, data='{"bar": 3}', visible=False),
         ]
         self.submission = self.submissions[0]
-
 
         self.invisible_place = Place.objects.create(
           dataset=self.dataset,
@@ -3565,17 +3551,15 @@ class TestDataSetListView (APITestMixin, TestCase):
           dataset=dataset2,
           geometry='POINT(3 4)',
         )
-        submissions2 = [
-          Submission.objects.create(place=place2, set_name='comments', dataset=dataset2, data='{"comment": "Wow!", "private-email": "abc@example.com", "foo": 3}'),
-          Submission.objects.create(place=place2, set_name='comments', dataset=dataset2, data='{"foo": 3}'),
-          Submission.objects.create(place=place2, set_name='comments', dataset=dataset2, data='{"foo": 3}', visible=False),
-        ]
+        Submission.objects.create(place=place2, set_name='comments', dataset=dataset2, data='{"comment": "Wow!", "private-email": "abc@example.com", "foo": 3}'),
+        Submission.objects.create(place=place2, set_name='comments', dataset=dataset2, data='{"foo": 3}'),
+        Submission.objects.create(place=place2, set_name='comments', dataset=dataset2, data='{"foo": 3}', visible=False),
 
         other_owner = User.objects.create_user(
             username='frank',
             password='789',
             email='def@example.com')
-        dataset3 = DataSet.objects.create(owner=other_owner, slug='slug', display_name="Display Name")
+        DataSet.objects.create(owner=other_owner, slug='slug', display_name="Display Name")
 
         self.apikey = ApiKey.objects.create(key='abc', dataset=self.dataset)
 
@@ -4007,7 +3991,7 @@ class TestPlaceAttachmentListView (APITestMixin, TestCase):
         f.name = 'myfile.txt'
         request = self.factory.post(self.path, data={'file': f, 'name': 'my-file'})
         User.objects.create_user(username='new_user', password='password')
-        credentials =  ':'.join(['new_user', 'password']).encode()
+        credentials = ':'.join(['new_user', 'password']).encode()
         request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(credentials).decode()
         response = self.view(request, **self.request_kwargs)
 
@@ -4051,7 +4035,6 @@ class TestPlaceAttachmentListView (APITestMixin, TestCase):
         response = self.view(request, **self.invisible_request_kwargs)
         self.assertStatusCode(response, 400, response.render())
 
-
         # --------------------------------------------------
 
         #
@@ -4073,7 +4056,7 @@ class TestPlaceAttachmentListView (APITestMixin, TestCase):
         f.name = 'myfile.txt'
         request = self.factory.post(self.invisible_path + '?include_invisible', data={'file': f, 'name': 'my-file'})
         User.objects.create_user(username='new_user', password='password')
-        credentials =  ':'.join(['new_user', 'password']).encode()
+        credentials = ':'.join(['new_user', 'password']).encode()
         request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(credentials).decode()
         response = self.view(request, **self.invisible_request_kwargs)
 
@@ -4114,7 +4097,6 @@ class TestPlaceAttachmentListView (APITestMixin, TestCase):
         #
         request = self.factory.get(self.invisible_path)
         response = self.view(request, **self.invisible_request_kwargs)
-        data = json.loads(response.rendered_content)
 
         # Check that the request was successful
         self.assertStatusCode(response, 400)
@@ -4126,7 +4108,6 @@ class TestPlaceAttachmentListView (APITestMixin, TestCase):
         #
         request = self.factory.get(self.invisible_path + '?include_invisible')
         response = self.view(request, **self.invisible_request_kwargs)
-        data = json.loads(response.rendered_content)
 
         # Check that the request was restricted
         self.assertStatusCode(response, 401)
@@ -4139,7 +4120,6 @@ class TestPlaceAttachmentListView (APITestMixin, TestCase):
         request = self.factory.get(self.invisible_path + '?include_invisible')
         request.META[KEY_HEADER] = self.apikey.key
         response = self.view(request, **self.invisible_request_kwargs)
-        data = json.loads(response.rendered_content)
 
         # Check that the request was restricted
         self.assertStatusCode(response, 403)
@@ -4152,7 +4132,6 @@ class TestPlaceAttachmentListView (APITestMixin, TestCase):
         request = self.factory.get(self.invisible_path + '?include_invisible')
         request.user = User.objects.create(username='new_user', password='password')
         response = self.view(request, **self.invisible_request_kwargs)
-        data = json.loads(response.rendered_content)
 
         # Check that the request was restricted
         self.assertStatusCode(response, 403)
@@ -4165,7 +4144,6 @@ class TestPlaceAttachmentListView (APITestMixin, TestCase):
         request = self.factory.get(self.invisible_path + '?include_invisible')
         request.user = self.owner
         response = self.view(request, **self.invisible_request_kwargs)
-        data = json.loads(response.rendered_content)
 
         # Check that the request was successful
         self.assertStatusCode(response, 200)
@@ -4179,7 +4157,6 @@ class TestPlaceAttachmentListView (APITestMixin, TestCase):
         credentials = ':'.join([self.owner.username, '123']).encode()
         request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(credentials).decode()
         response = self.view(request, **self.invisible_request_kwargs)
-        data = json.loads(response.rendered_content)
 
         # Check that the request was successful
         self.assertStatusCode(response, 200)
@@ -4192,7 +4169,6 @@ class TestPlaceAttachmentListView (APITestMixin, TestCase):
         request = self.factory.get(self.invisible_path)
         request.user = self.owner
         response = self.view(request, **self.invisible_request_kwargs)
-        data = json.loads(response.rendered_content)
 
         # Check that the request was successful
         self.assertStatusCode(response, 400)
@@ -4292,7 +4268,6 @@ class TestSubmissionAttachmentListView (APITestMixin, TestCase):
         #
         request = self.factory.get(self.invisible_path)
         response = self.view(request, **self.invisible_request_kwargs)
-        data = json.loads(response.rendered_content)
 
         # Check that the request was successful
         self.assertStatusCode(response, 400)
@@ -4304,7 +4279,6 @@ class TestSubmissionAttachmentListView (APITestMixin, TestCase):
         #
         request = self.factory.get(self.invisible_path + '?include_invisible')
         response = self.view(request, **self.invisible_request_kwargs)
-        data = json.loads(response.rendered_content)
 
         # Check that the request was restricted
         self.assertStatusCode(response, 401)
@@ -4317,7 +4291,6 @@ class TestSubmissionAttachmentListView (APITestMixin, TestCase):
         request = self.factory.get(self.invisible_path + '?include_invisible')
         request.META[KEY_HEADER] = self.apikey.key
         response = self.view(request, **self.invisible_request_kwargs)
-        data = json.loads(response.rendered_content)
 
         # Check that the request was restricted
         self.assertStatusCode(response, 403)
@@ -4330,7 +4303,6 @@ class TestSubmissionAttachmentListView (APITestMixin, TestCase):
         request = self.factory.get(self.invisible_path + '?include_invisible')
         request.user = User.objects.create(username='new_user', password='password')
         response = self.view(request, **self.invisible_request_kwargs)
-        data = json.loads(response.rendered_content)
 
         # Check that the request was restricted
         self.assertStatusCode(response, 403)
@@ -4343,7 +4315,6 @@ class TestSubmissionAttachmentListView (APITestMixin, TestCase):
         request = self.factory.get(self.invisible_path + '?include_invisible')
         request.user = self.owner
         response = self.view(request, **self.invisible_request_kwargs)
-        data = json.loads(response.rendered_content)
 
         # Check that the request was successful
         self.assertStatusCode(response, 200)
@@ -4357,7 +4328,6 @@ class TestSubmissionAttachmentListView (APITestMixin, TestCase):
         credentials = ':'.join([self.owner.username, '123']).encode()
         request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(credentials).decode()
         response = self.view(request, **self.invisible_request_kwargs)
-        data = json.loads(response.rendered_content)
 
         # Check that the request was successful
         self.assertStatusCode(response, 200)
@@ -4370,7 +4340,6 @@ class TestSubmissionAttachmentListView (APITestMixin, TestCase):
         request = self.factory.get(self.invisible_path)
         request.user = self.owner
         response = self.view(request, **self.invisible_request_kwargs)
-        data = json.loads(response.rendered_content)
 
         # Check that the request was successful
         self.assertStatusCode(response, 400)
@@ -4414,7 +4383,7 @@ class TestSubmissionAttachmentListView (APITestMixin, TestCase):
         f.name = 'myfile.txt'
         request = self.factory.post(self.path, data={'file': f, 'name': 'my-file'})
         User.objects.create_user(username='new_user', password='password')
-        credentials =  ':'.join(['new_user', 'password']).encode()
+        credentials = ':'.join(['new_user', 'password']).encode()
         request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(credentials).decode()
         response = self.view(request, **self.request_kwargs)
 
@@ -4458,7 +4427,6 @@ class TestSubmissionAttachmentListView (APITestMixin, TestCase):
         response = self.view(request, **self.invisible_request_kwargs)
         self.assertStatusCode(response, 400, response.render())
 
-
         # --------------------------------------------------
 
         #
@@ -4480,7 +4448,7 @@ class TestSubmissionAttachmentListView (APITestMixin, TestCase):
         f.name = 'myfile.txt'
         request = self.factory.post(self.invisible_path + '?include_invisible', data={'file': f, 'name': 'my-file'})
         User.objects.create_user(username='new_user', password='password')
-        credentials =  ':'.join(['new_user', 'password']).encode()
+        credentials = ':'.join(['new_user', 'password']).encode()
         request.META['HTTP_AUTHORIZATION'] = 'Basic ' + base64.b64encode(credentials).decode()
         response = self.view(request, **self.invisible_request_kwargs)
 

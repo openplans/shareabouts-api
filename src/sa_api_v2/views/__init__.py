@@ -1,2 +1,2 @@
-from .base_views import *
-from .bulk_data_views import *
+from .base_views import *  # noqa
+from .bulk_data_views import *  # noqa

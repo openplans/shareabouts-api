@@ -1,9 +1,9 @@
 from os import environ
 from django.core.management.base import BaseCommand
-from django.contrib.auth import get_user_model
 
 import logging
 log = logging.getLogger(__name__)
+
 
 class Command(BaseCommand):
     help = 'Create a dataset that can be used with the sample shareabouts client settings.'

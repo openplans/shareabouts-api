@@ -2,6 +2,7 @@ import time
 import logging
 from django.utils.deprecation import MiddlewareMixin
 
+
 class RequestTimeLogger (MiddlewareMixin):
     def process_request(self, request):
         self.start_time = time.time()
@@ -40,7 +41,8 @@ class CookiesLogger (MiddlewareMixin):
                 response.status_code,
                 request.COOKIES,
                 response.cookies or {}
-        ))
+            )
+        )
         return response
 
 

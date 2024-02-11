@@ -5,6 +5,7 @@ from django.contrib.auth import get_user_model
 import logging
 log = logging.getLogger(__name__)
 
+
 class Command(BaseCommand):
     help = 'Create a one-off default administrative user.'
 

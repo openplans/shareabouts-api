@@ -1,17 +1,7 @@
 from django.urls import reverse
 from django.http import HttpResponse
-from mock import patch
-from rest_framework import views, permissions
-from rest_framework.negotiation import DefaultContentNegotiation
-from rest_framework.parsers import JSONParser, FormParser, MultiPartParser
+from rest_framework import views
 from rest_framework.response import Response
-from rest_framework.request import Request
-from rest_framework.exceptions import APIException
-from rest_framework.settings import APISettings
-from rest_framework_bulk import generics as bulk_generics
-from ..params import (INCLUDE_INVISIBLE_PARAM, INCLUDE_PRIVATE_PARAM,
-    INCLUDE_SUBMISSIONS_PARAM, NEAR_PARAM, DISTANCE_PARAM, TEXTSEARCH_PARAM,
-    FORMAT_PARAM, PAGE_PARAM, PAGE_SIZE_PARAM, CALLBACK_PARAM)
 from ..models import DataSnapshotRequest, DataSnapshot, DataSet
 from ..tasks import store_bulk_data, bulk_data_status_update
 from .base_views import OwnedResourceMixin

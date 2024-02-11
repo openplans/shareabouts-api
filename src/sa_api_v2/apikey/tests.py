@@ -1,9 +1,9 @@
-#from django.core.exceptions import PermissionDenied
-#import mock
-#import django.test
+# from django.core.exceptions import PermissionDenied
+# import mock
+# import django.test
 
 
-#class TestApiKeyAuth(django.test.TestCase):
+# class TestApiKeyAuth(django.test.TestCase):
 
 #    def _cleanup(self):
 #        from .models import ApiKey

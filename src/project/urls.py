@@ -38,7 +38,6 @@ urlpatterns = [
 ]
 
 # Debug toolbar explicit setup
-from django.conf import settings
 if settings.SHOW_DEBUG_TOOLBAR:
     import debug_toolbar
     urlpatterns += [

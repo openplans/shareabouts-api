@@ -1,0 +1,23 @@
+[flake8]
+exclude =
+    env*/,
+    __pycache__,
+    profiling/,
+    **/south_migrations/
+extend-ignore =
+    # Line too long
+    E501,
+
+    # Continuation line under-indented or unaligned
+    E128,
+    E131,
+
+    # Multiple statements on one line
+    E701,
+
+    # Spaces before/after curly braces
+    E201,
+    E202,
+
+    # Lambda expression assignment
+    E731

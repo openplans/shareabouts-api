@@ -13,12 +13,12 @@ MANAGERS = ADMINS
 USE_GEODB = (environ.get('USE_GEODB', 'True').lower() == 'true')
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.', # Add 'postgresql_psycopg2', 'mysql', 'sqlite3' or 'oracle'.
-        'NAME': '',                      # Or path to database file if using sqlite3.
-        'USER': '',                      # Not used with sqlite3.
-        'PASSWORD': '',                  # Not used with sqlite3.
-        'HOST': '',                      # Set to empty string for localhost. Not used with sqlite3.
-        'PORT': '',                      # Set to empty string for default. Not used with sqlite3.
+        'ENGINE': 'django.db.backends.',  # Add 'postgresql_psycopg2', 'mysql', 'sqlite3' or 'oracle'.
+        'NAME': '',                       # Or path to database file if using sqlite3.
+        'USER': '',                       # Not used with sqlite3.
+        'PASSWORD': '',                   # Not used with sqlite3.
+        'HOST': '',                       # Set to empty string for localhost. Not used with sqlite3.
+        'PORT': '',                       # Set to empty string for default. Not used with sqlite3.
     }
 }
 DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
@@ -185,8 +185,6 @@ INSTALLED_APPS = (
     'sa_api_v2',
     'sa_api_v2.apikey',
     'sa_api_v2.cors',
-    # TODO: Update to use django-oauth-toolkit
-    # 'remote_client_user',
 )
 
 if USE_GEODB:
@@ -251,6 +249,7 @@ SOCIAL_AUTH_LOGIN_ERROR_URL = 'remote-social-login-error'
 # Debug toolbar
 def custom_show_toolbar(request):
     return SHOW_DEBUG_TOOLBAR
+
 
 DEBUG_TOOLBAR_CONFIG = {
     'SHOW_TOOLBAR_CALLBACK': 'project.settings.custom_show_toolbar',
@@ -365,7 +364,8 @@ if 'DEBUG' in environ:
 
 # Look for the following redis environment variables, in order
 for REDIS_URL_ENVVAR in ('REDIS_URL', 'OPENREDIS_URL'):
-    if REDIS_URL_ENVVAR in environ: break
+    if REDIS_URL_ENVVAR in environ:
+        break
 else:
     REDIS_URL_ENVVAR = None
 
@@ -400,13 +400,11 @@ if all([key in environ for key in ('SHAREABOUTS_AWS_KEY',
     DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
     ATTACHMENT_STORAGE = DEFAULT_FILE_STORAGE
 
-if 'SHAREABOUTS_TWITTER_KEY' in environ \
-    and 'SHAREABOUTS_TWITTER_SECRET' in environ:
+if 'SHAREABOUTS_TWITTER_KEY' in environ and 'SHAREABOUTS_TWITTER_SECRET' in environ:
     SOCIAL_AUTH_TWITTER_KEY = environ['SHAREABOUTS_TWITTER_KEY']
     SOCIAL_AUTH_TWITTER_SECRET = environ['SHAREABOUTS_TWITTER_SECRET']
 
-if 'SHAREABOUTS_FACEBOOK_KEY' in environ \
-    and 'SHAREABOUTS_FACEBOOK_SECRET' in environ:
+if 'SHAREABOUTS_FACEBOOK_KEY' in environ and 'SHAREABOUTS_FACEBOOK_SECRET' in environ:
     SOCIAL_AUTH_FACEBOOK_KEY = environ['SHAREABOUTS_FACEBOOK_KEY']
     SOCIAL_AUTH_FACEBOOK_SECRET = environ['SHAREABOUTS_FACEBOOK_SECRET']
 
@@ -426,7 +424,7 @@ if 'CONSOLE_LOG_LEVEL' in environ:
 # Override settings values by importing the local_settings.py module.
 
 try:
-    from .local_settings import *
+    from .local_settings import *  # noqa  # type: ignore
 except ImportError:
     pass
 

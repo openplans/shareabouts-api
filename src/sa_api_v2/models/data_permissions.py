@@ -5,6 +5,7 @@ from .core import CacheClearingModel
 from .core import DataSet
 from .mixins import CloneableModelMixin
 
+
 class DataPermissionManager (models.Manager):
     use_for_related_fields = True
 
@@ -142,6 +143,8 @@ def create_data_permissions(sender, instance, created, **kwargs):
     if created and not cloned:
         DataSetPermission.objects.create(dataset=instance, submission_set='*',
             can_retrieve=True, can_create=False, can_update=False, can_destroy=False)
+
+
 post_save.connect(create_data_permissions, sender=DataSet, dispatch_uid="dataset-create-permissions")
 
 
@@ -152,11 +155,14 @@ def any_allow(permissions, do_action, submission_set, protected=False):
     is on protected data.
     """
     for permission in permissions:
-        if (permission.submission_set in (submission_set, '*')
+        if (
+            permission.submission_set in (submission_set, '*')
             and getattr(permission, 'can_' + do_action, False)
-            and (permission.can_access_protected or not protected)):
+            and (permission.can_access_protected or not protected)
+        ):
             return True
     return False
+
 
 def check_data_permission(user, client, do_action, dataset, submission_set, protected=False):
     """
@@ -180,16 +186,19 @@ def check_data_permission(user, client, do_action, dataset, submission_set, prot
 
     # Then the client permission
     if client is not None:
-        if (client.dataset == dataset and
-            any_allow(client.permissions.all(), do_action, submission_set, protected)):
+        if (
+            client.dataset == dataset and
+            any_allow(client.permissions.all(), do_action, submission_set, protected)
+        ):
             return True
 
     # Next, check the user's groups
     if user is not None and user.is_authenticated:
         for group in user._groups.all():
-            if (dataset and group.dataset_id == dataset.id and
-                any_allow(group.permissions.all(), do_action, submission_set, protected)):
+            if (
+                dataset and group.dataset_id == dataset.id and
+                any_allow(group.permissions.all(), do_action, submission_set, protected)
+            ):
                 return True
 
     return False
-

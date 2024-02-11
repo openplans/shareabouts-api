@@ -1,7 +1,5 @@
 from django.test import TestCase
-from django.test.client import RequestFactory
 from ..models import User
-from ..views import CurrentUserInstanceView
 
 
 class APITestMixin (object):

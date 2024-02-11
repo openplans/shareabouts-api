@@ -2,21 +2,14 @@ from django.test import TestCase
 from django.test.client import RequestFactory
 from django.urls import reverse
 from django.core.cache import cache as django_cache
-from django.core.files import File
-from django.contrib.auth.models import AnonymousUser
-import base64
 import json
-import mock
 import responses
-from io import StringIO
-from ..models import User, DataSet, Place, Submission, Attachment, Group, Webhook
+from ..models import User, DataSet, Place, Submission, Webhook
 from ..cache import cache_buffer
 from ..apikey.models import ApiKey
 from ..apikey.auth import KEY_HEADER
 from ..cors.models import Origin
-from ..views import (PlaceInstanceView, PlaceListView, SubmissionInstanceView,
-    SubmissionListView, DataSetSubmissionListView, DataSetInstanceView,
-    DataSetListView, AttachmentListView, ActionListView, requests)
+from ..views import PlaceListView
 
 
 class APITestMixin (object):
@@ -65,7 +58,7 @@ class TestPlaceListView (APITestMixin, TestCase):
         self.ds_origin = Origin.objects.create(pattern='http://openplans.github.com', dataset=self.dataset)
 
         dataset2 = DataSet.objects.create(slug='ds2', owner=self.owner)
-        place2 = Place.objects.create(
+        Place.objects.create(
           dataset=dataset2,
           geometry='POINT(3 4)',
         )

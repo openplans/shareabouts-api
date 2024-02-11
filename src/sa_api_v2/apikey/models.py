@@ -14,7 +14,6 @@ from django.db.models.signals import post_save
 from django.utils.timezone import now
 from ..models import DataSet, KeyPermission
 from ..models.mixins import CloneableModelMixin
-from .. import utils
 
 # Changing this would require a migration, ugh.
 KEY_SIZE = 32
@@ -97,4 +96,6 @@ def create_data_permissions(sender, instance, created, **kwargs):
     if created:
         KeyPermission.objects.create(key=instance, submission_set='*',
             can_retrieve=True, can_create=True, can_update=True, can_destroy=True)
+
+
 post_save.connect(create_data_permissions, sender=ApiKey, dispatch_uid="apikey-create-permissions")

@@ -4,7 +4,6 @@ DjangoRestFramework resources for the Shareabouts REST API.
 import ujson as json
 import re
 from collections import defaultdict, OrderedDict
-from itertools import chain
 from urllib.parse import quote_plus
 from django.conf import settings
 if settings.USE_GEODB:
@@ -22,7 +21,7 @@ from . import cors
 from . import models
 from .models import check_data_permission
 from .params import (INCLUDE_INVISIBLE_PARAM, INCLUDE_PRIVATE_PARAM,
-    INCLUDE_SUBMISSIONS_PARAM, FORMAT_PARAM)
+    INCLUDE_SUBMISSIONS_PARAM,)
 
 import logging
 log = logging.getLogger(__name__)
@@ -67,6 +66,7 @@ class GeometryField(serializers.Field):
 # Shareabouts-specific fields
 # ---------------------------
 #
+
 
 class ShareaboutsFieldMixin (object):
 
@@ -123,13 +123,14 @@ def api_reverse(view_name, kwargs={}, request=None, format=None):
     except KeyError:
         raise ValueError('No API route named {} formatted.'.format(view_name))
 
-    url_params = dict([(key, quote_plus(val)) for key,val in kwargs.items()])
+    url_params = dict([(key, quote_plus(val)) for key, val in kwargs.items()])
     url += route_template_string.format(**url_params)
 
     if format is not None:
         url += '.' + format
 
     return url
+
 
 class ShareaboutsRelatedField (ShareaboutsFieldMixin, serializers.HyperlinkedRelatedField):
     """
@@ -153,7 +154,6 @@ class ShareaboutsRelatedField (ShareaboutsFieldMixin, serializers.HyperlinkedRel
         if pk is None:
             return
 
-        lookup_value = getattr(obj, self.lookup_field)
         kwargs = self.get_url_kwargs(obj)
         return self.reverse(view_name, kwargs=kwargs, request=request, format=format)
 
@@ -194,7 +194,6 @@ class ShareaboutsIdentityField (ShareaboutsFieldMixin, serializers.HyperlinkedId
         # Unsaved objects will not yet have a valid URL.
         if obj.pk is None: return None
 
-        lookup_value = getattr(obj, self.lookup_field)
         kwargs = self.get_url_kwargs(obj)
         return self.reverse(view_name, kwargs=kwargs, request=request, format=format)
 
@@ -347,7 +346,7 @@ class TwitterUserDataStrategy (object):
     def extract_avatar_url(self, user_info):
         url = user_info['profile_image_url']
 
-        url_pattern = '^(?P<path>.*?)(?:_normal|_mini|_bigger|)(?P<ext>\.[^\.]*)$'
+        url_pattern = r'^(?P<path>.*?)(?:_normal|_mini|_bigger|)(?P<ext>\.[^\.]*)$'
         match = re.match(url_pattern, url)
         if match:
             return match.group('path') + '_bigger' + match.group('ext')
@@ -444,20 +443,24 @@ class DataSetPermissionSerializer (serializers.ModelSerializer):
         model = models.DataSetPermission
         exclude = ('id', 'dataset')
 
+
 class GroupPermissionSerializer (serializers.ModelSerializer):
     class Meta:
         model = models.GroupPermission
         exclude = ('id', 'group')
+
 
 class KeyPermissionSerializer (serializers.ModelSerializer):
     class Meta:
         model = models.KeyPermission
         exclude = ('id', 'key')
 
+
 class OriginPermissionSerializer (serializers.ModelSerializer):
     class Meta:
         model = models.OriginPermission
         exclude = ('id', 'origin')
+
 
 class ApiKeySerializer (serializers.ModelSerializer):
     permissions = KeyPermissionSerializer(many=True)
@@ -465,6 +468,7 @@ class ApiKeySerializer (serializers.ModelSerializer):
     class Meta:
         model = apikey.models.ApiKey
         exclude = ('id', 'dataset', 'logged_ip', 'last_used')
+
 
 class OriginSerializer (serializers.ModelSerializer):
     permissions = OriginPermissionSerializer(many=True)
@@ -480,11 +484,13 @@ class BaseGroupSerializer (serializers.ModelSerializer):
         model = models.Group
         exclude = ('submitters', 'id')
 
+
 class SimpleGroupSerializer (BaseGroupSerializer):
     permissions = GroupPermissionSerializer(many=True)
 
     class Meta (BaseGroupSerializer.Meta):
         exclude = ('id', 'dataset', 'submitters')
+
 
 class GroupSerializer (BaseGroupSerializer):
     dataset = DataSetRelatedField()
@@ -558,6 +564,7 @@ class SimpleUserSerializer (BaseUserSerializer):
     class Meta (BaseUserSerializer.Meta):
         exclude = BaseUserSerializer.Meta.exclude + ('groups',)
 
+
 class UserSerializer (BaseUserSerializer):
     """
     Generates a partial user representation, for use as submitter data in API
@@ -565,6 +572,7 @@ class UserSerializer (BaseUserSerializer):
     """
     class Meta (BaseUserSerializer.Meta):
         exclude = BaseUserSerializer.Meta.exclude + ('groups',)
+
 
 class FullUserSerializer (BaseUserSerializer):
     """
@@ -855,10 +863,12 @@ class BasePlaceSerializer (SubmittedThingSerializer, serializers.ModelSerializer
 
         return data
 
+
 class SimplePlaceSerializer (BasePlaceSerializer):
     class Meta (BasePlaceSerializer.Meta):
         fields = '__all__'
         read_only_fields = ('dataset',)
+
 
 class PlaceSerializer (BasePlaceSerializer, serializers.HyperlinkedModelSerializer):
     url = PlaceIdentityField()
@@ -900,9 +910,11 @@ class BaseSubmissionSerializer (SubmittedThingSerializer, serializers.ModelSeria
         list_serializer_class = bulk_serializers.BulkListSerializer
         update_lookup_field = 'url'
 
+
 class SimpleSubmissionSerializer (BaseSubmissionSerializer):
     class Meta (BaseSubmissionSerializer.Meta):
         read_only_fields = ('dataset', 'place')
+
 
 class SubmissionSerializer (BaseSubmissionSerializer, serializers.HyperlinkedModelSerializer):
     url = SubmissionIdentityField()
@@ -959,6 +971,7 @@ class BaseDataSetSerializer (EmptyModelSerializer, serializers.ModelSerializer):
             ret[field_name] = value
         return ret
 
+
 class SimpleDataSetSerializer (BaseDataSetSerializer, serializers.ModelSerializer):
     keys = ApiKeySerializer(many=True, read_only=False)
     origins = OriginSerializer(many=True, read_only=False)
@@ -967,6 +980,7 @@ class SimpleDataSetSerializer (BaseDataSetSerializer, serializers.ModelSerialize
 
     class Meta (BaseDataSetSerializer.Meta):
         fields = '__all__'
+
 
 class DataSetSerializer (BaseDataSetSerializer, serializers.HyperlinkedModelSerializer):
     url = DataSetIdentityField()
@@ -1007,7 +1021,6 @@ class DataSetSerializer (BaseDataSetSerializer, serializers.HyperlinkedModelSeri
             # Then, do:
             from .tasks import load_dataset_archive
             load_dataset_archive.apply_async(args=(obj.id, self.load_url,))
-
 
     def to_internal_value(self, data):
         if data and 'load_from_url' in data:

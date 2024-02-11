@@ -1,5 +1,4 @@
 import time
-import uuid
 from django.db import models
 
 

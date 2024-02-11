@@ -1,4 +1,3 @@
-from django.contrib.auth import login
 from django.core.exceptions import PermissionDenied
 from rest_framework import authentication
 from .models import ApiKey

@@ -3,7 +3,6 @@ from django.conf import settings
 from django.core import cache as django_cache
 from django.core.exceptions import ObjectDoesNotExist
 from django.urls import reverse
-from . import utils
 
 import logging
 logger = logging.getLogger('sa_api_v2.cache')
@@ -11,6 +10,7 @@ logger = logging.getLogger('sa_api_v2.cache')
 
 # A sentinel object to differentiate from None
 Undefined = object()
+
 
 class CacheBuffer (object):
     def __init__(self, initial_buffer=None):
@@ -162,6 +162,8 @@ class CacheBuffer (object):
         self.delete_queue = set()
         self.timeouts = {}
         self.buffer = {}
+
+
 cache_buffer = CacheBuffer()
 
 
@@ -298,7 +300,7 @@ class Cache (object):
         # Collect the prefixes for cached requests
         prefixes = self.get_request_prefixes(**params)
         prefixed_keys = self.get_keys_with_prefixes(*prefixes)
-        #Serialized data keys
+        # Serialized data keys
         data_keys = self.get_serialized_data_keys(obj)
         # Collect other related keys
         other_keys = self.get_other_keys(**params) | set([self.get_instance_params_key(obj.pk)])

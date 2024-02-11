@@ -1,11 +1,8 @@
-#-*- coding:utf-8 -*-
-
 from django.test import TestCase
 from django.test.client import RequestFactory
 from django.contrib.gis.geos import GEOSGeometry
 from django.core.files.base import ContentFile
 from rest_framework.reverse import reverse
-from nose.tools import istest
 from sa_api_v2.cache import cache_buffer
 from sa_api_v2.models import Attachment, Action, User, DataSet, Place, Submission, Group
 from sa_api_v2.serializers import AttachmentSerializer, ActionSerializer, UserSerializer, FullUserSerializer, PlaceSerializer, DataSetSerializer, SubmissionSerializer
@@ -13,7 +10,6 @@ from sa_api_v2.views import PlaceInstanceView
 from social_django.models import UserSocialAuth
 import json
 from os import path
-from mock import patch
 
 
 class TestAttachmentSerializer (TestCase):
@@ -80,7 +76,7 @@ class TestActionSerializer (TestCase):
 
     def test_prejoined_place_action_attributes(self):
         action = Action.objects.all()\
-            .select_related('thing__full_place' ,'thing__full_submission')\
+            .select_related('thing__full_place', 'thing__full_submission')\
             .filter(thing=self.place_action.thing)[0]
 
         serializer = ActionSerializer(action, context={
@@ -95,7 +91,7 @@ class TestActionSerializer (TestCase):
 
     def test_prejoined_submission_action_attributes(self):
         action = Action.objects.all()\
-            .select_related('thing__full_place' ,'thing__full_submission')\
+            .select_related('thing__full_place', 'thing__full_submission')\
             .filter(thing=self.comment_action.thing)[0]
 
         serializer = ActionSerializer(action, context={

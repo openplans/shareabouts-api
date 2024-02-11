@@ -1,14 +1,10 @@
-
-
 import requests
-import ujson as json
 from celery import shared_task
 from celery.result import AsyncResult
 from django.db import transaction
 from django.test.client import RequestFactory
 from django.utils.timezone import now
-from itertools import chain
-#from social.apps.django_app.default.models import UserSocialAuth
+from social.apps.django_app.default.models import UserSocialAuth
 from .models import DataSnapshotRequest, DataSnapshot, DataSet, User, Place, Submission
 from .serializers import SimplePlaceSerializer, SimpleSubmissionSerializer, SimpleDataSetSerializer
 from .renderers import CSVRenderer, JSONRenderer, GeoJSONRenderer
@@ -50,6 +46,7 @@ def generate_bulk_content(dataset, submission_set_name, **flags):
         content[format] = renderer.render(data)
     return content
 
+
 @shared_task
 def store_bulk_data(request_id):
     task_id = store_bulk_data.request.id
@@ -79,6 +76,7 @@ def store_bulk_data(request_id):
 
     return task_id
 
+
 @shared_task
 def bulk_data_status_update(uuid):
     """
@@ -89,6 +87,7 @@ def bulk_data_status_update(uuid):
     datarequest = DataSnapshotRequest.objects.get(guid=uuid)
     datarequest.status = taskresult.status.lower()
     datarequest.save()
+
 
 @shared_task
 def clone_related_dataset_data(orig_dataset_id, new_dataset_id):
@@ -137,6 +136,7 @@ def get_twitter_extra_data(user_data):
         'name': user_data.get('name')
     }
 
+
 def get_facebook_extra_data(user_data):
     return {
         'access_token': 'abc123',
@@ -148,6 +148,7 @@ def get_facebook_extra_data(user_data):
         "id": user_data.get('provider_id'),
         "name": user_data.get('name'),
     }
+
 
 def get_or_create_user(user_data, users_map):
     if user_data is None:
@@ -171,11 +172,13 @@ def get_or_create_user(user_data, users_map):
             user=user,
             provider=provider,
             uid=uid,
-            extra_data=
+            extra_data=(
                 get_twitter_extra_data(user_data)
                 if provider == 'twitter' else
                 get_facebook_extra_data(user_data)
+            )
         )
+
 
 def preload_users(data):
     """
@@ -198,6 +201,7 @@ def preload_users(data):
     users = User.objects.filter(username__in=usernames)
     users_map = dict([(user.username, user) for user in users])
     return users_map
+
 
 def list_errors(errors):
     errors_list = []

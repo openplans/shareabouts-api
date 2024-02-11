@@ -33,4 +33,5 @@ class OriginAdmin(ModelAdmin):
             obj.logged_ip = None
         super(OriginAdmin, self).save_model(request, obj, form, change)
 
+
 admin.site.register(Origin, OriginAdmin)

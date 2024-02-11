@@ -1,24 +1,21 @@
 from django.conf import settings
 from django.contrib.auth import views as auth_views
 if settings.USE_GEODB:
-    from django.contrib.gis.geos import GEOSGeometry, Point, Polygon
+    from django.contrib.gis.geos import Polygon
 from django.core import cache as django_cache
 from django.urls import reverse
 from django.db.models import Count, Q
 from django.http import Http404, HttpResponse, HttpResponseBadRequest, HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from django.test.client import RequestFactory
-from django.test.utils import override_settings
-from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
-from rest_framework import (views, permissions, mixins, authentication,
+from rest_framework import (views, permissions, authentication,
                             generics, exceptions, status)
 from rest_framework.negotiation import DefaultContentNegotiation
 from rest_framework.parsers import JSONParser, FormParser, MultiPartParser
 from rest_framework.response import Response
 from rest_framework.renderers import JSONRenderer, BrowsableAPIRenderer
 from rest_framework.request import Request
-from rest_framework.exceptions import APIException
 from rest_framework_bulk import generics as bulk_generics
 from social_django import views as social_views
 from mock import patch
@@ -32,20 +29,19 @@ from .. import parsers
 from .. import apikey
 from .. import cors
 from .. import tasks
-from .. import utils
 from ..cache import cache_buffer
 from ..params import (INCLUDE_INVISIBLE_PARAM, INCLUDE_PRIVATE_PARAM,
     INCLUDE_SUBMISSIONS_PARAM, NEAR_PARAM, DISTANCE_PARAM, BBOX_PARAM,
     TEXTSEARCH_PARAM, FORMAT_PARAM, PAGE_PARAM, PAGE_SIZE_PARAM,
     CALLBACK_PARAM)
 from functools import wraps
-from itertools import groupby, count
+from itertools import count
 from collections import defaultdict
 try:
     # Python 2
-    from urlparse import urlparse
+    from urlparse import urlparse  # type: ignore
     from urllib import urlencode
-except:
+except (ModuleNotFoundError, ImportError):
     # Python 3
     from urllib.parse import urlencode, urlparse
 import re
@@ -157,17 +153,6 @@ def is_really_logged_in(user, request):
     return (user.is_authenticated and
             not is_apikey_auth(auth) and
             not is_origin_auth(auth))
-
-
-class IsLoggedInOwner(permissions.BasePermission):
-    def has_permission(self, request, view):
-        if not is_really_logged_in(request.user, request):
-            return False
-
-        if request.user.is_superuser or is_owner(request.user, request):
-            return True
-
-        return False
 
 
 class IsOwnerOrReadOnly(permissions.BasePermission):
@@ -512,7 +497,6 @@ class FilteredResourceMixin (object):
                                 excluded.append(obj.pk)
                     queryset = queryset.exclude(pk__in=excluded)
 
-
         return queryset
 
 
@@ -594,9 +578,10 @@ class OwnedResourceMixin (ClientAuthenticationMixin, CorsEnabledMixin):
 
     def get_owner(self, force=False):
         if force or not hasattr(self, '_owner'):
-            if (hasattr(self, 'owner_username_kwarg') and
-                self.owner_username_kwarg in self.kwargs):
-
+            if (
+                hasattr(self, 'owner_username_kwarg') and
+                self.owner_username_kwarg in self.kwargs
+            ):
                 owner_username = self.kwargs[self.owner_username_kwarg]
                 self._owner = get_object_or_404(models.User.objects.all().prefetch_related('_groups', '_groups__permissions'), username=owner_username)
             else:
@@ -606,14 +591,14 @@ class OwnedResourceMixin (ClientAuthenticationMixin, CorsEnabledMixin):
     @classmethod
     def _get_dataset_from_db(cls, owner_username, dataset_slug):
         return get_object_or_404(
-            models.DataSet.objects.all()\
-                .select_related('owner')\
-                .prefetch_related('permissions')\
-                .prefetch_related('keys')\
-                .prefetch_related('keys__permissions')\
-                .prefetch_related('origins')\
-                .prefetch_related('origins__permissions')
-            , slug=dataset_slug, owner__username=owner_username)
+            models.DataSet.objects.all()
+                .select_related('owner')
+                .prefetch_related('permissions')
+                .prefetch_related('keys')
+                .prefetch_related('keys__permissions')
+                .prefetch_related('origins')
+                .prefetch_related('origins__permissions'),
+            slug=dataset_slug, owner__username=owner_username)
 
     @classmethod
     def _get_dataset_from_cache(cls, owner_username, dataset_slug):
@@ -635,11 +620,12 @@ class OwnedResourceMixin (ClientAuthenticationMixin, CorsEnabledMixin):
 
     def get_dataset(self, force=False):
         if force or not hasattr(self, '_dataset'):
-            if (hasattr(self, 'owner_username_kwarg') and
+            if (
+                hasattr(self, 'owner_username_kwarg') and
                 hasattr(self, 'dataset_slug_kwarg') and
                 self.owner_username_kwarg in self.kwargs and
-                self.dataset_slug_kwarg in self.kwargs):
-
+                self.dataset_slug_kwarg in self.kwargs
+            ):
                 owner_username = self.kwargs[self.owner_username_kwarg]
                 dataset_slug = self.kwargs[self.dataset_slug_kwarg]
 
@@ -971,11 +957,11 @@ class PlaceInstanceView (CachedResourceMixin, LocatedResourceMixin, OwnedResourc
 
 class CompletePlaceListRequestView (OwnedResourceMixin, generics.RetrieveAPIView):
     def get(self, request, *args, **kwargs):
-        dataset = self.get_dataset()
-        cache_key = dataset.cache.get_bulk_data_cache_key(dataset.pk, 'places',
-            include_submissions=(INCLUDE_SUBMISSIONS_PARAM in request.GET),
-            include_private=(INCLUDE_PRIVATE_PARAM in request.GET),
-            include_invisible=(INCLUDE_INVISIBLE_PARAM in request.GET))
+        # dataset = self.get_dataset()
+        # cache_key = dataset.cache.get_bulk_data_cache_key(dataset.pk, 'places',
+        #     include_submissions=(INCLUDE_SUBMISSIONS_PARAM in request.GET),
+        #     include_private=(INCLUDE_PRIVATE_PARAM in request.GET),
+        #     include_invisible=(INCLUDE_INVISIBLE_PARAM in request.GET))
         result = super(CompletePlaceListRequestView, self).get(request, *args, **kwargs)
         return result
 
@@ -1183,7 +1169,7 @@ class SubmissionInstanceView (CachedResourceMixin, OwnedResourceMixin, generics.
 
     queryset = models.Submission.objects.all()
     serializer_class = serializers.SubmissionSerializer
-    submission_set_name_kwarg = 'submission_set_name' # Set here so that the data permission checker has access
+    submission_set_name_kwarg = 'submission_set_name'  # Set here so that the data permission checker has access
 
     def get_object_or_404(self, pk):
         try:
@@ -1196,8 +1182,9 @@ class SubmissionInstanceView (CachedResourceMixin, OwnedResourceMixin, generics.
                     'place__dataset',
                     'place__dataset__owner',
                     'submitter')\
-                .prefetch_related('attachments', 'submitter__social_auth'
-                    )\
+                .prefetch_related(
+                    'attachments',
+                    'submitter__social_auth')\
                 .get()
         except self.queryset.model.DoesNotExist:
             raise Http404
@@ -1421,7 +1408,7 @@ class DataSetInstanceView (ProtectedOwnedResourceMixin, generics.RetrieveUpdateD
 
     def get_serializer_context(self):
         context = super(DataSetInstanceView, self).get_serializer_context()
-        include_invisible = INCLUDE_INVISIBLE_PARAM in self.request.GET
+        # include_invisible = INCLUDE_INVISIBLE_PARAM in self.request.GET
 
         return context
 
@@ -1960,15 +1947,18 @@ def capture_referer(view_func):
 
     return wrapper
 
+
 remote_social_login = capture_referer(social_views.auth)
 remote_logout = capture_referer(auth_views.LogoutView.as_view())
+
 
 def remote_social_login_error(request):
     error_redirect_url = request.session.get('client_error_next')
     return redirector(request, target=error_redirect_url)
 
-## social_auth_login = use_social_auth_headers(social_views.auth)
-## social_auth_complete = use_social_auth_headers(social_views.complete)
+# social_auth_login = use_social_auth_headers(social_views.auth)
+# social_auth_complete = use_social_auth_headers(social_views.complete)
+
 
 def redirector(request, target=None):
     """

@@ -1,27 +1,15 @@
 import json
 from django.test import TestCase
-# from django.test.client import Client
-from django.test.client import RequestFactory
-# from django.contrib.auth.models import User
 from django.core.cache import cache
-from django.urls import reverse
-# from mock import patch
-# from nose.tools import (istest, assert_equal, assert_not_equal, assert_in,
-#                         assert_raises)
 from ..models import (Attachment, DataSet, User, Group, SubmittedThing, Action, Place, Submission,
     DataSetPermission, check_data_permission, DataIndex, IndexedValue)
 from ..apikey.models import ApiKey
-# from ..views import SubmissionCollectionView
-# from ..views import raise_error_if_not_authenticated
-# from ..views import ApiKeyCollectionView
-# from ..views import OwnerPasswordView
-# import json
-import mock
 from mock import patch
 
 
 import os.path
 FIXTURE_PATH = os.path.join(os.path.dirname(__file__), 'fixtures')
+
 
 class TestAttachment (TestCase):
     def setUp(self):
@@ -445,7 +433,7 @@ class DataPermissionTests (TestCase):
         owner = User.objects.create(username='myowner')
         user = User.objects.create(username='myuser')
         dataset = DataSet.objects.create(slug='data', owner_id=owner.id)
-        place = Place.objects.create(dataset_id=dataset.id, geometry='POINT(0 0)')
+        Place.objects.create(dataset_id=dataset.id, geometry='POINT(0 0)')
 
         # Make sure a permission objects were created
         self.assertEqual(dataset.permissions.count(), 1)
@@ -472,7 +460,7 @@ class DataPermissionTests (TestCase):
         owner = User.objects.create(username='myowner')
         user = User.objects.create(username='myuser')
         dataset = DataSet.objects.create(slug='data', owner_id=owner.id)
-        place = Place.objects.create(dataset_id=dataset.id, geometry='POINT(0 0)')
+        Place.objects.create(dataset_id=dataset.id, geometry='POINT(0 0)')
 
         # Make sure a permission objects were created
         self.assertEqual(dataset.permissions.count(), 1)
@@ -498,7 +486,7 @@ class DataPermissionTests (TestCase):
         owner = User.objects.create(username='myowner')
         user = User.objects.create(username='myuser')
         dataset = DataSet.objects.create(slug='data', owner_id=owner.id)
-        place = Place.objects.create(dataset_id=dataset.id, geometry='POINT(0 0)')
+        Place.objects.create(dataset_id=dataset.id, geometry='POINT(0 0)')
 
         # Make sure a permission objects were created
         self.assertEqual(dataset.permissions.count(), 1)
@@ -537,7 +525,7 @@ class DataPermissionTests (TestCase):
         owner = User.objects.create(username='myowner')
         user = User.objects.create(username='myuser')
         dataset = DataSet.objects.create(slug='data', owner_id=owner.id)
-        place = Place.objects.create(dataset_id=dataset.id, geometry='POINT(0 0)')
+        Place.objects.create(dataset_id=dataset.id, geometry='POINT(0 0)')
 
         # Create a key for the dataset
         key = ApiKey.objects.create(key='abc', dataset=dataset)
@@ -567,7 +555,7 @@ class DataPermissionTests (TestCase):
         owner = User.objects.create(username='myowner')
         user = User.objects.create(username='myuser')
         dataset = DataSet.objects.create(slug='data', owner_id=owner.id)
-        place = Place.objects.create(dataset_id=dataset.id, geometry='POINT(0 0)')
+        Place.objects.create(dataset_id=dataset.id, geometry='POINT(0 0)')
 
         with patch('sa_api_v2.models.data_permissions.any_allow') as any_allow:
             check_data_permission(user, None, 'retrieve', dataset, 'comments')

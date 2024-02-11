@@ -9,9 +9,10 @@ from functools import wraps
 try:
     # Python 2
     from urlparse import urlparse, urljoin
-except:
+except (ModuleNotFoundError, ImportError):
     # Python 3
     from urllib.parse import urlparse, urljoin
+
 
 def isiterable(obj):
     try:
@@ -20,6 +21,7 @@ def isiterable(obj):
         return False
     else:
         return True
+
 
 def to_distance(string):
     try:
@@ -33,6 +35,7 @@ def to_distance(string):
         units = match.group(2)
 
     return D(**{units: number})
+
 
 def to_geom(string):
     """
@@ -57,6 +60,7 @@ def to_geom(string):
         geom.srid = 4326
 
     return geom
+
 
 def memo(f):
     """

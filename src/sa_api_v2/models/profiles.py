@@ -24,7 +24,8 @@ class ShareaboutsUserManager (UserManager):
         if token_response.status_code != 200:
             raise Exception('Received a {0} response while retrieving Twitter '
                 'authorization token: "{1}"'.format(
-                token_response.status_code, token_response.text))
+                    token_response.status_code, token_response.text)
+                )
 
         access_token = token_response.json().get('access_token')
         return access_token
@@ -94,7 +95,7 @@ class ShareaboutsUserManager (UserManager):
         if provider == 'twitter':
             return self.add_twitter_user(username, firstname, lastname)
         else:
-            raise NotImplemented('Adding by {0} is not yet implemented'.format(provider))
+            raise NotImplementedError('Adding by {0} is not yet implemented'.format(provider))
 
 
 class User (CacheClearingModel, AbstractUser):
