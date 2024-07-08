@@ -159,7 +159,6 @@ INSTALLED_APPS = (
     # 3rd-party reusaple apps
     # =================================
     'rest_framework',
-    'django_nose',
     'storages',
     'django_ace',
     'django_object_actions',
@@ -242,9 +241,6 @@ SOCIAL_AUTH_LOGIN_ERROR_URL = 'remote-social-login-error'
 #
 # Testing and administration
 #
-
-# Tests (nose)
-# TEST_RUNNER = 'django_nose.NoseTestSuiteRunner'
 
 # Debug toolbar
 def custom_show_toolbar(request):
