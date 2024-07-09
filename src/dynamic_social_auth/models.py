@@ -125,6 +125,14 @@ class OAuth2Provider (models.Model):
     def __str__(self):
         return self.name
 
+    def save(self, *args, **kwargs):
+        # Ensure that the scope_separator is set to the default value if it is
+        # not set (also protects against the admin trimming the field to an
+        # empty string).
+        if not self.scope_separator:
+            self.scope_separator = ' '
+        return super().save(*args, **kwargs)
+
     def make_backend_class(self):
         model_instance = self
 
