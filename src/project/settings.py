@@ -211,6 +211,7 @@ CELERY_ACCEPT_CONTENT = ['json', 'msgpack', 'yaml', 'pickle']
 AUTHENTICATION_BACKENDS = (
     # See https://python-social-auth.readthedocs.io/en/latest/backends/index.html#supported-backends
     # for list of available backends.
+    'dynamic_social_auth.backends.DynamicProviderModelAuth',
     'social_core.backends.twitter.TwitterOAuth',
     'social_core.backends.facebook.FacebookOAuth2',
     'sa_api_v2.auth_backends.CachedModelBackend',
@@ -403,6 +404,11 @@ if 'SHAREABOUTS_TWITTER_KEY' in environ and 'SHAREABOUTS_TWITTER_SECRET' in envi
 if 'SHAREABOUTS_FACEBOOK_KEY' in environ and 'SHAREABOUTS_FACEBOOK_SECRET' in environ:
     SOCIAL_AUTH_FACEBOOK_KEY = environ['SHAREABOUTS_FACEBOOK_KEY']
     SOCIAL_AUTH_FACEBOOK_SECRET = environ['SHAREABOUTS_FACEBOOK_SECRET']
+
+# Load in any other social auth keys and secrets from the environment
+for key in environ:
+    if key.startswith('SOCIAL_AUTH_') and (key.endswith('_KEY') or key.endswith('_SECRET')):
+        globals()[key] = environ[key]
 
 
 if 'SHAREABOUTS_ADMIN_EMAIL' in environ:
