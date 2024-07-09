@@ -370,13 +370,20 @@ if REDIS_URL_ENVVAR:
     import django_cache_url
     CACHE_CONFIG = django_cache_url.config(env=REDIS_URL_ENVVAR)
 
+    # Override to use the django-redis backend
+    CACHE_CONFIG['BACKEND'] = 'django_redis.cache.RedisCache'
+    CACHE_CONFIG.setdefault('OPTIONS', {}).update({
+        "CLIENT_CLASS": "django_redis.client.DefaultClient",
+    })
+
+    # Use TLS if the REDIS_USE_TLS environment variable is set to true
     if environ.get('REDIS_USE_TLS', 'false').lower() == 'true':
         CACHE_CONFIG.setdefault('OPTIONS', {}).update({
-            "CLIENT_CLASS": "django_redis.client.DefaultClient",
             "CONNECTION_POOL_KWARGS": {
                 "ssl_cert_reqs": None
             },
         })
+
     CACHES = {'default': CACHE_CONFIG}
 
     # Django sessions
