@@ -213,7 +213,6 @@ class OAuth2Provider (models.Model):
                 if model_instance.use_querystring_for_user_data:
                     params[model_instance.access_token_param] = access_token
 
-                breakpoint()
                 return self.get_json(url, headers=headers, data=params)
 
         return DynamicOAuth2
