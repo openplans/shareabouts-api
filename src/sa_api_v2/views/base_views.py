@@ -1899,7 +1899,9 @@ class CurrentUserInstanceView (CorsEnabledMixin, views.APIView):
             return HttpResponseRedirect(user_url, status=303)
 
     def delete(self, request):
-        auth_views.LogoutView.as_view()(request)
+        from django.contrib.auth import logout
+
+        logout(request)
         return HttpResponse(status=204)
 
 
