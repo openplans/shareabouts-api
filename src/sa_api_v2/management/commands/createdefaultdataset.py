@@ -17,8 +17,16 @@ class Command(BaseCommand):
         key = environ.get('SHAREABOUTS_DATASET_KEY', 'NTNhODE3Y2IzODlmZGZjMWU4NmU3NDhj')
 
         user, created = User.objects.get_or_create(username=username)
+        if created: log.info(f'Created user: {user.username}')
+        else: log.info(f'Using existing user: {user.username}')
+
         ds, created = DataSet.objects.get_or_create(owner=user, display_name=slug, slug=slug)
+        if created: log.info(f'Created dataset: {ds.display_name} ({ds.slug})')
+        else: log.info(f'Using existing dataset: {ds.display_name} ({ds.slug})')
+
         key, created = ApiKey.objects.get_or_create(dataset=ds, key=key)
+        if created: log.info(f'Created API key: {key.key}')
+        else: log.info(f'Using existing API key: {key.key}')
 
         if key.permissions.count() == 0:
             key.permissions.add(
@@ -27,3 +35,5 @@ class Command(BaseCommand):
                 KeyPermission(submission_set='supports', can_retrieve=True, can_create=True, can_update=False, can_destroy=True),
                 bulk=False,
             )
+            log.info('Added default permissions to API key.')
+        else: log.info('API key already has permissions set.')
