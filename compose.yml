@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  init:
+    build:
+      context: .
+      dockerfile: Containerfile
+    command: >
+      sh -c "
+        python3 manage.py migrate --noinput && 
+        python3 manage.py ensuresuperuser --noinput &&
+        python3 manage.py createdefaultdataset
+      "
+    env_file: .env
+    depends_on:
+      db: {"condition": "service_healthy"}
+      redis: {"condition": "service_healthy"}
+    restart: "no"
+
+  web:
+    build:
+      context: .
+      dockerfile: Containerfile
+    command: gunicorn project.wsgi --pythonpath src --workers ${WORKERS} --config gunicorn.conf.py --bind 0.0.0.0:8000
+    env_file: .env
+    ports:
+      - "8000:8000"
+    depends_on:
+      db: {"condition": "service_healthy"}
+      redis: {"condition": "service_healthy"}
+      init: {"condition": "service_completed_successfully"}
+
+  worker:
+    build:
+      context: .
+      dockerfile: Containerfile
+    command: celery --workdir=/app --app=project worker
+    env_file: .env
+    environment:
+      C_FORCE_ROOT: "true"
+    depends_on:
+      db: {"condition": "service_healthy"}
+      redis: {"condition": "service_healthy"}
+      init: {"condition": "service_completed_successfully"}
+
+  db:
+    image: postgis/postgis:15-3.3
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: shareabouts
+    ports:
+      - "15432:5432"
+    healthcheck:
+      test: [ "CMD-SHELL","psql -U postgres -d shareabouts -c \"SELECT ST_Buffer( ST_SetSRID('POINT(0 0)'::GEOMETRY, 4326), 1) AS geom ;\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7
+    ports:
+      - "16379:6379"
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
