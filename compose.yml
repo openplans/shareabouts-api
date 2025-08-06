@@ -4,7 +4,7 @@ services:
   init:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Containerfile
     command: >
       sh -c "
         python3 manage.py migrate --noinput && 
@@ -20,7 +20,7 @@ services:
   web:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Containerfile
     command: gunicorn project.wsgi --pythonpath src --workers ${WORKERS} --config gunicorn.conf.py --bind 0.0.0.0:8000
     env_file: .env
     ports:
@@ -33,9 +33,11 @@ services:
   worker:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Containerfile
     command: celery --workdir=/app --app=project worker
     env_file: .env
+    environment:
+      C_FORCE_ROOT: "true"
     depends_on:
       db: {"condition": "service_healthy"}
       redis: {"condition": "service_healthy"}
