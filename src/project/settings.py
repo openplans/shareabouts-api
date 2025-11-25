@@ -357,6 +357,24 @@ if 'DATABASE_URL' in environ:
     if USE_GEODB:
         DATABASES['default']['ENGINE'] = 'django.contrib.gis.db.backends.postgis'
 
+elif all([key in environ for key in ('DB_PASSWORD', 'DATABASE_HOST', 'DATABASE_NAME', 'DATABASE_USER')]):
+    # Construct DATABASE_URL from components (Cloud Run Secrets approach)
+    db_user = environ['DATABASE_USER']
+    db_password = environ['DB_PASSWORD']
+    db_host = environ['DATABASE_HOST']
+    db_name = environ['DATABASE_NAME']
+
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.contrib.gis.db.backends.postgis' if USE_GEODB else 'django.db.backends.postgresql',
+            'NAME': db_name,
+            'USER': db_user,
+            'PASSWORD': db_password,
+            'HOST': db_host,
+            'PORT': '5432',
+        }
+    }
+
 if 'DEBUG' in environ:
     DEBUG = (environ['DEBUG'].lower() == 'true')
     TEMPLATES[0]['OPTIONS']['debug'] = DEBUG
@@ -395,9 +413,38 @@ if REDIS_URL_ENVVAR:
     # Celery broker
     CELERY_BROKER_URL = environ[REDIS_URL_ENVVAR].strip('/') + '/1'
 
-if all([key in environ for key in ('SHAREABOUTS_AWS_KEY',
-                                   'SHAREABOUTS_AWS_SECRET',
-                                   'SHAREABOUTS_AWS_BUCKET')]):
+# Storage Configuration
+# ---------------------
+# We support S3, GCS, and local filesystem.
+# Precedence: GCS > S3 > Local
+
+DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
+STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
+ATTACHMENT_STORAGE = DEFAULT_FILE_STORAGE
+
+if 'GS_BUCKET_NAME' in environ:
+    # Google Cloud Storage
+    GS_BUCKET_NAME = environ['GS_BUCKET_NAME']
+    GS_PROJECT_ID = environ.get('GS_PROJECT_ID')
+
+    DEFAULT_FILE_STORAGE = "storages.backends.gcloud.GoogleCloudStorage"
+    STATICFILES_STORAGE = "storages.backends.gcloud.GoogleCloudStorage"
+
+    GS_DEFAULT_ACL = "publicRead"
+
+    # Static files
+    STATIC_URL = f"https://storage.googleapis.com/{GS_BUCKET_NAME}/static/"
+
+    # Media files
+    MEDIA_URL = f"https://storage.googleapis.com/{GS_BUCKET_NAME}/media/"
+
+    # Attachments
+    ATTACHMENT_STORAGE = DEFAULT_FILE_STORAGE
+
+elif all([key in environ for key in ('SHAREABOUTS_AWS_KEY',
+                                     'SHAREABOUTS_AWS_SECRET',
+                                     'SHAREABOUTS_AWS_BUCKET')]):
+    # AWS S3
     AWS_ACCESS_KEY_ID = environ['SHAREABOUTS_AWS_KEY']
     AWS_SECRET_ACCESS_KEY = environ['SHAREABOUTS_AWS_SECRET']
     AWS_STORAGE_BUCKET_NAME = environ['SHAREABOUTS_AWS_BUCKET']
@@ -406,6 +453,7 @@ if all([key in environ for key in ('SHAREABOUTS_AWS_KEY',
 
     DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
     ATTACHMENT_STORAGE = DEFAULT_FILE_STORAGE
+
 
 if 'SHAREABOUTS_TWITTER_KEY' in environ and 'SHAREABOUTS_TWITTER_SECRET' in environ:
     SOCIAL_AUTH_TWITTER_KEY = environ['SHAREABOUTS_TWITTER_KEY']
