@@ -8,7 +8,7 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-22.04  # 22.04 is stable; 24.04 is available but sticking to stable for now.
+    runs-on: ubuntu-24.04  # Use 24.04 for Podman 4.x (matches local dev environment)
 
     steps:
     - uses: actions/checkout@v4
