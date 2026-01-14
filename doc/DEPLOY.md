@@ -154,13 +154,13 @@ To import an existing database dump (e.g., from Heroku):
 3.  **Build the image**:
 
     ```bash
-    podman build -t gcr.io/${PROJECT_ID}/shareabouts-api:latest -f Containerfile .
+    podman build -t gcr.io/${PROJECT_ID}/shareabouts-api:latest-${ENVIRONMENT_NAME} -f Containerfile .
     ```
 
 4.  **Push the image**:
 
     ```bash
-    podman push gcr.io/${PROJECT_ID}/shareabouts-api:latest
+    podman push gcr.io/${PROJECT_ID}/shareabouts-api:latest-${ENVIRONMENT_NAME}
     ```
 
 5.  **Update Cloud Run**:
@@ -168,7 +168,7 @@ To import an existing database dump (e.g., from Heroku):
     ```bash
     gcloud run services update ${SERVICE_NAME}-${ENVIRONMENT_NAME} \
     --region ${REGION} \
-    --image gcr.io/${PROJECT_ID}/shareabouts-api:latest
+    --image gcr.io/${PROJECT_ID}/shareabouts-api:latest-${ENVIRONMENT_NAME}
     ```
 
 ### 5. Static Files

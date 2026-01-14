@@ -11,7 +11,7 @@ resource "google_cloud_run_v2_service" "default" {
     }
 
     containers {
-      image = "gcr.io/${var.project_id}/${var.service_name}:latest" # Assumes image is pushed
+      image = "gcr.io/${var.project_id}/${var.service_name}:latest-${var.environment}" # Assumes image is pushed
 
       resources {
         limits = {
