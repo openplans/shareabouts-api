@@ -411,7 +411,9 @@ if REDIS_URL_ENVVAR:
     SESSION_ENGINE = "django.contrib.sessions.backends.cache"
 
     # Celery broker
-    CELERY_BROKER_URL = environ[REDIS_URL_ENVVAR].strip('/') + '/1'
+    CELERY_BROKER_URL = environ[REDIS_URL_ENVVAR].rstrip('/')
+    if not CELERY_BROKER_URL.split('/')[-1].isdigit():
+        CELERY_BROKER_URL = CELERY_BROKER_URL + '/1'
 
 # Storage Configuration
 # ---------------------

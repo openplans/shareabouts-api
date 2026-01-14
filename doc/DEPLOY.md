@@ -130,13 +130,15 @@ To import an existing database dump (e.g., from Heroku):
 
 ### 4. Image Deployment
 
-1.  **Authenticate with Container Registry**:
+A `Makefile` is provided for common deployment tasks.
+
+1.  **Authenticate with Container Registry** (one-time setup):
 
     ```bash
     gcloud auth configure-docker gcr.io
     ```
 
-    *(For Podman, you may also need to run `podman login gcr.io` using a service account key or `gcloud auth print-access-token`), i.e.:*
+    *(For Podman, you may also need to run:)*
 
     ```bash
     gcloud auth print-access-token | podman login -u oauth2accesstoken --password-stdin https://gcr.io
@@ -151,24 +153,18 @@ To import an existing database dump (e.g., from Heroku):
     export REGION=your-region
     ```
 
-3.  **Build the image**:
+3.  **Deploy** (build, push, and restart Cloud Run):
 
     ```bash
-    podman build -t gcr.io/${PROJECT_ID}/shareabouts-api:latest-${ENVIRONMENT_NAME} -f Containerfile .
+    make gcp-deploy
     ```
 
-4.  **Push the image**:
+    Or run individual steps:
 
     ```bash
-    podman push gcr.io/${PROJECT_ID}/shareabouts-api:latest-${ENVIRONMENT_NAME}
-    ```
-
-5.  **Update Cloud Run**:
-
-    ```bash
-    gcloud run services update ${SERVICE_NAME}-${ENVIRONMENT_NAME} \
-    --region ${REGION} \
-    --image gcr.io/${PROJECT_ID}/shareabouts-api:latest-${ENVIRONMENT_NAME}
+    make build       # Build the container image locally
+    make gcp-push    # Push image to GCR
+    make gcp-restart # Update the Cloud Run service
     ```
 
 ### 5. Static Files
