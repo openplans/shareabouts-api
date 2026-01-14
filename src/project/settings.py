@@ -428,12 +428,14 @@ if 'GS_BUCKET_NAME' in environ:
     GS_PROJECT_ID = environ.get('GS_PROJECT_ID')
 
     DEFAULT_FILE_STORAGE = "storages.backends.gcloud.GoogleCloudStorage"
-    STATICFILES_STORAGE = "storages.backends.gcloud.GoogleCloudStorage"
 
     GS_DEFAULT_ACL = "publicRead"
 
-    # Static files
-    STATIC_URL = f"https://storage.googleapis.com/{GS_BUCKET_NAME}/static/"
+    # TODO: Use GCS for static file storage; With this commented out, the
+    #       default behavior of dj_static.Cling is used.
+    # # Static files
+    # STATICFILES_STORAGE = "storages.backends.gcloud.GoogleCloudStorage"
+    # STATIC_URL = f"https://storage.googleapis.com/{GS_BUCKET_NAME}/static/"
 
     # Media files
     MEDIA_URL = f"https://storage.googleapis.com/{GS_BUCKET_NAME}/media/"

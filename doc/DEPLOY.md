@@ -80,3 +80,70 @@ Deploying to Heroku
 5. Connect the app with the repository (add a git remote)
 6. Push to Heroku
 7. Run database migrations (or copy the database from elsewhere)
+
+Deploying to Google Cloud Platform
+----------------------------------
+
+The GCP deployment uses OpenTofu (or Terraform) for infrastructure, Podman for
+containerization, and Google Cloud Storage for media assets.
+
+### 1. Prerequisites
+
+- [OpenTofu](https://opentofu.org/) or [Terraform](https://www.terraform.io/)
+- [Podman](https://podman.io/) or Docker
+- [Google Cloud SDK (gcloud)](https://cloud.google.com/sdk)
+
+### 2. Infrastructure Setup
+
+Initialize and apply the OpenTofu configuration in the `infra/gcp` directory:
+
+    cd infra/gcp
+    tofu init
+    tofu apply
+
+This will create the Cloud SQL instance, Cloud Run service, GCS bucket, and other necessary resources.
+
+### 3. Database Migration
+
+To import an existing database dump (e.g., from Heroku):
+
+1.  **Convert to "Clean" SQL**: Use `pg_restore` with flags to ignore ownership and privileges that won't exist on Cloud SQL.
+
+        pg_restore -O -x -f dump.sql input.dump
+
+2.  **Upload to GCS**:
+
+        gcloud storage cp dump.sql gs://your-migration-bucket/
+
+3.  **Grant Permissions**: Ensure the Cloud SQL service account can read from the bucket.
+
+        gcloud storage buckets add-iam-policy-binding gs://your-migration-bucket \
+          --member="serviceAccount:<SQL-SERVICE-ACCOUNT>" \
+          --role="roles/storage.objectViewer"
+
+    *(You can find the service account email using `gcloud sql instances describe <instance-id>`)*
+
+4.  **Run Import**:
+
+        gcloud sql import sql <instance-id> gs://your-migration-bucket/dump.sql \
+          --database=<db-name> --user=<db-user>
+
+### 4. Image Deployment
+
+1.  **Build the image**:
+
+        podman build -t gcr.io/<PROJECT_ID>/shareabouts-api:latest -f Containerfile .
+
+2.  **Push the image**:
+
+        podman push gcr.io/<PROJECT_ID>/shareabouts-api:latest
+
+3.  **Update Cloud Run**:
+
+        gcloud run services update <service-name> \
+          --region <region> \
+          --image gcr.io/<PROJECT_ID>/shareabouts-api:latest
+
+### 5. Static Files
+
+Currently, static files are served directly by the container using `dj_static.Cling`. Ensure `STATIC_URL` and `STATICFILES_STORAGE` in `settings.py` are configured appropriately (local serving is the default if GCS static configuration is commented out).

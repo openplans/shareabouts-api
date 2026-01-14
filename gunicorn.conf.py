@@ -4,3 +4,6 @@ x_forwarded_for_header = 'X-FORWARDED-FOR'
 secure_scheme_headers = {
     'X-FORWARDED-PROTO': 'https',
 }
+accesslog = '-'
+errorlog = '-'
+timeout = 120
