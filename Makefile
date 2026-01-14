@@ -1,4 +1,4 @@
-.PHONY: test test-clean build gcp-push gcp-restart gcp-deploy
+.PHONY: test-env test test-clean build gcp-push gcp-restart gcp-deploy
 
 # Build the container image
 build:
@@ -26,8 +26,12 @@ gcp-restart:
 # Full deployment: build, push, and restart
 gcp-deploy: build gcp-push gcp-restart
 
+# Stub .env file
+test-env:
+	cp .env.template .env
+
 # Run tests in a clean container environment
-test: test-clean
+test: test-env test-clean
 	podman-compose run --rm test
 
 # Just clean up containers
