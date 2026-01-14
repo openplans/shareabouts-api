@@ -11,10 +11,15 @@ import loginas.urls
 
 admin.autodiscover()
 
+def raise_error(request):
+    raise Exception("Test error")
+
 urlpatterns = [
     # Examples:
     # re_path(r'^$', 'project.views.home', name='home'),
     # re_path(r'^project/', include('project.foo.urls')),
+
+    re_path(r'^test-error/', raise_error),
 
     # NOTE: Redirect all manager urls until the manager is fixed.
     re_path(r'^$', lambda x: HttpResponseRedirect(resolve_url(settings.ROOT_REDIRECT_TO))),

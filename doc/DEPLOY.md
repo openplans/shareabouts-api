@@ -130,19 +130,46 @@ To import an existing database dump (e.g., from Heroku):
 
 ### 4. Image Deployment
 
-1.  **Build the image**:
+1.  **Authenticate with Container Registry**:
 
-        podman build -t gcr.io/<PROJECT_ID>/shareabouts-api:latest -f Containerfile .
+    ```bash
+    gcloud auth configure-docker gcr.io
+    ```
 
-2.  **Push the image**:
+    *(For Podman, you may also need to run `podman login gcr.io` using a service account key or `gcloud auth print-access-token`), i.e.:*
 
-        podman push gcr.io/<PROJECT_ID>/shareabouts-api:latest
+    ```bash
+    gcloud auth print-access-token | podman login -u oauth2accesstoken --password-stdin https://gcr.io
+    ```
 
-3.  **Update Cloud Run**:
+2.  **Set Environment Variables**:
 
-        gcloud run services update <service-name> \
-          --region <region> \
-          --image gcr.io/<PROJECT_ID>/shareabouts-api:latest
+    ```bash
+    export PROJECT_ID=your-project-id
+    export SERVICE_NAME=your-service-name
+    export ENVIRONMENT_NAME=your-environment-name
+    export REGION=your-region
+    ```
+
+3.  **Build the image**:
+
+    ```bash
+    podman build -t gcr.io/${PROJECT_ID}/shareabouts-api:latest -f Containerfile .
+    ```
+
+4.  **Push the image**:
+
+    ```bash
+    podman push gcr.io/${PROJECT_ID}/shareabouts-api:latest
+    ```
+
+5.  **Update Cloud Run**:
+
+    ```bash
+    gcloud run services update ${SERVICE_NAME}-${ENVIRONMENT_NAME} \
+    --region ${REGION} \
+    --image gcr.io/${PROJECT_ID}/shareabouts-api:latest
+    ```
 
 ### 5. Static Files
 
