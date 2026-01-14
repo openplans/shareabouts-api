@@ -1,0 +1,29 @@
+name: Test
+
+on:
+  push:
+    branches: [ master, main ]
+  pull_request:
+    branches: [ master, main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-22.04  # 22.04 is stable; 24.04 is available but sticking to stable for now.
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.12'
+
+    - name: Install Podman Compose
+      run: |
+        pip install podman-compose
+
+    - name: Build Images
+      run: make build
+
+    - name: Run Tests
+      run: make test
