@@ -46,10 +46,8 @@ services:
       init: {"condition": "service_completed_successfully"}
 
   test:
-    build:
-      context: .
-      dockerfile: Containerfile
-    command: python3 manage.py test .
+    image: shareabouts-api
+    command: pytest
     env_file: .env
     environment:
       - REDIS_URL=redis://redis:6379/0

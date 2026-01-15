@@ -32,7 +32,7 @@ test-env:
 
 # Run tests in a clean container environment
 test: test-env test-clean
-	podman-compose run --rm test
+	podman-compose run --rm test pytest
 
 # Just clean up containers
 test-clean:
