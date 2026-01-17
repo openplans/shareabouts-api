@@ -10,7 +10,7 @@ resource "google_project_service" "apis" {
     "storage.googleapis.com",
     "iam.googleapis.com",
     "secretmanager.googleapis.com",
-    "run.googleapis.com",
+
   ])
 
   service            = each.key

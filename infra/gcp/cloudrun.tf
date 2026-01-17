@@ -20,24 +20,6 @@ resource "google_cloud_run_v2_service" "default" {
         }
       }
 
-      # env {
-      #   name = "DATABASE_URL"
-      #   value_source {
-      #     secret_key_ref {
-      #       secret  = google_secret_manager_secret.db_password.secret_id
-      #       version = "latest"
-      #     }
-      #   }
-      # }
-      # We need to construct the full DB URL.
-      # Since we can't easily interpolate secrets into env vars directly in Cloud Run (it supports full value from secret),
-      # we might need to change how the app reads DB config OR use a startup script.
-      # HOWEVER, Cloud Run supports mounting secrets as files or env vars.
-      # Let's use the env var approach but we need to construct the connection string.
-      # DJANGO_DATABASE_URL expects the full string.
-      # Alternative: Pass DB_PASSWORD as a separate env var and construct DATABASE_URL in settings.py or entrypoint.
-      # Let's assume we can change settings.py or use a script.
-      # For now, let's pass DB_PASSWORD as an env var.
 
       env {
         name = "DB_PASSWORD"
