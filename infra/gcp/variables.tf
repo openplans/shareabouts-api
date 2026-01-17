@@ -24,3 +24,8 @@ variable "domain_name" {
   description = "The custom domain name"
   type        = string
 }
+
+variable "allowed_hosts" {
+  description = "The allowed hosts"
+  type        = list(string)
+}

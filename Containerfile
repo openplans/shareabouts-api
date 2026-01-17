@@ -3,12 +3,12 @@ FROM ubuntu:24.04
 # Install Python & GeoDjango dependencies
 RUN apt update && \
     apt install -y \
-        libpq-dev \
-        libproj-dev \
-        gdal-bin \
-        python3 \
-        python3-pip \
-        python3-venv && \
+    libpq-dev \
+    libproj-dev \
+    gdal-bin \
+    python3 \
+    python3-pip \
+    python3-venv && \
     apt clean
 
 # Create a virtual environment
@@ -29,6 +29,7 @@ WORKDIR /app
 # We pass dummy values for REDIS_URL and SECRET_KEY to ensure settings.py loads without error
 RUN REDIS_URL="redis://dummy:6379/0" \
     SECRET_KEY="dummy" \
+    ALLOWED_HOSTS="*" \
     python3 manage.py collectstatic --noinput
 
 # Copy gunicorn config

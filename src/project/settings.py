@@ -1,4 +1,5 @@
 from os import environ
+from django.core.exceptions import ImproperlyConfigured
 
 DEBUG = True
 SHOW_DEBUG_TOOLBAR = DEBUG
@@ -30,8 +31,16 @@ DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 
 # Hosts/domain names that are valid for this site; required if DEBUG is False
 # See https://docs.djangoproject.com/en/1.5/ref/settings/#allowed-hosts
-ALLOWED_HOSTS = ['*']
-SECRET_KEY = 'pbv(g=%7$$4rzvl88e24etn57-%n0uw-@y*=7ak422_3!zrc9+'
+try:
+    ALLOWED_HOSTS = [host.strip() for host in environ['ALLOWED_HOSTS'].split(',')]
+except KeyError:
+    raise ImproperlyConfigured('ALLOWED_HOSTS environment variable is required')
+
+try:
+    SECRET_KEY = environ['SECRET_KEY']
+except KeyError:
+    raise ImproperlyConfigured('SECRET_KEY environment variable is required')
+
 SITE_ID = 1
 
 # How long to keep api cache values. Since the api will invalidate the cache
@@ -404,6 +413,10 @@ if REDIS_URL_ENVVAR:
                 "ssl_cert_reqs": None
             },
         })
+
+    # Allow a cache prefix to be set to avoid cache key collisions across
+    # environments
+    CACHE_CONFIG['KEY_PREFIX'] = environ.get('REDIS_KEY_PREFIX', '')
 
     CACHES = {'default': CACHE_CONFIG}
 

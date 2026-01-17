@@ -49,6 +49,10 @@ resource "google_cloud_run_v2_service" "default" {
         value = "redis://${google_redis_instance.cache.host}:${google_redis_instance.cache.port}/0"
       }
       env {
+        name  = "REDIS_KEY_PREFIX"
+        value = var.environment
+      }
+      env {
         name  = "GS_BUCKET_NAME"
         value = google_storage_bucket.static.name
       }
@@ -71,7 +75,7 @@ resource "google_cloud_run_v2_service" "default" {
       }
       env {
         name  = "ALLOWED_HOSTS"
-        value = "*" # Should be restricted in production
+        value = join(",", concat(["${var.service_name}-${var.environment}-${var.project_id}-${var.region}.run.app"], var.allowed_hosts))
       }
     }
   }
