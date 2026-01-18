@@ -1,6 +1,7 @@
 resource "google_cloud_run_domain_mapping" "default" {
+  for_each = toset(var.domain_names)
   location = var.region
-  name     = var.domain_name
+  name     = each.value
 
   metadata {
     namespace = var.project_id

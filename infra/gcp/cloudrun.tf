@@ -1,3 +1,10 @@
+locals {
+  # Cloud Run service URL -- ideally we would pull this from the service resource
+  # itself, but we need to set it as an environment variable for ALLOWED_HOSTS
+  # before the service is created.
+  default_cloud_run_domain = "${var.service_name}-${var.environment}-${var.project_id}-${var.region}.run.app"
+}
+
 resource "google_cloud_run_v2_service" "default" {
   name     = "${var.service_name}-${var.environment}"
   location = var.region
@@ -74,8 +81,12 @@ resource "google_cloud_run_v2_service" "default" {
         value = "False"
       }
       env {
-        name  = "ALLOWED_HOSTS"
-        value = join(",", concat(["${var.service_name}-${var.environment}-${var.project_id}-${var.region}.run.app"], var.allowed_hosts))
+        name = "ALLOWED_HOSTS"
+        value = join(",", concat(
+          [local.default_cloud_run_domain],
+          var.domain_names,
+          var.additional_allowed_hosts
+        ))
       }
     }
   }

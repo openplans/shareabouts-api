@@ -20,12 +20,14 @@ variable "service_name" {
   default     = "shareabouts-api"
 }
 
-variable "domain_name" {
-  description = "The custom domain name"
-  type        = string
+variable "domain_names" {
+  description = "Any custom domain names"
+  type        = list(string)
+  default     = []
 }
 
-variable "allowed_hosts" {
-  description = "The allowed hosts"
+variable "additional_allowed_hosts" {
+  description = "Additional allowed hosts; ALLOWED_HOSTS will always include the Cloud Run service URL and the provided domain names. Set to [] to only allow those two. Set to [\"*\"] to allow all hosts (not recommended for production)."
   type        = list(string)
+  default     = []
 }
