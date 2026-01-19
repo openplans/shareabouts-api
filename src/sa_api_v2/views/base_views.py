@@ -534,7 +534,12 @@ class LocatedResourceMixin (object):
             if len(bounds) != 4:
                 raise QueryError(detail='Invalid parameter for "%s": %r' % (BBOX_PARAM, self.request.GET[BBOX_PARAM]))
 
-            boundingbox = Polygon.from_bbox(bounds)
+            try:
+                boundingbox = Polygon.from_bbox(bounds)
+                boundingbox.srid = 4326
+            except ValueError:
+                raise QueryError(detail='Invalid parameter for "%s": %r' % (BBOX_PARAM, self.request.GET[BBOX_PARAM]))
+
             queryset = queryset.filter(geometry__within=boundingbox)
 
         return queryset

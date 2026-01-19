@@ -4,6 +4,10 @@ from django.conf import settings
 if settings.USE_GEODB:
     from django.contrib.gis.geos import GEOSGeometry, Point
     from django.contrib.gis.measure import D
+    from django.contrib.gis.geos.error import GEOSException
+else:
+    class GEOSException(Exception): pass
+
 from functools import wraps
 
 try:
@@ -43,7 +47,7 @@ def to_geom(string):
     """
     try:
         geom = GEOSGeometry(string)
-    except ValueError:
+    except (ValueError, GEOSException):
         try:
             lat, lng = [float(coord.strip()) for coord in string.split(',')]
         except ValueError:
