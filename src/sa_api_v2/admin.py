@@ -82,7 +82,7 @@ class PrettyAceWidget (AceWidget):
         return super(PrettyAceWidget, self).render(name, value, attrs=attrs, renderer=renderer)
 
 
-BaseGeoAdmin = admin.OSMGeoAdmin if settings.USE_GEODB else admin.ModelAdmin
+BaseGeoAdmin = admin.GISModelAdmin if settings.USE_GEODB else admin.ModelAdmin
 
 
 class SubmittedThingAdmin(BaseGeoAdmin):
