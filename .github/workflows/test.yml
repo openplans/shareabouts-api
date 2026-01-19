@@ -1,0 +1,29 @@
+name: Test
+
+on:
+  push:
+    branches: [ master, main ]
+  pull_request:
+    branches: [ master, main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04  # Use 24.04 for Podman 4.x (matches local dev environment)
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v6
+      with:
+        python-version: '3.12'
+
+    - name: Install Podman Compose
+      run: |
+        pip install podman-compose
+
+    - name: Build Images
+      run: make build
+
+    - name: Run Tests
+      run: make test

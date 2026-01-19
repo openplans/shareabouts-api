@@ -2,12 +2,13 @@
 db/*.sqlite3
 log/*.log
 
-# tmp
+# tmp & cache
 tmp/
 .sass-cache/
 profiling/
 attachments/
 build/
+.terraform/
 
 # cover_me generated
 coverage
@@ -26,6 +27,7 @@ coverage.data
 # environment
 env*/
 .env*
+.auto.tfvars
 
 # Local project settings
 src/project/local_settings.py
