@@ -13,3 +13,8 @@ output "redis_host" {
 output "bucket_name" {
   value = google_storage_bucket.static.name
 }
+
+output "cloud_run_service_name" {
+  description = "The Cloud Run service name. Use this in the gcp-domains project's domain_mappings variable."
+  value       = google_cloud_run_v2_service.default.name
+}

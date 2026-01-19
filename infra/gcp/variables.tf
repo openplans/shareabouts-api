@@ -21,7 +21,7 @@ variable "service_name" {
 }
 
 variable "domain_names" {
-  description = "Any custom domain names"
+  description = "Custom domain names for ALLOWED_HOSTS configuration"
   type        = list(string)
   default     = []
 }

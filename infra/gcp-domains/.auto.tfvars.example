@@ -1,0 +1,38 @@
+# Example configuration - update with your actual values
+project_id         = "example-shareabouts"
+load_balancer_name = "custom-domains-abcd"
+
+# Add your domain mappings here
+# Each key is a service name, value contains domains and cloud_run_service details
+domain_mappings = {
+  # Example:
+  # shareabouts-api-dev = {
+  #   domains = ["shareaboutsapi-gcp-dev.example.com"]
+  #   cloud_run_service = {
+  #     name   = "shareabouts-api-dev"
+  #     region = "us-central1"
+  #   }
+  # }
+}
+
+# Optional: default backend for unmatched requests
+# default_backend_service = "projects/example-shareabouts/global/backendServices/default-backend"
+
+# Optional: redirect host for unmatched requests (used when default_backend_service is not set)
+# default_redirect_host = "example.com"
+
+# Optional: Legacy host rules for existing backend services not managed by this project
+# legacy_host_rules = {
+#   my-legacy-service = {
+#     hosts           = ["legacy.example.com"]
+#     path_matcher    = "legacy-example-com"
+#     backend_service = "https://www.googleapis.com/compute/v1/projects/my-project/global/backendServices/my-backend"
+#   }
+# }
+
+# Optional: Group domains into separate SSL certificates
+# domains not listed here will be grouped into a "default" certificate
+# ssl_certs = {
+#   mycity-gov    = ["suggest.mycity.gov", "suggest-staging.mycity.gov"]
+#   bikeshare-com = ["suggest.bikeshare.com"]
+# }
