@@ -53,6 +53,8 @@ services:
       - REDIS_URL=redis://redis:6379/0
     volumes:
       - ./htmlcov:/app/htmlcov
+      - ./src:/app
+      - ./pytest.ini:/app/pytest.ini
     depends_on:
       db: { "condition": "service_healthy" }
       redis: { "condition": "service_healthy" }

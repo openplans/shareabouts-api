@@ -51,7 +51,7 @@ class GeoJSONRenderer(JSONRenderer):
     """
 
     media_type = 'application/json'
-    format = 'json'
+    format = 'geojson'
     geometry_field = 'geometry'
     id_field = 'id'
 
