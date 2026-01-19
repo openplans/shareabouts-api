@@ -13,8 +13,8 @@ services:
     environment:
       - REDIS_URL=redis://redis:6379/0
     depends_on:
-      db: {"condition": "service_healthy"}
-      redis: {"condition": "service_healthy"}
+      db: { "condition": "service_healthy" }
+      redis: { "condition": "service_healthy" }
     restart: "no"
 
   web:
@@ -27,9 +27,9 @@ services:
     ports:
       - "8000:8000"
     depends_on:
-      db: {"condition": "service_healthy"}
-      redis: {"condition": "service_healthy"}
-      init: {"condition": "service_completed_successfully"}
+      db: { "condition": "service_healthy" }
+      redis: { "condition": "service_healthy" }
+      init: { "condition": "service_completed_successfully" }
 
   worker:
     build:
@@ -41,9 +41,9 @@ services:
       C_FORCE_ROOT: "true"
       REDIS_URL: "redis://redis:6379/0"
     depends_on:
-      db: {"condition": "service_healthy"}
-      redis: {"condition": "service_healthy"}
-      init: {"condition": "service_completed_successfully"}
+      db: { "condition": "service_healthy" }
+      redis: { "condition": "service_healthy" }
+      init: { "condition": "service_completed_successfully" }
 
   test:
     image: shareabouts-api
@@ -51,10 +51,12 @@ services:
     env_file: .env
     environment:
       - REDIS_URL=redis://redis:6379/0
+    volumes:
+      - ./htmlcov:/app/htmlcov
     depends_on:
-      db: {"condition": "service_healthy"}
-      redis: {"condition": "service_healthy"}
-      init: {"condition": "service_completed_successfully"}
+      db: { "condition": "service_healthy" }
+      redis: { "condition": "service_healthy" }
+      init: { "condition": "service_completed_successfully" }
 
   db:
     image: postgis/postgis:15-3.3
@@ -65,7 +67,7 @@ services:
     ports:
       - "15432:5432"
     healthcheck:
-      test: [ "CMD-SHELL","psql -U postgres -d shareabouts -c \"SELECT ST_Buffer( ST_SetSRID('POINT(0 0)'::GEOMETRY, 4326), 1) AS geom ;\""]
+      test: [ "CMD-SHELL", "psql -U postgres -d shareabouts -c \"SELECT ST_Buffer( ST_SetSRID('POINT(0 0)'::GEOMETRY, 4326), 1) AS geom ;\"" ]
       interval: 10s
       timeout: 5s
       retries: 5

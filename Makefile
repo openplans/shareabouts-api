@@ -1,4 +1,4 @@
-.PHONY: test-env test test-clean build gcp-push gcp-restart gcp-deploy
+.PHONY: test-env test test-coverage test-coverage-html test-clean build gcp-push gcp-restart gcp-deploy
 
 # Build the container image
 build:
@@ -33,6 +33,14 @@ test-env:
 # Run tests in a clean container environment
 test: test-env test-clean
 	podman-compose run --rm test pytest
+
+# Run tests with coverage report
+test-coverage: test-env test-clean
+	podman-compose run --rm test pytest --cov=sa_api_v2 --cov-report=term-missing
+
+# Run tests with HTML coverage report (outputs to htmlcov/)
+test-coverage-html: test-env test-clean
+	podman-compose run --rm test pytest --cov=sa_api_v2 --cov-report=html
 
 # Just clean up containers
 test-clean:
