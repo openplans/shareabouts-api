@@ -4,9 +4,9 @@ output "load_balancer_ip" {
 }
 
 output "ssl_certificate_domains" {
-  description = "The domains covered by the SSL certificates"
+  description = "The domains covered by the Certificate Manager certificates"
   value = {
-    for k, v in google_compute_managed_ssl_certificate.default : k => v.managed[0].domains
+    for k, v in google_certificate_manager_certificate.default : k => v.managed[0].domains
   }
 }
 

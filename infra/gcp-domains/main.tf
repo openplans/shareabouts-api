@@ -67,10 +67,9 @@ resource "google_compute_url_map" "default" {
 # Run: tofu import google_compute_target_https_proxy.default projects/PROJECT_ID/global/targetHttpsProxies/PROXY_NAME
 # ------------------------------------------------------------------------------
 resource "google_compute_target_https_proxy" "default" {
-  name    = "${var.load_balancer_name}-proxy"
-  url_map = google_compute_url_map.default.id
-
-  ssl_certificates = values(google_compute_managed_ssl_certificate.default)[*].id
+  name            = "${var.load_balancer_name}-proxy"
+  url_map         = google_compute_url_map.default.id
+  certificate_map = "//certificatemanager.googleapis.com/${google_certificate_manager_certificate_map.default.id}"
 }
 
 
