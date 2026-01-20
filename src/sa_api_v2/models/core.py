@@ -7,7 +7,7 @@ if settings.USE_GEODB:
 else:
     from django.db import models
 
-from django.core.files.storage import get_storage_class
+from django.core.files.storage import storages
 from django.utils.timezone import now
 from .. import cache
 from .. import utils
@@ -16,6 +16,10 @@ from .data_indexes import IndexedValue, FilterByIndexMixin
 from .mixins import CloneableModelMixin
 from .profiles import User
 from PIL import Image, UnidentifiedImageError
+
+
+# Create a simple AttachmentStorage factory
+AttachmentStorage = lambda *a, **kw : storages.create_storage(storages.backends['attachments'], *a, **kw)
 
 
 class TimeStampedModel (models.Model):
@@ -292,9 +296,6 @@ def timestamp_filename(attachment, filename):
     # NOTE: It would be nice if this were a staticmethod in Attachment, but
     # Django 1.4 tries to convert the function to a string when we do that.
     return ''.join(['attachments/', utils.base62_time(), '-', filename])
-
-
-AttachmentStorage = get_storage_class(settings.ATTACHMENT_STORAGE)
 
 
 class Attachment (CacheClearingModel, TimeStampedModel):

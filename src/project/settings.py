@@ -66,7 +66,6 @@ USE_TZ = True
 
 LANGUAGE_CODE = 'en-us'
 USE_I18N = True
-USE_L10N = True
 
 ###############################################################################
 #
@@ -106,7 +105,8 @@ TEMPLATES = [
     },
 ]
 
-ATTACHMENT_STORAGE = 'django.core.files.storage.FileSystemStorage'
+# Use the new div-based form rendering to avoid RemovedInDjango50Warning
+FORM_RENDERER = 'django.forms.renderers.DjangoDivFormRenderer'
 
 ###############################################################################
 #
@@ -433,16 +433,27 @@ if REDIS_URL_ENVVAR:
 # We support S3, GCS, and local filesystem.
 # Precedence: GCS > S3 > Local
 
-DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
-STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
-ATTACHMENT_STORAGE = DEFAULT_FILE_STORAGE
+STORAGES = {
+    'default': {
+        'BACKEND': 'django.core.files.storage.FileSystemStorage',
+    },
+    # Static files (CSS, JavaScript, Images)
+    # https://docs.djangoproject.com/en/1.6/howto/static-files/
+    'staticfiles': {
+        'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage',
+    },
+    'attachments': {
+        'BACKEND': 'django.core.files.storage.FileSystemStorage',
+    },
+}
+ATTACHMENT_STORAGE = STORAGES['attachments']['BACKEND']
 
 if 'GS_BUCKET_NAME' in environ:
     # Google Cloud Storage
     GS_BUCKET_NAME = environ['GS_BUCKET_NAME']
     GS_PROJECT_ID = environ.get('GS_PROJECT_ID')
 
-    DEFAULT_FILE_STORAGE = "storages.backends.gcloud.GoogleCloudStorage"
+    STORAGES['default']['BACKEND'] = "storages.backends.gcloud.GoogleCloudStorage"
 
     GS_DEFAULT_ACL = "publicRead"
 
@@ -456,7 +467,7 @@ if 'GS_BUCKET_NAME' in environ:
     MEDIA_URL = f"https://storage.googleapis.com/{GS_BUCKET_NAME}/media/"
 
     # Attachments
-    ATTACHMENT_STORAGE = DEFAULT_FILE_STORAGE
+    ATTACHMENT_STORAGE = STORAGES['attachments']['BACKEND'] = STORAGES['default']['BACKEND']
 
 elif all([key in environ for key in ('SHAREABOUTS_AWS_KEY',
                                      'SHAREABOUTS_AWS_SECRET',
@@ -468,8 +479,8 @@ elif all([key in environ for key in ('SHAREABOUTS_AWS_KEY',
     AWS_QUERYSTRING_AUTH = False
     AWS_PRELOAD_METADATA = True
 
-    DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
-    ATTACHMENT_STORAGE = DEFAULT_FILE_STORAGE
+    STORAGES['default']['BACKEND'] = 'storages.backends.s3boto3.S3Boto3Storage'
+    ATTACHMENT_STORAGE = STORAGES['attachments']['BACKEND'] = STORAGES['default']['BACKEND']
 
 
 if 'SHAREABOUTS_TWITTER_KEY' in environ and 'SHAREABOUTS_TWITTER_SECRET' in environ:

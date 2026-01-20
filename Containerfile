@@ -23,6 +23,7 @@ RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
 # Copy the application code to the container
 COPY src /app
+COPY pytest.ini /app/pytest.ini
 WORKDIR /app
 
 # Run collectstatic to gather static files

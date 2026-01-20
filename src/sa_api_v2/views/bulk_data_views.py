@@ -103,7 +103,7 @@ class DataSnapshotRequestListView (DataSnapshotMixin, OwnedResourceMixin, views.
         Get the parameters that should identify all snapshots formed off of
         this query.
         """
-        params = request.GET if request.method.upper() == 'GET' else request.DATA
+        params = request.GET if request.method.upper() == 'GET' else request.data
         return {
             'dataset': self.get_dataset(),
             'submission_set': submission_set_name,
@@ -147,6 +147,10 @@ class DataSnapshotRequestListView (DataSnapshotMixin, OwnedResourceMixin, views.
             for datarequest in datarequests], status=200)
 
 
+from .. import renderers
+from rest_framework.renderers import JSONRenderer
+from rest_framework_csv.renderers import CSVRenderer
+
 class DataSnapshotInstanceView (DataSnapshotMixin, OwnedResourceMixin, views.APIView):
     """
 
@@ -165,8 +169,10 @@ class DataSnapshotInstanceView (DataSnapshotMixin, OwnedResourceMixin, views.API
     ------------------------------------------------------------
     """
     submission_set_name_kwarg = 'submission_set_name'
+    renderer_classes = (JSONRenderer, renderers.JSONPRenderer, renderers.GeoJSONPRenderer, renderers.GeoJSONRenderer, CSVRenderer)
 
     def get(self, request, owner_username, dataset_slug, submission_set_name, data_guid, format=None):
+        print(f"DEBUG: View called. GUID: {data_guid}, Format: {format}")
         # Get the snapshot request model
         try:
             datarequest = DataSnapshotRequest.objects.get(guid=data_guid)
