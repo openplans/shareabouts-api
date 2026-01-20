@@ -2,8 +2,7 @@
 # Domain Mapping
 # ------------------------------------------------------------------------------
 #
-# Domain mapping for this Cloud Run service is managed in a separate project:
-#   ../gcp-domains/
+# Domain mapping for this Cloud Run service is managed in a separate project.
 #
 # WHY A SEPARATE PROJECT?
 # -----------------------
