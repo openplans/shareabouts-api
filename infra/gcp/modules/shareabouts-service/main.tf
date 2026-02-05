@@ -11,8 +11,11 @@ terraform {
   }
 }
 
+data "google_project" "project" {
+}
+
 locals {
-  default_cloud_run_domain = "${var.service_name}-${var.environment}-${var.project_id}-${var.region}.run.app"
+  default_cloud_run_domain = "${var.service_name}-${var.environment}-${data.google_project.project.number}.${var.region}.run.app"
 }
 
 # ------------------------------------------------------------------------------
