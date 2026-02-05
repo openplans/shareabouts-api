@@ -16,6 +16,27 @@ data "google_project" "project" {
 
 locals {
   default_cloud_run_domain = "${var.service_name}-${var.environment}-${data.google_project.project.number}.${var.region}.run.app"
+
+  env_vars = {
+    "DATABASE_HOST"    = var.db_private_ip
+    "DATABASE_NAME"    = google_sql_database.database.name
+    "DATABASE_USER"    = google_sql_user.user.name
+    "REDIS_URL"        = "redis://${var.redis_host}:${var.redis_port}/0"
+    "REDIS_KEY_PREFIX" = var.environment
+    "GS_BUCKET_NAME"   = google_storage_bucket.static.name
+    "GS_PROJECT_ID"    = var.project_id
+    "DEBUG"            = "False"
+    "ALLOWED_HOSTS" = join(",", concat(
+      [local.default_cloud_run_domain],
+      var.domain_names,
+      var.additional_allowed_hosts
+    ))
+  }
+
+  env_secrets = {
+    "DB_PASSWORD" = google_secret_manager_secret.db_password.secret_id
+    "SECRET_KEY"  = google_secret_manager_secret.secret_key.secret_id
+  }
 }
 
 # ------------------------------------------------------------------------------
@@ -171,65 +192,25 @@ resource "google_cloud_run_v2_service" "default" {
         }
       }
 
-      env {
-        name = "DB_PASSWORD"
-        value_source {
-          secret_key_ref {
-            secret  = google_secret_manager_secret.db_password.secret_id
-            version = "latest"
-          }
+      dynamic "env" {
+        for_each = local.env_vars
+        content {
+          name  = env.key
+          value = env.value
         }
       }
 
-      env {
-        name  = "DATABASE_HOST"
-        value = var.db_private_ip
-      }
-      env {
-        name  = "DATABASE_NAME"
-        value = google_sql_database.database.name
-      }
-      env {
-        name  = "DATABASE_USER"
-        value = google_sql_user.user.name
-      }
-
-      env {
-        name  = "REDIS_URL"
-        value = "redis://${var.redis_host}:${var.redis_port}/0"
-      }
-      env {
-        name  = "REDIS_KEY_PREFIX"
-        value = var.environment
-      }
-      env {
-        name  = "GS_BUCKET_NAME"
-        value = google_storage_bucket.static.name
-      }
-      env {
-        name  = "GS_PROJECT_ID"
-        value = var.project_id
-      }
-      env {
-        name = "SECRET_KEY"
-        value_source {
-          secret_key_ref {
-            secret  = google_secret_manager_secret.secret_key.secret_id
-            version = "latest"
+      dynamic "env" {
+        for_each = local.env_secrets
+        content {
+          name = env.key
+          value_source {
+            secret_key_ref {
+              secret  = env.value
+              version = "latest"
+            }
           }
         }
-      }
-      env {
-        name  = "DEBUG"
-        value = "False"
-      }
-      env {
-        name = "ALLOWED_HOSTS"
-        value = join(",", concat(
-          [local.default_cloud_run_domain],
-          var.domain_names,
-          var.additional_allowed_hosts
-        ))
       }
     }
   }
