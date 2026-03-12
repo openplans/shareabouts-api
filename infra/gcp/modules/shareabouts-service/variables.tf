@@ -54,7 +54,19 @@ variable "domain_names" {
 }
 
 variable "additional_allowed_hosts" {
-  description = "List of additional hosts to allow in Django"
+  description = "List of additional hostnames to allow"
   type        = list(string)
   default     = []
+}
+
+variable "shareabouts_admin_email" {
+  description = "Email address for Shareabouts API Admin"
+  type        = string
+  default     = null
+}
+
+variable "workers" {
+  description = "Number of gunicorn workers"
+  type        = string
+  default     = "4"
 }

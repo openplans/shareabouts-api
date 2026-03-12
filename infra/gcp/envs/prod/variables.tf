@@ -26,3 +26,14 @@ variable "additional_allowed_hosts" {
   type        = list(string)
   default     = []
 }
+
+variable "shareabouts_admin_email" {
+  description = "Email address for Shareabouts API Admin"
+  type        = string
+}
+
+variable "workers" {
+  description = "Number of gunicorn workers"
+  type        = string
+  default     = "4"
+}

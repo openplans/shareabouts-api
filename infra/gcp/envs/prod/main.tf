@@ -52,4 +52,6 @@ module "service" {
   # Config
   domain_names             = var.domain_names
   additional_allowed_hosts = var.additional_allowed_hosts
+  shareabouts_admin_email  = var.shareabouts_admin_email
+  workers                  = var.workers
 }

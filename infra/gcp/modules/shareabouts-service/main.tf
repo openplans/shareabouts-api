@@ -18,14 +18,16 @@ locals {
   default_cloud_run_domain = "${var.service_name}-${var.environment}-${data.google_project.project.number}.${var.region}.run.app"
 
   env_vars = {
-    "DATABASE_HOST"    = var.db_private_ip
-    "DATABASE_NAME"    = google_sql_database.database.name
-    "DATABASE_USER"    = google_sql_user.user.name
-    "REDIS_URL"        = "redis://${var.redis_host}:${var.redis_port}/0"
-    "REDIS_KEY_PREFIX" = var.environment
-    "GS_BUCKET_NAME"   = google_storage_bucket.static.name
-    "GS_PROJECT_ID"    = var.project_id
-    "DEBUG"            = "False"
+    "DATABASE_HOST"           = var.db_private_ip
+    "DATABASE_NAME"           = google_sql_database.database.name
+    "DATABASE_USER"           = google_sql_user.user.name
+    "REDIS_URL"               = "redis://${var.redis_host}:${var.redis_port}/0"
+    "REDIS_KEY_PREFIX"        = var.environment
+    "GS_BUCKET_NAME"          = google_storage_bucket.static.name
+    "GS_PROJECT_ID"           = var.project_id
+    "DEBUG"                   = "False"
+    "WORKERS"                 = var.workers
+    "SHAREABOUTS_ADMIN_EMAIL" = var.shareabouts_admin_email
     "ALLOWED_HOSTS" = join(",", concat(
       [local.default_cloud_run_domain],
       var.domain_names,
@@ -129,6 +131,7 @@ region                   = "${var.region}"
 
 domain_names             = ${jsonencode(var.domain_names)}
 additional_allowed_hosts = ${jsonencode(var.additional_allowed_hosts)}
+workers                  = "${var.workers}"
 EOT
 }
 

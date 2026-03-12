@@ -40,6 +40,6 @@ COPY gunicorn.conf.py /app/gunicorn.conf.py
 EXPOSE 8000
 
 # Default command
-CMD ["sh", "-c", "gunicorn project.wsgi --pythonpath src --workers 3 --config gunicorn.conf.py --bind 0.0.0.0:${PORT:-8000}"]
+CMD ["sh", "-c", "gunicorn project.wsgi --pythonpath src --workers ${WORKERS:-4} --config gunicorn.conf.py --bind 0.0.0.0:${PORT:-8000}"]
 
 
