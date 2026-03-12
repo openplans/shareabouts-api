@@ -1,12 +1,16 @@
-.PHONY: test-env test test-coverage test-coverage-html test-clean build gcp-push gcp-restart gcp-deploy
+.PHONY: test-env test test-coverage test-coverage-html test-clean build gcp-login gcp-push gcp-restart gcp-deploy
 
 # Build the container image
 build:
 	podman build -t shareabouts-api -f Containerfile .
 
+# Authenticate podman to GCP Container Registry
+gcp-login:
+	gcloud auth print-access-token | podman login -u oauth2accesstoken --password-stdin gcr.io
+
 # Push image to GCP Container Registry
 # Requires: PROJECT_ID, ENVIRONMENT_NAME environment variables
-gcp-push:
+gcp-push: gcp-login
 	@if [ -z "$(PROJECT_ID)" ]; then echo "Error: PROJECT_ID is not set"; exit 1; fi
 	@if [ -z "$(ENVIRONMENT_NAME)" ]; then echo "Error: ENVIRONMENT_NAME is not set"; exit 1; fi
 	podman tag shareabouts-api gcr.io/$(PROJECT_ID)/shareabouts-api:latest-$(ENVIRONMENT_NAME)
