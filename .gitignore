@@ -32,3 +32,5 @@ env/
 
 # Local project settings
 src/project/local_settings.py
+.vscode/
+scratch/
