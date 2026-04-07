@@ -20,12 +20,12 @@ Documentation
 -------------
 All of our documentation is is our `doc` directory. Use it to learn more about:
 * [local setup](https://github.com/openplans/shareabouts-api/blob/master/doc/README.md)
-* [how to deploy to DotCloud](https://github.com/openplans/shareabouts-api/blob/master/doc/DEPLOY.md)
+* [how to deploy to Heroku or GCP](https://github.com/openplans/shareabouts-api/blob/master/doc/DEPLOY.md)
 * [upgrading from an older version](https://github.com/openplans/shareabouts-api/blob/master/doc/UPGRADE.md)
 
 Demo
 ------------
-Please feel free to check out our [staging server](http://sapistaging-civicworks.dotcloud.com/manage/datasets/) to see how it work. Use username `demo-user` and password `demo`
+Please feel free to check out our [staging server](http://shareaboutsapi-gcp-dev.poepublic.com/manage/datasets/) to see how it work. Use username `demo-user` and password `demo`
 
 Contributing
 ------------

@@ -349,11 +349,11 @@ Create a place for a dataset
         "created_datetime": "2013-04-29T22:20:58.010Z",
         "description": "This is a great location.",
         "dataset": {
-            "url": "http://shareaboutsapi-civicworks.dotcloud.com/api/v1/demo-user/datasets/demo-data/"
+            "url": "http://shareaboutsapi-gcp-dev.poepublic.com/api/v1/demo-user/datasets/demo-data/"
         },
         "visible": true,
         "location": {"lat": 40.7204450013, "lng": -73.999908685700007},
-        "url": "http://shareaboutsapi-civicworks.dotcloud.com/api/v1/demo-user/datasets/demo-data/places/29664/",
+        "url": "http://shareaboutsapi-gcp-dev.poepublic.com/api/v1/demo-user/datasets/demo-data/places/29664/",
         "submitter_name": "Aaron",
         "submissions": [],
         "id": 29664,
@@ -389,11 +389,11 @@ Get a place
         "created_datetime": "2013-04-29T22:20:58.010Z",
         "description": "This is a REALLY great location.",
         "dataset": {
-            "url": "http://shareaboutsapi-civicworks.dotcloud.com/api/v1/demo-user/datasets/demo-data/"
+            "url": "http://shareaboutsapi-gcp-dev.poepublic.com/api/v1/demo-user/datasets/demo-data/"
         },
         "visible": true,
         "location": {"lat": 40.7204450013, "lng": -73.999908685700007},
-        "url": "http://shareaboutsapi-civicworks.dotcloud.com/api/v1/demo-user/datasets/demo-data/places/29664/",
+        "url": "http://shareaboutsapi-gcp-dev.poepublic.com/api/v1/demo-user/datasets/demo-data/places/29664/",
         "submitter_name": "Frank",
         "submissions": [],
         "id": 29664,
@@ -434,11 +434,11 @@ Update a place for a dataset
         "created_datetime": "2013-04-29T22:20:58.010Z",
         "description": "This is a REALLY great location.",
         "dataset": {
-            "url": "http://shareaboutsapi-civicworks.dotcloud.com/api/v1/demo-user/datasets/demo-data/"
+            "url": "http://shareaboutsapi-gcp-dev.poepublic.com/api/v1/demo-user/datasets/demo-data/"
         },
         "visible": true,
         "location": {"lat": 40.7204450013, "lng": -73.999908685700007},
-        "url": "http://shareaboutsapi-civicworks.dotcloud.com/api/v1/demo-user/datasets/demo-data/places/29664/",
+        "url": "http://shareaboutsapi-gcp-dev.poepublic.com/api/v1/demo-user/datasets/demo-data/places/29664/",
         "submitter_name": "Frank",
         "submissions": [],
         "id": 29664,
@@ -584,12 +584,12 @@ Get all submissions of a particular type for a dataset
             "id": 13,
             "place": {
                 "id": 8,
-                "url": "http://shareaboutsapi-civicworks.dotcloud.com/api/v1/demo-user/datasets/demo-data/places/8/"
+                "url": "http://shareaboutsapi-gcp-dev.poepublic.com/api/v1/demo-user/datasets/demo-data/places/8/"
             },
             "submitter_name": "",
             "type": "comments",
             "updated_datetime": "2012-08-27T14:46:23.330Z",
-            "url": "http://shareaboutsapi-civicworks.dotcloud.com/api/v1/demo-user/datasets/demo-data/places/8/comments/13/",
+            "url": "http://shareaboutsapi-gcp-dev.poepublic.com/api/v1/demo-user/datasets/demo-data/places/8/comments/13/",
             "visible": true
         },
         ...
@@ -680,7 +680,7 @@ Create a submission for a place
 
 **Content type**: application/json
 
-**Sample URL**: http://shareabouts-civicworks.dotcloud.com/api/places/29664/comments/
+**Sample URL**: http://shareaboutsapi-gcp-dev.poepublic.com/api/places/29664/comments/
 
 **Sample Request Data**:
 
@@ -701,10 +701,10 @@ Create a submission for a place
         "created_datetime": "2013-04-30T15:38:54.449Z",
         "visible": true,
         "place": {
-            "url": "http://shareaboutsapi-civicworks.dotcloud.com/api/v1/demo-user/datasets/demo-data/places/29664/",
+            "url": "http://shareaboutsapi-gcp-dev.poepublic.com/api/v1/demo-user/datasets/demo-data/places/29664/",
             "id": 29664
         },
-        "url": "http://shareaboutsapi-civicworks.dotcloud.com/api/v1/demo-user/datasets/demo-data/places/29664/comments/29671/",
+        "url": "http://shareaboutsapi-gcp-dev.poepublic.com/api/v1/demo-user/datasets/demo-data/places/29664/comments/29671/",
         "submitter_name": "Andy",
         "type": "comments",
         "id": 29671
@@ -726,7 +726,7 @@ Get a submission for a place
 
 **Response Formats**: JSON (default), CSV, HTML, XML
 
-**Sample URL**: http://shareabouts-civicworks.dotcloud.com/api/places/29664/comments/29671/
+**Sample URL**: http://shareaboutsapi-gcp-dev.poepublic.com/api/places/29664/comments/29671/
 
 **Sample Response**:
 
@@ -739,12 +739,12 @@ Get a submission for a place
         "id": 29671,
         "place": {
             "id": 29664,
-            "url": "http://shareaboutsapi-civicworks.dotcloud.com/api/v1/demo-user/datasets/demo-data/places/29664/"
+            "url": "http://shareaboutsapi-gcp-dev.poepublic.com/api/v1/demo-user/datasets/demo-data/places/29664/"
         },
         "submitter_name": "Andy",
         "type": "comments",
         "updated_datetime": "2013-04-30T15:48:13.395Z",
-        "url": "http://shareaboutsapi-civicworks.dotcloud.com/api/v1/demo-user/datasets/demo-data/places/29664/comments/29671/",
+        "url": "http://shareaboutsapi-gcp-dev.poepublic.com/api/v1/demo-user/datasets/demo-data/places/29664/comments/29671/",
         "visible": true
     }
 
@@ -759,7 +759,7 @@ Update a submission for a place of a specific type
 
 **Content type**: application/json
 
-**Sample URL**: http://shareabouts-civicworks.dotcloud.com/api/places/29664/comments/29671/
+**Sample URL**: http://shareaboutsapi-gcp-dev.poepublic.com/api/places/29664/comments/29671/
 
 **Sample Request Data**:
 
@@ -780,12 +780,12 @@ Update a submission for a place of a specific type
         "id": 29671,
         "place": {
             "id": 29664,
-            "url": "http://shareaboutsapi-civicworks.dotcloud.com/api/v1/demo-user/datasets/demo-data/places/29664/"
+            "url": "http://shareaboutsapi-gcp-dev.poepublic.com/api/v1/demo-user/datasets/demo-data/places/29664/"
         },
         "submitter_name": "Andy",
         "type": "comments",
         "updated_datetime": "2013-04-30T15:48:13.395Z",
-        "url": "http://shareaboutsapi-civicworks.dotcloud.com/api/v1/demo-user/datasets/demo-data/places/29664/comments/29671/",
+        "url": "http://shareaboutsapi-gcp-dev.poepublic.com/api/v1/demo-user/datasets/demo-data/places/29664/comments/29671/",
         "visible": true
     }
 
@@ -797,7 +797,7 @@ Delete a submission
 
 **Authentication**: Basic, session, or key auth *(required)*
 
-**Sample URL**: http://shareabouts-civicworks.dotcloud.com/api/places/29664/comments/29671/
+**Sample URL**: http://shareaboutsapi-gcp-dev.poepublic.com/api/places/29664/comments/29671/
 
 **Sample Response**:
 
