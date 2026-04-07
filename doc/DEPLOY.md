@@ -103,32 +103,7 @@ Initialize and apply the OpenTofu configuration in the `infra/gcp` directory:
 
 This will create the Cloud SQL instance, Cloud Run service, GCS bucket, and other necessary resources.
 
-### 3. Database Migration
-
-To import an existing database dump (e.g., from Heroku):
-
-1.  **Convert to "Clean" SQL**: Use `pg_restore` with flags to ignore ownership and privileges that won't exist on Cloud SQL.
-
-        pg_restore -O -x -f dump.sql input.dump
-
-2.  **Upload to GCS**:
-
-        gcloud storage cp dump.sql gs://your-migration-bucket/
-
-3.  **Grant Permissions**: Ensure the Cloud SQL service account can read from the bucket.
-
-        gcloud storage buckets add-iam-policy-binding gs://your-migration-bucket \
-          --member="serviceAccount:<SQL-SERVICE-ACCOUNT>" \
-          --role="roles/storage.objectViewer"
-
-    *(You can find the service account email using `gcloud sql instances describe <instance-id>`)*
-
-4.  **Run Import**:
-
-        gcloud sql import sql <instance-id> gs://your-migration-bucket/dump.sql \
-          --database=<db-name> --user=<db-user>
-
-### 4. Image Deployment
+### 3. Image Deployment
 
 A `Makefile` is provided for common deployment tasks.
 
@@ -167,6 +142,6 @@ A `Makefile` is provided for common deployment tasks.
     make gcp-restart # Update the Cloud Run service
     ```
 
-### 5. Static Files
+### 4. Static Files
 
 Currently, static files are served directly by the container using `dj_static.Cling`. Ensure `STATIC_URL` and `STATICFILES_STORAGE` in `settings.py` are configured appropriately (local serving is the default if GCS static configuration is commented out).
