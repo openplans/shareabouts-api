@@ -20,6 +20,18 @@ variable "service_name" {
   default     = "shareabouts-api"
 }
 
+variable "min_instances" {
+  description = "Minimum number of instances"
+  type        = number
+  default     = 0
+}
+
+variable "max_instances" {
+  description = "Maximum number of instances"
+  type        = number
+  default     = 10
+}
+
 # Inputs from Common Module
 variable "vpc_connector_id" {
   description = "ID of the VPC Access Connector"

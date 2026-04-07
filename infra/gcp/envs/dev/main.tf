@@ -41,6 +41,8 @@ module "service" {
   region       = var.region
   service_name = var.service_name
   environment  = "dev"
+  min_instances = 0
+  max_instances = 10
 
   # Inputs from Common
   vpc_connector_id = data.terraform_remote_state.common.outputs.vpc_connector_id

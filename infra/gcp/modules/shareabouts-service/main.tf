@@ -178,6 +178,11 @@ resource "google_cloud_run_v2_service" "default" {
   ingress             = "INGRESS_TRAFFIC_ALL"
   deletion_protection = false
 
+  scaling {
+    min_instance_count = var.min_instances
+    max_instance_count = var.max_instances
+  }
+
   template {
     service_account = google_service_account.sa.email
     vpc_access {
