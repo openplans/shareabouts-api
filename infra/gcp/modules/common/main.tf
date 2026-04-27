@@ -80,6 +80,10 @@ resource "google_sql_database_instance" "instance" {
       ipv4_enabled    = false
       private_network = google_compute_network.vpc.id
     }
+    backup_configuration {
+      enabled  = true
+      location = var.region
+    }
   }
 }
 
