@@ -231,6 +231,10 @@ AUTHENTICATION_BACKENDS = (
 # into account providers defined in database models.
 SOCIAL_AUTH_STRATEGY = 'dynamic_social_auth.strategy.DjangoModelStrategy'
 
+# Set a timeout for upstream requests to auth providers (in seconds).
+# Note: 10 seconds is the default starting in social-auth-core 4.9.0.
+SOCIAL_AUTH_REQUESTS_TIMEOUT = 10
+
 AUTH_USER_MODEL = 'sa_api_v2.User'
 
 # TODO: Enable after Django 1.11 update # SOCIAL_AUTH_POSTGRES_JSONFIELD = True
