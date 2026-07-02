@@ -7,7 +7,7 @@ resource "google_cloud_run_v2_job" "migrate" {
       service_account = google_service_account.sa.email
       vpc_access {
         connector = var.vpc_connector_id
-        egress    = "ALL_TRAFFIC"
+        egress    = "PRIVATE_RANGES_ONLY"
       }
 
       containers {
