@@ -33,6 +33,7 @@ class Migration(migrations.Migration):
                     "id_key",
                     models.CharField(
                         default="id",
+                        max_length=255,
                         help_text="\n        The default key name where the user identification field is defined,\n        it’s used in the auth process when some basic user data is returned.\n    ",
                     ),
                 ),
@@ -47,6 +48,7 @@ class Migration(migrations.Migration):
                     "scope_parameter_name",
                     models.CharField(
                         default="scope",
+                        max_length=255,
                         help_text="\n        The scope argument is used to tell the provider the API endpoints you\n        want to call later, it’s a permissions request granted over the\n        `access_token` later retrieved. The default value is `scope` since\n        that’s usually the name used in the URL parameter, but can be\n        overridden if needed.\n    ",
                     ),
                 ),
@@ -99,6 +101,7 @@ class Migration(migrations.Migration):
                     "response_type",
                     models.CharField(
                         default="code",
+                        max_length=255,
                         help_text="\n        The response type expected on the auth process, default value is `code`\n        as dictated by OAuth2 definition. Override it if default value doesn’t\n        fit the provider implementation.\n    ",
                     ),
                 ),

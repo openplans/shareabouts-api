@@ -17,22 +17,22 @@ class OAuth2Provider (models.Model):
         Describes the provider for documentation purposes. This field has no
         impact on the behavior of the provider.
     ''')
-    id_key = models.CharField(default='id', help_text='''
+    id_key = models.CharField(max_length=255, default='id', help_text='''
         The default key name where the user identification field is defined,
         it’s used in the auth process when some basic user data is returned.
     ''')
-    username_key = models.CharField(default='username', help_text='''
+    username_key = models.CharField(max_length=255, default='username', help_text='''
         The default key name where the user name field is defined, it’s used in
         the auth process when some basic user data is returned.
     ''')
-    fullname_key = models.CharField(default='fullname', help_text='''
+    fullname_key = models.CharField(max_length=255, default='fullname', help_text='''
         The default key name where the user's full name field is defined, it’s
         primarily used for display purposes.
     ''')
     requires_email_validation = models.BooleanField(default=False, help_text='''
         Flags the backend to enforce email validation during the pipeline.
     ''')
-    scope_parameter_name = models.CharField(default='scope', help_text='''
+    scope_parameter_name = models.CharField(max_length=255, default='scope', help_text='''
         The scope argument is used to tell the provider the API endpoints you
         want to call later, it’s a permissions request granted over the
         `access_token` later retrieved. The default value is `scope` since
@@ -77,7 +77,7 @@ class OAuth2Provider (models.Model):
     refresh_token_method = models.CharField(default='POST', max_length=10)
     revoke_token_url = models.URLField(null=True, blank=True)
     revoke_token_method = models.CharField(default='POST', max_length=10)
-    response_type = models.CharField(default='code', help_text='''
+    response_type = models.CharField(max_length=255, default='code', help_text='''
         The response type expected on the auth process, default value is `code`
         as dictated by OAuth2 definition. Override it if default value doesn’t
         fit the provider implementation.

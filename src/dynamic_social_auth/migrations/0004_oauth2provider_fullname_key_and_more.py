@@ -14,6 +14,7 @@ class Migration(migrations.Migration):
             name="fullname_key",
             field=models.CharField(
                 default="fullname",
+                max_length=255,
                 help_text="\n        The default key name where the user's full name field is defined, it’s\n        primarily used for display purposes.\n    ",
             ),
         ),
@@ -22,6 +23,7 @@ class Migration(migrations.Migration):
             name="username_key",
             field=models.CharField(
                 default="username",
+                max_length=255,
                 help_text="\n        The default key name where the user name field is defined, it’s used in\n        the auth process when some basic user data is returned.\n    ",
             ),
         ),

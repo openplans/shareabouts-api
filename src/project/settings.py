@@ -235,6 +235,18 @@ SOCIAL_AUTH_STRATEGY = 'dynamic_social_auth.strategy.DjangoModelStrategy'
 # Note: 10 seconds is the default starting in social-auth-core 4.9.0.
 SOCIAL_AUTH_REQUESTS_TIMEOUT = 10
 
+SOCIAL_AUTH_PIPELINE = (
+    'social_core.pipeline.social_auth.social_details',
+    'social_core.pipeline.social_auth.social_uid',
+    'social_core.pipeline.social_auth.auth_allowed',
+    'social_core.pipeline.social_auth.social_user',
+    'dynamic_social_auth.pipeline.get_username',
+    'social_core.pipeline.user.create_user',
+    'social_core.pipeline.social_auth.associate_user',
+    'social_core.pipeline.social_auth.load_extra_data',
+    'social_core.pipeline.user.user_details',
+)
+
 AUTH_USER_MODEL = 'sa_api_v2.User'
 
 # TODO: Enable after Django 1.11 update # SOCIAL_AUTH_POSTGRES_JSONFIELD = True
@@ -524,6 +536,11 @@ except ImportError:
 ##############################################################################
 # More background processing
 #
+
+if 'CELERY_BROKER_URL' in environ:
+    CELERY_BROKER_URL = environ['CELERY_BROKER_URL']
+elif not REDIS_URL_ENVVAR:
+    CELERY_BROKER_URL = 'memory://'
 
 try:
     CELERY_BROKER_URL
