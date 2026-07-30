@@ -42,7 +42,7 @@ module "service" {
   service_name = var.service_name
   environment  = "prod"
   min_instances = 1
-  max_instances = 10
+  max_instances = 5
 
   # Inputs from Common
   vpc_connector_id = data.terraform_remote_state.common.outputs.vpc_connector_id
