@@ -36,3 +36,9 @@ domain_mappings = {
 #   mycity-gov    = ["suggest.mycity.gov", "suggest-staging.mycity.gov"]
 #   bikeshare-com = ["suggest.bikeshare.com"]
 # }
+
+# Optional: List of IP CIDR ranges to block at the load balancer level via Cloud Armor
+# blocked_ip_ranges = [
+#   "192.0.2.0/24",
+# ]
+

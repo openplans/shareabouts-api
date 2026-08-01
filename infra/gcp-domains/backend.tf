@@ -24,6 +24,7 @@ resource "google_compute_backend_service" "default" {
   name                  = "${each.key}-backend"
   protocol              = "HTTP"
   load_balancing_scheme = "EXTERNAL_MANAGED"
+  security_policy       = length(google_compute_security_policy.ip_blocklist) > 0 ? google_compute_security_policy.ip_blocklist[0].id : null
 
   backend {
     group = google_compute_region_network_endpoint_group.serverless_neg[each.key].id

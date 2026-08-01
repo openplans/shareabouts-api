@@ -53,3 +53,10 @@ variable "ssl_certs" {
   description = "A map of custom SSL certificate groups. Any domains not in this map will be grouped into a default certificate."
   default     = {}
 }
+
+variable "blocked_ip_ranges" {
+  type        = list(string)
+  description = "List of IP CIDR ranges to block at the load balancer level via Cloud Armor security policy"
+  default     = []
+}
+
