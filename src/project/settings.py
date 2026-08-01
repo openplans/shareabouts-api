@@ -115,7 +115,14 @@ FORM_RENDERER = 'django.forms.renderers.DjangoDivFormRenderer'
 REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 100,
-    'PAGINATE_BY_PARAM': 'page_size'
+    'PAGINATE_BY_PARAM': 'page_size',
+    'DEFAULT_THROTTLE_CLASSES': (
+        'sa_api_v2.throttling.AnonymousIPThrottle',
+    ),
+    'DEFAULT_THROTTLE_RATES': {
+        'anon_ip': environ.get('ANON_THROTTLE_RATE', '20/min'),
+    },
+    'NUM_PROXIES': int(environ['NUM_PROXIES']) if 'NUM_PROXIES' in environ else None,
 }
 
 ###############################################################################

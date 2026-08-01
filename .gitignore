@@ -35,3 +35,5 @@ src/project/local_settings.py
 .vscode/
 scratch/
 *.code-workspace
+.agent/
+.claude/
