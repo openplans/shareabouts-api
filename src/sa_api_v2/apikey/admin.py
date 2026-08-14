@@ -14,7 +14,8 @@ class InlineKeyPermissionAdmin(admin.TabularInline):
 class ApiKeyAdmin(ModelAdmin):
     inlines = [InlineKeyPermissionAdmin]
     form = ApiKeyForm
-    list_display = ('key', 'dataset', 'logged_ip', 'last_used')
+    list_display = ('key', 'display_name', 'purpose', 'dataset', 'logged_ip', 'last_used')
+    search_fields = ('key', 'display_name', 'purpose')
     raw_id_fields = ['dataset']
 
     class Media:

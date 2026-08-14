@@ -1,4 +1,7 @@
 schema: spec-driven
+context: |
+  Tech stack: Django, Django REST Framework, PostgreSQL
+  Test-driven development: We write tests before implementing features with a specific eye toward protecting against regressions
 
 # Project context (optional)
 # This is shown to AI when creating artifacts.

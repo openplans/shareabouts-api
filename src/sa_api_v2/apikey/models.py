@@ -41,6 +41,8 @@ def generate_unique_api_key():
 
 
 class ApiKey(CloneableModelMixin, models.Model):
+    display_name = models.CharField(max_length=128, blank=True, default='')
+    purpose = models.TextField(blank=True, default='')
     key = models.CharField(max_length=KEY_SIZE, unique=True, default=generate_unique_api_key)
     logged_ip = models.GenericIPAddressField(blank=True, null=True)
     last_used = models.DateTimeField(blank=True, default=now)
@@ -70,7 +72,7 @@ class ApiKey(CloneableModelMixin, models.Model):
         return self.__unicode__()
 
     def __unicode__(self):
-        return self.key
+        return self.display_name or self.key
 
     def clone_related(self, onto):
         for permission in self.permissions.all():

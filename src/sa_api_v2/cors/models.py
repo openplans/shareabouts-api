@@ -18,6 +18,8 @@ import re
 
 
 class Origin(CloneableModelMixin, models.Model):
+    display_name = models.CharField(max_length=128, blank=True, default='')
+    purpose = models.TextField(blank=True, default='')
     pattern = models.CharField(max_length=100, help_text='The origin pattern, e.g., https://*.github.io, http://localhost:*, http*://map.phila.gov')
     logged_ip = models.GenericIPAddressField(blank=True, null=True)
     last_used = models.DateTimeField(blank=True, default=now)
@@ -54,7 +56,7 @@ class Origin(CloneableModelMixin, models.Model):
         return self.__unicode__()
 
     def __unicode__(self):
-        return self.pattern
+        return self.display_name or self.pattern
 
     @staticmethod
     def match(pattern, origin):

@@ -496,7 +496,7 @@ class GroupSerializer (BaseGroupSerializer):
     dataset = DataSetRelatedField()
 
     class Meta (BaseGroupSerializer.Meta):
-        pass
+        exclude = ('id', 'submitters', 'display_name', 'purpose')
 
 
 # User serializers

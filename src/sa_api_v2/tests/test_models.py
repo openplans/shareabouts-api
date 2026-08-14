@@ -567,3 +567,79 @@ class DataPermissionTests (TestCase):
 # - Specific client permission allows/restricts reading and writing
 # - General group permission allows reading and restricts writing
 # - Specific group permission allows/restricts reading and writing
+
+
+class TestModelMetadata(TestCase):
+    def setUp(self):
+        self.owner = User.objects.create(username='owner')
+        self.dataset = DataSet.objects.create(slug='testds', owner=self.owner)
+
+    def test_apikey_display_name_purpose_str_and_clone(self):
+        key = ApiKey.objects.create(
+            dataset=self.dataset,
+            key='mykey123',
+            display_name='Test Key',
+            purpose='For testing API authentication'
+        )
+        self.assertEqual(str(key), 'Test Key')
+        self.assertEqual(key.display_name, 'Test Key')
+        self.assertEqual(key.purpose, 'For testing API authentication')
+
+        key_no_name = ApiKey.objects.create(
+            dataset=self.dataset,
+            key='mykey456'
+        )
+        self.assertEqual(str(key_no_name), 'mykey456')
+
+        new_dataset = DataSet.objects.create(slug='newds', owner=self.owner)
+        cloned_key = key.clone(overrides={'dataset': new_dataset})
+        self.assertEqual(cloned_key.display_name, 'Test Key')
+        self.assertEqual(cloned_key.purpose, 'For testing API authentication')
+        self.assertEqual(cloned_key.dataset, new_dataset)
+
+    def test_origin_display_name_purpose_str_and_clone(self):
+        from ..cors.models import Origin
+        origin = Origin.objects.create(
+            dataset=self.dataset,
+            pattern='http://example.com',
+            display_name='Example Origin',
+            purpose='For web client CORS'
+        )
+        self.assertEqual(str(origin), 'Example Origin')
+        self.assertEqual(origin.display_name, 'Example Origin')
+        self.assertEqual(origin.purpose, 'For web client CORS')
+
+        origin_no_name = Origin.objects.create(
+            dataset=self.dataset,
+            pattern='http://test.com'
+        )
+        self.assertEqual(str(origin_no_name), 'http://test.com')
+
+        new_dataset = DataSet.objects.create(slug='newds2', owner=self.owner)
+        cloned_origin = origin.clone(overrides={'dataset': new_dataset})
+        self.assertEqual(cloned_origin.display_name, 'Example Origin')
+        self.assertEqual(cloned_origin.purpose, 'For web client CORS')
+        self.assertEqual(cloned_origin.dataset, new_dataset)
+
+    def test_group_display_name_purpose_str_and_clone(self):
+        group = Group.objects.create(
+            dataset=self.dataset,
+            name='reviewers',
+            display_name='Code Reviewers',
+            purpose='Group for reviewers'
+        )
+        self.assertEqual(str(group), 'Code Reviewers in testds')
+        self.assertEqual(group.display_name, 'Code Reviewers')
+        self.assertEqual(group.purpose, 'Group for reviewers')
+
+        group_no_name = Group.objects.create(
+            dataset=self.dataset,
+            name='admins'
+        )
+        self.assertEqual(str(group_no_name), 'admins in testds')
+
+        new_dataset = DataSet.objects.create(slug='newds3', owner=self.owner)
+        cloned_group = group.clone(overrides={'dataset': new_dataset})
+        self.assertEqual(cloned_group.display_name, 'Code Reviewers')
+        self.assertEqual(cloned_group.purpose, 'Group for reviewers')
+        self.assertEqual(cloned_group.dataset, new_dataset)

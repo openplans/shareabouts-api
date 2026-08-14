@@ -139,6 +139,7 @@ class InlineApiKeyAdmin(admin.StackedInline):
     form = AlwaysChangedModelForm
     # raw_id_fields = ['apikey']
     extra = 0
+    fields = ('display_name', 'purpose', 'key', 'logged_ip', 'last_used', 'edit_url')
     readonly_fields = ('edit_url',)
 
     def permissions_list(self, instance):
@@ -169,6 +170,7 @@ class InlineOriginAdmin(admin.StackedInline):
     form = AlwaysChangedModelForm
     # raw_id_fields = ['origin']
     extra = 0
+    fields = ('display_name', 'purpose', 'pattern', 'logged_ip', 'last_used', 'edit_url')
     readonly_fields = ('edit_url',)
 
     def permissions_list(self, instance):
@@ -198,6 +200,7 @@ class InlineGroupAdmin(admin.StackedInline):
     model = models.Group
     filter_horizontal = ('submitters',)
     extra = 0
+    fields = ('name', 'display_name', 'purpose', 'submitters', 'edit_url')
     readonly_fields = ('edit_url',)
 
     def permissions_list(self, instance):
@@ -384,6 +387,8 @@ class InlineGroupPermissionAdmin(admin.TabularInline):
 
 
 class GroupAdmin(admin.ModelAdmin):
+    list_display = ('name', 'display_name', 'purpose', 'dataset')
+    search_fields = ('name', 'display_name', 'purpose')
     raw_id_fields = ('dataset',)
     filter_horizontal = ('submitters',)
     inlines = [InlineGroupPermissionAdmin]

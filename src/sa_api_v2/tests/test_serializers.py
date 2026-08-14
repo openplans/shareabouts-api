@@ -374,3 +374,72 @@ class TestDataSetSerializer (TestCase):
 
         data = serializer.data
         self.assertIsInstance(data, dict)
+
+
+class TestGroupAndMetadataSerializers (TestCase):
+
+    def setUp(self):
+        User.objects.all().delete()
+        DataSet.objects.all().delete()
+        Group.objects.all().delete()
+
+        self.owner = User.objects.create(username='groupowner')
+        self.dataset = DataSet.objects.create(slug='groupds', owner=self.owner)
+        self.group = Group.objects.create(
+            dataset=self.dataset,
+            name='reviewers',
+            display_name='Code Reviewers',
+            purpose='Review submissions'
+        )
+
+        from sa_api_v2.apikey.models import ApiKey
+        from sa_api_v2.cors.models import Origin
+        self.key = ApiKey.objects.create(
+            dataset=self.dataset,
+            key='testkey1',
+            display_name='Key Name',
+            purpose='Key Purpose'
+        )
+        self.origin = Origin.objects.create(
+            dataset=self.dataset,
+            pattern='http://localhost:8000',
+            display_name='Origin Name',
+            purpose='Origin Purpose'
+        )
+
+    def test_group_serializer_excludes_display_name_and_purpose(self):
+        from sa_api_v2.serializers import GroupSerializer
+        request = RequestFactory().get('')
+        serializer = GroupSerializer(self.group, context={'request': request})
+        self.assertIn('name', serializer.data)
+        self.assertNotIn('display_name', serializer.data)
+        self.assertNotIn('purpose', serializer.data)
+        self.assertNotIn('submitters', serializer.data)
+
+    def test_simple_group_serializer_includes_display_name_and_purpose(self):
+        from sa_api_v2.serializers import SimpleGroupSerializer
+        serializer = SimpleGroupSerializer(self.group)
+        self.assertIn('name', serializer.data)
+        self.assertIn('display_name', serializer.data)
+        self.assertIn('purpose', serializer.data)
+        self.assertEqual(serializer.data['display_name'], 'Code Reviewers')
+        self.assertEqual(serializer.data['purpose'], 'Review submissions')
+        self.assertNotIn('submitters', serializer.data)
+
+    def test_api_key_serializer_includes_display_name_and_purpose(self):
+        from sa_api_v2.serializers import ApiKeySerializer
+        serializer = ApiKeySerializer(self.key)
+        self.assertIn('key', serializer.data)
+        self.assertIn('display_name', serializer.data)
+        self.assertIn('purpose', serializer.data)
+        self.assertEqual(serializer.data['display_name'], 'Key Name')
+        self.assertEqual(serializer.data['purpose'], 'Key Purpose')
+
+    def test_origin_serializer_includes_display_name_and_purpose(self):
+        from sa_api_v2.serializers import OriginSerializer
+        serializer = OriginSerializer(self.origin)
+        self.assertIn('pattern', serializer.data)
+        self.assertIn('display_name', serializer.data)
+        self.assertIn('purpose', serializer.data)
+        self.assertEqual(serializer.data['display_name'], 'Origin Name')
+        self.assertEqual(serializer.data['purpose'], 'Origin Purpose')

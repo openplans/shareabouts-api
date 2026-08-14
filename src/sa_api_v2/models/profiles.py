@@ -117,6 +117,8 @@ class Group (CloneableModelMixin, models.Model):
     """
     dataset = models.ForeignKey('DataSet', on_delete=models.CASCADE, help_text='Which dataset does this group apply to?', related_name='groups')
     name = models.CharField(max_length=32, help_text='What is the name of the group to which users with this group belong? For example: "judges", "administrators", "winners", ...')
+    display_name = models.CharField(max_length=128, blank=True, default='')
+    purpose = models.TextField(blank=True, default='')
     submitters = models.ManyToManyField(User, related_name='_groups', blank=True)
 
     class Meta:
@@ -124,8 +126,11 @@ class Group (CloneableModelMixin, models.Model):
         db_table = 'sa_api_group'
         unique_together = [('name', 'dataset')]
 
+    def __str__(self):
+        return self.__unicode__()
+
     def __unicode__(self):
-        return '%s in %s' % (self.name, self.dataset.slug)
+        return '%s in %s' % (self.display_name or self.name, self.dataset.slug)
 
     def clone_related(self, onto):
         for permission in self.permissions.all():
