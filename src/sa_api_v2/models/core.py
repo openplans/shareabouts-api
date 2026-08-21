@@ -1,4 +1,5 @@
 import ujson as json
+import uuid
 from django.conf import settings
 from django.db.models import query
 
@@ -331,3 +332,22 @@ class Attachment (CacheClearingModel, TimeStampedModel):
     class Meta:
         app_label = 'sa_api_v2'
         db_table = 'sa_api_attachment'
+
+
+class AnonymousValues (models.Model):
+    """
+    Anonymous demographic or survey values associated only with a dataset
+    and logical submission set, with no link to places, submissions, or users.
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    dataset = models.ForeignKey(DataSet, on_delete=models.CASCADE, related_name='anonymous_values')
+    set_name = models.TextField(db_index=True)
+    data = models.JSONField(default=dict)
+
+    class Meta:
+        app_label = 'sa_api_v2'
+        db_table = 'sa_api_anonymousvalues'
+
+    def __str__(self):
+        return f'{self.set_name} ({self.id})'
+

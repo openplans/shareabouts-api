@@ -831,3 +831,86 @@ JSON (default), CSV, HTML, XML
 
 ------------------------------------------------------------
 
+Anonymous Data
+--------------
+
+Shareabouts allows collecting demographic and sensitive data anonymously alongside places and submissions.
+
+### Write Behavior (`anonymous_` Prefix)
+
+When submitting a place or submission, any attributes prefixed with `anonymous_` or `anonymous-` (e.g. `anonymous_age`, `anonymous_race`, `anonymous_income`) will be intercepted:
+
+1. The `anonymous_` / `anonymous-` prefix is stripped from the attribute names (e.g., `anonymous_age` becomes `age`).
+2. The stripped key-value pairs are stored in a separate, unlinked `AnonymousValues` record associated only with the dataset and the set name (`places` for places, or the submission set name for submissions).
+3. The anonymous attributes are **omitted** from the place or submission data blob and never returned in place or submission responses.
+4. No foreign key, submitter reference, or timestamp link exists between the anonymous record and the place/submission, ensuring complete anonymity.
+
+### Anonymous Data Summaries (`include_anonymous`)
+
+Authorized users with protected data access (`can_access_protected`) can request anonymous data metadata summaries by passing `include_anonymous=1` (or `true`) as a query parameter on:
+
+* `GET /api/v2/:owner/datasets/:slug/` (included under `places` and each `submission_sets` summary)
+* `GET /api/v2/:owner/datasets/:slug/places/` (top-level `anonymous_data` in the GeoJSON FeatureCollection)
+* `GET /api/v2/:owner/datasets/:slug/:submission_set_name/` (top-level `anonymous_data` in the paginated response)
+* `GET /api/v2/:owner/datasets/:slug/places/:place_id/:submission_set_name/` (top-level `anonymous_data` linking to the dataset-level anonymous endpoint)
+
+Sample summary object:
+
+```json
+{
+  "anonymous_data": {
+    "length": 600,
+    "url": "http://api.shareabouts.org/api/v2/openplans/datasets/chicagobikes/comments/anonymous"
+  }
+}
+```
+
+*Note*: If `include_anonymous` is requested without proper authorization, the API responds with `401 Unauthorized` or `403 Forbidden`.
+
+### Dedicated Anonymous Data Endpoints
+
+To retrieve the anonymous records, authorized clients query the dedicated paginated read-only endpoints:
+
+#### GET /api/v2/*:owner*/datasets/*:slug*/places/anonymous
+
+Retrieve paginated anonymous data collected during place submissions.
+
+#### GET /api/v2/*:owner*/datasets/*:slug*/*:submission_set_name*/anonymous
+
+Retrieve paginated anonymous data collected during submissions to a specific submission set.
+
+**Authentication**: Basic, session, or key auth with `can_access_protected` permission *(required)*
+
+**Request Parameters**:
+* `page`: Page number (default: 1)
+* `page_size`: Number of results per page
+
+**Sample Response**:
+
+    200 OK
+
+    {
+      "metadata": {
+        "length": 600,
+        "page": 1,
+        "num_pages": 6,
+        "next": "http://api.shareabouts.org/api/v2/openplans/datasets/chicagobikes/comments/anonymous?page=2",
+        "previous": null
+      },
+      "results": [
+        {
+          "age": "25-34",
+          "race": "Asian"
+        },
+        {
+          "age": "35-44",
+          "income": "$50k-$75k"
+        }
+      ]
+    }
+
+*Note*: Anonymous data endpoints are read-only. `POST`, `PUT`, `PATCH`, and `DELETE` requests respond with `405 Method Not Allowed`.
+
+------------------------------------------------------------
+
+

@@ -11,6 +11,7 @@ from django.test.client import RequestFactory
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework import (views, permissions, authentication,
                             generics, exceptions, status)
+from rest_framework.reverse import reverse as rest_reverse
 from rest_framework.negotiation import DefaultContentNegotiation
 from rest_framework.parsers import JSONParser, FormParser, MultiPartParser
 from rest_framework.response import Response
@@ -31,9 +32,9 @@ from .. import cors
 from .. import tasks
 from ..cache import cache_buffer
 from ..params import (INCLUDE_INVISIBLE_PARAM, INCLUDE_PRIVATE_PARAM,
-    INCLUDE_SUBMISSIONS_PARAM, NEAR_PARAM, DISTANCE_PARAM, BBOX_PARAM,
-    TEXTSEARCH_PARAM, FORMAT_PARAM, PAGE_PARAM, PAGE_SIZE_PARAM,
-    CALLBACK_PARAM)
+    INCLUDE_ANONYMOUS_PARAM, INCLUDE_SUBMISSIONS_PARAM, NEAR_PARAM,
+    DISTANCE_PARAM, BBOX_PARAM, TEXTSEARCH_PARAM, FORMAT_PARAM,
+    PAGE_PARAM, PAGE_SIZE_PARAM, CALLBACK_PARAM)
 from functools import wraps
 from itertools import count
 from collections import defaultdict
@@ -188,7 +189,7 @@ class IsLoggedInOwnerOrPublicDataOnly(permissions.BasePermission):
         if request.method == 'OPTIONS':
             return True
 
-        private_data_flags = [INCLUDE_PRIVATE_PARAM, INCLUDE_INVISIBLE_PARAM]
+        private_data_flags = [INCLUDE_PRIVATE_PARAM, INCLUDE_INVISIBLE_PARAM, INCLUDE_ANONYMOUS_PARAM]
         if not any([flag in request.GET for flag in private_data_flags]):
             return True
 
@@ -276,8 +277,10 @@ class IsAllowedByDataPermissions(permissions.BasePermission):
             data_type = 'places'
 
         # Check whether we have to get permission for protected data
-        protected = (INCLUDE_INVISIBLE_PARAM in request.GET or
-                     INCLUDE_PRIVATE_PARAM in request.GET)
+        protected = (getattr(view, 'is_protected_resource', False) or
+                     INCLUDE_INVISIBLE_PARAM in request.GET or
+                     INCLUDE_PRIVATE_PARAM in request.GET or
+                     INCLUDE_ANONYMOUS_PARAM in request.GET)
 
         user = getattr(request, 'user', None)
         client = getattr(request, 'client', None)
@@ -468,8 +471,8 @@ class FilteredResourceMixin (object):
         # These filters will have been applied when constructing the queryset
         special_filters = set([FORMAT_PARAM, PAGE_PARAM, PAGE_SIZE_PARAM(),
             INCLUDE_SUBMISSIONS_PARAM, INCLUDE_PRIVATE_PARAM,
-            INCLUDE_INVISIBLE_PARAM, NEAR_PARAM, DISTANCE_PARAM,
-            TEXTSEARCH_PARAM, BBOX_PARAM, CALLBACK_PARAM(self)])
+            INCLUDE_ANONYMOUS_PARAM, INCLUDE_INVISIBLE_PARAM, NEAR_PARAM,
+            DISTANCE_PARAM, TEXTSEARCH_PARAM, BBOX_PARAM, CALLBACK_PARAM(self)])
 
         # Filter by full-text search
         textsearch_filter = self.request.GET.get(TEXTSEARCH_PARAM, None)
@@ -907,14 +910,14 @@ class PlaceInstanceView (CachedResourceMixin, LocatedResourceMixin, OwnedResourc
         List the submissions in each submission set instead of just a summary of
         the set.
 
-      * `include_invisible` *(only direct auth)*
+      * `include_invisible` *(protected data access)*
 
         Show the place even if it is set as. You must specify use this flag to
         view an invisible place. The flag will also apply to submissions, if the
         `include_submissions` flag is set. Only the dataset owner is allowed to
         request invisible resoruces.
 
-      * `include_private` *(only direct auth)*
+      * `include_private` *(protected data access)*
 
         Show private data attributes on the place, and on any submissions if the
         `include_submissions` flag is set. Only the dataset owner is allowed to
@@ -925,6 +928,9 @@ class PlaceInstanceView (CachedResourceMixin, LocatedResourceMixin, OwnedResourc
     Update a place
 
     **Authentication**: Basic, session, or key auth *(required)*
+
+    Properties prefixed with `anonymous_` (e.g. `anonymous_age`) are stripped
+    of their prefix, stored anonymously, and excluded from the place record.
 
     DELETE
     ------
@@ -991,18 +997,23 @@ class PlaceListView (CachedResourceMixin, SerializerParamsMixin, LocatedResource
         List the submissions in each submission set instead of just a summary of
         the set.
 
-      * `include_invisible` *(only direct auth)*
+      * `include_invisible` *(protected data access)*
 
         Show the place even if it is set as. You must specify use this flag to
         view an invisible place. The flag will also apply to submissions, if the
         `include_submissions` flag is set. Only the dataset owner is allowed to
         request invisible resoruces.
 
-      * `include_private` *(only direct auth)*
+      * `include_private` *(protected data access)*
 
         Show private data attributes on the place, and on any submissions if the
         `include_submissions` flag is set. Only the dataset owner is allowed to
         request private attributes.
+
+      * `include_anonymous` *(protected data access)*
+
+        Include anonymous data summary for places in the
+        response. Requires protected data access permission.
 
       * `near=<reference_geometry>`
 
@@ -1039,6 +1050,9 @@ class PlaceListView (CachedResourceMixin, SerializerParamsMixin, LocatedResource
 
     **Authentication**: Basic, session, or key auth *(required)*
 
+    Properties prefixed with `anonymous_` (e.g. `anonymous_age`) are stripped
+    of their prefix, stored anonymously, and excluded from the place record.
+
     ------------------------------------------------------------
     """
 
@@ -1057,6 +1071,24 @@ class PlaceListView (CachedResourceMixin, SerializerParamsMixin, LocatedResource
 
     def get_serializer_overrides(self):
         return {'dataset': self.get_dataset()}
+
+    def get_paginated_response(self, data):
+        anonymous_data = None
+        if INCLUDE_ANONYMOUS_PARAM in self.request.GET:
+            user = getattr(self.request, 'user', None)
+            client = getattr(self.request, 'client', None)
+            dataset = self.get_dataset()
+            if models.check_data_permission(user, client, 'retrieve', dataset, 'places', protected=True):
+                anon_count = models.AnonymousValues.objects.filter(dataset=dataset, set_name='places').count()
+                anon_url = rest_reverse('place-anonymous-data-list', kwargs={
+                    'owner_username': dataset.owner.username,
+                    'dataset_slug': dataset.slug,
+                }, request=self.request)
+                anonymous_data = {
+                    'length': anon_count,
+                    'url': anon_url
+                }
+        return self.paginator.get_paginated_response(data, anonymous_data=anonymous_data)
 
     def post_save(self, obj, created):
         super(PlaceListView, self).post_save(obj)
@@ -1146,13 +1178,13 @@ class SubmissionInstanceView (CachedResourceMixin, OwnedResourceMixin, generics.
 
     **Request Parameters**:
 
-      * `include_invisible` *(only direct auth)*
+      * `include_invisible` *(protected data access)*
 
         Show the submission even if it is set as invisible. You must specify use
         this flag to view an invisible submission. Only the dataset owner is
         allowed to request invisible resoruces.
 
-      * `include_private` *(only direct auth)*
+      * `include_private` *(protected data access)*
 
         Show private data attributes on the submission. Only the dataset owner
         is allowed to request private attributes.
@@ -1212,18 +1244,24 @@ class SubmissionListView (CachedResourceMixin, SerializerParamsMixin, OwnedResou
 
     **Request Parameters**:
 
-      * `include_invisible` *(only direct auth)*
+      * `include_invisible` *(protected data access)*
 
         Show the place even if it is set as. You must specify use this flag to
         view an invisible place. The flag will also apply to submissions, if the
         `include_submissions` flag is set. Only the dataset owner is allowed to
         request invisible resoruces.
 
-      * `include_private` *(only direct auth)*
+      * `include_private` *(protected data access)*
 
         Show private data attributes on the place, and on any submissions if the
         `include_submissions` flag is set. Only the dataset owner is allowed to
         request private attributes.
+
+      * `include_anonymous` *(protected data access)*
+
+        Include anonymous data summary for this submission set
+        in the response. The URL links to the dataset-level anonymous data
+        endpoint. Requires protected data access permission.
 
       * `<attr>=<value>`
 
@@ -1236,6 +1274,9 @@ class SubmissionListView (CachedResourceMixin, SerializerParamsMixin, OwnedResou
     Create a submission
 
     **Authentication**: Basic, session, or key auth *(required)*
+
+    Attributes prefixed with `anonymous_` (e.g. `anonymous_age`) are stripped
+    of their prefix, stored anonymously, and excluded from the submission record.
 
     ------------------------------------------------------------
     """
@@ -1262,6 +1303,26 @@ class SubmissionListView (CachedResourceMixin, SerializerParamsMixin, OwnedResou
         ds = self.get_dataset()
         set_name = self.kwargs[self.submission_set_name_kwarg]
         return {'dataset': ds, 'place': self.get_place(ds), 'set_name': set_name}
+
+    def get_paginated_response(self, data):
+        anonymous_data = None
+        if INCLUDE_ANONYMOUS_PARAM in self.request.GET:
+            user = getattr(self.request, 'user', None)
+            client = getattr(self.request, 'client', None)
+            dataset = self.get_dataset()
+            set_name = self.kwargs[self.submission_set_name_kwarg]
+            if models.check_data_permission(user, client, 'retrieve', dataset, set_name, protected=True):
+                anon_count = models.AnonymousValues.objects.filter(dataset=dataset, set_name=set_name).count()
+                anon_url = rest_reverse('submission-set-anonymous-data-list', kwargs={
+                    'owner_username': dataset.owner.username,
+                    'dataset_slug': dataset.slug,
+                    'submission_set_name': set_name,
+                }, request=self.request)
+                anonymous_data = {
+                    'length': anon_count,
+                    'url': anon_url
+                }
+        return self.paginator.get_paginated_response(data, anonymous_data=anonymous_data)
 
     def get_queryset(self):
         dataset = self.get_dataset()
@@ -1308,18 +1369,23 @@ class DataSetSubmissionListView (CachedResourceMixin, OwnedResourceMixin, Filter
 
     **Request Parameters**:
 
-      * `include_invisible` *(only direct auth)*
+      * `include_invisible` *(protected data access)*
 
         Show the place even if it is set as. You must specify use this flag to
         view an invisible place. The flag will also apply to submissions, if the
         `include_submissions` flag is set. Only the dataset owner is allowed to
         request invisible resoruces.
 
-      * `include_private` *(only direct auth)*
+      * `include_private` *(protected data access)*
 
         Show private data attributes on the place, and on any submissions if the
         `include_submissions` flag is set. Only the dataset owner is allowed to
         request private attributes.
+
+      * `include_anonymous` *(protected data access)*
+
+        Include anonymous data summary for this submission set
+        in the response. Requires protected data access permission.
 
       * `<attr>=<value>`
 
@@ -1340,6 +1406,26 @@ class DataSetSubmissionListView (CachedResourceMixin, OwnedResourceMixin, Filter
         metakey_kwargs.pop('pk_list', None)
         prefix = reverse('dataset-submission-list', kwargs=metakey_kwargs)
         return prefix + '_keys'
+
+    def get_paginated_response(self, data):
+        anonymous_data = None
+        if INCLUDE_ANONYMOUS_PARAM in self.request.GET:
+            user = getattr(self.request, 'user', None)
+            client = getattr(self.request, 'client', None)
+            dataset = self.get_dataset()
+            set_name = self.kwargs[self.submission_set_name_kwarg]
+            if models.check_data_permission(user, client, 'retrieve', dataset, set_name, protected=True):
+                anon_count = models.AnonymousValues.objects.filter(dataset=dataset, set_name=set_name).count()
+                anon_url = rest_reverse('submission-set-anonymous-data-list', kwargs={
+                    'owner_username': dataset.owner.username,
+                    'dataset_slug': dataset.slug,
+                    'submission_set_name': set_name,
+                }, request=self.request)
+                anonymous_data = {
+                    'length': anon_count,
+                    'url': anon_url
+                }
+        return self.paginator.get_paginated_response(data, anonymous_data=anonymous_data)
 
     def get_queryset(self):
         dataset = self.get_dataset()
@@ -1367,6 +1453,62 @@ class DataSetSubmissionListView (CachedResourceMixin, OwnedResourceMixin, Filter
                 'submitter___groups')
 
 
+class PlaceAnonymousDataListView (OwnedResourceMixin, generics.ListAPIView):
+    """
+    GET
+    ---
+    Get all anonymous data associated with places in a dataset.
+
+    **Authentication**: Basic, session, or key auth with protected data access *(required)*
+
+    **Responses**:
+    * 200 OK: Paginated list of anonymous data objects
+    * 401 Unauthorized: When not authenticated
+    * 403 Forbidden: When authenticated without `can_access_protected` permission
+
+    ------------------------------------------------------------
+    """
+    queryset = models.AnonymousValues.objects.all()
+    serializer_class = serializers.AnonymousValuesSerializer
+    pagination_class = serializers.PaginatedResultsPagination
+    is_protected_resource = True
+
+    def get_queryset(self):
+        dataset = self.get_dataset()
+        return super(PlaceAnonymousDataListView, self).get_queryset().filter(
+            dataset=dataset, set_name='places'
+        ).order_by('id')
+
+
+class SubmissionSetAnonymousDataListView (OwnedResourceMixin, generics.ListAPIView):
+    """
+    GET
+    ---
+    Get all anonymous data associated with a specific submission set in a dataset.
+
+    **Authentication**: Basic, session, or key auth with protected data access *(required)*
+
+    **Responses**:
+    * 200 OK: Paginated list of anonymous data objects
+    * 401 Unauthorized: When not authenticated
+    * 403 Forbidden: When authenticated without `can_access_protected` permission
+
+    ------------------------------------------------------------
+    """
+    queryset = models.AnonymousValues.objects.all()
+    serializer_class = serializers.AnonymousValuesSerializer
+    pagination_class = serializers.PaginatedResultsPagination
+    submission_set_name_kwarg = 'submission_set_name'
+    is_protected_resource = True
+
+    def get_queryset(self):
+        dataset = self.get_dataset()
+        set_name = self.kwargs[self.submission_set_name_kwarg]
+        return super(SubmissionSetAnonymousDataListView, self).get_queryset().filter(
+            dataset=dataset, set_name=set_name
+        ).order_by('id')
+
+
 class DataSetInstanceView (ProtectedOwnedResourceMixin, generics.RetrieveUpdateDestroyAPIView):
     """
     GET
@@ -1377,10 +1519,15 @@ class DataSetInstanceView (ProtectedOwnedResourceMixin, generics.RetrieveUpdateD
 
     **Request Parameters**:
 
-      * `include_invisible` *(only direct auth)*
+      * `include_invisible` *(protected data access)*
 
         Count visible and invisible places and submissions in the dataset. Only
         the dataset owner is allowed to request invisible resoruces.
+
+      * `include_anonymous` *(protected data access)*
+
+        Include anonymous data summaries within the places and
+        submission set summaries. Requires protected data access permission.
 
     PUT
     ---
@@ -1539,7 +1686,7 @@ class DataSetListView (DataSetListMixin, SerializerParamsMixin, ProtectedOwnedRe
 
     **Request Parameters**:
 
-      * `include_invisible` *(only direct auth)*
+      * `include_invisible` *(protected data access)*
 
         Count visible and invisible places and submissions in the dataset. Only
         the dataset owner is allowed to request invisible resoruces.

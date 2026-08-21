@@ -1,8 +1,9 @@
 import json
+import uuid
 from django.test import TestCase
 from django.core.cache import cache
 from ..models import (Attachment, DataSet, User, Group, SubmittedThing, Action, Place, Submission,
-    DataSetPermission, check_data_permission, DataIndex, IndexedValue)
+    DataSetPermission, check_data_permission, DataIndex, IndexedValue, AnonymousValues)
 from ..apikey.models import ApiKey
 from mock import patch
 
@@ -643,3 +644,89 @@ class TestModelMetadata(TestCase):
         self.assertEqual(cloned_group.display_name, 'Code Reviewers')
         self.assertEqual(cloned_group.purpose, 'Group for reviewers')
         self.assertEqual(cloned_group.dataset, new_dataset)
+
+
+class TestAnonymousValues (TestCase):
+    def setUp(self):
+        User.objects.all().delete()
+        DataSet.objects.all().delete()
+        AnonymousValues.objects.all().delete()
+
+        self.owner = User.objects.create(username='user')
+        self.dataset = DataSet.objects.create(slug='testds', owner=self.owner)
+
+    def test_uuid_pk_generation(self):
+        anon = AnonymousValues.objects.create(
+            dataset=self.dataset,
+            set_name='places',
+            data={'age': '25-34'}
+        )
+        self.assertIsInstance(anon.id, uuid.UUID)
+        self.assertEqual(AnonymousValues.objects.filter(id=anon.id).count(), 1)
+
+    def test_jsonb_data_mixed_types(self):
+        complex_data = {
+            'string_val': 'test',
+            'int_val': 42,
+            'bool_val': True,
+            'array_val': ['proposal-1', 'proposal-2', 'proposal-3'],
+            'nested_val': {'key': 'value', 'scores': [1, 2, 3]},
+            'null_val': None
+        }
+        anon = AnonymousValues.objects.create(
+            dataset=self.dataset,
+            set_name='ballots',
+            data=complex_data
+        )
+        # Reload from db
+        fetched = AnonymousValues.objects.get(id=anon.id)
+        self.assertEqual(fetched.data, complex_data)
+        self.assertEqual(fetched.data['array_val'], ['proposal-1', 'proposal-2', 'proposal-3'])
+        self.assertEqual(fetched.data['nested_val']['scores'], [1, 2, 3])
+
+    def test_cascade_delete_on_dataset(self):
+        anon1 = AnonymousValues.objects.create(
+            dataset=self.dataset,
+            set_name='places',
+            data={'age': '25-34'}
+        )
+        anon2 = AnonymousValues.objects.create(
+            dataset=self.dataset,
+            set_name='comments',
+            data={'rating': 5}
+        )
+        self.assertEqual(AnonymousValues.objects.count(), 2)
+
+        self.dataset.delete()
+        self.assertEqual(AnonymousValues.objects.count(), 0)
+
+    def test_place_deletion_does_not_affect_anonymous_data(self):
+        place = Place.objects.create(dataset=self.dataset, geometry='POINT(0 0)')
+        anon = AnonymousValues.objects.create(
+            dataset=self.dataset,
+            set_name='places',
+            data={'age': '35-44'}
+        )
+        place.delete()
+        self.assertEqual(AnonymousValues.objects.filter(id=anon.id).count(), 1)
+
+    def test_set_name_values(self):
+        anon_place = AnonymousValues.objects.create(
+            dataset=self.dataset,
+            set_name='places',
+            data={'age': '18-24'}
+        )
+        anon_comment = AnonymousValues.objects.create(
+            dataset=self.dataset,
+            set_name='comments',
+            data={'ethnicity': 'Hispanic'}
+        )
+        anon_ballot = AnonymousValues.objects.create(
+            dataset=self.dataset,
+            set_name='ballots',
+            data={'proposals': ['p1']}
+        )
+        self.assertEqual(AnonymousValues.objects.filter(dataset=self.dataset, set_name='places').count(), 1)
+        self.assertEqual(AnonymousValues.objects.filter(dataset=self.dataset, set_name='comments').count(), 1)
+        self.assertEqual(AnonymousValues.objects.filter(dataset=self.dataset, set_name='ballots').count(), 1)
+

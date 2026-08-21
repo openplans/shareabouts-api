@@ -44,6 +44,9 @@ urlpatterns = [
         views.SubmissionListView.as_view(),
         name='submission-list'),
 
+    re_path(r'^(?P<owner_username>[^/]+)/datasets/(?P<dataset_slug>[^/]+)/places/anonymous$',
+        views.PlaceAnonymousDataListView.as_view(),
+        name='place-anonymous-data-list'),
     re_path(r'^(?P<owner_username>[^/]+)/datasets/(?P<dataset_slug>[^/]+)/places/(?P<place_id>\d+)$',
         views.PlaceInstanceView.as_view(),
         name='place-detail'),
@@ -63,6 +66,9 @@ urlpatterns = [
         views.OriginListView.as_view(),
         name='origin-list'),
 
+    re_path(r'^(?P<owner_username>[^/]+)/datasets/(?P<dataset_slug>[^/]+)/(?P<submission_set_name>[^/]+)/anonymous$',
+        views.SubmissionSetAnonymousDataListView.as_view(),
+        name='submission-set-anonymous-data-list'),
     re_path(r'^(?P<owner_username>[^/]+)/datasets/(?P<dataset_slug>[^/]+)/(?P<submission_set_name>[^/]+)(?:/(?P<pk_list>(?:\d+,)+\d+))?$',
         views.DataSetSubmissionListView.as_view(),
         name='dataset-submission-list'),

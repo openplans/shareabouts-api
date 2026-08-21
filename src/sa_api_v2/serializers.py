@@ -21,7 +21,7 @@ from . import cors
 from . import models
 from .models import check_data_permission
 from .params import (INCLUDE_INVISIBLE_PARAM, INCLUDE_PRIVATE_PARAM,
-    INCLUDE_SUBMISSIONS_PARAM,)
+    INCLUDE_ANONYMOUS_PARAM, INCLUDE_SUBMISSIONS_PARAM,)
 
 import logging
 log = logging.getLogger(__name__)
@@ -213,9 +213,19 @@ class DataSetPlaceSetIdentityField (ShareaboutsIdentityField):
     view_name = 'place-list'
 
 
+class PlaceAnonymousDataIdentityField (ShareaboutsIdentityField):
+    url_arg_names = ('owner_username', 'dataset_slug')
+    view_name = 'place-anonymous-data-list'
+
+
 class DataSetSubmissionSetIdentityField (ShareaboutsIdentityField):
     url_arg_names = ('owner_username', 'dataset_slug', 'submission_set_name')
     view_name = 'dataset-submission-list'
+
+
+class SubmissionSetAnonymousDataIdentityField (ShareaboutsIdentityField):
+    url_arg_names = ('owner_username', 'dataset_slug', 'submission_set_name')
+    view_name = 'submission-set-anonymous-data-list'
 
 
 class SubmissionIdentityField (ShareaboutsIdentityField):
@@ -285,12 +295,17 @@ class DataBlobProcessor (EmptyModelSerializer):
 
         # Split the incoming data into stuff that will be set straight onto
         # preexisting fields, and stuff that will go into the data blob.
+        anonymous_data = {}
         for key in data:
             if key in known_fields:
                 structured_attrs[key] = data[key]
+            elif key.startswith(('anonymous_', 'anonymous-')):
+                clean_key = key[len('anonymous…'):]
+                anonymous_data[clean_key] = data[key]
             else:
                 blob[key] = data[key]
 
+        self._anonymous_data = anonymous_data
         structured_attrs['data'] = json.dumps(blob)
 
         if not self.partial:
@@ -602,29 +617,20 @@ class DataSetPlaceSetSummarySerializer (serializers.HyperlinkedModelSerializer):
         model = models.DataSet
         fields = ('length', 'url')
 
+    def is_flag_on(self, flagname):
+        if self.context.get(flagname, False):
+            return True
+        request = self.context.get('request')
+        if not request:
+            return False
+        param = request.GET.get(flagname, 'false')
+        return param.lower() not in ('false', 'no', 'off')
+
     def get_place_counts(self, obj):
         """
         Return a dictionary whose keys are dataset ids and values are the
         corresponding count of places in that dataset.
         """
-        # This will currently do a query for every dataset, not a single query
-        # for all datasets. Generally a bad idea, but not a huge problem
-        # considering the number of datasets at the moment. In the future,
-        # we should perhaps use some kind of many_to_representation function.
-
-        # if self.many:
-        #     include_invisible = INCLUDE_INVISIBLE_PARAM in self.context['request'].GET
-        #     places = models.Place.objects.filter(dataset__in=obj)
-        #     if not include_invisible:
-        #         places = places.filter(visible=True)
-
-        #     # Unset any default ordering
-        #     places = places.order_by()
-
-        #     places = places.values('dataset').annotate(length=Count('dataset'))
-        #     return dict([(place['dataset'], place['length']) for place in places])
-
-        # else:
         include_invisible = INCLUDE_INVISIBLE_PARAM in self.context['request'].GET
         places = obj.places
         if not include_invisible:
@@ -635,6 +641,21 @@ class DataSetPlaceSetSummarySerializer (serializers.HyperlinkedModelSerializer):
         place_count_map = self.get_place_counts(obj)
         obj.places_length = place_count_map.get(obj.pk, 0)
         data = super(DataSetPlaceSetSummarySerializer, self).to_representation(obj)
+
+        if self.is_flag_on(INCLUDE_ANONYMOUS_PARAM):
+            request = self.context.get('request')
+            user = getattr(request, 'user', None)
+            client = getattr(request, 'client', None)
+            if check_data_permission(user, client, 'retrieve', obj, 'places', protected=True):
+                anon_count = models.AnonymousValues.objects.filter(dataset=obj, set_name='places').count()
+                anon_url_field = PlaceAnonymousDataIdentityField()
+                anon_url_field.bind(parent=self, field_name='anonymous_data')
+                anon_url = anon_url_field.to_representation(obj)
+                data['anonymous_data'] = {
+                    'length': anon_count,
+                    'url': anon_url
+                }
+
         return data
 
 
@@ -671,6 +692,7 @@ class DataSetSubmissionSetSummarySerializer (serializers.HyperlinkedModelSeriali
         submission_sets_map = self.get_submission_sets(obj)
         sets = submission_sets_map.get(obj.id, {})
         summaries = {}
+        include_anonymous = self.is_flag_on(INCLUDE_ANONYMOUS_PARAM)
         for set_name, submission_set in sets.items():
             # Ensure the user has read permission on the submission set.
             user = getattr(request, 'user', None)
@@ -681,7 +703,19 @@ class DataSetSubmissionSetSummarySerializer (serializers.HyperlinkedModelSeriali
 
             obj.submission_set_name = set_name
             obj.submission_set_length = len(submission_set)
-            summaries[set_name] = super(DataSetSubmissionSetSummarySerializer, self).to_representation(obj)
+            rep = super(DataSetSubmissionSetSummarySerializer, self).to_representation(obj)
+
+            if include_anonymous and check_data_permission(user, client, 'retrieve', dataset, set_name, protected=True):
+                anon_count = models.AnonymousValues.objects.filter(dataset=obj, set_name=set_name).count()
+                anon_url_field = SubmissionSetAnonymousDataIdentityField()
+                anon_url_field.bind(parent=self, field_name='anonymous_data')
+                anon_url = anon_url_field.to_representation(obj)
+                rep['anonymous_data'] = {
+                    'length': anon_count,
+                    'url': anon_url
+                }
+
+            summaries[set_name] = rep
         return summaries
 
 
@@ -733,13 +767,44 @@ class SubmittedThingSerializer (bulk_serializers.BulkSerializerMixin, ActivityGe
 
         return data
 
+    def _save_anonymous_data(self, instance):
+        anon_data = getattr(self, '_anonymous_data', None)
+        if not anon_data:
+            return
+
+        # Skip creation if all values are empty/null/empty string
+        has_non_empty = any(v not in (None, '') for v in anon_data.values())
+        if not has_non_empty:
+            return
+
+        if hasattr(instance, 'set_name') and instance.set_name:
+            set_name = instance.set_name
+        elif isinstance(instance, models.Place) or hasattr(instance, 'full_place'):
+            set_name = 'places'
+        elif hasattr(instance, 'full_submission'):
+            set_name = instance.full_submission.set_name
+        else:
+            set_name = 'places'
+
+        dataset = getattr(instance, 'dataset', None)
+        if dataset:
+            models.AnonymousValues.objects.create(
+                dataset=dataset,
+                set_name=set_name,
+                data=anon_data
+            )
+
     def create(self, validated_data):
         validated_data = self._patch_submitter(data=validated_data)
-        return super(SubmittedThingSerializer, self).create(validated_data)
+        instance = super(SubmittedThingSerializer, self).create(validated_data)
+        self._save_anonymous_data(instance)
+        return instance
 
     def update(self, instance, validated_data):
         validated_data = self._patch_submitter(instance=instance, data=validated_data)
-        return super(SubmittedThingSerializer, self).update(instance, validated_data)
+        instance = super(SubmittedThingSerializer, self).update(instance, validated_data)
+        self._save_anonymous_data(instance)
+        return instance
 
 
 # Place serializers
@@ -1081,17 +1146,40 @@ class PaginatedMetadataMixin (object):
 
 
 class PaginatedResultsPagination (PaginatedMetadataMixin, pagination.PageNumberPagination):
-    def get_paginated_response(self, data):
-        return response.Response(OrderedDict([
+    def get_paginated_response(self, data, anonymous_data=None):
+        if anonymous_data is None:
+            anonymous_data = getattr(self, 'anonymous_data', None)
+
+        ret = [
             ('metadata', self.get_pagination_metadata(data)),
             ('results', data),
-        ]))
+        ]
+        if anonymous_data is not None:
+            ret.append(('anonymous_data', anonymous_data))
+
+        return response.Response(OrderedDict(ret))
 
 
 class FeatureCollectionPagination (PaginatedMetadataMixin, pagination.PageNumberPagination):
-    def get_paginated_response(self, data):
-        return response.Response(OrderedDict([
+    def get_paginated_response(self, data, anonymous_data=None):
+        if anonymous_data is None:
+            anonymous_data = getattr(self, 'anonymous_data', None)
+
+        ret = [
             ('metadata', self.get_pagination_metadata(data)),
             ('type', 'FeatureCollection'),
             ('features', data),
-        ]))
+        ]
+        if anonymous_data is not None:
+            ret.append(('anonymous_data', anonymous_data))
+
+        return response.Response(OrderedDict(ret))
+
+
+class AnonymousValuesSerializer (serializers.ModelSerializer):
+    class Meta:
+        model = models.AnonymousValues
+        fields = ('data',)
+
+    def to_representation(self, obj):
+        return obj.data

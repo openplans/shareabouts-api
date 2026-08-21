@@ -3,6 +3,7 @@ from django.conf import settings
 # Querystring Parameter Names
 INCLUDE_INVISIBLE_PARAM = 'include_invisible'
 INCLUDE_PRIVATE_PARAM = 'include_private'
+INCLUDE_ANONYMOUS_PARAM = 'include_anonymous'
 INCLUDE_SUBMISSIONS_PARAM = 'include_submissions'
 NEAR_PARAM = 'near'
 DISTANCE_PARAM = 'distance_lt'

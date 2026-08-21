@@ -12,7 +12,7 @@ import json
 import mock
 import unittest
 from io import StringIO
-from ..models import User, DataSet, Place, Submission, Attachment, Action, Group, DataIndex
+from ..models import User, DataSet, Place, Submission, Attachment, Action, Group, DataIndex, AnonymousValues
 from ..cache import cache_buffer
 from ..apikey.models import ApiKey
 from ..apikey.auth import KEY_HEADER
@@ -1411,6 +1411,40 @@ class TestPlaceListView (APITestMixin, TestCase):
         response = self.view(request, **self.request_kwargs)
         self.assertStatusCode(response, 403)
 
+    def test_POST_response_with_anonymous_data(self):
+        place_data = json.dumps({
+            'properties': {
+                'location_type': 'suggestion',
+                'description': 'Add a bike lane here',
+                'private_email': 'jane@example.com',
+                'anonymous_age': '25-34',
+                'anonymous_race': 'Asian'
+            },
+            'type': 'Feature',
+            'geometry': {"type": "Point", "coordinates": [-75.16, 39.95]}
+        })
+        request = self.factory.post(self.path, data=place_data, content_type='application/json')
+        request.META[KEY_HEADER] = self.apikey.key
+        self.apikey.permissions.all().delete()
+        self.apikey.permissions.add_permission('places', True, True, False, False)
+
+        response = self.view(request, **self.request_kwargs)
+        self.assertStatusCode(response, 201)
+
+        data = json.loads(response.rendered_content)
+        # Check response has public properties and excludes anonymous ones
+        self.assertEqual(data['properties'].get('location_type'), 'suggestion')
+        self.assertEqual(data['properties'].get('description'), 'Add a bike lane here')
+        self.assertNotIn('anonymous_age', data['properties'])
+        self.assertNotIn('anonymous_race', data['properties'])
+        self.assertNotIn('age', data['properties'])
+        self.assertNotIn('race', data['properties'])
+
+        # Check AnonymousValues record was created with set_name='places'
+        anon_records = AnonymousValues.objects.filter(dataset=self.dataset, set_name='places')
+        self.assertEqual(anon_records.count(), 1)
+        self.assertEqual(anon_records.first().data, {'age': '25-34', 'race': 'Asian'})
+
     @unittest.skip("TODO: figure out what the desired behavior for bulk PUT is.")
     def test_PUT_creates_in_bulk(self):
         # Create a couple bogus places so that we can be sure we're not
@@ -2505,6 +2539,30 @@ class TestSubmissionListView (APITestMixin, TestCase):
         # Check that we actually created a submission and set
         final_num_submissions = Submission.objects.all().count()
         self.assertEqual(final_num_submissions, start_num_submissions + 1)
+
+    def test_POST_response_with_anonymous_data(self):
+        submission_data = json.dumps({
+            'submitter_name': 'Jane',
+            'text': 'Great idea',
+            'anonymous_age': '25-34',
+            'anonymous_race': 'Asian'
+        })
+        request = self.factory.post(self.path, data=submission_data, content_type='application/json')
+        request.META[KEY_HEADER] = self.apikey.key
+
+        response = self.view(request, **self.request_kwargs)
+        self.assertStatusCode(response, 201)
+
+        data = json.loads(response.rendered_content)
+        self.assertEqual(data.get('text'), 'Great idea')
+        self.assertNotIn('anonymous_age', data)
+        self.assertNotIn('anonymous_race', data)
+        self.assertNotIn('age', data)
+        self.assertNotIn('race', data)
+
+        anon_records = AnonymousValues.objects.filter(dataset=self.dataset, set_name='comments')
+        self.assertEqual(anon_records.count(), 1)
+        self.assertEqual(anon_records.first().data, {'age': '25-34', 'race': 'Asian'})
 
     def test_POST_response_without_data_permission(self):
         submission_data = json.dumps({
