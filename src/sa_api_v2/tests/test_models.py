@@ -730,3 +730,42 @@ class TestAnonymousValues (TestCase):
         self.assertEqual(AnonymousValues.objects.filter(dataset=self.dataset, set_name='comments').count(), 1)
         self.assertEqual(AnonymousValues.objects.filter(dataset=self.dataset, set_name='ballots').count(), 1)
 
+    def test_verbose_names(self):
+        self.assertEqual(str(AnonymousValues._meta.verbose_name), 'Anonymous values')
+        self.assertEqual(str(AnonymousValues._meta.verbose_name_plural), 'Anonymous values')
+
+    def test_anonymous_values_clone(self):
+        dataset2 = DataSet.objects.create(owner=self.owner, slug='dataset-two')
+        anon = AnonymousValues.objects.create(
+            dataset=self.dataset,
+            set_name='comments',
+            data={'age': '25-34', 'rating': 5}
+        )
+        cloned = anon.clone(overrides={'dataset': dataset2})
+        self.assertNotEqual(cloned.id, anon.id)
+        self.assertEqual(cloned.dataset, dataset2)
+        self.assertEqual(cloned.set_name, 'comments')
+        self.assertEqual(cloned.data, {'age': '25-34', 'rating': 5})
+
+    def test_dataset_clone_related_clones_anonymous_values(self):
+        dataset2 = DataSet.objects.create(owner=self.owner, slug='dataset-two')
+        AnonymousValues.objects.create(
+            dataset=self.dataset,
+            set_name='places',
+            data={'age': '18-24'}
+        )
+        AnonymousValues.objects.create(
+            dataset=self.dataset,
+            set_name='comments',
+            data={'proposals': ['A', 'B']}
+        )
+        self.dataset.clone_related(dataset2)
+        self.assertEqual(dataset2.anonymous_values.count(), 2)
+        cloned_sets = list(dataset2.anonymous_values.values_list('set_name', flat=True))
+        self.assertIn('places', cloned_sets)
+        self.assertIn('comments', cloned_sets)
+        # Ensure new UUIDs are distinct from original UUIDs
+        orig_ids = set(self.dataset.anonymous_values.values_list('id', flat=True))
+        cloned_ids = set(dataset2.anonymous_values.values_list('id', flat=True))
+        self.assertEqual(orig_ids.intersection(cloned_ids), set())
+

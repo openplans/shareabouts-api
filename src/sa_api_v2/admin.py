@@ -75,8 +75,11 @@ class PrettyAceWidget (AceWidget):
         if value:
             try:
                 # If we can prettify the JSON, we should
-                value = json.dumps(json.loads(value), indent=2)
-            except ValueError:
+                if isinstance(value, str):
+                    value = json.dumps(json.loads(value), indent=2)
+                else:
+                    value = json.dumps(value, indent=2)
+            except (ValueError, TypeError):
                 # If we cannot, then we should still display the value
                 pass
         return super(PrettyAceWidget, self).render(name, value, attrs=attrs, renderer=renderer)
@@ -261,7 +264,7 @@ class DataSetAdmin(DjangoObjectActions, admin.ModelAdmin):
 
     objectactions = ('clone_dataset', 'clear_cache')
     raw_id_fields = ('owner',)
-    readonly_fields = ('api_path', 'places')
+    readonly_fields = ('api_path', 'places', 'anonymous_values')
     inlines = [InlineDataIndexAdmin, InlineDataSetPermissionAdmin, InlineApiKeyAdmin, InlineOriginAdmin, InlineGroupAdmin, InlineWebhookAdmin]
 
     def clear_cache(self, request, obj):
@@ -288,6 +291,11 @@ class DataSetAdmin(DjangoObjectActions, admin.ModelAdmin):
 
     def places(self, instance):
         path = '/admin/sa_api_v2/place/?dataset={}'
+        path = path.format(instance.slug)
+        return format_html('<a href="{0}">{0}</a>', path)
+
+    def anonymous_values(self, instance):
+        path = '/admin/sa_api_v2/anonymousvalues/?dataset={}'
         path = path.format(instance.slug)
         return format_html('<a href="{0}">{0}</a>', path)
 
@@ -430,10 +438,58 @@ class UserAdmin(BaseUserAdmin):
         return qs
 
 
+class AnonymousValuesAdmin(admin.ModelAdmin):
+    list_display = ('id', 'owner', 'dataset', 'set_name', 'data')
+    list_filter = ('set_name', DataSetFilter)
+    search_fields = ('set_name', 'data')
+    raw_id_fields = ('dataset',)
+    readonly_fields = ('id',)
+
+    def owner(self, obj):
+        try:
+            return obj.dataset.owner.username if obj.dataset and obj.dataset.owner else None
+        except models.DataSet.DoesNotExist:
+            return None
+    owner.short_description = 'Owner'
+    owner.admin_order_field = 'dataset__owner__username'
+
+    def dataset(self, obj):
+        try:
+            return obj.dataset.slug if obj.dataset else None
+        except models.DataSet.DoesNotExist:
+            return None
+    dataset.short_description = 'Dataset'
+    dataset.admin_order_field = 'dataset__slug'
+
+    def get_queryset(self, request):
+        qs = super(AnonymousValuesAdmin, self).get_queryset(request)
+        user = request.user
+        if not user.is_superuser:
+            qs = qs.filter(dataset__owner=user)
+        return qs.select_related('dataset', 'dataset__owner')
+
+    def get_form(self, request, obj=None, **kwargs):
+        FormWithJSONCleaning = super(AnonymousValuesAdmin, self).get_form(request, obj=obj, **kwargs)
+
+        def clean_json_blob(form):
+            data = form.cleaned_data['data']
+            if isinstance(data, str):
+                try:
+                    data = json.loads(data)
+                except Exception as e:
+                    raise ValidationError(e)
+            return data
+
+        FormWithJSONCleaning.clean_data = clean_json_blob
+        FormWithJSONCleaning.base_fields['data'].widget = PrettyAceWidget(mode='json', width='100%', wordwrap=True, theme='jsoneditor')
+        return FormWithJSONCleaning
+
+
 admin.site.register(models.User, UserAdmin)
 admin.site.register(models.DataSet, DataSetAdmin)
 admin.site.register(models.Place, PlaceAdmin)
 admin.site.register(models.Submission, SubmissionAdmin)
+admin.site.register(models.AnonymousValues, AnonymousValuesAdmin)
 admin.site.register(models.Action, ActionAdmin)
 admin.site.register(models.Group, GroupAdmin)
 admin.site.register(models.Webhook, WebhookAdmin)

@@ -194,6 +194,9 @@ class DataSet (CloneableModelMixin, CacheClearingModel, models.Model):
         for key in self.keys.all():
             key.clone(overrides={'dataset': onto})
 
+        for anonymous_value in self.anonymous_values.all():
+            anonymous_value.clone(overrides={'dataset': onto})
+
         self.reindex()
 
 
@@ -334,7 +337,7 @@ class Attachment (CacheClearingModel, TimeStampedModel):
         db_table = 'sa_api_attachment'
 
 
-class AnonymousValues (models.Model):
+class AnonymousValues (CloneableModelMixin, models.Model):
     """
     Anonymous demographic or survey values associated only with a dataset
     and logical submission set, with no link to places, submissions, or users.
@@ -347,6 +350,8 @@ class AnonymousValues (models.Model):
     class Meta:
         app_label = 'sa_api_v2'
         db_table = 'sa_api_anonymousvalues'
+        verbose_name = 'Anonymous values'
+        verbose_name_plural = 'Anonymous values'
 
     def __str__(self):
         return f'{self.set_name} ({self.id})'

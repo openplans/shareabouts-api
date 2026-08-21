@@ -60,3 +60,18 @@ The `set_name` field SHALL use the same values as `Submission.set_name` for subm
 #### Scenario: Anonymous data from submission creation uses submission's set_name
 - **WHEN** anonymous data is created as part of a submission to the `"comments"` submission set
 - **THEN** the `AnonymousValues.set_name` SHALL be `"comments"`
+
+### Requirement: AnonymousValues is cloneable with datasets
+`AnonymousValues` SHALL implement model cloning via `CloneableModelMixin`. When a `DataSet` is cloned, all `AnonymousValues` associated with the source dataset SHALL be cloned onto the new dataset with a new UUID primary key.
+
+#### Scenario: Dataset clone copies anonymous values
+- **WHEN** a dataset with associated `AnonymousValues` records is cloned
+- **THEN** matching `AnonymousValues` records SHALL be created for the new dataset with identical `set_name` and `data` blobs, each assigned a distinct auto-generated UUID
+
+### Requirement: Model verbose naming
+The `AnonymousValues` model Meta SHALL define `verbose_name` and `verbose_name_plural` both as `"Anonymous values"`.
+
+#### Scenario: Model Meta verbose names
+- **WHEN** the model Meta options for `AnonymousValues` are evaluated
+- **THEN** `verbose_name` SHALL be `"Anonymous values"`
+- **AND** `verbose_name_plural` SHALL be `"Anonymous values"`

@@ -108,6 +108,7 @@ def clone_related_dataset_data(orig_dataset_id, new_dataset_id):
                           'keys__permissions',
                           'origins',
                           'origins__permissions',
+                          'anonymous_values',
                           )
     datasets = list(qs)
     if datasets[0].id == orig_dataset_id:
