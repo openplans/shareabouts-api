@@ -37,10 +37,10 @@ data "terraform_remote_state" "common" {
 module "service" {
   source = "../../modules/shareabouts-service"
 
-  project_id   = var.project_id
-  region       = var.region
-  service_name = var.service_name
-  environment  = "dev"
+  project_id    = var.project_id
+  region        = var.region
+  service_name  = var.service_name
+  environment   = "dev"
   min_instances = 0
   max_instances = 10
 
@@ -54,4 +54,8 @@ module "service" {
   # Config
   domain_names             = var.domain_names
   additional_allowed_hosts = var.additional_allowed_hosts
+  superuser_username       = var.superuser_username
+  superuser_email          = var.superuser_email
+  superuser_password       = var.superuser_password
 }
+

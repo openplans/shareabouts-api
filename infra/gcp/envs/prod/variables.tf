@@ -37,3 +37,23 @@ variable "workers" {
   type        = string
   default     = "4"
 }
+
+variable "superuser_username" {
+  description = "Username for Django superuser (optional; if set with email and password, creates superuser job)"
+  type        = string
+  default     = null
+}
+
+variable "superuser_email" {
+  description = "Email for Django superuser (optional; if set with username and password, creates superuser job)"
+  type        = string
+  default     = null
+}
+
+variable "superuser_password" {
+  description = "Password for Django superuser (optional; if set with username and email, creates superuser job)"
+  type        = string
+  sensitive   = true
+  default     = null
+}
+

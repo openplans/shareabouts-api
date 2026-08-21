@@ -39,6 +39,18 @@ locals {
     "DB_PASSWORD" = google_secret_manager_secret.db_password.secret_id
     "SECRET_KEY"  = google_secret_manager_secret.secret_key.secret_id
   }
+
+  enable_createsuperuser = (
+    var.superuser_username != null &&
+    var.superuser_email != null &&
+    var.superuser_password != null
+  )
+
+  superuser_env_secrets = local.enable_createsuperuser ? {
+    "DJANGO_SUPERUSER_USERNAME" = google_secret_manager_secret.superuser_username[0].secret_id
+    "DJANGO_SUPERUSER_EMAIL"    = google_secret_manager_secret.superuser_email[0].secret_id
+    "DJANGO_SUPERUSER_PASSWORD" = google_secret_manager_secret.superuser_password[0].secret_id
+  } : {}
 }
 
 # ------------------------------------------------------------------------------
@@ -135,6 +147,48 @@ workers                  = "${var.workers}"
 EOT
 }
 
+resource "google_secret_manager_secret" "superuser_username" {
+  count     = local.enable_createsuperuser ? 1 : 0
+  secret_id = "${var.service_name}-${var.environment}-superuser-username"
+  replication {
+    auto {}
+  }
+}
+
+resource "google_secret_manager_secret_version" "superuser_username" {
+  count       = local.enable_createsuperuser ? 1 : 0
+  secret      = google_secret_manager_secret.superuser_username[0].id
+  secret_data = var.superuser_username
+}
+
+resource "google_secret_manager_secret" "superuser_email" {
+  count     = local.enable_createsuperuser ? 1 : 0
+  secret_id = "${var.service_name}-${var.environment}-superuser-email"
+  replication {
+    auto {}
+  }
+}
+
+resource "google_secret_manager_secret_version" "superuser_email" {
+  count       = local.enable_createsuperuser ? 1 : 0
+  secret      = google_secret_manager_secret.superuser_email[0].id
+  secret_data = var.superuser_email
+}
+
+resource "google_secret_manager_secret" "superuser_password" {
+  count     = local.enable_createsuperuser ? 1 : 0
+  secret_id = "${var.service_name}-${var.environment}-superuser-password"
+  replication {
+    auto {}
+  }
+}
+
+resource "google_secret_manager_secret_version" "superuser_password" {
+  count       = local.enable_createsuperuser ? 1 : 0
+  secret      = google_secret_manager_secret.superuser_password[0].id
+  secret_data = var.superuser_password
+}
+
 # ------------------------------------------------------------------------------
 # SERVICE ACCOUNT & IAM
 # ------------------------------------------------------------------------------
@@ -164,6 +218,27 @@ resource "google_secret_manager_secret_iam_member" "db_password_access" {
 
 resource "google_secret_manager_secret_iam_member" "secret_key_access" {
   secret_id = google_secret_manager_secret.secret_key.id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${google_service_account.sa.email}"
+}
+
+resource "google_secret_manager_secret_iam_member" "superuser_username_access" {
+  count     = local.enable_createsuperuser ? 1 : 0
+  secret_id = google_secret_manager_secret.superuser_username[0].id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${google_service_account.sa.email}"
+}
+
+resource "google_secret_manager_secret_iam_member" "superuser_email_access" {
+  count     = local.enable_createsuperuser ? 1 : 0
+  secret_id = google_secret_manager_secret.superuser_email[0].id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${google_service_account.sa.email}"
+}
+
+resource "google_secret_manager_secret_iam_member" "superuser_password_access" {
+  count     = local.enable_createsuperuser ? 1 : 0
+  secret_id = google_secret_manager_secret.superuser_password[0].id
   role      = "roles/secretmanager.secretAccessor"
   member    = "serviceAccount:${google_service_account.sa.email}"
 }
