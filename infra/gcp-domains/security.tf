@@ -10,11 +10,15 @@ locals {
     length(var.blocked_referer_domains) > 0
   )
 
+  # Match only bare-origin referers (no path) — this is the botnet's signature.
+  # Exempt requests carrying a Django session cookie so authenticated staff can
+  # browse /api/ from the admin or directly in the browser.
+  # Uses regex matching to stay within Cloud Armor's 10-expression limit.
   referer_match_expression = length(var.blocked_referer_domains) > 0 ? format(
-    "request.path.startsWith('/api/') && has(request.headers['referer']) && (%s)",
+    "request.path.startsWith('/api/') && has(request.headers['referer']) && (!has(request.headers['cookie']) || !request.headers['cookie'].contains('sessionid=')) && (%s)",
     join(" || ", [
       for d in var.blocked_referer_domains :
-      "request.headers['referer'].contains('${d}')"
+      "request.headers['referer'].matches('https?://${replace(d, ".", "\\\\.")}/?')"
     ])
   ) : ""
 }
