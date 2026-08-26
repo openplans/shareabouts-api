@@ -60,3 +60,15 @@ variable "blocked_ip_ranges" {
   default     = []
 }
 
+variable "block_php_requests" {
+  type        = bool
+  description = "Whether to block requests ending with .php via Cloud Armor"
+  default     = true
+}
+
+variable "blocked_referer_domains" {
+  type        = list(string)
+  description = "List of domain names whose self-referencing root referers should be blocked from accessing /api/ endpoints"
+  default     = []
+}
+

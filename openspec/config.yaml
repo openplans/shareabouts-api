@@ -2,6 +2,11 @@ schema: spec-driven
 context: |
   Tech stack: Django, Django REST Framework, PostgreSQL
   Test-driven development: We write tests before implementing features with a specific eye toward protecting against regressions
+  Infrastructure as Code: We use OpenTofu. Always ask (and show a plan) before applying infrastructure changes if there's a chance that they may alter TLS certificates.
+  Python environment: 
+    Version: 3.12
+    Package manager: pip
+    Virtual environment: /home/mjumbewu/.virtualenvs/home/mjumbewu/Code/PoePublic/shareabouts-api
 
 # Project context (optional)
 # This is shown to AI when creating artifacts.
