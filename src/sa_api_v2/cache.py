@@ -167,6 +167,155 @@ class CacheBuffer (object):
 cache_buffer = CacheBuffer()
 
 
+class SetCache (object):
+    """
+    A set-oriented cache abstraction designed for managing API cache metakeys.
+
+    Purpose:
+    --------
+    Metakeys (such as resource collection keys like `/places_keys` or `dataset:23_keys`)
+    track sets of dependent cache keys that must be invalidated when a resource is
+    updated.
+
+    Under multi-process concurrency (e.g. Gunicorn workers in production), storing
+    metakeys as serialized, pickled Python `set` objects in standard Django cache
+    keys introduces race conditions: multiple workers servicing different requests
+    (e.g., page 1 and page 2) can read, mutate, and overwrite the pickled set
+    simultaneously, clobbering each other's keys and causing silent cache misses.
+
+    This class provides atomic O(1) set operations (`SADD`, `SISMEMBER`, `SMEMBERS`,
+    `SREM`, `EXPIRE`) directly using native Redis data structures when the active
+    cache backend is Redis (via `django-redis`), with automatic TTL maintenance and
+    pipelined execution.
+
+    When running in non-Redis environments (such as in-memory `LocMemCache` or
+    `DummyCache` during local testing), it transparently falls back to managing
+    pickled Python sets in the standard cache backend.
+    """
+
+    def __init__(self, cache_backend=None):
+        self._cache = cache_backend or django_cache.cache
+
+    def _get_redis_client(self):
+        """
+        Returns the raw redis client if using django-redis, else None.
+        """
+        client = getattr(self._cache, 'client', None)
+        if client and hasattr(client, 'get_client'):
+            try:
+                return client.get_client(write=True)
+            except Exception:
+                return None
+        return None
+
+    def is_member(self, set_key, member):
+        """
+        Check whether member is tracked in the set identified by set_key.
+        """
+        redis_client = self._get_redis_client()
+        if redis_client:
+            redis_key = self._cache.make_key(set_key)
+            try:
+                return bool(redis_client.sismember(redis_key, member))
+            except Exception as e:
+                logger.warning('Redis sismember failed for key %s: %s', set_key, e)
+
+        members = self._cache.get(set_key) or set()
+        return member in members
+
+    def add(self, set_key, *members, timeout=None):
+        """
+        Atomically add one or more members to the set, and refresh the TTL on the set.
+        """
+        if not members:
+            return
+
+        timeout = timeout or settings.API_CACHE_TIMEOUT
+        redis_client = self._get_redis_client()
+
+        if redis_client:
+            redis_key = self._cache.make_key(set_key)
+            try:
+                pipe = redis_client.pipeline()
+                pipe.sadd(redis_key, *members)
+                if timeout:
+                    pipe.expire(redis_key, timeout)
+                pipe.execute()
+                return
+            except Exception as e:
+                # WRONGTYPE error from legacy string key; delete and retry as set
+                logger.warning('Redis sadd failed for key %s (will delete and retry): %s', set_key, e)
+                try:
+                    redis_client.delete(redis_key)
+                    pipe = redis_client.pipeline()
+                    pipe.sadd(redis_key, *members)
+                    if timeout:
+                        pipe.expire(redis_key, timeout)
+                    pipe.execute()
+                    return
+                except Exception as retry_err:
+                    logger.error('Redis sadd retry failed: %s', retry_err)
+
+        # Fallback for LocMemCache / non-Redis
+        s = self._cache.get(set_key) or set()
+        if not isinstance(s, (set, frozenset)):
+            s = set()
+        s.update(members)
+        self._cache.set(set_key, s, timeout)
+
+    def get_members(self, set_key):
+        """
+        Retrieve all members of the set.
+        """
+        redis_client = self._get_redis_client()
+        if redis_client:
+            redis_key = self._cache.make_key(set_key)
+            try:
+                raw_members = redis_client.smembers(redis_key)
+                return {
+                    m.decode('utf-8') if isinstance(m, bytes) else m
+                    for m in raw_members
+                }
+            except Exception as e:
+                logger.warning('Redis smembers failed for key %s: %s', set_key, e)
+
+        members = self._cache.get(set_key) or set()
+        if not isinstance(members, (set, frozenset)):
+            return set()
+        return set(members)
+
+    def remove(self, set_key, *members):
+        """
+        Remove one or more members from the set.
+        """
+        if not members:
+            return
+
+        redis_client = self._get_redis_client()
+        if redis_client:
+            redis_key = self._cache.make_key(set_key)
+            try:
+                redis_client.srem(redis_key, *members)
+                return
+            except Exception as e:
+                logger.warning('Redis srem failed for key %s: %s', set_key, e)
+
+        s = self._cache.get(set_key) or set()
+        if isinstance(s, (set, frozenset)):
+            s = set(s)
+            s.difference_update(members)
+            self._cache.set(set_key, s)
+
+    def delete(self, set_key):
+        """
+        Delete the entire set.
+        """
+        self._cache.delete(set_key)
+
+
+set_cache = SetCache()
+
+
 class Cache (object):
     """
     The base class for objects responsible for caching Shareabouts data
@@ -200,7 +349,7 @@ class Cache (object):
         keys = set()
         for prefix in prefixes:
             meta_key = self.get_meta_key(prefix)
-            keys |= cache_buffer.get(meta_key) or set()
+            keys |= set_cache.get_members(meta_key)
             keys.add(meta_key)
         logger.debug('Keys with prefixes "%s": "%s"' % ('", "'.join(prefixes), '", "'.join(keys)))
         return keys

@@ -30,7 +30,7 @@ from .. import parsers
 from .. import apikey
 from .. import cors
 from .. import tasks
-from ..cache import cache_buffer
+from ..cache import cache_buffer, set_cache
 from ..params import (INCLUDE_INVISIBLE_PARAM, INCLUDE_PRIVATE_PARAM,
     INCLUDE_ANONYMOUS_PARAM, INCLUDE_SUBMISSIONS_PARAM, NEAR_PARAM,
     DISTANCE_PARAM, BBOX_PARAM, TEXTSEARCH_PARAM, FORMAT_PARAM,
@@ -708,9 +708,8 @@ class CachedResourceMixin (object):
         # know when to invalidate it. If it's not managed we should just
         # assume that it's invalid.
         metakey = self.get_cache_metakey(request, *args, **kwargs)
-        keyset = django_cache.cache.get(metakey) or set()
 
-        if (response_data is not None) and (key in keyset):
+        if (response_data is not None) and set_cache.is_member(metakey, key):
             cached_response = self.respond_from_cache(response_data)
             handler_name = request.method.lower()
 
@@ -831,9 +830,7 @@ class CachedResourceMixin (object):
 
         # Also, add the key to the set of pages cached from this view.
         meta_key = self.get_cache_metakey(request, *args, **kwargs)
-        keys = django_cache.cache.get(meta_key) or set()
-        keys.add(key)
-        django_cache.cache.set(meta_key, keys, settings.API_CACHE_TIMEOUT)
+        set_cache.add(meta_key, key, timeout=settings.API_CACHE_TIMEOUT)
 
         return response
 
