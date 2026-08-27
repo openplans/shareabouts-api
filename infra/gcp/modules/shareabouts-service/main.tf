@@ -259,6 +259,8 @@ resource "google_cloud_run_v2_service" "default" {
   }
 
   template {
+    max_instance_request_concurrency = coalesce(var.container_concurrency, var.workers)
+
     service_account = google_service_account.sa.email
     vpc_access {
       connector = var.vpc_connector_id
@@ -273,6 +275,7 @@ resource "google_cloud_run_v2_service" "default" {
           cpu    = "1000m"
           memory = "1Gi"
         }
+        startup_cpu_boost = true
       }
 
       dynamic "env" {

@@ -27,6 +27,18 @@ variable "additional_allowed_hosts" {
   default     = []
 }
 
+variable "workers" {
+  description = "Number of gunicorn workers"
+  type        = string
+  default     = "4"
+}
+
+variable "container_concurrency" {
+  description = "Maximum number of concurrent requests per container instance (optional, defaults to workers)"
+  type        = number
+  default     = null
+}
+
 variable "superuser_username" {
   description = "Username for Django superuser (optional; if set with email and password, creates superuser job)"
   type        = string

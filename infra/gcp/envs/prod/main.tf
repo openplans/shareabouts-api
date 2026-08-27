@@ -56,6 +56,7 @@ module "service" {
   additional_allowed_hosts = var.additional_allowed_hosts
   shareabouts_admin_email  = var.shareabouts_admin_email
   workers                  = var.workers
+  container_concurrency    = var.container_concurrency
   superuser_username       = var.superuser_username
   superuser_email          = var.superuser_email
   superuser_password       = var.superuser_password

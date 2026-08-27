@@ -54,6 +54,8 @@ module "service" {
   # Config
   domain_names             = var.domain_names
   additional_allowed_hosts = var.additional_allowed_hosts
+  workers                  = var.workers
+  container_concurrency    = var.container_concurrency
   superuser_username       = var.superuser_username
   superuser_email          = var.superuser_email
   superuser_password       = var.superuser_password

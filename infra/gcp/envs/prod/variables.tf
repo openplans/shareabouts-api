@@ -38,6 +38,12 @@ variable "workers" {
   default     = "4"
 }
 
+variable "container_concurrency" {
+  description = "Maximum number of concurrent requests per container instance (optional, defaults to workers)"
+  type        = number
+  default     = null
+}
+
 variable "superuser_username" {
   description = "Username for Django superuser (optional; if set with email and password, creates superuser job)"
   type        = string
