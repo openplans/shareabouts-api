@@ -1,3 +1,4 @@
+import os
 from os import environ
 from django.core.exceptions import ImproperlyConfigured
 
@@ -386,8 +387,13 @@ if 'DATABASE_URL' in environ:
     # NOTE: Be sure that your DATABASE_URL has the 'postgis://' scheme.
     DATABASES = {'default': dj_database_url.config()}
 
-    if USE_GEODB:
+    if USE_GEODB and 'postgres' in DATABASES['default']['ENGINE']:
         DATABASES['default']['ENGINE'] = 'django.contrib.gis.db.backends.postgis'
+
+if 'SPATIALITE_LIBRARY_PATH' in environ:
+    SPATIALITE_LIBRARY_PATH = environ['SPATIALITE_LIBRARY_PATH']
+elif os.path.exists('/usr/lib/x86_64-linux-gnu/mod_spatialite.so'):
+    SPATIALITE_LIBRARY_PATH = '/usr/lib/x86_64-linux-gnu/mod_spatialite.so'
 
 elif all([key in environ for key in ('DB_PASSWORD', 'DATABASE_HOST', 'DATABASE_NAME', 'DATABASE_USER')]):
     # Construct DATABASE_URL from components (Cloud Run Secrets approach)

@@ -40,11 +40,11 @@ from itertools import count
 from collections import defaultdict
 try:
     # Python 2
-    from urlparse import urlparse  # type: ignore
+    from urlparse import urlparse, parse_qsl  # type: ignore
     from urllib import urlencode
 except (ModuleNotFoundError, ImportError):
     # Python 3
-    from urllib.parse import urlencode, urlparse
+    from urllib.parse import urlencode, urlparse, parse_qsl
 import re
 import requests
 import ujson as json
@@ -684,15 +684,11 @@ class ProtectedOwnedResourceMixin (OwnedResourceMixin):
 
 
 class CachedResourceMixin (object):
-    @property
-    def cache_prefix(self):
-        return self.request.path
+    def get_cache_prefix(self, request, *args, **kwargs):
+        return request.path
 
-    def get_cache_prefix(self):
-        return self.cache_prefix
-
-    def get_cache_metakey(self):
-        prefix = self.cache_prefix
+    def get_cache_metakey(self, request, *args, **kwargs):
+        prefix = self.get_cache_prefix(request, *args, **kwargs)
         return prefix + '_keys'
 
     @csrf_exempt
@@ -711,7 +707,7 @@ class CachedResourceMixin (object):
         # This is important, because if it's not managed, then we'll never
         # know when to invalidate it. If it's not managed we should just
         # assume that it's invalid.
-        metakey = self.get_cache_metakey()
+        metakey = self.get_cache_metakey(request, *args, **kwargs)
         keyset = django_cache.cache.get(metakey) or set()
 
         if (response_data is not None) and (key in keyset):
@@ -729,7 +725,7 @@ class CachedResourceMixin (object):
 
             # Only cache on OK resposne
             if response.status_code == 200:
-                self.cache_response(key, response)
+                self.cache_response(key, response, request, *args, **kwargs)
 
         # Save all the buffered data to the cache
         cache_buffer.flush()
@@ -739,35 +735,85 @@ class CachedResourceMixin (object):
         response['Cache-Control'] = 'no-cache'
         return response
 
+    def canonicalize_query_string(self, querystring):
+        if not querystring:
+            return ''
+        params = parse_qsl(querystring, keep_blank_values=True)
+        # Strip jQuery cache-busting parameter (e.g., '_=1234567890' or '_')
+        params = [(k, v) for k, v in params if k != '_']
+        params.sort(key=lambda item: (item[0], item[1]))
+        return urlencode(params)
+
+    def normalize_response_format(self, request):
+        # 1. Check format in GET query params (e.g., ?format=geojson, ?format=api)
+        format_param = request.GET.get('format', '').strip().lower()
+        if format_param:
+            return format_param
+
+        # 2. Check request.accepted_renderer if already negotiated
+        if hasattr(request, 'accepted_renderer') and request.accepted_renderer:
+            fmt = getattr(request.accepted_renderer, 'format', None)
+            if fmt:
+                return fmt.lower()
+
+        # 3. Inspect Accept header for common non-JSON formats
+        accept = request.META.get('HTTP_ACCEPT', '')
+        if 'application/vnd.geo+json' in accept or 'application/geo+json' in accept:
+            return 'geojson'
+        if 'text/html' in accept and 'application/xhtml+xml' in accept and 'application/json' not in accept:
+            return 'api'
+        if 'text/csv' in accept:
+            return 'csv'
+
+        # Default to json
+        return 'json'
+
+    def get_user_scope(self, request):
+        if not hasattr(request, 'user') or not request.user or not request.user.is_authenticated:
+            return 'anon'
+
+        user = request.user
+        if getattr(user, 'is_superuser', False):
+            return 'superuser'
+
+        # Only resolve dataset when user is authenticated (saves a lookup for anonymous requests)
+        dataset = None
+        if hasattr(self, 'get_dataset'):
+            dataset = self.get_dataset()
+
+        if dataset and getattr(user, 'id', None) == dataset.owner_id:
+            return 'owner'
+
+        if dataset:
+            group_set = sorted([
+                group.name for group in user._groups.all()
+                if group.dataset_id == dataset.id
+            ])
+            if group_set:
+                return 'groups:' + ','.join(group_set)
+
+        return 'anon'
+
+    def get_client_scope(self, request):
+        key_header = request.META.get(apikey_auth.KEY_HEADER)
+        if key_header:
+            return f'apikey:{key_header.strip()}'
+
+        origin_header = request.META.get('HTTP_ORIGIN')
+        if origin_header:
+            return f'origin:{origin_header.strip().lower()}'
+
+        return 'client:none'
+
     def get_cache_key(self, request, *args, **kwargs):
-        querystring = request.META.get('QUERY_STRING', '')
-        contenttype = request.META.get('HTTP_ACCEPT', '')
+        prefix = getattr(request, 'path', '') or self.get_cache_prefix(request, *args, **kwargs)
+        querystring = self.canonicalize_query_string(request.META.get('QUERY_STRING', ''))
+        response_format = self.normalize_response_format(request)
 
-        if not hasattr(request, 'user') or not request.user.is_authenticated:
-            groups = ''
-        else:
-            dataset = None
-            if hasattr(self, 'get_dataset'):
-                dataset = self.get_dataset()
+        user_scope = self.get_user_scope(request)
+        client_scope = self.get_client_scope(request)
 
-            if dataset:
-                if request.user.id == dataset.owner_id:
-                    groups = '__owners__'
-                else:
-                    group_set = []
-                    for group in request.user._groups.all():
-                        if group.dataset_id == dataset.id:
-                            group_set.append(group.name)
-                    groups = ','.join(group_set)
-            else:
-                groups = ''
-
-        # TODO: Eliminate the jQuery cache busting parameter for now. Get
-        # rid of this after the old API has been deprecated.
-        cache_buster_pattern = re.compile(r'&?_=\d+')
-        querystring = re.sub(cache_buster_pattern, '', querystring)
-
-        return ':'.join([self.cache_prefix, contenttype, querystring, groups])
+        return ';'.join([prefix, response_format, querystring, user_scope, client_scope])
 
     def respond_from_cache(self, cached_data):
         # Given some cached data, construct a response.
@@ -775,7 +821,7 @@ class CachedResourceMixin (object):
         response = Response(content, status=status, headers=dict(headers))
         return response
 
-    def cache_response(self, key, response):
+    def cache_response(self, key, response, request, *args, **kwargs):
         data = response.data
         status = response.status_code
         headers = list(response.items())
@@ -784,7 +830,7 @@ class CachedResourceMixin (object):
         django_cache.cache.set(key, (data, status, headers), settings.API_CACHE_TIMEOUT)
 
         # Also, add the key to the set of pages cached from this view.
-        meta_key = self.get_cache_metakey()
+        meta_key = self.get_cache_metakey(request, *args, **kwargs)
         keys = django_cache.cache.get(meta_key) or set()
         keys.add(key)
         django_cache.cache.set(meta_key, keys, settings.API_CACHE_TIMEOUT)
@@ -1063,8 +1109,8 @@ class PlaceListView (CachedResourceMixin, SerializerParamsMixin, LocatedResource
     renderer_classes = (renderers.GeoJSONRenderer, renderers.GeoJSONPRenderer) + OwnedResourceMixin.renderer_classes[2:]
     parser_classes = (parsers.GeoJSONParser,) + OwnedResourceMixin.parser_classes[1:]
 
-    def get_cache_metakey(self):
-        metakey_kwargs = self.kwargs.copy()
+    def get_cache_metakey(self, request, *args, **kwargs):
+        metakey_kwargs = kwargs.copy()
         metakey_kwargs.pop('pk_list', None)
         prefix = reverse('place-list', kwargs=metakey_kwargs)
         return prefix + '_keys'
@@ -1288,8 +1334,8 @@ class SubmissionListView (CachedResourceMixin, SerializerParamsMixin, OwnedResou
     place_id_kwarg = 'place_id'
     submission_set_name_kwarg = 'submission_set_name'
 
-    def get_cache_metakey(self):
-        metakey_kwargs = self.kwargs.copy()
+    def get_cache_metakey(self, request, *args, **kwargs):
+        metakey_kwargs = kwargs.copy()
         metakey_kwargs.pop('pk_list', None)
         prefix = reverse('submission-list', kwargs=metakey_kwargs)
         return prefix + '_keys'
@@ -1401,8 +1447,8 @@ class DataSetSubmissionListView (CachedResourceMixin, OwnedResourceMixin, Filter
 
     submission_set_name_kwarg = 'submission_set_name'
 
-    def get_cache_metakey(self):
-        metakey_kwargs = self.kwargs.copy()
+    def get_cache_metakey(self, request, *args, **kwargs):
+        metakey_kwargs = kwargs.copy()
         metakey_kwargs.pop('pk_list', None)
         prefix = reverse('dataset-submission-list', kwargs=metakey_kwargs)
         return prefix + '_keys'

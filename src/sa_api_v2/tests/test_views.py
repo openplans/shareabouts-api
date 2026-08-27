@@ -4698,3 +4698,149 @@ class TestActivityView(APITestMixin, TestCase):
         response2 = self.view(request, **self.kwargs)
 
         self.assertNotEqual(response1.rendered_content, response2.rendered_content)
+
+
+class TestCacheKeyNormalization(APITestMixin, TestCase):
+    def setUp(self):
+        self.owner = User.objects.create_user(username='owner_user', password='123', email='owner@example.com')
+        self.staff_user = User.objects.create_user(username='staff_user', password='123', email='staff@example.com')
+        self.superuser = User.objects.create_superuser(username='super_user', password='123', email='super@example.com')
+        self.dataset = DataSet.objects.create(slug='test-ds', owner=self.owner)
+        self.apikey = ApiKey.objects.create(key='test_key_123', dataset=self.dataset)
+        self.origin = Origin.objects.create(pattern='https://participate.boston.gov', dataset=self.dataset)
+        self.group = Group.objects.create(dataset=self.dataset, name='moderators')
+        self.group.submitters.add(self.staff_user)
+
+        self.factory = RequestFactory()
+        self.view_instance = PlaceListView()
+        self.view_instance.kwargs = {
+            'owner_username': self.owner.username,
+            'dataset_slug': self.dataset.slug,
+        }
+        self.url = reverse('place-list', kwargs=self.view_instance.kwargs)
+
+    def tearDown(self):
+        User.objects.all().delete()
+        DataSet.objects.all().delete()
+
+    def test_format_normalization_across_diverse_accept_headers(self):
+        req_axios = self.factory.get(self.url, HTTP_ACCEPT='application/json, text/plain, */*')
+        req_curl = self.factory.get(self.url, HTTP_ACCEPT='*/*')
+        req_app = self.factory.get(self.url, HTTP_ACCEPT='application/json')
+        req_custom = self.factory.get(self.url, HTTP_ACCEPT='application/json; charset=utf-8')
+
+        key_axios = self.view_instance.get_cache_key(req_axios)
+        key_curl = self.view_instance.get_cache_key(req_curl)
+        key_app = self.view_instance.get_cache_key(req_app)
+        key_custom = self.view_instance.get_cache_key(req_custom)
+
+        # All JSON clients resolve to format 'json' and produce identical cache keys
+        self.assertEqual(key_axios, key_curl)
+        self.assertEqual(key_axios, key_app)
+        self.assertEqual(key_axios, key_custom)
+        self.assertIn(';json;', key_axios)
+
+        # Direct browser navigation requesting HTML gets Browsable API format
+        req_browser = self.factory.get(self.url, HTTP_ACCEPT='text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8')
+        key_browser = self.view_instance.get_cache_key(req_browser)
+        self.assertIn(';api;', key_browser)
+
+    def test_explicit_format_parameter(self):
+        req_geojson = self.factory.get(self.url + '?format=geojson')
+        key_geojson = self.view_instance.get_cache_key(req_geojson)
+        self.assertIn(';geojson;', key_geojson)
+
+        req_api = self.factory.get(self.url + '?format=api')
+        key_api = self.view_instance.get_cache_key(req_api)
+        self.assertIn(';api;', key_api)
+
+    def test_query_parameter_sorting_and_cache_buster_stripping(self):
+        req1 = self.factory.get(self.url + '?page=2&include_submissions=true')
+        req2 = self.factory.get(self.url + '?include_submissions=true&page=2')
+        req3 = self.factory.get(self.url + '?page=2&include_submissions=true&_=1693152000000')
+
+        key1 = self.view_instance.get_cache_key(req1)
+        key2 = self.view_instance.get_cache_key(req2)
+        key3 = self.view_instance.get_cache_key(req3)
+
+        self.assertEqual(key1, key2)
+        self.assertEqual(key1, key3)
+        self.assertIn(';include_submissions=true&page=2;', key1)
+
+    def test_composite_user_and_client_auth_scopes(self):
+        # 1. Anonymous request
+        req_anon = self.factory.get(self.url)
+        key_anon = self.view_instance.get_cache_key(req_anon)
+        self.assertTrue(key_anon.endswith(';anon;client:none'))
+
+        # 2. Superuser request
+        req_super = self.factory.get(self.url)
+        req_super.user = self.superuser
+        key_super = self.view_instance.get_cache_key(req_super)
+        self.assertTrue(key_super.endswith(';superuser;client:none'))
+
+        # 3. Dataset owner request
+        req_owner = self.factory.get(self.url)
+        req_owner.user = self.owner
+        key_owner = self.view_instance.get_cache_key(req_owner)
+        self.assertTrue(key_owner.endswith(';owner;client:none'))
+
+        # 4. Group member request
+        req_staff = self.factory.get(self.url)
+        req_staff.user = self.staff_user
+        key_staff = self.view_instance.get_cache_key(req_staff)
+        self.assertTrue(key_staff.endswith(';groups:moderators;client:none'))
+
+        # 5. API Key request
+        req_key = self.factory.get(self.url, **{KEY_HEADER: self.apikey.key})
+        key_key = self.view_instance.get_cache_key(req_key)
+        self.assertTrue(key_key.endswith(f';anon;apikey:{self.apikey.key}'))
+
+        # 6. CORS Origin request
+        req_origin = self.factory.get(self.url, HTTP_ORIGIN='https://participate.boston.gov')
+        key_origin = self.view_instance.get_cache_key(req_origin)
+        self.assertTrue(key_origin.endswith(f';anon;origin:{self.origin.pattern}'))
+
+    def test_semicolon_delimited_structure(self):
+        req = self.factory.get(self.url + '?page=1')
+        key = self.view_instance.get_cache_key(req)
+        parts = key.split(';')
+        self.assertEqual(len(parts), 5)
+        self.assertEqual(parts[0], self.url)
+        self.assertEqual(parts[1], 'json')
+        self.assertEqual(parts[2], 'page=1')
+        self.assertEqual(parts[3], 'anon')
+        self.assertEqual(parts[4], 'client:none')
+
+    def test_get_cache_key_performs_zero_database_queries(self):
+        # 1. Anonymous request with no extra headers
+        req_anon = self.factory.get(self.url + '?page=2&include_submissions=true')
+        with self.assertNumQueries(0):
+            key_anon = self.view_instance.get_cache_key(req_anon)
+        self.assertIn(';anon;client:none', key_anon)
+
+        # 2. Browser request with Origin header
+        req_origin = self.factory.get(self.url, HTTP_ORIGIN='https://participate.boston.gov')
+        with self.assertNumQueries(0):
+            key_origin = self.view_instance.get_cache_key(req_origin)
+        self.assertIn(';anon;origin:https://participate.boston.gov', key_origin)
+
+        # 3. API Key request with X-Shareabouts-Key header
+        req_key = self.factory.get(self.url, **{KEY_HEADER: self.apikey.key})
+        with self.assertNumQueries(0):
+            key_key = self.view_instance.get_cache_key(req_key)
+        self.assertIn(f';anon;apikey:{self.apikey.key}', key_key)
+
+        # 4. Complex browser Accept header
+        req_browser = self.factory.get(self.url, HTTP_ACCEPT='text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8')
+        with self.assertNumQueries(0):
+            key_browser = self.view_instance.get_cache_key(req_browser)
+        self.assertIn(';api;', key_browser)
+
+        # 5. Permuted query parameters and cache buster
+        req_params = self.factory.get(self.url + '?page=2&include_submissions=true&_=1234567890')
+        with self.assertNumQueries(0):
+            key_params = self.view_instance.get_cache_key(req_params)
+        self.assertIn(';include_submissions=true&page=2;', key_params)
+
+
