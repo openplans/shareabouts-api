@@ -21,7 +21,7 @@ locals {
     "DATABASE_HOST"           = var.db_private_ip
     "DATABASE_NAME"           = google_sql_database.database.name
     "DATABASE_USER"           = google_sql_user.user.name
-    "REDIS_URL"               = "redis://${var.redis_host}:${var.redis_port}/0"
+    "REDIS_URL"               = "redis://${var.redis_host}:${var.redis_port}/${var.redis_db}"
     "REDIS_KEY_PREFIX"        = var.environment
     "GS_BUCKET_NAME"          = google_storage_bucket.static.name
     "GS_PROJECT_ID"           = var.project_id

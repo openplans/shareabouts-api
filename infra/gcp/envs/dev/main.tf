@@ -50,6 +50,7 @@ module "service" {
   db_private_ip    = data.terraform_remote_state.common.outputs.db_private_ip
   redis_host       = data.terraform_remote_state.common.outputs.redis_host
   redis_port       = data.terraform_remote_state.common.outputs.redis_port
+  redis_db         = 1
 
   # Config
   domain_names             = var.domain_names

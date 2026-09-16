@@ -58,6 +58,11 @@ variable "redis_port" {
   type        = string
 }
 
+variable "redis_db" {
+  description = "Database number of the shared Redis Instance"
+  type        = string
+}
+
 # Configuration
 variable "domain_names" {
   description = "List of custom domain names to map to the service"
