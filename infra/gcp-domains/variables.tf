@@ -72,3 +72,13 @@ variable "blocked_referer_domains" {
   default     = []
 }
 
+variable "blocked_datasets" {
+  type = list(object({
+    owner = string
+    slug  = string
+  }))
+  description = "List of owner and slug pairs for datasets to block at the load balancer level via Cloud Armor security policy"
+  default     = []
+}
+
+

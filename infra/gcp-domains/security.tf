@@ -7,7 +7,8 @@ locals {
   has_security_rules = (
     length(var.blocked_ip_ranges) > 0 ||
     var.block_php_requests ||
-    length(var.blocked_referer_domains) > 0
+    length(var.blocked_referer_domains) > 0 ||
+    length(var.blocked_datasets) > 0
   )
 
   # Match only bare-origin referers (no path) — this is the botnet's signature.
@@ -21,6 +22,18 @@ locals {
       "request.headers['referer'].matches('https?://${replace(d, ".", "\\\\.")}/?')"
     ])
   ) : ""
+
+  # Match requests targeting configured blocked datasets under /api/v2/<owner>/datasets/<slug>
+  # (or entire owner if slug is "*"). Uses standard Cloud Armor regex syntax without anchors/groups.
+  dataset_match_expression = length(var.blocked_datasets) > 0 ? format(
+    "request.path.matches('%s')",
+    join("|", [
+      for d in var.blocked_datasets :
+      d.slug == "*" ? "/api/v2/${d.owner}/.*" : "/api/v2/${d.owner}/datasets/${d.slug}.*"
+    ])
+  ) : ""
+
+
 }
 
 resource "google_compute_security_policy" "ip_blocklist" {
@@ -57,7 +70,22 @@ resource "google_compute_security_policy" "ip_blocklist" {
   }
 
   dynamic "rule" {
+    for_each = length(var.blocked_datasets) > 0 ? [1] : []
+    content {
+      action   = "deny(404)"
+      priority = "920"
+      match {
+        expr {
+          expression = local.dataset_match_expression
+        }
+      }
+      description = "Deny requests for defunct datasets"
+    }
+  }
+
+  dynamic "rule" {
     for_each = length(var.blocked_ip_ranges) > 0 ? [1] : []
+
     content {
       action   = "deny(403)"
       priority = "1000"

@@ -50,4 +50,11 @@ domain_mappings = {
 #   "api.example.com",
 # ]
 
+# Optional: List of owner and slug dataset pairs to block at the load balancer level via Cloud Armor
+# blocked_datasets = [
+#   { owner = "ourmiami", slug = "psc2014" },
+#   { owner = "pbnyc", slug = "pbnyc-2018" },
+# ]
+
+
 
