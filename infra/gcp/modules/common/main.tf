@@ -32,6 +32,7 @@ resource "google_project_service" "apis" {
 resource "google_compute_network" "vpc" {
   name                    = "${var.service_name}-vpc"
   auto_create_subnetworks = false
+  routing_mode            = "GLOBAL"
 }
 
 resource "google_compute_subnetwork" "subnet" {
